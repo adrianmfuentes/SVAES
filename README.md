@@ -1,5 +1,5 @@
 # SVAES  
-## Sistema de Verificación Automática de Entregas de Software
+## Sistema de Verificación Automática de Entregas de Software  
 
 Trabajo Fin de Grado  
 Grado en Ingeniería Informática del Software  
@@ -11,183 +11,217 @@ Curso: 2025/2026
 
 ---
 
-## 1. Descripción del proyecto
+# 1. Introducción
 
-SVAES (Sistema de Verificación Automática de Entregas de Software) es una plataforma orientada a la validación automatizada de entregas de software en entornos de desarrollo profesional.
+El Sistema de Verificación Automática de Entregas de Software (SVAES) es una plataforma diseñada para automatizar la validación de entregas de software dentro de procesos de desarrollo modernos basados en integración continua.
 
-El sistema permite verificar de forma automática la calidad, completitud y coherencia de entregas software (releases), integrándose con herramientas externas como gestores de tareas, repositorios de código o sistemas de documentación.
+El sistema actúa como un mecanismo de control de calidad (Quality Gate), evaluando de forma automática la coherencia, integridad y completitud de los artefactos asociados a una release, mediante la integración con múltiples sistemas externos.
 
-Su objetivo principal es reducir errores manuales en la validación de entregas, mejorar la trazabilidad y garantizar el cumplimiento de criterios de calidad definidos.
-
----
-
-## 2. Objetivos
-
-### Objetivo general
-Diseñar e implementar un sistema genérico capaz de verificar automáticamente entregas de software mediante reglas configurables.
-
-### Objetivos específicos
-- Definir un modelo de verificación desacoplado de herramientas externas
-- Implementar un motor de verificación eficiente y seguro
-- Diseñar una arquitectura escalable basada en principios modernos
-- Permitir la integración con sistemas externos mediante conectores
-- Proporcionar una interfaz de usuario para la gestión de verificaciones
-- Garantizar la trazabilidad entre requisitos y diseño
+El objetivo principal es eliminar procesos manuales de validación, reducir errores humanos y garantizar la trazabilidad completa del ciclo de vida de las entregas.
 
 ---
 
-## 3. Arquitectura del sistema
+# 2. Objetivos del sistema
 
-El sistema sigue una arquitectura híbrida basada en:
+## 2.1 Objetivo general
 
-- Arquitectura hexagonal (Ports & Adapters)
-- Clean Architecture
+Diseñar e implementar un sistema extensible y desacoplado capaz de verificar automáticamente entregas de software en entornos multi-herramienta.
 
-Principios clave:
+## 2.2 Objetivos específicos
 
-- El dominio es independiente de la infraestructura  
-- Las dependencias siempre apuntan hacia el núcleo  
-- Las integraciones externas se realizan mediante interfaces (puertos)  
-
-### Componentes principales
-
-- Frontend web (React + Vite)
-- API backend (Node.js + Express + TypeScript)
-- Worker de verificación asíncrona (Node.js + BullMQ)
-- Base de datos (PostgreSQL)
-- Caché y colas (Redis)
+- Automatizar la validación de releases  
+- Garantizar trazabilidad completa de verificaciones  
+- Integrarse con herramientas externas sin acoplamiento  
+- Proporcionar métricas y observabilidad del proceso de calidad  
+- Permitir su uso como Quality Gate en pipelines CI/CD  
 
 ---
 
-## 4. Tecnologías utilizadas
+# 3. Alcance funcional
 
-| Capa                | Tecnología                     |
-|---------------------|--------------------------------|
-| Frontend            | React + TypeScript + Vite      |
-| Backend             | Node.js + Express + TypeScript |
-| Worker              | Node.js + BullMQ               |
-| Base de datos       | PostgreSQL                     |
-| Cola y caché        | Redis                          |
-| Validación          | Zod                            |
-| Contenerización     | Docker + Docker Compose        |
+El sistema cubre las siguientes capacidades:
+
+- Gestión de organizaciones (multi-tenant)  
+- Gestión de proyectos y releases  
+- Configuración de conectores externos  
+- Definición de perfiles de verificación  
+- Ejecución automática de verificaciones  
+- Registro de resultados y auditoría  
+- Exposición de API REST para integración  
+
+Quedan fuera del alcance:
+
+- Ejecución de pipelines CI/CD  
+- Modificación de sistemas externos  
+- Análisis predictivo o inteligencia artificial  
 
 ---
 
-## 5. Estructura del repositorio
+# 4. Arquitectura del sistema
 
-```
+## 4.1 Enfoque arquitectónico
+
+El sistema adopta una arquitectura híbrida basada en:
+
+- Arquitectura hexagonal (Ports & Adapters)  
+- Clean Architecture  
+
+Principio clave:
+
+Las dependencias solo pueden apuntar hacia el dominio.
+
+---
+
+## 4.2 Descomposición en contenedores
+
+El sistema se divide en los siguientes componentes:
+
+- Frontend (Angular SPA)  
+- Backend (FastAPI)  
+- Motor de verificación (Rust)  
+- Cola de tareas (Celery + Redis)  
+- Base de datos (PostgreSQL)  
+- Conectores externos  
+
+---
+
+## 4.3 Flujo de ejecución
+
+1. El usuario lanza una verificación  
+2. El backend valida el estado de la release  
+3. Se encola una tarea  
+4. Un worker procesa la tarea  
+5. Se obtienen datos mediante conectores  
+6. Se ejecuta el motor  
+7. Se guarda el resultado  
+8. El frontend consulta el estado  
+
+---
+
+# 5. Modelo de dominio
+
+Entidades principales:
+
+- Organization  
+- Project  
+- Release  
+- Artifact  
+- VerificationProfile  
+- VerificationRule  
+- VerificationResult  
+- ConnectorInstance  
+
+Cada verificación almacena un snapshot completo del estado evaluado.
+
+---
+
+# 6. Ciclo de vida de una release
+
+BORRADOR → PENDIENTE → EN_VERIFICACIÓN →  
+VÁLIDA / NO_VÁLIDA / CON_ADVERTENCIAS  
+
+---
+
+# 7. Motor de verificación
+
+Implementado en Rust.
+
+Características:
+
+- Ejecución paralela  
+- Sin llamadas de red  
+- Procesamiento en memoria  
+- Resultado determinista  
+
+Pipeline:
+
+1. Validación  
+2. Evaluación de reglas  
+3. Agregación  
+4. Veredicto  
+
+---
+
+# 8. Conectores
+
+Puerto principal:
+
+IConnector
+
+Permite integrar sistemas externos sin modificar el núcleo.
+
+---
+
+# 9. Persistencia
+
+Base de datos PostgreSQL:
+
+- UUID como identificadores  
+- JSONB para datos dinámicos  
+- Integridad referencial  
+- Auditoría  
+
+---
+
+# 10. Seguridad
+
+- JWT  
+- RBAC  
+- Cifrado de credenciales  
+- HTTPS  
+- Protección contra ataques  
+
+---
+
+# 11. Tecnologías
+
+- Angular  
+- FastAPI  
+- Rust  
+- PostgreSQL  
+- Celery  
+- Redis  
+- Docker  
+
+---
+
+# 12. Estructura
+
 svaes/
-│
-├── apps/
-│   ├── api/
-│   └── web/
-├── packages/
-│   ├── application/
-│   ├── connectors/
-│   ├── domain/
-│   ├── infrastructure/
-│   └── shared/
-├── workers/
-│   └── verification-worker/
-├── scripts/
-│   ├── db/
-│   ├── deploy/
-│   └── dev/
-├── tests/
-│   ├── e2e/
-│   ├── integration/
-│   ├── performance/
-│   ├── security/
-│   └── unit/
-├── docs/
-│   ├── api/
-│   ├── database/
-│   ├── diagrams/
-│   └── tfg/
-├── .env.example           
-├── docker-compose.yml
-└── README.md
-```
+├── frontend/
+├── backend/
+├── verifier-engine/
+├── connectors/
+├── database/
+├── docker/
+└── docs/
 
 ---
 
-## 6. Funcionalidades principales
+# 13. Limitaciones
 
-- Gestión de entregas (releases)
-- Configuración de perfiles de verificación
-- Ejecución automática de verificaciones
-- Integración con herramientas externas
-- Consulta de resultados y métricas
-- Sistema de roles y autenticación
+- No despliegue productivo  
+- Conectores limitados  
+- Sin IA  
 
 ---
 
-## 7. Instalación y ejecución
-
-### Requisitos
-
-- Docker
-- Docker Compose
-
-### Pasos
-
-```bash
-git clone https://github.com/adrianmfuentes/svaes.git
-cd svaes
-cp .env.example .env
-docker-compose up --build
-```
-
-Acceso:
-- Web: http://localhost:3000
-- API: http://localhost:8080
-
----
-
-## 8. Uso básico
-
-1. Acceder a la aplicación web  
-2. Crear una organización/proyecto  
-3. Configurar conectores externos  
-4. Definir reglas de verificación  
-5. Lanzar verificación sobre una entrega  
-6. Consultar resultados  
-
----
-
-## 9. Seguridad
-
-- Autenticación mediante JWT  
-- Control de acceso basado en roles (RBAC)  
-- Aislamiento del motor de verificación  
-- Gestión segura de credenciales  
-
----
-
-## 10. Limitaciones
-
-- No incluye despliegue en entorno productivo real  
-- Integraciones externas limitadas  
-- No incluye análisis predictivo  
-
----
-
-## 11. Trabajo futuro
+# 14. Trabajo futuro
 
 - Nuevos conectores  
-- Dashboard avanzado  
 - Integración CI/CD  
-- Despliegue en cloud  
+- Métricas avanzadas  
 
 ---
 
-## 12. Licencia
+# 15. Ejecución
 
-Este proyecto se distribuye bajo licencia MIT. Ver el archivo `LICENSE`.
+git clone https://github.com/adrianmfuentes/svaes.git  
+cd svaes  
+docker-compose up  
 
 ---
 
-## 13. Contacto
+# 16. Conclusión
 
-Adrián Martínez Fuentes  
-Universidad de Oviedo  
+El sistema proporciona una solución desacoplada, extensible y robusta para la verificación automática de entregas de software.
