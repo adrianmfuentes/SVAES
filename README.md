@@ -51,26 +51,25 @@ Principios clave:
 
 ### Componentes principales
 
-- Frontend (Angular SPA)  
-- Backend (FastAPI - Python)  
-- Motor de verificación (Rust)  
-- Sistema de colas (Celery + Redis)  
-- Base de datos (PostgreSQL)  
+- Frontend web (React + Vite)
+- API backend (Node.js + Express + TypeScript)
+- Worker de verificación asíncrona (Node.js + BullMQ)
+- Base de datos (PostgreSQL)
+- Caché y colas (Redis)
 
 ---
 
 ## 4. Tecnologías utilizadas
 
-| Capa                | Tecnología                  |
-|---------------------|---------------------------|
-| Frontend           | Angular + TypeScript       |
-| Backend            | Python (FastAPI)           |
-| Motor verificación | Rust                       |
-| Base de datos      | PostgreSQL                 |
-| ORM                | SQLAlchemy + Alembic       |
-| Cola de tareas     | Celery + Redis             |
-| API                | OpenAPI 3.x                |
-| Contenerización    | Docker + Docker Compose    |
+| Capa                | Tecnología                     |
+|---------------------|--------------------------------|
+| Frontend            | React + TypeScript + Vite      |
+| Backend             | Node.js + Express + TypeScript |
+| Worker              | Node.js + BullMQ               |
+| Base de datos       | PostgreSQL                     |
+| Cola y caché        | Redis                          |
+| Validación          | Zod                            |
+| Contenerización     | Docker + Docker Compose        |
 
 ---
 
@@ -79,14 +78,34 @@ Principios clave:
 ```
 svaes/
 │
-├── frontend/              
-├── backend/               
-├── verifier-engine/       
-├── connectors/            
-├── database/              
-├── docs/                  
-├── docker/                
+├── apps/
+│   ├── api/
+│   └── web/
+├── packages/
+│   ├── application/
+│   ├── connectors/
+│   ├── domain/
+│   ├── infrastructure/
+│   └── shared/
+├── workers/
+│   └── verification-worker/
+├── scripts/
+│   ├── db/
+│   ├── deploy/
+│   └── dev/
+├── tests/
+│   ├── e2e/
+│   ├── integration/
+│   ├── performance/
+│   ├── security/
+│   └── unit/
+├── docs/
+│   ├── api/
+│   ├── database/
+│   ├── diagrams/
+│   └── tfg/
 ├── .env.example           
+├── docker-compose.yml
 └── README.md
 ```
 
@@ -120,7 +139,8 @@ docker-compose up --build
 ```
 
 Acceso:
-http://localhost:8080
+- Web: http://localhost:3000
+- API: http://localhost:8080
 
 ---
 
@@ -163,7 +183,7 @@ http://localhost:8080
 
 ## 12. Licencia
 
-Proyecto desarrollado con fines académicos.
+Este proyecto se distribuye bajo licencia MIT. Ver el archivo `LICENSE`.
 
 ---
 
