@@ -1,0 +1,29 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.rulers": [100],
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/target": true,
+    "**/.git": false
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/target": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "eslint.workingDirectories": [
+    { "directory": "apps/web", "changeProcessCWD": true },
+    { "directory": "apps/api", "changeProcessCWD": true },
+    { "directory": "workers/verification-worker", "changeProcessCWD": true }
+  ],
+  "plantuml.render": "Local",
+  "plantuml.diagramsRoot": "docs/diagrams/plantuml",
+  "plantuml.exportOutDir": "docs/diagrams/exported",
+  "[yaml]": { "editor.defaultFormatter": "redhat.vscode-yaml" },
+  "[java]": { "editor.defaultFormatter": "redhat.java" }
+}

@@ -1,0 +1,36 @@
+openapi: "3.1.0"
+info:
+  title: SVAES API
+  version: 0.1.0
+  description: Software Verification and Audit Engine System — REST API
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+
+tags:
+  - name: auth
+  - name: organizations
+  - name: users
+  - name: projects
+  - name: releases
+  - name: verification
+  - name: policies
+  - name: connectors
+  - name: audit
+  - name: dashboard
+  - name: notifications
+  - name: api-keys
+
+paths: {}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas: {}
+
+security:
+  - bearerAuth: []

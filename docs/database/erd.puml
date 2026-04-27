@@ -1,0 +1,102 @@
+@startuml SVAES ERD
+
+!define TABLE(x) class x << (T,#FFAAAA) >>
+hide methods
+hide stereotypes
+
+TABLE(organizations) {
+  id UUID PK
+  name VARCHAR
+  slug VARCHAR UNIQUE
+  plan VARCHAR
+  created_at TIMESTAMP
+}
+
+TABLE(users) {
+  id UUID PK
+  organization_id UUID FK
+  email VARCHAR UNIQUE
+  role VARCHAR
+  created_at TIMESTAMP
+}
+
+TABLE(projects) {
+  id UUID PK
+  organization_id UUID FK
+  name VARCHAR
+  repository_url VARCHAR
+  created_at TIMESTAMP
+}
+
+TABLE(releases) {
+  id UUID PK
+  project_id UUID FK
+  version VARCHAR
+  status VARCHAR
+  created_by UUID FK
+  created_at TIMESTAMP
+}
+
+TABLE(verifications) {
+  id UUID PK
+  release_id UUID FK
+  status VARCHAR
+  triggered_by UUID FK
+  started_at TIMESTAMP
+  finished_at TIMESTAMP
+}
+
+TABLE(verification_results) {
+  id UUID PK
+  verification_id UUID FK
+  rule_id UUID FK
+  outcome VARCHAR
+  detail JSONB
+}
+
+TABLE(policies) {
+  id UUID PK
+  organization_id UUID FK
+  name VARCHAR
+  rules JSONB
+}
+
+TABLE(connectors) {
+  id UUID PK
+  organization_id UUID FK
+  type VARCHAR
+  config JSONB
+  active BOOLEAN
+}
+
+TABLE(audit_logs) {
+  id UUID PK
+  organization_id UUID FK
+  actor_id UUID FK
+  action VARCHAR
+  entity_type VARCHAR
+  entity_id UUID
+  payload JSONB
+  created_at TIMESTAMP
+}
+
+TABLE(notifications) {
+  id UUID PK
+  user_id UUID FK
+  type VARCHAR
+  payload JSONB
+  read BOOLEAN
+  created_at TIMESTAMP
+}
+
+organizations ||--o{ users : "has"
+organizations ||--o{ projects : "owns"
+organizations ||--o{ connectors : "configures"
+organizations ||--o{ policies : "defines"
+organizations ||--o{ audit_logs : "generates"
+projects ||--o{ releases : "contains"
+releases ||--o{ verifications : "triggers"
+verifications ||--o{ verification_results : "produces"
+users ||--o{ notifications : "receives"
+
+@enduml
