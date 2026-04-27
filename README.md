@@ -117,8 +117,32 @@ Cada verificación almacena un snapshot completo del estado evaluado.
 
 # 6. Ciclo de vida de una release
 
-BORRADOR → PENDIENTE → EN_VERIFICACIÓN →  
-VÁLIDA / NO_VÁLIDA / CON_ADVERTENCIAS  
+El ciclo de vida de una release define los estados por los que pasa una entrega desde su creación hasta el resultado final de la verificación.
+
+```text
+BORRADOR
+   |
+   v
+PENDIENTE
+   |
+   v
+EN_VERIFICACION
+   |
+   +--> VALIDA
+   +--> NO_VALIDA
+   +--> CON_ADVERTENCIAS
+```
+
+| Estado | Descripción |
+| --- | --- |
+| `BORRADOR` | Release creada, todavía editable y sin enviar a verificación. |
+| `PENDIENTE` | Release preparada para ser verificada. |
+| `EN_VERIFICACION` | Verificación en curso por parte del worker. |
+| `VALIDA` | Release verificada correctamente. |
+| `NO_VALIDA` | Release rechazada por incumplir reglas obligatorias. |
+| `CON_ADVERTENCIAS` | Release aceptable, pero con incidencias no bloqueantes. |
+
+Estados finales: `VALIDA`, `NO_VALIDA` y `CON_ADVERTENCIAS`.
 
 ---
 
@@ -187,38 +211,105 @@ Base de datos PostgreSQL:
 
 # 12. Estructura
 
-svaes/
-├── frontend/
-├── backend/
-├── verifier-engine/
-├── connectors/
-├── database/
-├── docker/
-└── docs/
-
----
-
-# 13. Limitaciones
-
-- No despliegue productivo  
-- Conectores limitados  
-- Sin IA  
-
----
-
-# 14. Trabajo futuro
-
-- Nuevos conectores  
-- Integración CI/CD  
-- Métricas avanzadas  
+```text
+SVAES/
+|-- apps/
+|   |-- api/                         # API principal
+|   |   |-- src/
+|   |   |   |-- main/
+|   |   |   `-- test/
+|   |   `-- package.json
+|   `-- web/                         # Aplicacion frontend
+|       |-- public/
+|       |-- src/
+|       |   |-- app/
+|       |   |-- components/
+|       |   |-- features/
+|       |   |-- hooks/
+|       |   |-- pages/
+|       |   |-- routes/
+|       |   |-- services/
+|       |   `-- styles/
+|       `-- package.json
+|-- docs/
+|   |-- api/
+|   |   `-- openapi.yaml
+|   |-- database/
+|   |   `-- erd.puml
+|   |-- diagrams/
+|   |   |-- exported/
+|   |   `-- plantuml/
+|   `-- tfg/
+|-- packages/
+|   |-- application/
+|   |   |-- src/
+|   |   |   |-- dto/
+|   |   |   |-- ports/
+|   |   |   |-- services/
+|   |   |   `-- use-cases/
+|   |   `-- tests/
+|   |-- connectors/
+|   |   |-- change-management/
+|   |   |-- confluence/
+|   |   |-- gitlab/
+|   |   |-- jira/
+|   |   |-- planning/
+|   |   `-- shared/
+|   |-- domain/
+|   |   |-- src/
+|   |   |   |-- organizations/
+|   |   |   |-- policies/
+|   |   |   |-- projects/
+|   |   |   |-- releases/
+|   |   |   |-- users/
+|   |   |   `-- verification/
+|   |   `-- tests/
+|   |-- infrastructure/
+|   |   |-- src/
+|   |   |   |-- external/
+|   |   |   |-- logging/
+|   |   |   |-- persistence/
+|   |   |   |-- queue/
+|   |   |   `-- security/
+|   |   `-- tests/
+|   `-- shared/
+|       |-- constants/
+|       |-- errors/
+|       |-- types/
+|       `-- utils/
+|-- scripts/
+|   |-- db/
+|   |-- deploy/
+|   `-- dev/
+|-- tests/
+|   |-- e2e/
+|   |-- integration/
+|   |-- performance/
+|   |-- security/
+|   `-- unit/
+|-- workers/
+|   `-- verification-worker/
+|       |-- src/
+|       |   |-- executors/
+|       |   |-- jobs/
+|       |   |-- result-writers/
+|       |   `-- rules/
+|       |-- tests/
+|       `-- package.json
+|-- .env.example
+|-- docker-compose.yml
+|-- LICENSE
+`-- README.md
+```
 
 ---
 
 # 15. Ejecución
-
+```
 git clone https://github.com/adrianmfuentes/svaes.git  
 cd svaes  
 docker-compose up  
+```
 
 ---
 
