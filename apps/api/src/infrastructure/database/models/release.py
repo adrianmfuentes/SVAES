@@ -1,12 +1,15 @@
+from __future__ import annotations
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 from sqlalchemy import String, text, ForeignKey, UniqueConstraint, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP
 from .base import Base
-
-# Importamos el Enum del dominio
 from domain.entities.enums import ReleaseStatus
+
+if TYPE_CHECKING:
+    from .project import ProjectModel
 
 class ReleaseModel(Base):
     __tablename__ = "release"

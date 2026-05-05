@@ -1,9 +1,14 @@
+from __future__ import annotations
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Boolean, text, ForeignKey
+from typing import TYPE_CHECKING
+from sqlalchemy import Boolean, String, text
+from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP
 from .base import Base
+
+if TYPE_CHECKING:
+    from .project import ProjectModel
 
 class OrganizationModel(Base):
     __tablename__ = "organization"
