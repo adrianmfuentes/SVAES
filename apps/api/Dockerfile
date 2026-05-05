@@ -3,7 +3,7 @@ FROM python:3.14-slim
 WORKDIR /app
 
 COPY pyproject.toml .
-RUN pip install fastapi uvicorn
+RUN pip install --no-cache-dir .
 
 COPY src/ ./src/
 
