@@ -24,6 +24,7 @@
   "plantuml.render": "Local",
   "plantuml.diagramsRoot": "docs/diagrams/plantuml",
   "plantuml.exportOutDir": "docs/diagrams/exported",
+  "python.analysis.extraPaths": ["apps/api/src"],
   "[yaml]": { "editor.defaultFormatter": "redhat.vscode-yaml" },
   "[java]": { "editor.defaultFormatter": "redhat.java" }
 }
