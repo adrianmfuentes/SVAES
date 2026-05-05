@@ -2,10 +2,13 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
-from sqlalchemy import String, text, ForeignKey, UniqueConstraint, Enum
+from sqlalchemy import Enum, ForeignKey, String, UniqueConstraint, text
+from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP
+
 from .base import Base
+
+_NOW = text("now()")
 from domain.entities.enums import ReleaseStatus
 
 if TYPE_CHECKING:
@@ -37,10 +40,10 @@ class ReleaseModel(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=text("now()")
+        TIMESTAMP(timezone=True), server_default=_NOW
     )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=text("now()"), onupdate=text("now()")
+        TIMESTAMP(timezone=True), server_default=_NOW, onupdate=_NOW
     )
 
     # Restricción UNIQUE según esquema (project_id, version)

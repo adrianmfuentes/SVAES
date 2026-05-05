@@ -3,9 +3,12 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 from sqlalchemy import String, text, ForeignKey, UniqueConstraint
+from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP
+
 from .base import Base
+
+_NOW = text("now()")
 
 if TYPE_CHECKING:
     from .organization import OrganizationModel
@@ -26,10 +29,10 @@ class ProjectModel(Base):
     description: Mapped[str] = mapped_column(String, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=text("now()")
+        TIMESTAMP(timezone=True), server_default=_NOW
     )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), server_default=text("now()"), onupdate=text("now()")
+        TIMESTAMP(timezone=True), server_default=_NOW, onupdate=_NOW
     )
 
     # Restricción UNIQUE según esquema (org_id, name)
