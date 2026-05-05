@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Genera mensajes de commit en español con Claude Code CLI.
+# Solo actúa en commits normales (no amend, merge, rebase, squash).
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+
+# Ruta explícita para Git Bash en Windows (no hereda el PATH completo de Windows)
+CLAUDE_BIN="${CLAUDE_BIN:-/c/Users/34644/.local/bin/claude}"
+CLAUDE=$(command -v claude 2>/dev/null || echo "$CLAUDE_BIN")
+
+# Abortar si ya hay un mensaje (--amend, merge, template, etc.)
+[ -n "$COMMIT_SOURCE" ] && exit 0
+
+DIFF=$(git diff --cached 2>/dev/null)
+
+# Sin cambios staged, dejar que git maneje el error
+[ -z "$DIFF" ] && exit 0
+
+PROMPT="Eres un experto en control de versiones. Genera un mensaje de commit en español \
+siguiendo el estándar Conventional Commits (feat, fix, refactor, docs, chore, test, ci, build, perf, style). \
+Reglas estrictas:
+- Subject: imperativo, ≤50 caracteres, sin punto final
+- Body: solo si el 'por qué' no es obvio, separado por línea en blanco, ≤72 chars por línea
+- Sin explicaciones adicionales, sin bloques de código, devuelve únicamente el mensaje
+- Usa 'feat(scope):' cuando el scope sea relevante
+
+Diff a analizar:
+${DIFF}"
+
+MESSAGE=$("$CLAUDE" -p "$PROMPT" < /dev/null 2>/dev/null \
+    | sed '/^```/d')
+
+if [ -n "$MESSAGE" ]; then
+    printf '%s\n' "$MESSAGE" > "$COMMIT_MSG_FILE"
+fi
