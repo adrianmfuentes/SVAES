@@ -3,10 +3,10 @@ from datetime import datetime, timezone
 import uuid
 
 @dataclass
-class Organization:
+class Project:
+    organization_id: uuid.UUID
     name: str
-    slug: str
-    is_active: bool = True
+    description: str
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
