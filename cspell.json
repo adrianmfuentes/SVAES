@@ -36,7 +36,8 @@
     "uuid",
     "uuids",
     "uvicorn",
-    "venv"
+    "venv",
+    "VERIFICACION"
   ],
   "ignorePaths": [
     ".git",
