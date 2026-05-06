@@ -15,6 +15,7 @@
     "dsn",
     "fastapi",
     "hexagonal",
+    "mockeada",
     "multitenancy",
     "multitenant",
     "nullable",

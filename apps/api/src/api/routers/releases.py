@@ -1,0 +1,73 @@
+import uuid
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from api.schemas.release import VerificationTaskResponse
+from api.dependencies import get_launch_verification_use_case
+from application.use_cases.launch_verification import LaunchVerificationUseCase, LaunchVerificationCommand
+from domain.exceptions import EntityNotFoundError, ReleaseInvalidStateError
+
+router = APIRouter(prefix="/releases", tags=["Releases"])
+
+@router.post(
+    "/{release_id}/verify",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=VerificationTaskResponse,
+    summary="Lanza la verificación asíncrona de una release",
+)
+async def verify_release(
+    release_id: uuid.UUID,
+    use_case: Annotated[LaunchVerificationUseCase, Depends(get_launch_verification_use_case)],
+):
+    current_user_id = uuid.uuid4()
+    command = LaunchVerificationCommand(release_id=release_id, user_id=current_user_id)
+
+    try:
+        _, task_id = await use_case.execute(command)
+        return VerificationTaskResponse(
+            message="Verificación encolada correctamente",
+            task_id=task_id
+        )
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ReleaseInvalidStateError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor")
+    
+    # Añadir al archivo api/routers/releases.py existente
+
+from application.use_cases.create_release import CreateReleaseUseCase, CreateReleaseCommand
+from application.use_cases.get_verification_history import GetVerificationHistoryUseCase
+
+class ReleaseCreate(BaseModel):
+    project_id: uuid.UUID
+    profile_id: uuid.UUID
+    version: str
+    description: str = ""
+
+@router.post("", status_code=status.HTTP_201_CREATED)
+async def create_release(
+    request: ReleaseCreate, 
+    use_case: Annotated[CreateReleaseUseCase, Depends()]
+):
+    # Simulando usuario autenticado
+    current_user_id = uuid.uuid4()
+    command = CreateReleaseCommand(
+        project_id=request.project_id,
+        profile_id=request.profile_id,
+        version=request.version,
+        description=request.description,
+        created_by=current_user_id
+    )
+    return await use_case.execute(command)
+
+@router.get("/{release_id}/results")
+async def get_results(
+    release_id: uuid.UUID,
+    use_case: Annotated[GetVerificationHistoryUseCase, Depends()]
+):
+    try:
+        return await use_case.execute(release_id)
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

@@ -1,15 +1,18 @@
+from typing import Optional, List
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from domain.entities.connector_instance import ConnectorInstance, ConnectorStatus
 from domain.ports.i_connector_repository import IConnectorRepository
 from infrastructure.database.models.connector_instance import ConnectorInstanceModel
 
+
 class SqlConnectorRepository(IConnectorRepository):
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
 
     async def save(self, connector: ConnectorInstance) -> ConnectorInstance:
-        model = self.session.get(ConnectorInstanceModel, connector.id)
+        model = await self.session.get(ConnectorInstanceModel, connector.id)
         if model is None:
             model = ConnectorInstanceModel(
                 id=connector.id,
@@ -23,20 +26,21 @@ class SqlConnectorRepository(IConnectorRepository):
         else:
             model.config_encrypted = connector.encrypted_credentials
             model.status = connector.status.value
-        self.session.flush()
+        await self.session.flush()
         return connector
 
-    def find_by_id(self, connector_id: UUID) -> ConnectorInstance | None:
-        model = self.session.get(ConnectorInstanceModel, connector_id)
+    async def get_by_id(self, instance_id: UUID) -> Optional[ConnectorInstance]:
+        model = await self.session.get(ConnectorInstanceModel, instance_id)
         return self._to_entity(model) if model else None
 
-    def find_by_organization(self, organization_id: UUID) -> list[ConnectorInstance]:
-        models = (
-            self.session.query(ConnectorInstanceModel)
-            .filter_by(organization_id=organization_id)
-            .all()
+    async def list_by_organization(self, organization_id: UUID, active_only: bool = True) -> List[ConnectorInstance]:
+        query = select(ConnectorInstanceModel).where(
+            ConnectorInstanceModel.organization_id == organization_id
         )
-        return [self._to_entity(m) for m in models]
+        if active_only:
+            query = query.where(ConnectorInstanceModel.status == "ACTIVO")
+        result = await self.session.execute(query)
+        return [self._to_entity(m) for m in result.scalars().all()]
 
     def _to_entity(self, model: ConnectorInstanceModel) -> ConnectorInstance:
         return ConnectorInstance(
