@@ -5,6 +5,12 @@ from domain.exceptions import EntityNotFoundError
 
 
 class GetVerificationHistoryUseCase:
+    """Retrieves verification results for a release.
+
+    Note: currently returns a hardcoded stub. Pending full implementation
+    via IVerificationResultRepository once the verification engine is integrated.
+    """
+
     def __init__(self, release_repo: IReleaseRepository):
         self.release_repo = release_repo
 

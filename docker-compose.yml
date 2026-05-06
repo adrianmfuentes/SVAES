@@ -6,6 +6,8 @@ services:
       - "8000:8000"
     networks:
       - svaes-internal
+    environment:
+      - PYTHONPATH=/app/src
 
   postgres:
     image: postgres:16

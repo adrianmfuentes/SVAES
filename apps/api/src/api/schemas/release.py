@@ -15,5 +15,6 @@ class ReleaseResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 class VerificationTaskResponse(BaseModel):
+    """Response returned when a verification task is accepted and enqueued."""
     message: str
     task_id: str

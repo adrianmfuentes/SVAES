@@ -8,6 +8,8 @@ from infrastructure.database.models.release import ReleaseModel
 
 
 class SqlReleaseRepository(IReleaseRepository):
+    """Async SQLAlchemy adapter for IReleaseRepository."""
+
     def __init__(self, session: AsyncSession):
         self.session = session
 

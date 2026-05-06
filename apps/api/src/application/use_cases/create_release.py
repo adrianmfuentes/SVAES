@@ -14,6 +14,12 @@ class CreateReleaseCommand:
     description: str = ""
 
 class CreateReleaseUseCase:
+    """Creates a release in BORRADOR status, ready to be promoted for verification.
+
+    organization_repo is injected for future multi-tenant ownership checks
+    (e.g., verifying the project belongs to the caller's organization).
+    """
+
     def __init__(
         self,
         release_repo: IReleaseRepository,

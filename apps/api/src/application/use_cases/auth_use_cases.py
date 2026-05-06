@@ -10,6 +10,12 @@ class LoginCommand:
 
 
 class LoginUseCase:
+    """Application service for user authentication. Returns a bearer token on success.
+
+    Note: password comparison is a hardcoded placeholder — replace with hashed
+    verification (bcrypt/argon2) before any production use.
+    """
+
     def __init__(self, user_repo: IUserRepository):
         self.user_repo = user_repo
 

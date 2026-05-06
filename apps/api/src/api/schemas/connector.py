@@ -5,11 +5,13 @@ from datetime import datetime
 from domain.entities.enums import ConnectorStatus
 
 class ConnectorCreateRequest(BaseModel):
+    """Request body for registering a new connector instance in an organization."""
     connector_type: str
     name: str
     config_data: Dict[str, Any]
 
 class ConnectorResponse(BaseModel):
+    """API response shape for a persisted connector instance."""
     id: uuid.UUID
     organization_id: uuid.UUID
     connector_type: str

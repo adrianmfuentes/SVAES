@@ -5,6 +5,7 @@ from domain.entities.artifact import Artifact
 
 
 class IArtifactRepository(ABC):
+    """Outbound port for persisting raw artifacts fetched from external connectors."""
 
     @abstractmethod
     def save(self, artifact: Artifact) -> Artifact:

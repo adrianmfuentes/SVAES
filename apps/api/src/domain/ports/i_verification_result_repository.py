@@ -5,6 +5,7 @@ from domain.entities.verification_result import VerificationResult
 
 
 class IVerificationResultRepository(ABC):
+    """Outbound port for persisting and querying the results of verification runs."""
 
     @abstractmethod
     def save(self, result: VerificationResult) -> VerificationResult:

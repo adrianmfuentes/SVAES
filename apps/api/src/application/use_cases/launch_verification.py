@@ -13,6 +13,12 @@ class LaunchVerificationCommand:
     user_id: uuid.UUID
 
 class LaunchVerificationUseCase:
+    """Transitions a PENDIENTE release into EN_VERIFICACION and enqueues the async verification task.
+
+    Enforces the release state machine — raises ReleaseInvalidStateError if the release
+    is not in PENDIENTE status, preventing duplicate or out-of-order verification runs.
+    """
+
     def __init__(
         self,
         release_repo: IReleaseRepository,

@@ -12,6 +12,8 @@ class CreateProjectCommand:
 
 
 class CreateProjectUseCase:
+    """Creates a project scoped to an organization. Projects act as containers for releases."""
+
     def __init__(self, project_repo: IProjectRepository):
         self.project_repo = project_repo
 

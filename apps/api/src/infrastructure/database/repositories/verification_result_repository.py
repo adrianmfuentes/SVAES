@@ -6,6 +6,11 @@ from domain.ports.i_verification_result_repository import IVerificationResultRep
 from infrastructure.database.models.verification_result import VerificationResultModel
 
 class SqlVerificationResultRepository(IVerificationResultRepository):
+    """Sync SQLAlchemy adapter for IVerificationResultRepository.
+
+    Same sync/async note as SqlArtifactRepository — intended for worker processes.
+    """
+
     def __init__(self, session: Session):
         self.session = session
 

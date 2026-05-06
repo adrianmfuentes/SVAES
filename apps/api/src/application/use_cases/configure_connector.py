@@ -16,6 +16,13 @@ class ConfigureConnectorCommand:
     config_data: Dict[str, Any]
 
 class ConfigureConnectorUseCase:
+    """Registers and validates an external connector for an organization.
+
+    Resolves the concrete IConnector implementation from the registry, tests the connection,
+    then persists the instance. On connection failure the instance is saved as INACTIVO
+    rather than rejected — this lets admins correct credentials without re-entering all config.
+    """
+
     def __init__(
         self,
         connector_repo: IConnectorRepository,

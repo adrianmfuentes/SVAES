@@ -5,6 +5,10 @@ from .enums import ReleaseStatus
 
 @dataclass
 class Release:
+    """Central aggregate tracking a versioned software delivery submitted for verification.
+
+    Progresses through a state machine: BORRADOR → PENDIENTE → EN_VERIFICACION → COMPLETADA.
+    """
     project_id: uuid.UUID
     profile_id: uuid.UUID
     version: str

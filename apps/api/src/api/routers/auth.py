@@ -2,7 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from application.use_cases.auth_use_cases import LoginUseCase, LoginCommand
-
+from api.dependencies import get_login_use_case
 
 class LoginRequest(BaseModel):
     email: str
@@ -13,14 +13,12 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-
 router = APIRouter(prefix="/auth", tags=["Auth"])
-
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
     request: LoginRequest,
-    use_case: Annotated[LoginUseCase, Depends()],
+    use_case: Annotated[LoginUseCase, Depends(get_login_use_case)]
 ):
     try:
         command = LoginCommand(email=request.email, password_plain=request.password)

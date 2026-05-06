@@ -4,6 +4,7 @@ import uuid
 
 @dataclass
 class Organization:
+    """Tenant root aggregate. All resources (projects, connectors, profiles) are scoped to an organization."""
     name: str
     slug: str
     is_active: bool = True

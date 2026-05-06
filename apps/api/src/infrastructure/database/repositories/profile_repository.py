@@ -1,40 +1,55 @@
 from uuid import UUID
-from sqlalchemy.orm import Session
+from typing import Optional, List
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from domain.entities.verification_profile import VerificationProfile
 from domain.entities.verification_rule import VerificationRule
 from domain.ports.i_profile_repository import IProfileRepository
 from infrastructure.database.models.verification_profile import VerificationProfileModel
 
+
 class SqlProfileRepository(IProfileRepository):
-    def __init__(self, session: Session):
+    """Async SQLAlchemy adapter for IProfileRepository.
+
+    Uses selectinload for the rules relationship to avoid MissingGreenlet errors
+    in async context (lazy loading is not available with AsyncSession).
+    """
+
+    def __init__(self, session: AsyncSession):
         self.session = session
 
-    def save(self, profile: VerificationProfile) -> VerificationProfile:
-        model = self.session.get(VerificationProfileModel, profile.id)
-        if model is None:
-            model = VerificationProfileModel(
-                id=profile.id,
-                organization_id=profile.organization_id,
-                name=profile.name,
-                is_default=False,
-            )
-            self.session.add(model)
-        else:
-            model.name = profile.name
-        self.session.flush()
+    async def create(self, profile: VerificationProfile) -> VerificationProfile:
+        model = VerificationProfileModel(
+            id=profile.id,
+            organization_id=profile.organization_id,
+            name=profile.name,
+            is_default=False,
+        )
+        self.session.add(model)
+        await self.session.flush()
         return profile
 
-    def find_by_id(self, profile_id: UUID) -> VerificationProfile | None:
-        model = self.session.get(VerificationProfileModel, profile_id)
+    async def get_by_id(self, profile_id: UUID) -> Optional[VerificationProfile]:
+        result = await self.session.execute(
+            select(VerificationProfileModel)
+            .options(selectinload(VerificationProfileModel.rules))
+            .where(VerificationProfileModel.id == profile_id)
+        )
+        model = result.scalars().first()
         return self._to_entity(model) if model else None
 
-    def find_by_organization(self, organization_id: UUID) -> list[VerificationProfile]:
-        models = (
-            self.session.query(VerificationProfileModel)
-            .filter_by(organization_id=organization_id)
-            .all()
+    async def get_default_for_organization(self, organization_id: UUID) -> Optional[VerificationProfile]:
+        result = await self.session.execute(
+            select(VerificationProfileModel)
+            .options(selectinload(VerificationProfileModel.rules))
+            .where(
+                VerificationProfileModel.organization_id == organization_id,
+                VerificationProfileModel.is_default.is_(True),
+            )
         )
-        return [self._to_entity(m) for m in models]
+        model = result.scalars().first()
+        return self._to_entity(model) if model else None
 
     def _to_entity(self, model: VerificationProfileModel) -> VerificationProfile:
         rules = [

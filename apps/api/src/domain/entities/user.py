@@ -7,6 +7,11 @@ from .enums import UserRole
 
 @dataclass
 class User:
+    """Core domain entity for authenticated users.
+
+    Role determines permissions across all organization resources.
+    organization_id is None for superadmins or users not yet assigned to a tenant.
+    """
     id: UUID
     email: str
     hashed_password: str

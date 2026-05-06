@@ -12,6 +12,8 @@ class CreateOrganizationCommand:
 
 
 class CreateOrganizationUseCase:
+    """Creates a new tenant organization. Slug must be unique across the system."""
+
     def __init__(self, org_repo: IOrganizationRepository):
         self.org_repo = org_repo
 

@@ -8,6 +8,8 @@ from infrastructure.database.models.connector_instance import ConnectorInstanceM
 
 
 class SqlConnectorRepository(IConnectorRepository):
+    """Async SQLAlchemy adapter for IConnectorRepository."""
+
     def __init__(self, session: AsyncSession):
         self.session = session
 

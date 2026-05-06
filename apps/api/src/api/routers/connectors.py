@@ -1,5 +1,4 @@
 import uuid
-from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from api.schemas.connector import ConnectorCreateRequest, ConnectorResponse
 from api.dependencies import get_configure_connector_use_case
@@ -30,5 +29,5 @@ async def create_connector(
         return instance
     except ConnectorConnectionFailedError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    except (ValueError, RuntimeError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno") from e

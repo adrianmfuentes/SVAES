@@ -5,6 +5,11 @@ from .enums import VerdictType
 
 @dataclass
 class VerificationResult:
+    """Immutable record of a completed verification run.
+
+    profile_snapshot captures the full rule set at execution time so the audit
+    trail remains valid even if the profile is later modified or deleted.
+    """
     release_id: uuid.UUID
     verdict: VerdictType
     duration_ms: int

@@ -1,54 +1,61 @@
 from uuid import UUID
-from sqlalchemy.orm import Session
+from typing import Optional, List
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from domain.entities.user import User, UserRole
 from domain.ports.i_user_repository import IUserRepository
 from infrastructure.database.models.user import UserModel
 
+
 class SqlUserRepository(IUserRepository):
-    def __init__(self, session: Session):
+    """Async SQLAlchemy adapter for IUserRepository. Concrete outbound port for User persistence."""
+
+    def __init__(self, session: AsyncSession):
         self.session = session
 
-    def save(self, user: User) -> User:
-        model = self.session.get(UserModel, user.id)
-        if model is None:
-            model = UserModel(
-                id=user.id,
-                email=user.email,
-                password_hash=user.hashed_password,
-                display_name=user.email,
-                is_active=True,
-            )
-            self.session.add(model)
-        else:
-            model.email = user.email
-            model.password_hash = user.hashed_password
-        self.session.flush()
+    async def create(self, user: User) -> User:
+        model = UserModel(
+            id=user.id,
+            email=user.email,
+            password_hash=user.hashed_password,
+            display_name=user.email,
+            is_active=True,
+        )
+        self.session.add(model)
+        await self.session.flush()
         return user
 
-    def find_by_id(self, user_id: UUID) -> User | None:
-        model = self.session.get(UserModel, user_id)
+    async def get_by_id(self, user_id: UUID) -> Optional[User]:
+        model = await self.session.get(UserModel, user_id)
         return self._to_entity(model) if model else None
 
-    def find_by_email(self, email: str) -> User | None:
-        model = self.session.query(UserModel).filter_by(email=email).first()
+    async def get_by_email(self, email: str) -> Optional[User]:
+        result = await self.session.execute(select(UserModel).where(UserModel.email == email))
+        model = result.scalars().first()
         return self._to_entity(model) if model else None
 
-    def find_by_organization(self, organization_id: UUID) -> list[User]:
-        models = (
-            self.session.query(UserModel)
-            .join(UserModel.memberships)
-            .filter_by(organization_id=organization_id)
-            .all()
-        )
-        return [self._to_entity(m) for m in models]
+    async def list_all(self, active_only: bool = True) -> List[User]:
+        stmt = select(UserModel)
+        if active_only:
+            stmt = stmt.where(UserModel.is_active.is_(True))
+        result = await self.session.execute(stmt)
+        return [self._to_entity(m) for m in result.scalars().all()]
+
+    async def update(self, user: User) -> User:
+        model = await self.session.get(UserModel, user.id)
+        if model:
+            model.email = user.email
+            model.password_hash = user.hashed_password
+            await self.session.flush()
+        return user
 
     def _to_entity(self, model: UserModel) -> User:
         return User(
             id=model.id,
             email=model.email,
             hashed_password=model.password_hash,
-            role=UserRole.VIEWER,  # El rol real viene de user_membership
-            organization_id=model.memberships[0].organization_id if model.memberships else None,
+            role=UserRole.VIEWER,
+            organization_id=None,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )

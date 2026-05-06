@@ -9,6 +9,8 @@ class CreateProfileCommand:
     name: str
 
 class ManageProfileUseCase:
+    """Application service for managing verification profiles within an organization."""
+
     def __init__(self, profile_repo: IProfileRepository):
         self.profile_repo = profile_repo
 

@@ -4,6 +4,7 @@ import uuid
 
 @dataclass
 class Artifact:
+    """Raw data object fetched from an external connector and associated with a release for verification."""
     release_id: uuid.UUID
     connector_instance_id: uuid.UUID
     artifact_type: str  # e.g., 'task', 'commit', 'doc'

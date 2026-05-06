@@ -5,6 +5,12 @@ from domain.ports.i_artifact_repository import IArtifactRepository
 from infrastructure.database.models.artifact import ArtifactModel
 
 class SqlArtifactRepository(IArtifactRepository):
+    """Sync SQLAlchemy adapter for IArtifactRepository.
+
+    Intended for use by offline workers or Celery tasks, not FastAPI request handlers
+    (which use AsyncSession). Swap to async when integrating with the async pipeline.
+    """
+
     def __init__(self, session: Session):
         self.session = session
 
