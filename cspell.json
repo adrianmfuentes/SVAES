@@ -31,7 +31,8 @@
     "venv",
     "postgresql",
     "poolclass",
-    "pycache"
+    "pycache",
+    "claude"
   ],
   "ignorePaths": [
     ".git",
