@@ -47,6 +47,19 @@ Thumbs.db
 # Docker
 .docker/
 
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
 # Misc
 *.swp
 *.swo
