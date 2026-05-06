@@ -11,12 +11,19 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # ── Stage 2: production runtime ───────────────────────────────────────────────
 FROM python:3.11-slim AS runtime
 
+RUN groupadd --gid 1001 appgroup && \
+    useradd --uid 1001 --gid appgroup --no-create-home appuser
+
 WORKDIR /app
 
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY src/ ./src/
+
+RUN chown -R appuser:appgroup /app
+
+USER appuser
 
 ENV PYTHONPATH=/app/src
 
