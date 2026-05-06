@@ -1,0 +1,30 @@
+# ── DEV overrides (loaded automatically by Docker Compose) ────────────────────
+# Run with: docker compose up
+#
+# What this adds vs base:
+#   - Hot reload (source mounted as volume — no rebuild needed on code changes)
+#   - Postgres port exposed so DBeaver / pgAdmin / psql can connect from host
+#   - Permissive dev secrets (not suitable for production)
+
+services:
+  api:
+    build:
+      target: builder       # reuse builder stage — has pip packages, skips copy-only runtime stage
+    volumes:
+      - ./apps/api/src:/app/src   # mount source for hot reload
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://svaes:svaes@postgres:5432/svaes
+      JWT_SECRET_KEY: dev-secret-do-not-use-in-production
+      JWT_EXPIRE_MINUTES: "1440"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  postgres:
+    ports:
+      - "5432:5432"         # expose to host so you can connect with any DB client
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_dev_data:

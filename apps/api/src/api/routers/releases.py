@@ -1,8 +1,7 @@
 import uuid
-
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-
 from domain.entities.user import User
 from domain.exceptions import EntityNotFoundError, ReleaseInvalidStateError
 from api.schemas.release import VerificationTaskResponse
@@ -18,7 +17,6 @@ from application.use_cases.get_verification_history import GetVerificationHistor
 
 router = APIRouter(prefix="/releases", tags=["Releases"])
 
-
 class ReleaseCreate(BaseModel):
     project_id: uuid.UUID
     profile_id: uuid.UUID
@@ -29,8 +27,11 @@ class ReleaseCreate(BaseModel):
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_release(
     request: ReleaseCreate,
-    use_case: CreateReleaseUseCase = Depends(get_create_release_use_case),
-    current_user: User = Depends(get_current_user),
+    use_case: Annotated[
+        CreateReleaseUseCase,
+        Depends(get_create_release_use_case),
+    ],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     command = CreateReleaseCommand(
         project_id=request.project_id,
@@ -45,8 +46,11 @@ async def create_release(
 @router.get("/{release_id}/results")
 async def get_results(
     release_id: uuid.UUID,
-    use_case: GetVerificationHistoryUseCase = Depends(get_verification_history_use_case),
-    _current_user: User = Depends(get_current_user),
+    use_case: Annotated[
+        GetVerificationHistoryUseCase,
+        Depends(get_verification_history_use_case),
+    ],
+    _current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
         return await use_case.execute(release_id)
@@ -62,8 +66,11 @@ async def get_results(
 )
 async def verify_release(
     release_id: uuid.UUID,
-    use_case: LaunchVerificationUseCase = Depends(get_launch_verification_use_case),
-    current_user: User = Depends(get_current_user),
+    use_case: Annotated[
+        LaunchVerificationUseCase,
+        Depends(get_launch_verification_use_case),
+    ],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     command = LaunchVerificationCommand(release_id=release_id, user_id=current_user.id)
 

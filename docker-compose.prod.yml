@@ -1,0 +1,29 @@
+# ── PROD overrides ────────────────────────────────────────────────────────────
+# Run with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Requires these env vars set on the host (or in a secrets manager):
+#   DATABASE_URL, JWT_SECRET_KEY, ENCRYPTION_KEY
+#
+# Generate ENCRYPTION_KEY with:
+#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+services:
+  api:
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_EXPIRE_MINUTES: "60"
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    # No volume mounts — uses the baked image, not live source
+
+  postgres:
+    restart: always
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    # No port exposure — only accessible via the internal network
+
+volumes:
+  postgres_prod_data:

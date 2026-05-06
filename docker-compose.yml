@@ -1,27 +1,32 @@
 services:
-  backend:
-    build: ./apps/api
-    container_name: svaes-backend
-    ports:
-      - "8000:8000"
+  api:
+    build:
+      context: ./apps/api
+      target: runtime
+    environment:
+      PYTHONPATH: /app/src
     networks:
       - svaes-internal
-    environment:
-      - PYTHONPATH=/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   postgres:
     image: postgres:16
-    container_name: svaes-postgres
     environment:
       POSTGRES_USER: svaes
       POSTGRES_PASSWORD: svaes
       POSTGRES_DB: svaes
     networks:
       - svaes-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U svaes"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
-    container_name: svaes-redis
     networks:
       - svaes-internal
 

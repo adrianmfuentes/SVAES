@@ -1,12 +1,10 @@
 import uuid
-
+from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel
-
 from domain.entities.user import User
 from application.use_cases.manage_profile import ManageProfileUseCase, CreateProfileCommand
 from api.dependencies import get_manage_profile_use_case, get_current_user
-
 
 class ProfileCreate(BaseModel):
     organization_id: uuid.UUID
@@ -15,12 +13,11 @@ class ProfileCreate(BaseModel):
 
 router = APIRouter(prefix="/profiles", tags=["Profiles"])
 
-
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_profile(
     request: ProfileCreate,
-    use_case: ManageProfileUseCase = Depends(get_manage_profile_use_case),
-    _current_user: User = Depends(get_current_user),
+    use_case: Annotated[ManageProfileUseCase, Depends(get_manage_profile_use_case)],
+    _current_user: Annotated[User, Depends(get_current_user)],
 ):
     command = CreateProfileCommand(
         organization_id=request.organization_id,

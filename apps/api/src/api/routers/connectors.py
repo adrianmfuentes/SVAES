@@ -1,7 +1,6 @@
 import uuid
-
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
-
 from domain.entities.user import User
 from domain.exceptions import ConnectorConnectionFailedError
 from api.schemas.connector import ConnectorCreateRequest, ConnectorResponse
@@ -9,7 +8,6 @@ from api.dependencies import get_configure_connector_use_case, get_current_user
 from application.use_cases.configure_connector import ConfigureConnectorUseCase, ConfigureConnectorCommand
 
 router = APIRouter(tags=["Connectors"])
-
 
 @router.post(
     "/organizations/{org_id}/connectors",
@@ -19,8 +17,8 @@ router = APIRouter(tags=["Connectors"])
 async def create_connector(
     org_id: uuid.UUID,
     request: ConnectorCreateRequest,
-    use_case: ConfigureConnectorUseCase = Depends(get_configure_connector_use_case),
-    _current_user: User = Depends(get_current_user),
+    use_case: Annotated[ConfigureConnectorUseCase, Depends(get_configure_connector_use_case)],
+    _current_user: Annotated[User, Depends(get_current_user)],
 ):
     command = ConfigureConnectorCommand(
         organization_id=org_id,
