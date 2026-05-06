@@ -18,6 +18,8 @@
     "multitenancy",
     "multitenant",
     "nullable",
+    "ondelete",
+    "onupdate",
     "poolclass",
     "postgresql",
     "psycopg",
