@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 from domain.ports.i_user_repository import IUserRepository
-from domain.exceptions import EntityNotFoundError
+from domain.ports.i_password_hasher import IPasswordHasher
+from domain.ports.i_token_service import ITokenService
+from infrastructure.logging.logger import get_logger
+
+_log = get_logger(__name__)
 
 
 @dataclass
@@ -10,19 +14,28 @@ class LoginCommand:
 
 
 class LoginUseCase:
-    """Application service for user authentication. Returns a bearer token on success.
+    """Application service for user authentication. Returns a signed JWT on success.
 
-    Note: password comparison is a hardcoded placeholder — replace with hashed
-    verification (bcrypt/argon2) before any production use.
+    Intentionally raises ValueError (not EntityNotFoundError) on bad credentials
+    to avoid leaking whether the email exists.
     """
 
-    def __init__(self, user_repo: IUserRepository):
+    def __init__(
+        self,
+        user_repo: IUserRepository,
+        password_hasher: IPasswordHasher,
+        token_service: ITokenService,
+    ) -> None:
         self.user_repo = user_repo
+        self.password_hasher = password_hasher
+        self.token_service = token_service
 
     async def execute(self, command: LoginCommand) -> str:
         user = await self.user_repo.get_by_email(command.email)
-        if not user:
-            raise EntityNotFoundError("Credenciales inválidas")
-        if command.password_plain != "password_secreta":
+        if not user or not self.password_hasher.verify(command.password_plain, user.hashed_password):
+            _log.warning("Failed login attempt for email=%s", command.email)
             raise ValueError("Credenciales inválidas")
-        return f"jwt_token_for_{user.id}"
+
+        token = self.token_service.create_access_token(user_id=user.id, role=user.role.value)
+        _log.info("User %s authenticated successfully", user.id)
+        return token

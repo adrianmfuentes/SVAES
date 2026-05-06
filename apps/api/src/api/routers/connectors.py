@@ -1,11 +1,15 @@
 import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from api.schemas.connector import ConnectorCreateRequest, ConnectorResponse
-from api.dependencies import get_configure_connector_use_case
-from application.use_cases.configure_connector import ConfigureConnectorUseCase, ConfigureConnectorCommand
+
+from domain.entities.user import User
 from domain.exceptions import ConnectorConnectionFailedError
+from api.schemas.connector import ConnectorCreateRequest, ConnectorResponse
+from api.dependencies import get_configure_connector_use_case, get_current_user
+from application.use_cases.configure_connector import ConfigureConnectorUseCase, ConfigureConnectorCommand
 
 router = APIRouter(tags=["Connectors"])
+
 
 @router.post(
     "/organizations/{org_id}/connectors",
@@ -15,7 +19,8 @@ router = APIRouter(tags=["Connectors"])
 async def create_connector(
     org_id: uuid.UUID,
     request: ConnectorCreateRequest,
-    use_case: Annotated[ConfigureConnectorUseCase, Depends(get_configure_connector_use_case)],
+    use_case: ConfigureConnectorUseCase = Depends(get_configure_connector_use_case),
+    _current_user: User = Depends(get_current_user),
 ):
     command = ConfigureConnectorCommand(
         organization_id=org_id,
@@ -25,9 +30,11 @@ async def create_connector(
     )
 
     try:
-        instance = await use_case.execute(command)
-        return instance
+        return await use_case.execute(command)
     except ConnectorConnectionFailedError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except (ValueError, RuntimeError) as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno") from e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno",
+        ) from e

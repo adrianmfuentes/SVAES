@@ -6,6 +6,9 @@ from domain.entities.enums import ReleaseStatus
 from domain.ports.i_release_repository import IReleaseRepository
 from domain.ports.i_task_queue import ITaskQueue
 from domain.exceptions import EntityNotFoundError, ReleaseInvalidStateError
+from infrastructure.logging.logger import get_logger
+
+_log = get_logger(__name__)
 
 @dataclass
 class LaunchVerificationCommand:
@@ -43,4 +46,5 @@ class LaunchVerificationUseCase:
         updated_release = await self.release_repo.update(release)
 
         task_id = await self.task_queue.enqueue_verification_task(release.id)
+        _log.info("Verification enqueued: release=%s task=%s", release.id, task_id)
         return updated_release, task_id

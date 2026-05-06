@@ -1,16 +1,20 @@
 import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+
+from domain.entities.user import User
+from domain.exceptions import EntityNotFoundError, ReleaseInvalidStateError
 from api.schemas.release import VerificationTaskResponse
 from api.dependencies import (
     get_launch_verification_use_case,
     get_create_release_use_case,
     get_verification_history_use_case,
+    get_current_user,
 )
 from application.use_cases.launch_verification import LaunchVerificationUseCase, LaunchVerificationCommand
 from application.use_cases.create_release import CreateReleaseUseCase, CreateReleaseCommand
 from application.use_cases.get_verification_history import GetVerificationHistoryUseCase
-from domain.exceptions import EntityNotFoundError, ReleaseInvalidStateError
 
 router = APIRouter(prefix="/releases", tags=["Releases"])
 
@@ -26,14 +30,14 @@ class ReleaseCreate(BaseModel):
 async def create_release(
     request: ReleaseCreate,
     use_case: CreateReleaseUseCase = Depends(get_create_release_use_case),
+    current_user: User = Depends(get_current_user),
 ):
-    current_user_id = uuid.uuid4()
     command = CreateReleaseCommand(
         project_id=request.project_id,
         profile_id=request.profile_id,
         version=request.version,
         description=request.description,
-        created_by=current_user_id,
+        created_by=current_user.id,
     )
     return await use_case.execute(command)
 
@@ -42,6 +46,7 @@ async def create_release(
 async def get_results(
     release_id: uuid.UUID,
     use_case: GetVerificationHistoryUseCase = Depends(get_verification_history_use_case),
+    _current_user: User = Depends(get_current_user),
 ):
     try:
         return await use_case.execute(release_id)
@@ -58,9 +63,9 @@ async def get_results(
 async def verify_release(
     release_id: uuid.UUID,
     use_case: LaunchVerificationUseCase = Depends(get_launch_verification_use_case),
+    current_user: User = Depends(get_current_user),
 ):
-    current_user_id = uuid.uuid4()
-    command = LaunchVerificationCommand(release_id=release_id, user_id=current_user_id)
+    command = LaunchVerificationCommand(release_id=release_id, user_id=current_user.id)
 
     try:
         _, task_id = await use_case.execute(command)
@@ -73,4 +78,7 @@ async def verify_release(
     except ReleaseInvalidStateError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except (ValueError, RuntimeError) as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor") from e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor",
+        ) from e
