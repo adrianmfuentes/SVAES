@@ -8,7 +8,6 @@ Grado en Ingeniería Informática del Software
 Universidad de Oviedo  
 
 Autor: Adrián Martínez Fuentes  
-Tutora: María del Carmen Suárez Torrente  
 Curso: 2025/2026  
 
 ---
