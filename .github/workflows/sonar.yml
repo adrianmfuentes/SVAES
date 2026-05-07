@@ -20,7 +20,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install uv
-        run: pip install uv==0.11.11 --only-binary :all: --require-hashes --hash=sha256:d5b9f31dab557b5ee4257d8c6ba2608a63c7278537cb0cd102cf6fc518e3fb5c --hash=sha256:1d227bb53b701e533f0aa074dd145a6fa31492dc7d6d57a6e72a700b9a4a1991
+        run: "pip install --only-binary :all: --require-hashes -r .github/requirements/uv.txt"
 
       - name: Run tests with coverage
         run: uv run --frozen --no-build --project apps/api --extra dev pytest --cov=apps/api/src --cov-report=xml
