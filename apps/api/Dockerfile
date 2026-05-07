@@ -1,24 +1,21 @@
 # ── Stage 1: install dependencies ────────────────────────────────────────────
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
-# Install deps isolated from src — Docker cache survives code-only changes
-COPY pyproject.toml .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir .
+COPY pyproject.toml uv.lock ./
+RUN pip install --no-cache-dir uv==0.11.11 --only-binary :all: && \
+    uv sync --frozen --no-dev --no-install-project --no-build
 
 # ── Stage 2: production runtime ───────────────────────────────────────────────
-FROM python:3.11-slim AS runtime
+FROM python:3.13-slim AS runtime
 
 RUN groupadd --gid 1001 appgroup && \
     useradd --uid 1001 --gid appgroup --no-create-home appuser
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-
+COPY --from=builder /app/.venv /app/.venv
 COPY src/ ./src/
 
 RUN chown -R appuser:appgroup /app
@@ -26,6 +23,7 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 ENV PYTHONPATH=/app/src
+ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000
 
