@@ -20,10 +20,12 @@ jobs:
           python-version: '3.13'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install uv
+          uv pip install --system -e "apps/api[dev]"
 
       - name: Run tests with coverage
-        run: pytest --cov=. --cov-report=xml
+        run: pytest --cov=apps/api/src --cov-report=xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
