@@ -13,13 +13,10 @@ class ITaskQueue(ABC):
     """
     @abstractmethod
     async def enqueue_verification_task(self, release_id: uuid.UUID) -> str:
-        """
-        Encola la verificación de una release.
-        Retorna el ID de la tarea (task_id) para poder consultarla luego.
-        """
+        """Enqueues a verification job for the given release. Returns the task ID."""
         pass
-        
+
     @abstractmethod
     async def get_task_status(self, task_id: str) -> str:
-        """Consulta el estado actual de la tarea encolada."""
+        """Returns the current status of an enqueued task."""
         pass

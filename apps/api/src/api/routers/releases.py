@@ -89,7 +89,7 @@ async def get_results(
     "/{release_id}/verify",
     status_code=status.HTTP_202_ACCEPTED,
     response_model=VerificationTaskResponse,
-    summary="Lanza la verificación asíncrona de una release",
+    summary="Launch asynchronous verification of a release",
 )
 async def verify_release(
     release_id: uuid.UUID,
@@ -113,7 +113,7 @@ async def verify_release(
     try:
         _, task_id = await use_case.execute(command)
         return VerificationTaskResponse(
-            message="Verificación encolada correctamente",
+            message="Verification successfully queued",
             task_id=task_id,
         )
     except EntityNotFoundError as e:
@@ -123,5 +123,5 @@ async def verify_release(
     except (ValueError, RuntimeError) as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor",
+            detail="Internal server error",
         ) from e

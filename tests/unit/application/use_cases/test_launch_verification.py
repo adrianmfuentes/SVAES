@@ -1,36 +1,34 @@
 """
-Test suite para ``LaunchVerificationUseCase``.
+Test suite for ``LaunchVerificationUseCase``.
 
-``LaunchVerificationUseCase`` es la transición crítica de la máquina de estados
-de una release: lleva una release de ``PENDIENTE`` a ``EN_VERIFICACION`` y encola
-la tarea de verificación asíncrona en la cola de trabajos.
+``LaunchVerificationUseCase`` is the critical state machine transition for a
+release: it moves a release from ``PENDIENTE`` to ``EN_VERIFICACION`` and enqueues
+the asynchronous verification task in the job queue.
 
-Diagrama de estados relevante:
+Relevant state diagram:
     BORRADOR → PENDIENTE → **EN_VERIFICACION** → COMPLETADA
                                 ↑
-                         (este caso de uso)
+                         (this use case)
 
-Este caso de uso impone dos precondiciones de dominio:
-    1. La release debe existir.
-    2. La release debe estar en estado ``PENDIENTE`` (no en cualquier otro estado).
+This use case enforces two domain preconditions:
+    1. The release must exist.
+    2. The release must be in state ``PENDIENTE`` (not any other state).
 
-El orden de operaciones también es una invariante del dominio: el estado se
-persiste **antes** de encolar la tarea, evitando condiciones de carrera en las
-que un worker procese una release que aún figura como ``PENDIENTE`` en la base
-de datos.
+The operation order is also a domain invariant: state is persisted **before**
+enqueueing the task, avoiding race conditions where a worker processes a release
+that still shows as ``PENDIENTE`` in the database.
 
-Estrategia de prueba:
-    Pruebas unitarias. El repositorio (``IReleaseRepository``) y la cola de tareas
-    (``ITaskQueue``) se sustituyen por ``AsyncMock``. El test de orden de llamadas
-    utiliza efectos secundarios instrumentados para registrar la secuencia real
-    de ejecución.
+Testing strategy:
+    Unit tests. The repository (``IReleaseRepository``) and task queue
+    (``ITaskQueue``) are replaced by ``AsyncMock``. The call-order test uses
+    instrumented side effects to record the actual execution sequence.
 
-Invariantes clave verificadas:
-    - Lanzar verificación sobre una release inexistente lanza ``EntityNotFoundError``.
-    - Cualquier estado distinto de ``PENDIENTE`` lanza ``ReleaseInvalidStateError``.
-    - La release se actualiza a ``EN_VERIFICACION`` antes de devolver control.
-    - El ID de tarea devuelto por la cola se propaga al llamante.
-    - ``repo.update`` se ejecuta antes que ``task_queue.enqueue_verification_task``.
+Key invariants verified:
+    - Launching verification on a non-existent release raises ``EntityNotFoundError``.
+    - Any state other than ``PENDIENTE`` raises ``ReleaseInvalidStateError``.
+    - The release is updated to ``EN_VERIFICACION`` before returning control.
+    - The task ID returned by the queue is propagated to the caller.
+    - ``repo.update`` executes before ``task_queue.enqueue_verification_task``.
 """
 
 import uuid
@@ -48,7 +46,7 @@ from domain.exceptions import EntityNotFoundError, ReleaseInvalidStateError
 # ---------------------------------------------------------------------------
 
 def _make_release(status: ReleaseStatus = ReleaseStatus.PENDIENTE) -> Release:
-    """Construye una ``Release`` de prueba con el estado especificado."""
+    """Builds a test ``Release`` with the specified status."""
     return Release(
         project_id=uuid.uuid4(),
         profile_id=uuid.uuid4(),
@@ -64,7 +62,7 @@ def _make_release(status: ReleaseStatus = ReleaseStatus.PENDIENTE) -> Release:
 
 @pytest.fixture
 def task_queue():
-    """Cola de tareas stub que retorna un ID de tarea predecible."""
+    """Task queue stub that returns a predictable task ID."""
     queue = AsyncMock()
     queue.enqueue_verification_task.return_value = "task-abc-123"
     return queue
@@ -76,20 +74,20 @@ def task_queue():
 
 class TestLaunchVerificationUseCase:
     """
-    Pruebas unitarias para ``LaunchVerificationUseCase``.
+    Unit tests for ``LaunchVerificationUseCase``.
 
-    Cubre las condiciones de error de dominio, el camino feliz completo y la
-    garantía de orden de operaciones (persistencia antes de encolar).
+    Covers domain error conditions, the complete happy path, and the
+    operation-order guarantee (persist before enqueue).
     """
 
     async def test_release_not_found_raises_entity_not_found(self, task_queue):
         """
-        Una release inexistente lanza ``EntityNotFoundError`` antes de cualquier operación.
+        A non-existent release raises ``EntityNotFoundError`` before any operation.
 
-        Given:  Un repositorio que devuelve ``None`` para cualquier ID de release.
-        When:   Se ejecuta ``LaunchVerificationUseCase`` con un ID aleatorio.
-        Then:   Se lanza ``EntityNotFoundError``, impidiendo que se intente cambiar
-                el estado o encolar una tarea para una entidad que no existe.
+        Given:  A repository that returns ``None`` for any release ID.
+        When:   ``LaunchVerificationUseCase`` is executed with a random ID.
+        Then:   ``EntityNotFoundError`` is raised, preventing any attempt to change
+                state or enqueue a task for an entity that does not exist.
         """
         repo = AsyncMock()
         repo.get_by_id.return_value = None
@@ -101,13 +99,13 @@ class TestLaunchVerificationUseCase:
 
     async def test_release_not_pendiente_raises_invalid_state(self, task_queue):
         """
-        Todos los estados distintos de ``PENDIENTE`` producen ``ReleaseInvalidStateError``.
+        All states other than ``PENDIENTE`` produce ``ReleaseInvalidStateError``.
 
-        Given:  Releases en estados ``BORRADOR``, ``EN_VERIFICACION`` y ``COMPLETADA``.
-        When:   Se intenta lanzar la verificación para cada una de ellas.
-        Then:   Cada intento lanza ``ReleaseInvalidStateError``, aplicando la máquina
-                de estados del dominio y previniendo verificaciones duplicadas o
-                fuera de orden que podrían corromper el historial de auditoría.
+        Given:  Releases in states ``BORRADOR``, ``EN_VERIFICACION``, and ``COMPLETADA``.
+        When:   Verification launch is attempted for each of them.
+        Then:   Each attempt raises ``ReleaseInvalidStateError``, enforcing the domain
+                state machine and preventing duplicate or out-of-order verifications
+                that could corrupt the audit history.
         """
         for bad_status in (
             ReleaseStatus.BORRADOR,
@@ -124,12 +122,12 @@ class TestLaunchVerificationUseCase:
 
     async def test_happy_path_updates_status_to_en_verificacion(self, task_queue):
         """
-        Una release en ``PENDIENTE`` transiciona a ``EN_VERIFICACION`` tras la ejecución.
+        A release in ``PENDIENTE`` transitions to ``EN_VERIFICACION`` after execution.
 
-        Given:  Una release con estado ``PENDIENTE`` y un repositorio que persiste el cambio.
-        When:   Se ejecuta el caso de uso con éxito.
-        Then:   El objeto release devuelto tiene el estado ``EN_VERIFICACION``,
-                reflejando la transición de estado perseguida por este caso de uso.
+        Given:  A release with status ``PENDIENTE`` and a repository that persists the change.
+        When:   The use case executes successfully.
+        Then:   The returned release object has status ``EN_VERIFICACION``,
+                reflecting the state transition targeted by this use case.
         """
         release = _make_release(ReleaseStatus.PENDIENTE)
         repo = AsyncMock()
@@ -144,13 +142,13 @@ class TestLaunchVerificationUseCase:
 
     async def test_happy_path_enqueues_task_and_returns_task_id(self, task_queue):
         """
-        El ID de tarea devuelto por la cola se propaga como segundo elemento de la tupla.
+        The task ID returned by the queue is propagated as the second tuple element.
 
-        Given:  Una release en estado ``PENDIENTE`` y una cola que retorna ``"task-abc-123"``.
-        When:   Se ejecuta el caso de uso correctamente.
-        Then:   El segundo elemento de la tupla resultante es ``"task-abc-123"`` y
-                ``enqueue_verification_task`` se llama exactamente una vez con el ID
-                de la release, garantizando que cada lanzamiento genera una sola tarea.
+        Given:  A release in state ``PENDIENTE`` and a queue that returns ``"task-abc-123"``.
+        When:   The use case executes successfully.
+        Then:   The second element of the resulting tuple is ``"task-abc-123"`` and
+                ``enqueue_verification_task`` is called exactly once with the release ID,
+                guaranteeing that each launch generates a single task.
         """
         release = _make_release(ReleaseStatus.PENDIENTE)
         repo = AsyncMock()
@@ -166,19 +164,19 @@ class TestLaunchVerificationUseCase:
 
     async def test_repo_update_called_before_enqueue(self, task_queue):
         """
-        La persistencia del cambio de estado ocurre antes del encolado de la tarea.
+        State persistence occurs before the task is enqueued.
 
-        Given:  Efectos secundarios instrumentados en ``repo.update`` y
-                ``task_queue.enqueue_verification_task`` que registran el orden de llamada.
-        When:   Se ejecuta el caso de uso sobre una release en estado ``PENDIENTE``.
-        Then:   El orden registrado es ``["update", "enqueue"]``, garantizando que
-                ningún worker pueda procesar la tarea antes de que el cambio de estado
-                esté confirmado en la base de datos.
+        Given:  Instrumented side effects on ``repo.update`` and
+                ``task_queue.enqueue_verification_task`` that record the call order.
+        When:   The use case is executed on a release in state ``PENDIENTE``.
+        Then:   The recorded order is ``["update", "enqueue"]``, guaranteeing that
+                no worker can process the task before the state change is committed
+                to the database.
 
-        Nota:
-            Esta invariante de ordenamiento es crítica para la consistencia: si la
-            tarea se encolara primero, un worker podría encontrar la release aún
-            en ``PENDIENTE`` y rechazarla o procesarla en estado incorrecto.
+        Note:
+            This ordering invariant is critical for consistency: if the task were
+            enqueued first, a worker could find the release still in ``PENDIENTE``
+            and reject it or process it in the wrong state.
         """
         call_order = []
         release = _make_release(ReleaseStatus.PENDIENTE)

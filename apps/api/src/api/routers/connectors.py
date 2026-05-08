@@ -51,5 +51,5 @@ async def create_connector(
     except (ValueError, RuntimeError) as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno",
-        ) from e # Rethrow the original exception as the cause for better debugging
+            detail="Internal server error",
+        ) from e

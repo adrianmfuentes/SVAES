@@ -1,30 +1,30 @@
 """
-Test suite para ``ConfigureConnectorUseCase``.
+Test suite for ``ConfigureConnectorUseCase``.
 
-Los conectores externos (GitHub, Jira, SonarQube, etc.) son los adaptadores que
-alimentan de datos al motor de verificación. ``ConfigureConnectorUseCase`` registra
-un nuevo conector para una organización: resuelve el cliente concreto desde el
-registro de conectores, prueba la conexión y persiste la instancia con las
-credenciales cifradas.
+External connectors (GitHub, Jira, SonarQube, etc.) are the adapters that feed
+data to the verification engine. ``ConfigureConnectorUseCase`` registers a new
+connector for an organisation: resolves the concrete client from the connector
+registry, tests the connection, and persists the instance with encrypted
+credentials.
 
-El caso de uso implementa una política de tolerancia a fallos deliberada:
-    - Si ``test_connection`` retorna ``False``: se lanza ``ConnectorConnectionFailedError``
-      y **no** se persiste (las credenciales son inválidas, no hay nada que guardar).
-    - Si ``test_connection`` lanza ``RuntimeError`` o ``ValueError``: la instancia se
-      persiste en estado ``INACTIVO``, permitiendo que el administrador corrija la
-      configuración sin reintroducir todos los datos.
+The use case implements a deliberate fault-tolerance policy:
+    - If ``test_connection`` returns ``False``: ``ConnectorConnectionFailedError``
+      is raised and nothing is persisted (credentials are invalid).
+    - If ``test_connection`` raises ``RuntimeError`` or ``ValueError``: the
+      instance is persisted in ``INACTIVO`` state, allowing the administrator
+      to correct the configuration without re-entering all data.
 
-Estrategia de prueba:
-    Pruebas unitarias. El repositorio, el registro de conectores, el cliente del
-    conector y el encriptador se sustituyen por dobles de prueba para aislar
-    completamente la lógica del caso de uso.
+Testing strategy:
+    Unit tests. The repository, connector registry, connector client, and
+    encryptor are all replaced by test doubles to completely isolate the use-case
+    logic.
 
-Invariantes clave verificadas:
-    - Conexión exitosa → instancia guardada con ``ACTIVO``.
-    - ``test_connection`` retorna ``False`` → ``ConnectorConnectionFailedError``, sin guardar.
-    - ``RuntimeError`` / ``ValueError`` en el cliente → instancia guardada con ``INACTIVO``.
-    - Las credenciales siempre se cifran antes de persistir.
-    - Un tipo de conector no registrado lanza ``KeyError`` antes de cualquier I/O.
+Key invariants verified:
+    - Successful connection → instance saved as ``ACTIVO``.
+    - ``test_connection`` returns ``False`` → ``ConnectorConnectionFailedError``, not saved.
+    - ``RuntimeError`` / ``ValueError`` from the client → instance saved as ``INACTIVO``.
+    - Credentials are always encrypted before being persisted.
+    - An unregistered connector type raises ``KeyError`` before any I/O.
 """
 
 import uuid
@@ -43,13 +43,13 @@ from infrastructure.adapters.connector_registry import ConnectorRegistry
 
 @pytest.fixture
 def org_id():
-    """UUID de organización de prueba reutilizable entre varios tests."""
+    """Reusable test organisation UUID shared across multiple tests."""
     return uuid.uuid4()
 
 
 @pytest.fixture
 def connector_client():
-    """Cliente de conector stub con conexión exitosa por defecto."""
+    """Connector client stub with a successful connection by default."""
     client = AsyncMock()
     client.test_connection.return_value = True
     return client
@@ -58,10 +58,10 @@ def connector_client():
 @pytest.fixture
 def registry(connector_client):
     """
-    Registro de conectores con el tipo «github» registrado.
+    Connector registry with the «github» type registered.
 
-    Proporciona un ``ConnectorRegistry`` real (no mockeado) para verificar
-    que la resolución del cliente por tipo funciona correctamente.
+    Uses a real ``ConnectorRegistry`` (not mocked) to verify that client
+    resolution by type works correctly.
     """
     reg = ConnectorRegistry()
     reg.register("github", connector_client)
@@ -70,7 +70,7 @@ def registry(connector_client):
 
 @pytest.fixture
 def connector_repo():
-    """Repositorio de conectores stub que retorna la instancia recibida."""
+    """Connector repository stub that returns the received instance."""
     repo = AsyncMock()
 
     def _save(instance):
@@ -82,7 +82,7 @@ def connector_repo():
 
 @pytest.fixture
 def encryptor():
-    """Encriptador stub que retorna bytes cifrados predecibles."""
+    """Encryptor stub that returns predictable encrypted bytes."""
     enc = MagicMock()
     enc.encrypt.return_value = b"encrypted_creds"
     return enc
@@ -90,7 +90,7 @@ def encryptor():
 
 @pytest.fixture
 def command(org_id):
-    """Comando de prueba con tipo «github» y credenciales de ejemplo."""
+    """Test command with type «github» and sample credentials."""
     return ConfigureConnectorCommand(
         organization_id=org_id,
         connector_type="github",
@@ -105,22 +105,22 @@ def command(org_id):
 
 class TestConfigureConnectorUseCase:
     """
-    Pruebas unitarias para ``ConfigureConnectorUseCase``.
+    Unit tests for ``ConfigureConnectorUseCase``.
 
-    Cubre la política de manejo de errores de conexión, el cifrado obligatorio
-    de credenciales y la resolución de tipos de conector no registrados.
+    Covers the connection-error handling policy, mandatory credential
+    encryption, and resolution of unregistered connector types.
     """
 
     async def test_successful_connection_saved_as_activo(
         self, connector_repo, registry, encryptor, command
     ):
         """
-        Una conexión exitosa persiste la instancia con estado ``ACTIVO``.
+        A successful connection persists the instance with state ``ACTIVO``.
 
-        Given:  Un cliente cuyo ``test_connection`` retorna ``True``.
-        When:   Se ejecuta ``ConfigureConnectorUseCase``.
-        Then:   La instancia retornada tiene estado ``ACTIVO`` y el repositorio
-                persiste la instancia exactamente una vez.
+        Given:  A client whose ``test_connection`` returns ``True``.
+        When:   ``ConfigureConnectorUseCase`` is executed.
+        Then:   The returned instance has state ``ACTIVO`` and the repository
+                persists the instance exactly once.
         """
         use_case = ConfigureConnectorUseCase(connector_repo, registry, encryptor)
         result = await use_case.execute(command)
@@ -132,12 +132,12 @@ class TestConfigureConnectorUseCase:
         self, connector_repo, registry, encryptor, command, connector_client
     ):
         """
-        ``test_connection`` retornando ``False`` lanza ``ConnectorConnectionFailedError``.
+        ``test_connection`` returning ``False`` raises ``ConnectorConnectionFailedError``.
 
-        Given:  Un cliente cuyo ``test_connection`` retorna ``False`` explícitamente.
-        When:   Se ejecuta el caso de uso.
-        Then:   Se lanza ``ConnectorConnectionFailedError``, indicando que las credenciales
-                provistas son inválidas y la conexión no puede establecerse.
+        Given:  A client whose ``test_connection`` explicitly returns ``False``.
+        When:   The use case is executed.
+        Then:   ``ConnectorConnectionFailedError`` is raised, indicating that the
+                provided credentials are invalid and the connection cannot be made.
         """
         connector_client.test_connection.return_value = False
         use_case = ConfigureConnectorUseCase(connector_repo, registry, encryptor)
@@ -149,12 +149,12 @@ class TestConfigureConnectorUseCase:
         self, connector_repo, registry, encryptor, command, connector_client
     ):
         """
-        Cuando la conexión falla con ``False``, no se persiste ninguna instancia.
+        When the connection fails with ``False``, no instance is persisted.
 
-        Given:  Un cliente cuyo ``test_connection`` retorna ``False``.
-        When:   Se ejecuta el caso de uso y se captura la excepción esperada.
-        Then:   ``connector_repo.save`` no se llama en ningún momento, evitando
-                almacenar conectores con credenciales que se saben incorrectas.
+        Given:  A client whose ``test_connection`` returns ``False``.
+        When:   The use case is executed and the expected exception is caught.
+        Then:   ``connector_repo.save`` is never called, avoiding storage of
+                connectors with known-invalid credentials.
         """
         connector_client.test_connection.return_value = False
         use_case = ConfigureConnectorUseCase(connector_repo, registry, encryptor)
@@ -168,14 +168,14 @@ class TestConfigureConnectorUseCase:
         self, connector_repo, registry, encryptor, command, connector_client
     ):
         """
-        Un ``RuntimeError`` en la prueba de conexión persiste la instancia como ``INACTIVO``.
+        A ``RuntimeError`` during the connection test persists the instance as ``INACTIVO``.
 
-        Given:  Un cliente cuyo ``test_connection`` lanza ``RuntimeError("connection timeout")``.
-        When:   Se ejecuta el caso de uso.
-        Then:   La instancia se persiste con estado ``INACTIVO``, permitiendo que el
-                administrador la edite sin necesidad de recrear el conector completo.
-                Este comportamiento distingue los errores de infraestructura transitorios
-                de las credenciales inválidas (que no se persisten).
+        Given:  A client whose ``test_connection`` raises ``RuntimeError("connection timeout")``.
+        When:   The use case is executed.
+        Then:   The instance is persisted with state ``INACTIVO``, allowing the
+                administrator to edit it without recreating the entire connector.
+                This distinguishes transient infrastructure errors from invalid
+                credentials (which are not persisted).
         """
         connector_client.test_connection.side_effect = RuntimeError("connection timeout")
         use_case = ConfigureConnectorUseCase(connector_repo, registry, encryptor)
@@ -189,12 +189,12 @@ class TestConfigureConnectorUseCase:
         self, connector_repo, registry, encryptor, command, connector_client
     ):
         """
-        Un ``ValueError`` en la prueba de conexión persiste la instancia como ``INACTIVO``.
+        A ``ValueError`` during the connection test persists the instance as ``INACTIVO``.
 
-        Given:  Un cliente cuyo ``test_connection`` lanza ``ValueError("invalid config")``.
-        When:   Se ejecuta el caso de uso.
-        Then:   La instancia se persiste con estado ``INACTIVO``, con la misma
-                semántica de tolerancia a fallos aplicada al caso ``RuntimeError``.
+        Given:  A client whose ``test_connection`` raises ``ValueError("invalid config")``.
+        When:   The use case is executed.
+        Then:   The instance is persisted with state ``INACTIVO``, applying the
+                same fault-tolerance semantics as the ``RuntimeError`` case.
         """
         connector_client.test_connection.side_effect = ValueError("invalid config")
         use_case = ConfigureConnectorUseCase(connector_repo, registry, encryptor)
@@ -207,12 +207,12 @@ class TestConfigureConnectorUseCase:
         self, connector_repo, registry, encryptor, command
     ):
         """
-        Las credenciales se cifran mediante ``ICredentialEncryptor`` antes de persistir.
+        Credentials are encrypted via ``ICredentialEncryptor`` before being persisted.
 
-        Given:  Un encriptador que retorna ``b"encrypted_creds"`` para cualquier entrada.
-        When:   Se ejecuta el caso de uso con éxito.
-        Then:   ``encryptor.encrypt`` se llama exactamente una vez y la instancia
-                resultante almacena los bytes cifrados, nunca las credenciales en claro.
+        Given:  An encryptor that returns ``b"encrypted_creds"`` for any input.
+        When:   The use case executes successfully.
+        Then:   ``encryptor.encrypt`` is called exactly once and the resulting
+                instance stores the encrypted bytes, never the plain-text credentials.
         """
         use_case = ConfigureConnectorUseCase(connector_repo, registry, encryptor)
         result = await use_case.execute(command)
@@ -224,13 +224,13 @@ class TestConfigureConnectorUseCase:
         self, connector_repo, encryptor, org_id
     ):
         """
-        Un tipo de conector no registrado lanza ``KeyError`` antes de cualquier I/O.
+        An unregistered connector type raises ``KeyError`` before any I/O.
 
-        Given:  Un ``ConnectorRegistry`` vacío (sin conectores registrados).
-        When:   Se intenta configurar un conector de tipo ``"nonexistent"``.
-        Then:   Se lanza ``KeyError``, fallando rápido sin intentar conexiones ni
-                escrituras en base de datos, facilitando la detección temprana de
-                errores de configuración en la capa de registro.
+        Given:  An empty ``ConnectorRegistry`` (no connectors registered).
+        When:   A connector of type ``"nonexistent"`` is configured.
+        Then:   ``KeyError`` is raised immediately, without attempting connections
+                or database writes, enabling early detection of registry
+                configuration errors.
         """
         reg = ConnectorRegistry()
         cmd = ConfigureConnectorCommand(

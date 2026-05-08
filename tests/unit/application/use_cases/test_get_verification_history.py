@@ -1,23 +1,23 @@
 """
-Test suite para ``GetVerificationHistoryUseCase``.
+Test suite for ``GetVerificationHistoryUseCase``.
 
-Este caso de uso proporciona el historial de verificación de una release: dado
-un identificador de release, devuelve un resumen estructurado con el veredicto
-final, la duración de la verificación y las reglas evaluadas.
+This use case provides the verification history of a release: given a release
+identifier, it returns a structured summary with the final verdict, verification
+duration, and evaluated rules.
 
-Es un caso de uso de consulta (query) dentro del patrón CQRS implícito de la
-capa de aplicación: no modifica estado, sólo agrega y proyecta datos asociados
-a una release ya completada.
+It is a query use case within the implicit CQRS pattern of the application layer:
+it does not modify state, only aggregates and projects data associated with an
+already completed release.
 
-Estrategia de prueba:
-    Pruebas unitarias. El repositorio de releases se reemplaza por un ``AsyncMock``
-    que permite controlar el estado de la entidad devuelta en cada escenario.
+Testing strategy:
+    Unit tests. The release repository is replaced by an ``AsyncMock`` that
+    controls the state of the returned entity for each scenario.
 
-Invariantes clave verificadas:
-    - Consultar el historial de una release inexistente lanza ``EntityNotFoundError``.
-    - El resultado es un diccionario que incluye el ID de la release como cadena.
-    - El diccionario contiene las claves ``verdict``, ``duration_ms`` y
-      ``rules_evaluated``, definiendo el contrato de respuesta de la API.
+Key invariants verified:
+    - Querying the history of a non-existent release raises ``EntityNotFoundError``.
+    - The result is a dictionary that includes the release ID as a string.
+    - The dictionary contains the keys ``verdict``, ``duration_ms``, and
+      ``rules_evaluated``, defining the API response contract.
 """
 
 import uuid
@@ -35,7 +35,7 @@ from domain.exceptions import EntityNotFoundError
 # ---------------------------------------------------------------------------
 
 def _make_release() -> Release:
-    """Construye una ``Release`` de prueba en estado ``COMPLETADA``."""
+    """Builds a test ``Release`` in state ``COMPLETADA``."""
     return Release(
         project_id=uuid.uuid4(),
         profile_id=uuid.uuid4(),
@@ -51,21 +51,21 @@ def _make_release() -> Release:
 
 class TestGetVerificationHistoryUseCase:
     """
-    Pruebas unitarias para ``GetVerificationHistoryUseCase``.
+    Unit tests for ``GetVerificationHistoryUseCase``.
 
-    Verifica el comportamiento ante releases inexistentes y la estructura del
-    diccionario de respuesta para releases encontradas.
+    Verifies behavior for non-existent releases and the response dictionary
+    structure for found releases.
     """
 
     async def test_release_not_found_raises_entity_not_found(self):
         """
-        Consultar el historial de una release inexistente lanza ``EntityNotFoundError``.
+        Querying the history of a non-existent release raises ``EntityNotFoundError``.
 
-        Given:  Un repositorio que devuelve ``None`` para cualquier ID de release.
-        When:   Se ejecuta ``GetVerificationHistoryUseCase`` con un UUID aleatorio.
-        Then:   Se lanza ``EntityNotFoundError``, informando al llamante de forma
-                explícita que el recurso solicitado no existe, en lugar de devolver
-                un resultado vacío que podría interpretarse ambiguamente.
+        Given:  A repository that returns ``None`` for any release ID.
+        When:   ``GetVerificationHistoryUseCase`` is executed with a random UUID.
+        Then:   ``EntityNotFoundError`` is raised, explicitly informing the caller
+                that the requested resource does not exist, rather than returning
+                an empty result that could be interpreted ambiguously.
         """
         repo = AsyncMock()
         repo.get_by_id.return_value = None
@@ -75,13 +75,13 @@ class TestGetVerificationHistoryUseCase:
 
     async def test_returns_dict_with_release_id(self):
         """
-        El historial incluye el ID de la release serializado como cadena de texto.
+        The history includes the release ID serialized as a string.
 
-        Given:  Un repositorio que devuelve una release en estado ``COMPLETADA``.
-        When:   Se ejecuta el caso de uso con el ID de dicha release.
-        Then:   El diccionario resultante contiene la clave ``"release_id"`` con
-                el valor ``str(release.id)``, proporcionando la referencia cruzada
-                necesaria para que los consumidores de la API identifiquen el recurso.
+        Given:  A repository that returns a release in state ``COMPLETADA``.
+        When:   The use case is executed with that release's ID.
+        Then:   The resulting dictionary contains the key ``"release_id"`` with
+                the value ``str(release.id)``, providing the cross-reference
+                needed for API consumers to identify the resource.
         """
         release = _make_release()
         repo = AsyncMock()
@@ -93,14 +93,13 @@ class TestGetVerificationHistoryUseCase:
 
     async def test_result_contains_expected_keys(self):
         """
-        El historial expone las claves de contrato definidas por el dominio.
+        The history exposes the contract keys defined by the domain.
 
-        Given:  Un repositorio que devuelve una release válida.
-        When:   Se ejecuta el caso de uso.
-        Then:   El diccionario resultante contiene las claves ``"verdict"``,
-                ``"duration_ms"`` y ``"rules_evaluated"``, que forman el contrato
-                mínimo de respuesta consumido por los routers de la API y los
-                clientes externos.
+        Given:  A repository that returns a valid release.
+        When:   The use case is executed.
+        Then:   The resulting dictionary contains the keys ``"verdict"``,
+                ``"duration_ms"``, and ``"rules_evaluated"``, which form the
+                minimum response contract consumed by API routers and external clients.
         """
         release = _make_release()
         repo = AsyncMock()

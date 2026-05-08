@@ -1,9 +1,8 @@
 """
-Configuración compartida de pytest para la suite de pruebas unitarias.
+Shared pytest configuration for the unit test suite.
 
-Añade ``apps/api/src`` al ``sys.path`` para que los módulos del paquete
-de la aplicación sean importables directamente por nombre (sin prefijos de
-ruta) desde cualquier archivo de test dentro de ``tests/unit/``.
+Adds ``apps/api/src`` to ``sys.path`` so application package modules are
+importable by name (without path prefixes) from any test file under ``tests/unit/``.
 """
 
 import os

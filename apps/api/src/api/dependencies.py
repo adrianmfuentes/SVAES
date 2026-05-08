@@ -113,7 +113,7 @@ async def get_current_user(
     except (InvalidTokenError, KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido o expirado",
+            detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -121,7 +121,7 @@ async def get_current_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuario no encontrado",
+            detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user

@@ -97,7 +97,7 @@ class TestGetCurrentUser:
             await get_current_user(credentials, user_repo, jwt_handler)
 
         assert exc_info.value.status_code == 401
-        assert "Usuario no encontrado" in exc_info.value.detail
+        assert "User not found" in exc_info.value.detail
 
 
 # ---------------------------------------------------------------------------

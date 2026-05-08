@@ -1,23 +1,22 @@
 """
-Test suite para ``CreateProjectUseCase``.
+Test suite for ``CreateProjectUseCase``.
 
-Los proyectos son el segundo nivel de la jerarquía de SVAES: agrupan releases
-bajo una organización y definen el contexto lógico de cada ciclo de verificación.
-``CreateProjectUseCase`` encapsula la lógica de construcción y persistencia de
-nuevos proyectos.
+Projects are the second level of the SVAES hierarchy: they group releases under
+an organization and define the logical context of each verification cycle.
+``CreateProjectUseCase`` encapsulates the construction and persistence logic for
+new projects.
 
-Estrategia de prueba:
-    Pruebas unitarias. El repositorio ``IProjectRepository`` se sustituye por
-    un ``AsyncMock`` para verificar la composición de la entidad y el contrato
-    de persistencia de forma aislada.
+Testing strategy:
+    Unit tests. The ``IProjectRepository`` is replaced by an ``AsyncMock`` to
+    verify entity composition and the persistence contract in isolation.
 
-Invariantes clave verificadas:
-    - La entidad ``Project`` resultante refleja exactamente los campos del comando
+Key invariants verified:
+    - The resulting ``Project`` entity exactly reflects the command fields
       (``organization_id``, ``name``, ``description``).
-    - La persistencia se delega al repositorio y el resultado final es el objeto
-      devuelto por ``repo.create``.
-    - El campo ``description`` tiene valor vacío por defecto, permitiendo crear
-      proyectos mínimos sin campos opcionales.
+    - Persistence is delegated to the repository and the final result is the
+      object returned by ``repo.create``.
+    - The ``description`` field defaults to an empty string, allowing minimal
+      projects to be created without optional fields.
 """
 
 import uuid
@@ -30,22 +29,21 @@ from domain.entities.project import Project
 
 class TestCreateProjectUseCase:
     """
-    Pruebas unitarias para ``CreateProjectUseCase``.
+    Unit tests for ``CreateProjectUseCase``.
 
-    Valida la construcción correcta de la entidad ``Project`` y la delegación
-    de la persistencia al repositorio, incluyendo el comportamiento de valores
-    por defecto del comando.
+    Validates correct construction of the ``Project`` entity and delegation of
+    persistence to the repository, including default-value behavior of the command.
     """
 
     async def test_creates_project_with_correct_fields(self):
         """
-        Los campos del comando se transfieren fielmente a la entidad ``Project`` creada.
+        Command fields are faithfully transferred to the created ``Project`` entity.
 
-        Given:  Un repositorio que retorna el objeto recibido sin modificación y
-                un comando con ``organization_id``, ``name`` y ``description`` explícitos.
-        When:   Se ejecuta ``CreateProjectUseCase`` con dicho comando.
-        Then:   La entidad resultante tiene exactamente los valores provistos en el
-                comando, confirmando que el caso de uso no altera los datos de entrada.
+        Given:  A repository that returns the received object without modification and
+                a command with explicit ``organization_id``, ``name``, and ``description``.
+        When:   ``CreateProjectUseCase`` is executed with that command.
+        Then:   The resulting entity has exactly the values provided in the command,
+                confirming that the use case does not alter the input data.
         """
         org_id = uuid.uuid4()
         repo = AsyncMock()
@@ -60,13 +58,13 @@ class TestCreateProjectUseCase:
 
     async def test_delegates_persistence_to_repo(self):
         """
-        El caso de uso persiste la entidad a través del repositorio y retorna su resultado.
+        The use case persists the entity through the repository and returns its result.
 
-        Given:  Un repositorio que devuelve una instancia de ``Project`` predefinida.
-        When:   Se ejecuta el caso de uso con un comando coherente con dicha instancia.
-        Then:   El objeto retornado es exactamente la instancia del repositorio
-                y ``repo.create`` se llama exactamente una vez, asegurando que no
-                existe lógica de reintento ni creación duplicada.
+        Given:  A repository that returns a predefined ``Project`` instance.
+        When:   The use case is executed with a command matching that instance.
+        Then:   The returned object is exactly the repository instance and
+                ``repo.create`` is called exactly once, ensuring no retry logic
+                or duplicate creation exists.
         """
         repo = AsyncMock()
         saved = Project(organization_id=uuid.uuid4(), name="X", description="")
@@ -81,12 +79,12 @@ class TestCreateProjectUseCase:
 
     def test_default_description_is_empty(self):
         """
-        Omitir ``description`` en el comando produce una descripción vacía, no un error.
+        Omitting ``description`` in the command produces an empty description, not an error.
 
-        Given:  Un ``CreateProjectCommand`` construido sin el campo ``description``.
-        When:   Se accede al atributo ``description`` del comando.
-        Then:   El valor es la cadena vacía ``""``, permitiendo registrar proyectos
-                con información mínima sin violar ninguna restricción del dominio.
+        Given:  A ``CreateProjectCommand`` constructed without the ``description`` field.
+        When:   The ``description`` attribute of the command is accessed.
+        Then:   The value is the empty string ``""``, allowing projects to be registered
+                with minimal information without violating any domain constraint.
         """
         cmd = CreateProjectCommand(organization_id=uuid.uuid4(), name="Minimal")
         assert cmd.description == ""

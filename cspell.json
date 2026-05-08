@@ -52,6 +52,7 @@
     "svaes",
     "toml",
     "transiciona",
+    "unauthorised",
     "uuid",
     "uuids",
     "uvicorn",

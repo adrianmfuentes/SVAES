@@ -38,7 +38,7 @@ separación tiene una implicación directa sobre la estrategia de pruebas:
   la aplicación completa contra entornos efímeros.
 
 Este diseño maximiza la velocidad del ciclo de retroalimentación durante el
-desarrollo: las 177 pruebas unitarias se ejecutan en menos de 3 segundos sin
+desarrollo: las pruebas unitarias se ejecutan en menos de 3 segundos sin
 requerir ninguna dependencia de infraestructura real.
 
 ---
@@ -530,3 +530,534 @@ explícitamente para evitar cobertura sólo de caminos felices.
 Las pruebas de integración requerirán un `conftest.py` propio con fixtures de
 sesión que gestionen el ciclo de vida de la base de datos de pruebas (creación
 de tablas, datos de seed y limpieza entre tests).
+
+---
+---
+
+# Test Suite — SVAES
+
+This directory contains the test infrastructure for the **SVAES** system
+(*Automatic Software Delivery Verification System*). Tests are organized by
+isolation level following the classic testing pyramid, balancing execution
+speed, production fidelity, and diagnostic granularity.
+
+---
+
+## Table of contents
+
+1. [Testing philosophy](#1-testing-philosophy)
+2. [Directory structure](#2-directory-structure)
+3. [Current unit coverage](#3-current-unit-coverage)
+4. [Naming and style conventions](#4-naming-and-style-conventions)
+5. [Running tests](#5-running-tests)
+6. [pytest configuration](#6-pytest-configuration)
+7. [Test doubles and isolation strategy](#7-test-doubles-and-isolation-strategy)
+8. [Code coverage](#8-code-coverage)
+9. [Pending test levels](#9-pending-test-levels)
+
+---
+
+## 1. Testing philosophy
+
+SVAES adopts a hexagonal architecture (Ports & Adapters) that strictly separates
+the domain, application layer, and infrastructure. This separation has a direct
+implication on the testing strategy:
+
+- **Business logic** (domain entities and use cases) can and must be tested in
+  complete isolation from databases, message queues, and external services.
+- **Infrastructure adapters** (SQLAlchemy repositories, JWT client, etc.) are
+  tested with mocked sessions to verify entity mapping without requiring a real
+  connection.
+- **End-to-end flows** are validated in E2E tests that spin up the complete
+  application against ephemeral environments.
+
+This design maximizes feedback cycle speed during development: unit tests run
+in under 3 seconds without requiring any real infrastructure dependency.
+
+---
+
+## 2. Directory structure
+
+```
+tests/
+├── README.md                        ← this document
+│
+├── unit/                            ← total isolation tests (no real I/O)
+│   ├── conftest.py                  ← sys.path and dummy DATABASE_URL for imports
+│   │
+│   ├── api/
+│   │   ├── test_dependencies.py     ← get_current_user (FastAPI dependency)
+│   │   └── test_routers.py          ← auth, orgs, projects, profiles,
+│   │                                   releases and connectors handlers
+│   │
+│   ├── application/
+│   │   └── use_cases/
+│   │       ├── test_auth_use_cases.py
+│   │       ├── test_organization_use_cases.py
+│   │       ├── test_project_use_cases.py
+│   │       ├── test_create_release.py
+│   │       ├── test_launch_verification.py
+│   │       ├── test_configure_connector.py
+│   │       ├── test_manage_profile.py
+│   │       └── test_get_verification_history.py
+│   │
+│   ├── domain/
+│   │   └── test_entities.py         ← domain entities, enums, and exceptions
+│   │
+│   └── infrastructure/
+│       ├── test_repositories.py     ← SQLAlchemy repositories (mocked session)
+│       └── test_security.py         ← JWT, Fernet, MockTaskQueue, ConnectorRegistry,
+│                                       logging and Settings
+│
+├── integration/                     ← tests with real database and services
+│   └── .gitkeep
+│
+├── e2e/                             ← end-to-end tests (full application)
+│   └── .gitkeep
+│
+├── performance/                     ← benchmarks and load tests
+│   └── .gitkeep
+│
+└── security/                        ← automated security tests (SAST/DAST)
+    └── .gitkeep
+```
+
+---
+
+## 3. Current unit coverage
+
+### `test_dependencies.py` — `TestGetCurrentUser`
+
+| Test | Scenario |
+|------|----------|
+| `test_valid_token_returns_user` | Valid token → user returned by the repository |
+| `test_invalid_token_raises_401` | `InvalidTokenError` → HTTP 401 with `WWW-Authenticate` header |
+| `test_missing_sub_claim_raises_401` | Payload without `sub` field → HTTP 401 |
+| `test_invalid_uuid_in_sub_raises_401` | Malformed UUID in `sub` → HTTP 401 |
+| `test_user_not_found_raises_401` | Valid token but non-existent user → HTTP 401 |
+
+---
+
+### `test_routers.py` — API layer handlers
+
+#### `TestAuthRouter`
+
+| Test | Scenario |
+|------|----------|
+| `test_login_success_returns_token` | Valid credentials → `access_token` and `token_type = "bearer"` |
+| `test_login_exception_raises_401` | `ValueError` from use case → HTTP 401 |
+| `test_login_generic_exception_raises_401` | Unexpected `RuntimeError` → HTTP 401 |
+
+#### `TestOrganizationsRouter`
+
+| Test | Scenario |
+|------|----------|
+| `test_create_org_returns_organization` | Handler returns the repository instance |
+| `test_create_org_passes_plan` | `plan` field from request is propagated to the command |
+| `test_list_orgs_returns_list` | List with elements returned without transformation |
+| `test_list_orgs_empty_list` | Empty list returned without exception |
+
+#### `TestProjectsRouter`
+
+| Test | Scenario |
+|------|----------|
+| `test_create_project_success` | Handler returns the project from the use case |
+| `test_create_project_passes_correct_command` | `organization_id`, `name`, and `description` mapped to the command |
+
+#### `TestProfilesRouter`
+
+| Test | Scenario |
+|------|----------|
+| `test_create_profile_success` | `create_profile` invoked once; result returned |
+
+#### `TestReleasesRouter`
+
+| Test | Scenario |
+|------|----------|
+| `test_create_release_success` | Release returned by the use case |
+| `test_create_release_passes_creator` | `created_by` propagated from the authenticated user |
+| `test_get_results_success` | Results dictionary returned with `verdict` field |
+| `test_get_results_not_found_raises_404` | `EntityNotFoundError` → HTTP 404 |
+| `test_verify_release_success` | `task_id` and confirmation message in the response |
+| `test_verify_release_not_found_raises_404` | `EntityNotFoundError` → HTTP 404 |
+| `test_verify_release_invalid_state_raises_409` | `ReleaseInvalidStateError` → HTTP 409 |
+| `test_verify_release_runtime_error_raises_500` | `RuntimeError` → HTTP 500 |
+| `test_verify_release_value_error_raises_500` | `ValueError` → HTTP 500 |
+
+#### `TestConnectorsRouter`
+
+| Test | Scenario |
+|------|----------|
+| `test_create_connector_success` | Connector from use case returned directly |
+| `test_create_connector_connection_failed_raises_400` | `ConnectorConnectionFailedError` → HTTP 400 |
+| `test_create_connector_runtime_error_raises_500` | `RuntimeError` → HTTP 500 |
+| `test_create_connector_value_error_raises_500` | `ValueError` → HTTP 500 |
+
+---
+
+### `test_auth_use_cases.py` — `LoginUseCase`
+
+| Test | Scenario |
+|------|----------|
+| `test_valid_credentials_return_token` | Valid credentials → JWT with `user_id` and `role` |
+| `test_user_not_found_raises_value_error` | Non-existent email → generic `ValueError` |
+| `test_wrong_password_raises_value_error` | Wrong password → generic `ValueError` |
+| `test_token_not_issued_when_user_not_found` | Auth failure → `ITokenService` not invoked |
+
+**Security invariant:** identical error message for non-existent email and wrong
+password, preventing user enumeration.
+
+---
+
+### `test_organization_use_cases.py` — `CreateOrganizationUseCase` / `ListOrganizationsUseCase`
+
+| Test | Scenario |
+|------|----------|
+| `test_creates_and_returns_organization` | Result is the instance returned by the repository |
+| `test_passes_correct_slug_to_repo` | `name` and `slug` from command transferred faithfully |
+| `test_default_plan_is_free` | Default plan is `"free"` without specifying it |
+| `test_returns_active_organizations` | Listing calls `list_all(active_only=True)` |
+| `test_returns_empty_list_when_no_orgs` | No active organizations → empty list, no exception |
+
+---
+
+### `test_project_use_cases.py` — `CreateProjectUseCase`
+
+| Test | Scenario |
+|------|----------|
+| `test_creates_project_with_correct_fields` | `organization_id`, `name`, and `description` preserved |
+| `test_delegates_persistence_to_repo` | Result is the repository object; `create` called once |
+| `test_default_description_is_empty` | Omitted `description` → empty string, not an error |
+
+---
+
+### `test_create_release.py` — `CreateReleaseUseCase`
+
+| Test | Scenario |
+|------|----------|
+| `test_release_created_with_borrador_status` | Initial state always `BORRADOR` |
+| `test_release_has_correct_project_and_profile` | `project_id` and `profile_id` without modification |
+| `test_release_has_correct_version_and_creator` | `version` and `created_by` preserved |
+| `test_delegates_persistence_to_release_repo` | `release_repo.create` called exactly once |
+
+---
+
+### `test_launch_verification.py` — `LaunchVerificationUseCase`
+
+| Test | Scenario |
+|------|----------|
+| `test_release_not_found_raises_entity_not_found` | Non-existent release → `EntityNotFoundError` |
+| `test_release_not_pendiente_raises_invalid_state` | BORRADOR / EN_VERIFICACION / COMPLETADA → `ReleaseInvalidStateError` |
+| `test_happy_path_updates_status_to_en_verificacion` | PENDIENTE release → state updated to EN_VERIFICACION |
+| `test_happy_path_enqueues_task_and_returns_task_id` | Task ID propagated; `enqueue_verification_task` invoked with `release.id` |
+| `test_repo_update_called_before_enqueue` | `repo.update` precedes `enqueue_verification_task` (guaranteed order) |
+
+**Consistency invariant:** the state transition is persisted *before* enqueueing
+the task, eliminating the possibility of a worker consuming a message whose
+release still shows as `PENDIENTE`.
+
+---
+
+### `test_configure_connector.py` — `ConfigureConnectorUseCase`
+
+| Test | Scenario |
+|------|----------|
+| `test_successful_connection_saved_as_activo` | Successful connection → instance persisted as `ACTIVO` |
+| `test_connection_returns_false_raises_error` | `test_connection` returns `False` → `ConnectorConnectionFailedError` |
+| `test_connection_false_does_not_save` | Failure with `False` → no persistence |
+| `test_runtime_error_saved_as_inactivo` | `RuntimeError` in client → persisted as `INACTIVO` |
+| `test_value_error_saved_as_inactivo` | `ValueError` in client → persisted as `INACTIVO` |
+| `test_credentials_are_encrypted_and_stored` | `ICredentialEncryptor.encrypt` invoked; plaintext credentials not stored |
+| `test_unregistered_connector_type_raises_key_error` | Unregistered type → `KeyError` without I/O |
+
+---
+
+### `test_manage_profile.py` — `ManageProfileUseCase`
+
+| Test | Scenario |
+|------|----------|
+| `test_create_profile_with_correct_org_and_name` | `organization_id` and `name` reflected in the profile |
+| `test_create_profile_generates_unique_id` | Same command executed twice → different IDs |
+| `test_delegates_persistence_to_repo` | `repo.create` invoked exactly once |
+
+---
+
+### `test_get_verification_history.py` — `GetVerificationHistoryUseCase`
+
+| Test | Scenario |
+|------|----------|
+| `test_release_not_found_raises_entity_not_found` | Non-existent release → `EntityNotFoundError` |
+| `test_returns_dict_with_release_id` | Result contains `release_id` as a string |
+| `test_result_contains_expected_keys` | Contract keys: `verdict`, `duration_ms`, `rules_evaluated` |
+
+---
+
+### `test_entities.py` — domain
+
+#### `TestEnums`
+
+| Test | Scenario |
+|------|----------|
+| `test_release_status_string_values` | BORRADOR / PENDIENTE / EN_VERIFICACION / COMPLETADA are strings |
+| `test_verdict_type_values` | VALID / VALID_WITH_WARNINGS / INVALID |
+| `test_connector_status_values` | ACTIVO / INACTIVO / ERROR |
+| `test_severity_type_values` | INFO / LOW / MEDIUM / HIGH / CRITICAL |
+| `test_user_role_values` | VIEWER / OPERATOR / MANAGER / ADMIN |
+| `test_release_status_enum_from_string` | `ReleaseStatus("BORRADOR") is ReleaseStatus.BORRADOR` |
+| `test_verdict_type_is_string_subclass` | All enums are subclasses of `str` |
+
+#### `TestUserEntity` / `TestOrganizationEntity` / `TestProjectEntity` / `TestReleaseEntity`
+
+Verify: fields stored correctly, auto-generated unique IDs, auto-assigned timestamps,
+default values (`is_active=True`, `status=BORRADOR`, `description=""`), and
+construction with explicit ID.
+
+#### `TestArtifactEntity` / `TestConnectorInstanceEntity` / `TestVerificationProfileEntity` / `TestVerificationResultEntity` / `TestVerificationRuleEntity`
+
+Verify: required fields, collection defaults (`metadata={}`, `rules=[]`,
+`rule_results={}`, `profile_snapshot={}`), automatic timestamps, and explicit
+rule and configuration setup.
+
+#### `TestDomainExceptions`
+
+| Test | Scenario |
+|------|----------|
+| `test_domain_exception_message_and_str` | `message` and `str()` match |
+| `test_entity_not_found_error_inherits` | Inherits from `DomainException` |
+| `test_release_invalid_state_error_message_contains_state` | Message includes current state, expected state, and `release_id` |
+| `test_connector_connection_failed_error` | Message propagated correctly |
+| `test_invalid_connector_configuration_error` | Message propagated correctly |
+| `test_user_not_belongs_to_organization_error` | Inherits from `DomainException` |
+| `test_verification_profile_not_active_error` | Inherits from `DomainException` |
+| `test_all_exceptions_are_catchable_as_domain_exception` | All catchable as `DomainException` |
+
+---
+
+### `test_repositories.py` — SQLAlchemy adapters
+
+All repositories use mocked sessions (`AsyncMock` / `MagicMock`);
+no real PostgreSQL connection is required.
+
+| Repository | Tests |
+|------------|-------|
+| `SqlOrganizationRepository` | `create`, `get_by_id` (found/not found), `get_by_slug`, `list_all`, `update` (found/not found) |
+| `SqlUserRepository` | `create`, `get_by_id`, `get_by_email`, `list_all`, `update` |
+| `SqlProjectRepository` | `create`, `get_by_id`, `list_by_organization`, `description=None` fallback |
+| `SqlReleaseRepository` | `create`, `get_by_id`, `list_by_project`, `update` (found/not found) |
+| `SqlConnectorRepository` | `save` (new/existing), `get_by_id`, `list_by_organization` (active_only/all) |
+| `SqlProfileRepository` | `create`, `get_by_id`, `get_default_for_organization` (found/not found) |
+| `SqlArtifactRepository` | `save` (new/existing), `find_by_id`, `find_by_release` |
+| `SqlVerificationResultRepository` | `save` (new/existing — skip add on update), `find_by_id`, `find_by_release` |
+
+---
+
+### `test_security.py` — security infrastructure
+
+#### `TestJwtHandler`
+
+| Test | Scenario |
+|------|----------|
+| `test_create_access_token_returns_non_empty_string` | Non-empty token returned |
+| `test_decode_returns_correct_sub_and_role` | `sub` and `role` round-trip correctly |
+| `test_decode_invalid_token_raises` | Malformed token → `InvalidTokenError` |
+| `test_token_from_different_secret_rejected` | Token signed with secret A → rejected by secret B |
+| `test_custom_algorithm_stored` | `sub` round-trip with explicit algorithm and expiration |
+| `test_decoded_payload_has_iat_and_exp` | Payload contains `iat` and `exp`; `exp > iat` |
+
+#### `TestFernetCredentialEncryptor`
+
+| Test | Scenario |
+|------|----------|
+| `test_encrypt_returns_bytes` | Ciphertext ≠ plaintext, type `bytes` |
+| `test_roundtrip_preserves_data` | `decrypt(encrypt(x)) == x` |
+| `test_accepts_bytes_key` | Key as `bytes` works the same |
+| `test_different_keys_produce_different_ciphertext` | Two different keys → different ciphertexts |
+
+#### `TestMockTaskQueue`
+
+| Test | Scenario |
+|------|----------|
+| `test_enqueue_returns_uuid_string` | Task ID is a valid UUID string |
+| `test_enqueue_returns_unique_ids_each_call` | Unique IDs per call |
+| `test_get_task_status_returns_pending` | State always `"PENDING"` |
+| `test_get_task_status_any_id` | Accepts any ID without error |
+
+#### `TestConnectorRegistry` / `TestLogging` / `TestSettings`
+
+Verify: connector registration and retrieval, logger idempotency, instance
+caching, auto-generation of Fernet key when empty, and JWT configuration defaults.
+
+---
+
+## 4. Naming and style conventions
+
+### Test files
+
+- One file per module under test: `test_<module_name>.py`.
+- `test_` prefix required for pytest auto-discovery.
+
+### Test classes
+
+- One class per unit under test: `class Test<UnitName>`.
+- Do not inherit from `unittest.TestCase`; pytest manages the lifecycle.
+
+### Test methods
+
+Names follow the pattern:
+
+```
+test_<condition_or_scenario>_<expected_result>
+```
+
+### Helpers and factories
+
+Auxiliary functions for building entities or ORM mocks use the
+`_make_` or `_<type>_model` prefix:
+
+```python
+def _make_release(status: ReleaseStatus = ReleaseStatus.PENDIENTE) -> Release: ...
+def _release_model(version="1.0.0", status="BORRADOR", **kwargs): ...
+```
+
+---
+
+## 5. Running tests
+
+### Prerequisites
+
+```bash
+pip install pytest pytest-asyncio pytest-cov
+```
+
+### Run all unit tests
+
+```bash
+pytest tests/unit/ -v
+```
+
+### Run a specific package
+
+```bash
+# API layer only
+pytest tests/unit/api/ -v
+
+# Use cases only
+pytest tests/unit/application/ -v
+
+# Infrastructure only
+pytest tests/unit/infrastructure/ -v
+```
+
+### Run a specific module
+
+```bash
+pytest tests/unit/application/use_cases/test_auth_use_cases.py -v
+```
+
+### Run with detailed failure output
+
+```bash
+pytest tests/unit/ -v --tb=short
+```
+
+---
+
+## 6. pytest configuration
+
+`pytest.ini` (repository root):
+
+```ini
+[pytest]
+asyncio_mode = auto
+testpaths = tests/unit
+pythonpath = apps/api/src
+```
+
+`tests/unit/conftest.py` sets the `DATABASE_URL` variable with a dummy value
+**before** any import, preventing `session.py` from failing due to a missing
+variable. The SQLAlchemy engine initializes lazily (on the first real call),
+so the `psycopg` driver is never loaded during unit tests.
+
+---
+
+## 7. Test doubles and isolation strategy
+
+| Type | Common use |
+|------|-----------|
+| `AsyncMock` | Async repositories, task queue, use cases |
+| `MagicMock` | Synchronous services (JWT, encryptor), ORM models |
+
+```python
+# Repository that mirrors the received argument:
+repo.create.side_effect = lambda entity: entity
+
+# Service that simulates a failure:
+connector_client.test_connection.side_effect = RuntimeError("timeout")
+
+# Synthetic ORM model:
+model = MagicMock()
+model.id = uuid.uuid4()
+model.name = "Acme"
+```
+
+Domain entities and application commands are **never** mocked; they are
+instantiated with their real constructors to detect regressions.
+
+---
+
+## 8. Code coverage
+
+### View coverage in terminal (full source)
+
+```bash
+pytest tests/unit/ --cov=apps/api/src --cov-report=term-missing
+```
+
+### View coverage by layer
+
+```bash
+# Application layer only
+pytest tests/unit/ --cov=apps/api/src/application --cov-report=term-missing
+
+# Domain layer only
+pytest tests/unit/ --cov=apps/api/src/domain --cov-report=term-missing
+
+# Infrastructure only
+pytest tests/unit/ --cov=apps/api/src/infrastructure --cov-report=term-missing
+```
+
+### Generate HTML report
+
+```bash
+pytest tests/unit/ \
+  --cov=apps/api/src \
+  --cov-report=html:htmlcov/unit \
+  --cov-report=term-missing
+```
+
+The report is generated at `htmlcov/unit/index.html`.
+
+### Enforce minimum threshold (fails the build if not met)
+
+```bash
+pytest tests/unit/ --cov=apps/api/src --cov-fail-under=80
+```
+
+The coverage target for the application and infrastructure layers is
+**≥ 80%** of statements. Error flows and conditional branches are tested
+explicitly to avoid coverage of happy paths only.
+
+---
+
+## 9. Pending test levels
+
+| Directory | Purpose | Status |
+|-----------|---------|--------|
+| `integration/` | Repositories against real PostgreSQL in Docker | Pending |
+| `e2e/` | Complete flows via HTTP against a local API instance | Pending |
+| `performance/` | Benchmarks for critical endpoints (Locust / k6) | Pending |
+| `security/` | SAST with Bandit and automated authentication tests | Pending |
+
+Integration tests will require their own `conftest.py` with session fixtures
+that manage the test database lifecycle (table creation, seed data, and cleanup
+between tests).

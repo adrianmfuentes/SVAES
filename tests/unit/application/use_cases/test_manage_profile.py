@@ -1,24 +1,24 @@
 """
-Test suite para ``ManageProfileUseCase``.
+Test suite for ``ManageProfileUseCase``.
 
-Los perfiles de verificación agrupan conjuntos de reglas que determinan los
-criterios de aceptación aplicados a una release. ``ManageProfileUseCase``
-encapsula la creación de nuevos perfiles bajo una organización específica.
+Verification profiles group sets of rules that determine the acceptance criteria
+applied to a release. ``ManageProfileUseCase`` encapsulates the creation of new
+profiles under a specific organization.
 
-Un perfil es una entidad con identidad propia (ID único autogenerado), lo que
-permite reutilizarlo en múltiples releases dentro del mismo tenant sin duplicar
-las reglas asociadas.
+A profile is an entity with its own identity (auto-generated unique ID), which
+allows it to be reused across multiple releases within the same tenant without
+duplicating the associated rules.
 
-Estrategia de prueba:
-    Pruebas unitarias. El repositorio ``IProfileRepository`` se sustituye por un
-    ``AsyncMock`` para aislar la lógica de construcción de entidades y verificar
-    el contrato de persistencia sin dependencias de infraestructura.
+Testing strategy:
+    Unit tests. The ``IProfileRepository`` is replaced by an ``AsyncMock`` to
+    isolate entity construction logic and verify the persistence contract without
+    infrastructure dependencies.
 
-Invariantes clave verificadas:
-    - El perfil resultante refleja el ``organization_id`` y ``name`` del comando.
-    - Cada llamada genera un ID único: dos ejecuciones del mismo comando producen
-      entidades con IDs distintos.
-    - La persistencia se delega al repositorio exactamente una vez por creación.
+Key invariants verified:
+    - The resulting profile reflects the ``organization_id`` and ``name`` from the command.
+    - Each invocation generates a unique ID: two executions of the same command produce
+      entities with different IDs.
+    - Persistence is delegated to the repository exactly once per creation.
 """
 
 import uuid
@@ -30,22 +30,22 @@ from application.use_cases.manage_profile import ManageProfileUseCase, CreatePro
 
 class TestManageProfileUseCase:
     """
-    Pruebas unitarias para ``ManageProfileUseCase``.
+    Unit tests for ``ManageProfileUseCase``.
 
-    Valida la construcción correcta de perfiles de verificación, la unicidad de
-    sus identificadores y la delegación de la persistencia al repositorio.
+    Validates correct construction of verification profiles, uniqueness of their
+    identifiers, and delegation of persistence to the repository.
     """
 
     async def test_create_profile_with_correct_org_and_name(self):
         """
-        El perfil creado refleja exactamente el ``organization_id`` y ``name`` del comando.
+        The created profile exactly reflects the ``organization_id`` and ``name`` from the command.
 
-        Given:  Un repositorio que retorna el objeto recibido sin modificación y
-                un comando con ``organization_id`` y ``name`` explícitos.
-        When:   Se invoca ``ManageProfileUseCase.create_profile``.
-        Then:   Los atributos ``organization_id`` y ``name`` del perfil resultante
-                coinciden con los provistos en el comando, garantizando la asociación
-                correcta del perfil con su tenant propietario.
+        Given:  A repository that returns the received object without modification and
+                a command with explicit ``organization_id`` and ``name``.
+        When:   ``ManageProfileUseCase.create_profile`` is invoked.
+        Then:   The ``organization_id`` and ``name`` attributes of the resulting profile
+                match those provided in the command, guaranteeing correct association
+                of the profile with its owning tenant.
         """
         org_id = uuid.uuid4()
         repo = AsyncMock()
@@ -60,14 +60,14 @@ class TestManageProfileUseCase:
 
     async def test_create_profile_generates_unique_id(self):
         """
-        Dos ejecuciones del mismo comando producen perfiles con IDs distintos.
+        Two executions of the same command produce profiles with different IDs.
 
-        Given:  Un repositorio que retorna el objeto recibido y un comando idéntico
-                aplicado dos veces consecutivas.
-        When:   Se invoca ``create_profile`` dos veces con el mismo comando.
-        Then:   Los IDs de los dos perfiles resultantes son diferentes, confirmando
-                que la entidad genera su propio UUID en cada instanciación sin
-                depender de secuencias externas ni de la base de datos.
+        Given:  A repository that returns the received object and an identical command
+                applied twice consecutively.
+        When:   ``create_profile`` is invoked twice with the same command.
+        Then:   The IDs of the two resulting profiles are different, confirming that
+                the entity generates its own UUID on each instantiation without
+                depending on external sequences or the database.
         """
         repo = AsyncMock()
         repo.create.side_effect = lambda p: p
@@ -81,13 +81,13 @@ class TestManageProfileUseCase:
 
     async def test_delegates_persistence_to_repo(self):
         """
-        La creación del perfil se delega al repositorio exactamente una vez.
+        Profile creation is delegated to the repository exactly once.
 
-        Given:  Un repositorio con ``create`` instrumentado.
-        When:   Se invoca ``create_profile`` con un comando válido.
-        Then:   ``repo.create`` se llama una sola vez, confirmando que el caso de
-                uso no intenta persistir el perfil por múltiples vías ni reintenta
-                la operación ante un primer éxito.
+        Given:  A repository with an instrumented ``create`` method.
+        When:   ``create_profile`` is invoked with a valid command.
+        Then:   ``repo.create`` is called exactly once, confirming that the use case
+                does not attempt to persist the profile through multiple paths or
+                retry the operation after a first success.
         """
         repo = AsyncMock()
         repo.create.side_effect = lambda p: p

@@ -1,24 +1,23 @@
 """
-Test suite para ``CreateOrganizationUseCase`` y ``ListOrganizationsUseCase``.
+Test suite for ``CreateOrganizationUseCase`` and ``ListOrganizationsUseCase``.
 
-Las organizaciones son la raíz de la jerarquía de tenants en SVAES: cada proyecto,
-release y conector pertenece a una organización. Estos casos de uso encapsulan
-la lógica de creación y listado de tenants, delegando la persistencia en
+Organizations are the root of the tenant hierarchy in SVAES: every project,
+release, and connector belongs to an organization. These use cases encapsulate
+the logic for creating and listing tenants, delegating persistence to
 ``IOrganizationRepository``.
 
-Estrategia de prueba:
-    Pruebas unitarias puras. El repositorio se reemplaza por un ``AsyncMock``
-    para verificar exclusivamente la lógica de construcción de entidades y los
-    contratos de llamada, sin dependencias de base de datos.
+Testing strategy:
+    Pure unit tests. The repository is replaced by an ``AsyncMock`` to verify
+    only entity construction logic and call contracts, without database dependencies.
 
-Invariantes clave verificadas:
-    - La entidad ``Organization`` se construye con los campos ``name`` y ``slug``
-      tal y como los provee el comando.
-    - El plan por defecto de una nueva organización es ``"free"``.
-    - El listado de organizaciones filtra siempre por ``active_only=True``,
-      evitando exponer tenants desactivados.
-    - Cuando no existen organizaciones activas, el caso de uso retorna lista vacía
-      sin lanzar excepción.
+Key invariants verified:
+    - The ``Organization`` entity is built with the ``name`` and ``slug`` fields
+      exactly as provided by the command.
+    - The default plan for a new organization is ``"free"``.
+    - The organization listing always filters by ``active_only=True``,
+      preventing exposure of deactivated tenants.
+    - When no active organizations exist, the use case returns an empty list
+      without raising an exception.
 """
 
 import uuid
@@ -38,7 +37,7 @@ from domain.entities.organization import Organization
 # ---------------------------------------------------------------------------
 
 def _make_org(name: str = "Acme", slug: str = "acme") -> Organization:
-    """Construye una ``Organization`` de prueba con ID aleatorio."""
+    """Builds a test ``Organization`` with a random ID."""
     return Organization(id=uuid.uuid4(), name=name, slug=slug)
 
 
@@ -48,21 +47,21 @@ def _make_org(name: str = "Acme", slug: str = "acme") -> Organization:
 
 class TestCreateOrganizationUseCase:
     """
-    Pruebas unitarias para ``CreateOrganizationUseCase``.
+    Unit tests for ``CreateOrganizationUseCase``.
 
-    Verifica que el caso de uso construya correctamente la entidad ``Organization``
-    a partir del comando recibido, delega la persistencia al repositorio y respeta
-    los valores por defecto del dominio (plan «free»).
+    Verifies that the use case correctly constructs the ``Organization`` entity
+    from the received command, delegates persistence to the repository, and
+    respects domain defaults (plan «free»).
     """
 
     async def test_creates_and_returns_organization(self):
         """
-        El caso de uso retorna la organización tal como la devuelve el repositorio.
+        The use case returns the organization as returned by the repository.
 
-        Given:  Un repositorio cuyo método ``create`` retorna una instancia de ``Organization``.
-        When:   Se ejecuta ``CreateOrganizationUseCase`` con nombre y slug válidos.
-        Then:   El resultado es la misma instancia devuelta por el repositorio y
-                ``create`` se llama exactamente una vez.
+        Given:  A repository whose ``create`` method returns an ``Organization`` instance.
+        When:   ``CreateOrganizationUseCase`` is executed with valid name and slug.
+        Then:   The result is the same instance returned by the repository and
+                ``create`` is called exactly once.
         """
         org = _make_org()
         repo = AsyncMock()
@@ -77,12 +76,12 @@ class TestCreateOrganizationUseCase:
 
     async def test_passes_correct_slug_to_repo(self):
         """
-        El slug y el nombre del comando se transfieren fielmente a la entidad persistida.
+        The slug and name from the command are faithfully transferred to the persisted entity.
 
-        Given:  Un repositorio que retorna el argumento recibido sin modificarlo.
-        When:   Se ejecuta el caso de uso con ``name="Beta Corp"`` y ``slug="beta-corp"``.
-        Then:   La entidad resultante refleja exactamente los valores del comando,
-                garantizando que el repositorio almacena el slug canónico esperado.
+        Given:  A repository that returns the received argument without modification.
+        When:   The use case is executed with ``name="Beta Corp"`` and ``slug="beta-corp"``.
+        Then:   The resulting entity reflects exactly the command values,
+                guaranteeing that the repository stores the expected canonical slug.
         """
         repo = AsyncMock()
         repo.create.side_effect = lambda o: o
@@ -96,12 +95,12 @@ class TestCreateOrganizationUseCase:
 
     def test_default_plan_is_free(self):
         """
-        El plan por defecto de ``CreateOrganizationCommand`` es ``"free"``.
+        The default plan of ``CreateOrganizationCommand`` is ``"free"``.
 
-        Given:  Un comando creado sin especificar el campo ``plan``.
-        When:   Se accede al atributo ``plan`` del comando.
-        Then:   El valor es ``"free"``, conforme al modelo de negocio que asigna
-                el nivel gratuito a toda organización recién creada.
+        Given:  A command created without specifying the ``plan`` field.
+        When:   The ``plan`` attribute of the command is accessed.
+        Then:   The value is ``"free"``, in accordance with the business model
+                that assigns the free tier to every newly created organization.
         """
         cmd = CreateOrganizationCommand(name="X", slug="x")
         assert cmd.plan == "free"
@@ -109,21 +108,21 @@ class TestCreateOrganizationUseCase:
 
 class TestListOrganizationsUseCase:
     """
-    Pruebas unitarias para ``ListOrganizationsUseCase``.
+    Unit tests for ``ListOrganizationsUseCase``.
 
-    Verifica que el listado siempre consulte únicamente organizaciones activas
-    y que el caso de uso propague el resultado del repositorio sin transformaciones.
+    Verifies that the listing always queries only active organizations and that
+    the use case propagates the repository result without transformations.
     """
 
     async def test_returns_active_organizations(self):
         """
-        El caso de uso devuelve exactamente la lista que retorna el repositorio.
+        The use case returns exactly the list returned by the repository.
 
-        Given:  Un repositorio que retorna dos organizaciones activas.
-        When:   Se ejecuta ``ListOrganizationsUseCase``.
-        Then:   La lista resultante coincide con la del repositorio y el método
-                ``list_all`` se invoca con ``active_only=True``, garantizando que
-                los tenants desactivados no se exponen a los consumidores de la API.
+        Given:  A repository that returns two active organizations.
+        When:   ``ListOrganizationsUseCase`` is executed.
+        Then:   The resulting list matches the repository's list and ``list_all``
+                is invoked with ``active_only=True``, guaranteeing that deactivated
+                tenants are not exposed to API consumers.
         """
         orgs = [_make_org("A", "a"), _make_org("B", "b")]
         repo = AsyncMock()
@@ -136,12 +135,12 @@ class TestListOrganizationsUseCase:
 
     async def test_returns_empty_list_when_no_orgs(self):
         """
-        Cuando no hay organizaciones activas, el caso de uso retorna lista vacía sin error.
+        When no active organizations exist, the use case returns an empty list without error.
 
-        Given:  Un repositorio que devuelve una lista vacía.
-        When:   Se ejecuta ``ListOrganizationsUseCase``.
-        Then:   El resultado es una lista vacía (``[]``), evitando que la ausencia
-                de datos se trate como condición de error en la capa de aplicación.
+        Given:  A repository that returns an empty list.
+        When:   ``ListOrganizationsUseCase`` is executed.
+        Then:   The result is an empty list (``[]``), preventing the absence of
+                data from being treated as an error condition in the application layer.
         """
         repo = AsyncMock()
         repo.list_all.return_value = []

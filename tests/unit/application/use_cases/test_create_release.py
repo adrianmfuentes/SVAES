@@ -1,26 +1,26 @@
 """
-Test suite para ``CreateReleaseUseCase``.
+Test suite for ``CreateReleaseUseCase``.
 
-Una release representa un artefacto de software candidato a ser verificado.
-``CreateReleaseUseCase`` crea la entidad con el estado inicial correcto
-(``BORRADOR``) y la persiste asociada a un proyecto y un perfil de verificación.
+A release represents a software artefact that is a candidate for verification.
+``CreateReleaseUseCase`` creates the entity with the correct initial state
+(``BORRADOR``) and persists it linked to a project and a verification profile.
 
-El ciclo de vida de una release sigue una máquina de estados estricta:
+The release lifecycle follows a strict state machine:
     BORRADOR → PENDIENTE → EN_VERIFICACION → COMPLETADA
 
-Este caso de uso ocupa la primera transición: instanciar la release en ``BORRADOR``
-antes de que el operador la envíe a verificación.
+This use case handles the first transition: instantiating the release in
+``BORRADOR`` before the operator submits it for verification.
 
-Estrategia de prueba:
-    Pruebas unitarias. Tanto el repositorio de releases (``IReleaseRepository``)
-    como el repositorio de organizaciones (``IOrganizationRepository``) se sustituyen
-    por ``AsyncMock`` para aislar la lógica de construcción del dominio.
+Testing strategy:
+    Unit tests. Both the release repository (``IReleaseRepository``) and the
+    organisation repository (``IOrganizationRepository``) are replaced by
+    ``AsyncMock`` to isolate domain construction logic from infrastructure.
 
-Invariantes clave verificadas:
-    - Toda release se crea en estado ``BORRADOR``, sin excepción.
-    - Los identificadores de proyecto, perfil, versión y creador se preservan
-      tal como los provee el comando.
-    - La persistencia se delega exactamente una vez al repositorio de releases.
+Key invariants verified:
+    - Every release is created in state ``BORRADOR``, without exception.
+    - Project, profile, version, and creator identifiers are preserved exactly
+      as provided by the command.
+    - Persistence is delegated exactly once to the release repository.
 """
 
 import uuid
@@ -33,18 +33,18 @@ from domain.entities.enums import ReleaseStatus
 
 class TestCreateReleaseUseCase:
     """
-    Pruebas unitarias para ``CreateReleaseUseCase``.
+    Unit tests for ``CreateReleaseUseCase``.
 
-    Verifica que toda release se instancie en estado ``BORRADOR`` con los campos
-    correctos y que la persistencia se delegue al repositorio correspondiente.
+    Verifies that every release is instantiated in state ``BORRADOR`` with the
+    correct fields and that persistence is delegated to the repository.
     """
 
     def _make_command(self, **kwargs) -> CreateReleaseCommand:
         """
-        Construye un ``CreateReleaseCommand`` con valores de prueba por defecto.
+        Builds a ``CreateReleaseCommand`` with default test values.
 
-        Acepta overrides por clave para facilitar la variación de escenarios
-        sin repetir la inicialización completa en cada test.
+        Accepts keyword overrides to simplify scenario variation without
+        repeating the full initialisation in each test.
         """
         defaults = {
             "project_id": uuid.uuid4(),
@@ -57,12 +57,12 @@ class TestCreateReleaseUseCase:
 
     async def test_release_created_with_borrador_status(self):
         """
-        Toda release recién creada adopta el estado inicial ``BORRADOR``.
+        Every newly created release adopts the initial state ``BORRADOR``.
 
-        Given:  Un repositorio de releases configurado para retornar el objeto recibido.
-        When:   Se ejecuta ``CreateReleaseUseCase`` con un comando estándar.
-        Then:   El estado de la release resultante es ``ReleaseStatus.BORRADOR``,
-                conforme al primer eslabón de la máquina de estados del dominio.
+        Given:  A release repository configured to return the received object.
+        When:   ``CreateReleaseUseCase`` is executed with a standard command.
+        Then:   The resulting release status is ``ReleaseStatus.BORRADOR``,
+                matching the first link in the domain state machine.
         """
         release_repo = AsyncMock()
         org_repo = AsyncMock()
@@ -76,12 +76,12 @@ class TestCreateReleaseUseCase:
 
     async def test_release_has_correct_project_and_profile(self):
         """
-        Los identificadores de proyecto y perfil se transfieren sin modificación.
+        Project and profile identifiers are transferred without modification.
 
-        Given:  Un comando con ``project_id`` y ``profile_id`` específicos.
-        When:   Se ejecuta el caso de uso.
-        Then:   La release resultante referencia exactamente los IDs proporcionados,
-                garantizando la trazabilidad correcta dentro del grafo de entidades.
+        Given:  A command with specific ``project_id`` and ``profile_id``.
+        When:   The use case is executed.
+        Then:   The resulting release references exactly the provided IDs,
+                ensuring correct traceability within the entity graph.
         """
         project_id = uuid.uuid4()
         profile_id = uuid.uuid4()
@@ -98,12 +98,12 @@ class TestCreateReleaseUseCase:
 
     async def test_release_has_correct_version_and_creator(self):
         """
-        La versión semántica y el identificador del creador se preservan en la entidad.
+        Semantic version and creator identifier are preserved in the entity.
 
-        Given:  Un comando con ``version="2.5.1"`` y un ``created_by`` específico.
-        When:   Se ejecuta el caso de uso.
-        Then:   La release resultante expone los valores exactos del comando,
-                asegurando la auditoría correcta de quién creó qué versión.
+        Given:  A command with ``version="2.5.1"`` and a specific ``created_by``.
+        When:   The use case is executed.
+        Then:   The resulting release exposes the exact values from the command,
+                ensuring correct audit of who created which version.
         """
         creator_id = uuid.uuid4()
         release_repo = AsyncMock()
@@ -119,13 +119,13 @@ class TestCreateReleaseUseCase:
 
     async def test_delegates_persistence_to_release_repo(self):
         """
-        La entidad se persiste a través de ``IReleaseRepository.create`` exactamente una vez.
+        The entity is persisted via ``IReleaseRepository.create`` exactly once.
 
-        Given:  Un repositorio de releases con ``create`` instrumentado.
-        When:   Se ejecuta el caso de uso con un comando válido.
-        Then:   ``release_repo.create`` se invoca una sola vez, evitando inserciones
-                duplicadas y confirmando que la responsabilidad de persistencia
-                no recae en el caso de uso sino en el repositorio.
+        Given:  A release repository with an instrumented ``create`` method.
+        When:   The use case is executed with a valid command.
+        Then:   ``release_repo.create`` is called once, preventing duplicate
+                inserts and confirming that persistence responsibility belongs
+                to the repository, not the use case.
         """
         release_repo = AsyncMock()
         org_repo = AsyncMock()

@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="SVAES API",
-    description="Sistema de Verificación Automática de Entregas de Software",
+    description="Automatic Software Delivery Verification System",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -71,4 +71,4 @@ app.include_router(connectors.router, prefix=API_V1_PREFIX)
 
 @app.get("/health", tags=["System"])
 def health():
-    return {"status": "ok", "message": "El backend está funcionando correctamente"}
+    return {"status": "ok", "message": "The backend is running correctly"}
