@@ -2,10 +2,12 @@ from passlib.context import CryptContext
 from domain.ports.i_password_hasher import IPasswordHasher
 
 class BcryptPasswordHasher(IPasswordHasher):
-    """bcrypt implementation of IPasswordHasher via passlib.
-
-    Cost factor defaults to 12. Automatically handles deprecated schemes
-    via passlib's deprecated='auto' policy.
+    """Implementation of IPasswordHasher using bcrypt hashing algorithm. 
+    This class provides methods to hash plaintext passwords and verify them against hashed versions.
+    
+    Methods:
+        hash(plain: str) -> str: Hashes the given plaintext password and returns the hashed version.
+        verify(plain: str, hashed: str) -> bool: Verifies that the given plaintext password matches the provided hashed password, returning True if they match and False otherwise.
     """
 
     def __init__(self) -> None:

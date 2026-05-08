@@ -260,3 +260,90 @@ class TestSettings:
         settings = Settings(jwt_secret_key="my-custom-secret")  # NOSONAR
 
         assert settings.jwt_secret_key == "my-custom-secret"
+
+
+# ---------------------------------------------------------------------------
+# BcryptPasswordHasher
+# ---------------------------------------------------------------------------
+
+class TestBcryptPasswordHasher:
+    def test_init_creates_bcrypt_context(self):
+        from unittest.mock import patch, MagicMock
+        from infrastructure.security.password_hasher import BcryptPasswordHasher
+        with patch("infrastructure.security.password_hasher.CryptContext") as mock_cls:
+            mock_ctx = MagicMock()
+            mock_cls.return_value = mock_ctx
+
+            hasher = BcryptPasswordHasher()
+
+            mock_cls.assert_called_once_with(schemes=["bcrypt"], deprecated="auto")
+            assert hasher._ctx is mock_ctx
+
+    def test_hash_delegates_to_ctx(self):
+        from unittest.mock import patch, MagicMock
+        from infrastructure.security.password_hasher import BcryptPasswordHasher
+        with patch("infrastructure.security.password_hasher.CryptContext") as mock_cls:
+            mock_ctx = MagicMock()
+            mock_ctx.hash.return_value = "$2b$12$hashed"  # NOSONAR
+            mock_cls.return_value = mock_ctx
+
+            result = BcryptPasswordHasher().hash("secret")  # NOSONAR
+
+            assert result == "$2b$12$hashed"  # NOSONAR
+            mock_ctx.hash.assert_called_once_with("secret")  # NOSONAR
+
+    def test_verify_delegates_to_ctx(self):
+        from unittest.mock import patch, MagicMock
+        from infrastructure.security.password_hasher import BcryptPasswordHasher
+        with patch("infrastructure.security.password_hasher.CryptContext") as mock_cls:
+            mock_ctx = MagicMock()
+            mock_ctx.verify.return_value = True
+            mock_cls.return_value = mock_ctx
+
+            result = BcryptPasswordHasher().verify("plain", "$2b$12$hashed")  # NOSONAR
+
+            assert result is True
+            mock_ctx.verify.assert_called_once_with("plain", "$2b$12$hashed")  # NOSONAR
+
+
+# ---------------------------------------------------------------------------
+# DatabaseSession
+# ---------------------------------------------------------------------------
+
+class TestDatabaseSession:
+    def test_get_engine_returns_session_factory(self):
+        from unittest.mock import patch, MagicMock
+        import infrastructure.database.session as session_module
+
+        mock_engine = MagicMock()
+        mock_factory = MagicMock()
+
+        with patch("infrastructure.database.session.create_async_engine", return_value=mock_engine), \
+             patch("infrastructure.database.session.async_sessionmaker", return_value=mock_factory):
+            # Reset singleton state so the mocked path is exercised
+            session_module._engine = None
+            session_module._AsyncSessionLocal = None
+
+            from infrastructure.database.session import _get_engine
+            factory = _get_engine()
+
+        assert factory is mock_factory
+
+    def test_get_engine_returns_same_instance_on_repeated_calls(self):
+        from unittest.mock import patch, MagicMock
+        import infrastructure.database.session as session_module
+
+        mock_engine = MagicMock()
+        mock_factory = MagicMock()
+
+        with patch("infrastructure.database.session.create_async_engine", return_value=mock_engine), \
+             patch("infrastructure.database.session.async_sessionmaker", return_value=mock_factory):
+            session_module._engine = None
+            session_module._AsyncSessionLocal = None
+
+            from infrastructure.database.session import _get_engine
+            factory1 = _get_engine()
+            factory2 = _get_engine()
+
+        assert factory1 is factory2
+        assert factory1 is mock_factory

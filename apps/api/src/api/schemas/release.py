@@ -4,6 +4,7 @@ from datetime import datetime
 from domain.entities.enums import ReleaseStatus
 
 class ReleaseResponse(BaseModel):
+    """API response shape for a release entity."""
     id: uuid.UUID
     project_id: uuid.UUID
     profile_id: uuid.UUID

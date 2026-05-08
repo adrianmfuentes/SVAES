@@ -12,14 +12,23 @@ _log = get_logger(__name__)
 
 @dataclass
 class LaunchVerificationCommand:
+    """Command object for launching the verification process of a release."""
     release_id: uuid.UUID
     user_id: uuid.UUID
 
 class LaunchVerificationUseCase:
-    """Transitions a PENDIENTE release into EN_VERIFICACION and enqueues the async verification task.
+    """Use case for launching the verification process of a release.
 
-    Enforces the release state machine — raises ReleaseInvalidStateError if the release
-    is not in PENDIENTE status, preventing duplicate or out-of-order verification runs.
+    Attributes:
+        release_repo (IReleaseRepository): Repository for managing release entities.
+        task_queue (ITaskQueue): Interface for enqueuing background tasks.
+
+    Raises:
+        EntityNotFoundError: If the release with the given ID does not exist.
+        ReleaseInvalidStateError: If the release is not in a state that allows launching verification.
+
+    Returns:
+        Tuple[Release, str]: A tuple containing the updated release entity and the ID of the enqueued verification task.
     """
 
     def __init__(
@@ -33,7 +42,7 @@ class LaunchVerificationUseCase:
     async def execute(self, command: LaunchVerificationCommand) -> Tuple[Release, str]:
         release = await self.release_repo.get_by_id(command.release_id)
         if not release:
-            raise EntityNotFoundError(f"No se encontró la release {command.release_id}")
+            raise EntityNotFoundError(f"Release not found with ID: {command.release_id}")
 
         if release.status != ReleaseStatus.PENDIENTE:
             raise ReleaseInvalidStateError(

@@ -4,36 +4,33 @@ import uuid
 from domain.entities.user import User
 
 class IUserRepository(ABC):
-    """
-    Puerto de salida (Outbound Port): IUserRepository
-    Define el contrato para la persistencia de la entidad User.
-    Esencial para los casos de uso de Autenticación y Gestión de Usuarios.
-    """
+    """Outbound port for managing User entities in the data store. This interface defines the contract for persisting, retrieving, updating, and listing
+    user data, abstracting away the underlying database or storage mechanism. Implementations of this interface can use SQL databases, NoSQL databases,
+    or any other form of storage, while the application layer interacts with it through these defined methods
 
+    Methods:
+        create(user: User) -> User: Persists a new user and returns the created entity
+        get_by_id(user_id: uuid.UUID) -> Optional[User]: Retrieves a user by their unique identifier, or returns None if not found.
+        get_by_email(email: str) -> Optional[User]: Retrieves a user by their email address, or returns None if not found.
+        list_all(active_only: bool = True) -> List[User]: Returns a list of all registered users, with an option to filter only active ones.
+        update(user: User) -> User: Updates the state, password, or other data of an existing user and returns the updated entity.
+    """
     @abstractmethod
     async def create(self, user: User) -> User:
-        """Persiste un nuevo usuario en la base de datos."""
         pass
 
     @abstractmethod
     async def get_by_id(self, user_id: uuid.UUID) -> Optional[User]:
-        """Recupera un usuario por su identificador único."""
         pass
 
     @abstractmethod
     async def get_by_email(self, email: str) -> Optional[User]:
-        """
-        Recupera un usuario por su correo electrónico.
-        ¡Vital para el caso de uso de Login (autenticación)!
-        """
         pass
 
     @abstractmethod
     async def list_all(self, active_only: bool = True) -> List[User]:
-        """Devuelve un listado de todos los usuarios registrados."""
         pass
 
     @abstractmethod
     async def update(self, user: User) -> User:
-        """Actualiza el estado, contraseña o datos de un usuario existente."""
         pass

@@ -5,9 +5,12 @@ from jwt.exceptions import InvalidTokenError
 from domain.ports.i_token_service import ITokenService
 
 class JwtHandler(ITokenService):
-    """HS256 JWT implementation of ITokenService.
+    """Implementation of ITokenService using JSON Web Tokens (JWT). 
+    This class provides methods to create and decode JWTs for user authentication and authorization.
 
-    Tokens embed 'sub' (user UUID), 'role', 'iat', and 'exp' claims.
+    Methods:
+        create_access_token(user_id: UUID, role: str) -> str: Creates a JWT access token containing the user's ID and role, with an expiration time.
+        decode_token(token: str) -> dict: Decodes and validates the JWT, returning the payload if valid or raising an Invalid
     """
 
     def __init__(self, secret: str, algorithm: str = "HS256", expire_minutes: int = 60) -> None:
@@ -26,9 +29,4 @@ class JwtHandler(ITokenService):
         return jwt.encode(payload, self._secret, algorithm=self._algorithm)
 
     def decode_token(self, token: str) -> dict:
-        """Decodes and validates the JWT signature and expiry.
-
-        Raises:
-            jwt.InvalidTokenError: if the token is expired, tampered, or malformed.
-        """
         return jwt.decode(token, self._secret, algorithms=[self._algorithm])

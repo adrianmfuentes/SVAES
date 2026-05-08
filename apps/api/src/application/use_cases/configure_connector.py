@@ -2,7 +2,6 @@ import uuid
 import json
 from dataclasses import dataclass
 from typing import Dict, Any
-
 from domain.entities.connector_instance import ConnectorInstance
 from domain.entities.enums import ConnectorStatus
 from domain.ports.i_connector_repository import IConnectorRepository
@@ -13,9 +12,9 @@ from infrastructure.logging.logger import get_logger
 
 _log = get_logger(__name__)
 
-
 @dataclass
 class ConfigureConnectorCommand:
+    """Command object for configuring a connector instance."""
     organization_id: uuid.UUID
     connector_type: str
     name: str
@@ -23,13 +22,20 @@ class ConfigureConnectorCommand:
 
 
 class ConfigureConnectorUseCase:
-    """Registers and validates an external connector for an organization.
+    """Use case for registering and validating an external connector for an organization.
 
-    Resolves the concrete IConnector implementation from the registry, tests the connection,
-    then persists the instance. On connection failure the instance is saved as INACTIVO
-    rather than rejected — this lets admins correct credentials without re-entering all config.
+    Attributes:
+        connector_repo (IConnectorRepository): Repository for storing connector instances.
+        connector_registry (ConnectorRegistry): Registry for obtaining connector clients.
+        credential_encryptor (ICredentialEncryptor): Service for encrypting connector credentials.
+
+    Raises:
+        ConnectorConnectionFailedError: If the connector fails to connect with the provided configuration.
+
+    Logs:
+        - Warning: Failed connection test for the connector with organization and error details.
+        - Info: Successful registration of the connector with organization and status.
     """
-
     def __init__(
         self,
         connector_repo: IConnectorRepository,
@@ -47,7 +53,7 @@ class ConfigureConnectorUseCase:
             is_valid = await connector_client.test_connection(command.config_data)
             status = ConnectorStatus.ACTIVO if is_valid else ConnectorStatus.INACTIVO
             if not is_valid:
-                raise ConnectorConnectionFailedError("Las credenciales son inválidas.")
+                raise ConnectorConnectionFailedError("Invalid credentials.")
         except ConnectorConnectionFailedError:
             raise
         except (ValueError, RuntimeError) as exc:

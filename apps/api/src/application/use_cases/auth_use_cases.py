@@ -6,18 +6,26 @@ from infrastructure.logging.logger import get_logger
 
 _log = get_logger(__name__)
 
-
 @dataclass
 class LoginCommand:
+    """Command object for login use case."""
     email: str
     password_plain: str
 
-
 class LoginUseCase:
-    """Application service for user authentication. Returns a signed JWT on success.
+    """Use case for user login. Validates credentials and returns an access token if successful.
 
-    Intentionally raises ValueError (not EntityNotFoundError) on bad credentials
-    to avoid leaking whether the email exists.
+    Attributes:
+        user_repo (IUserRepository): Repository for accessing user data.
+        password_hasher (IPasswordHasher): Service for hashing and verifying passwords.
+        token_service (ITokenService): Service for creating access tokens.
+
+    Raises:
+        ValueError: If the credentials are invalid.
+    
+    Logs:
+        - Warning: Failed login attempt with email.
+        - Info: Successful authentication of user.
     """
 
     def __init__(
@@ -34,7 +42,7 @@ class LoginUseCase:
         user = await self.user_repo.get_by_email(command.email)
         if not user or not self.password_hasher.verify(command.password_plain, user.hashed_password):
             _log.warning("Failed login attempt for email=%s", command.email)
-            raise ValueError("Credenciales inválidas")
+            raise ValueError("Invalid credentials")
 
         token = self.token_service.create_access_token(user_id=user.id, role=user.role.value)
         _log.info("User %s authenticated successfully", user.id)

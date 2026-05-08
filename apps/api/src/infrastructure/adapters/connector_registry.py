@@ -1,11 +1,12 @@
 from typing import Any
 
 class ConnectorRegistry:
-    """In-memory registry mapping connector type identifiers to IConnector implementations.
+    """Registry for managing connector implementations. This class allows for the registration and retrieval of connectors based on their type, 
+    enabling the application to interact with various external systems through a unified interface.
 
-    Populated at application startup. Acts as a Service Locator for the infrastructure
-    adapter layer, allowing ConfigureConnectorUseCase to remain decoupled from concrete
-    connector classes.
+    Methods:
+        register(connector_type: str, connector: Any) -> None: Registers a connector implementation
+        get_connector(connector_type: str) -> Any: Retrieves the connector implementation for the given type, raising a KeyError if the type is not registered.
     """
 
     def __init__(self) -> None:

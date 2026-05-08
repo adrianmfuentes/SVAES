@@ -6,8 +6,13 @@ from domain.entities.release import Release
 from domain.entities.verification_profile import VerificationProfile
 
 class IVerificationEngine(ABC):
-    """Puerto para invocar al motor de verificación independiente."""
-
+    """Outbound port for executing verification processes. This interface defines the contract for running verifications based on release data, 
+    verification profiles, and associated artifacts. Implementations of this interface can integrate with various verification tools or services, 
+    allowing the application layer to remain decoupled from specific verification technologies.
+    
+    Methods:
+        execute_verification(release: Release, profile: VerificationProfile, artifacts_data: list) -> VerificationResult: Executes the verification process and returns the results.
+    """
     @abstractmethod
     async def execute_verification(
         self, 
@@ -15,7 +20,4 @@ class IVerificationEngine(ABC):
         profile: VerificationProfile, 
         artifacts_data: list
     ) -> VerificationResult:
-        """
-        Envía los datos al motor y retorna el resultado estructurado.
-        """
         pass

@@ -4,8 +4,16 @@ import uuid
 from domain.entities.release import Release
 
 class IReleaseRepository(ABC):
-    """Puerto para la persistencia de Releases."""
+    """Outbound port for managing Release entities in the data store. This interface defines the contract for persisting, retrieving, listing, and updating
+    release data, abstracting away the underlying database or storage mechanism. Implementations of this interface can use SQL databases, NoSQL databases,
+    or any other form of storage, while the application layer interacts with it through these defined methods.
 
+    Methods:
+        create(release: Release) -> Release: Persists a new release and returns the created entity.
+        get_by_id(release_id: uuid.UUID) -> Optional[Release]: Retrieves a release by its unique identifier, or returns None if not found.
+        list_by_project(project_id: uuid.UUID) -> List[Release]: Returns a list of releases associated with a given project.
+        update(release: Release) -> Release: Updates the state or other fields of the release.
+    """
     @abstractmethod
     async def create(self, release: Release) -> Release:
         pass
@@ -20,5 +28,4 @@ class IReleaseRepository(ABC):
 
     @abstractmethod
     async def update(self, release: Release) -> Release:
-        """Actualiza el estado u otros campos de la release."""
         pass

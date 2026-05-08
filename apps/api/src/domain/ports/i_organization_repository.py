@@ -4,43 +4,34 @@ import uuid
 from domain.entities.organization import Organization
 
 class IOrganizationRepository(ABC):
-    """
-    Puerto de salida (Outbound Port): IOrganizationRepository
-    Define el contrato para la persistencia de la entidad Organization.
-    La capa de dominio y aplicación interactúa con esta interfaz sin conocer
-    si los datos van a PostgreSQL, a memoria, o a otro lugar.
-    """
+    """Outbound port for managing Organization entities in the data store. This interface defines the contract for persisting, retrieving, and updating
+    organization data, abstracting away the underlying database or storage mechanism. Implementations of this interface can use SQL databases, 
+    NoSQL databases, or any other form of storage, while the application layer interacts with it through these defined methods.
 
+    Methods:
+        create(organization: Organization) -> Organization: Persists a new organization and returns the created
+        get_by_id(organization_id: uuid.UUID) -> Optional[Organization]: Retrieves an organization by its unique identifier, or returns None if not found.
+        get_by_slug(slug: str) -> Optional[Organization]: Retrieves an organization by its
+        slug (which is UNIQUE according to the schema), or returns None if not found.
+        list_all(active_only: bool = True) -> List[Organization]: Returns a list of organizations, with an option to filter for only active ones.
+        update(organization: Organization) -> Organization: Updates the state of an existing organization and returns the updated entity.
+    """
     @abstractmethod
     async def create(self, organization: Organization) -> Organization:
-        """Persiste una nueva organización en el almacén de datos."""
         pass
 
     @abstractmethod
     async def get_by_id(self, organization_id: uuid.UUID) -> Optional[Organization]:
-        """
-        Recupera una organización por su identificador único.
-        Retorna None si no se encuentra.
-        """
         pass
 
     @abstractmethod
     async def get_by_slug(self, slug: str) -> Optional[Organization]:
-        """
-        Recupera una organización por su slug (que es UNIQUE según el esquema).
-        Retorna None si no se encuentra.
-        """
         pass
 
     @abstractmethod
     async def list_all(self, active_only: bool = True) -> List[Organization]:
-        """
-        Devuelve un listado de organizaciones.
-        Permite filtrar para devolver solo las activas.
-        """
-        pass
+         pass
 
     @abstractmethod
     async def update(self, organization: Organization) -> Organization:
-        """Actualiza el estado de una organización existente."""
         pass

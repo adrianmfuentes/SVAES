@@ -5,11 +5,16 @@ from domain.ports.i_profile_repository import IProfileRepository
 
 @dataclass
 class CreateProfileCommand:
+    """Command object for creating a new verification profile."""
     organization_id: uuid.UUID
     name: str
 
 class ManageProfileUseCase:
-    """Application service for managing verification profiles within an organization."""
+    """Use case for managing verification profiles.
+
+    Attributes:
+        profile_repo (IProfileRepository): Repository for managing verification profile entities. 
+    """
 
     def __init__(self, profile_repo: IProfileRepository):
         self.profile_repo = profile_repo

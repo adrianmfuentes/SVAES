@@ -2,12 +2,14 @@ import uuid
 from domain.ports.i_task_queue import ITaskQueue
 
 class MockTaskQueue(ITaskQueue):
-    """Development stub for ITaskQueue.
+    """Mock implementation of ITaskQueue for testing purposes. This class simulates the behavior of a task queue by generating unique task IDs 
+    and returning a fixed status for any given task. It allows for testing the integration of task queue functionality without relying on an 
+    actual message broker or task processing system.
 
-    Returns random UUIDs as task IDs without real queueing. Replace with a
-    Celery/ARQ/Redis Streams implementation before connecting the verification engine.
+    Methods:
+        enqueue_verification_task(release_id: uuid.UUID) -> str: Simulates enqueuing a verification task for a given release ID and returns a unique task ID.
+        get_task_status(task_id: str) -> str: Simulates retrieving the status of a task by returning a fixed
     """
-
     async def enqueue_verification_task(self, release_id: uuid.UUID) -> str:
         return str(uuid.uuid4())
 

@@ -5,24 +5,33 @@ from pydantic import BaseModel
 from domain.entities.user import User
 from domain.exceptions import EntityNotFoundError, ReleaseInvalidStateError
 from api.schemas.release import VerificationTaskResponse
+from application.use_cases.launch_verification import LaunchVerificationUseCase, LaunchVerificationCommand
+from application.use_cases.create_release import CreateReleaseUseCase, CreateReleaseCommand
+from application.use_cases.get_verification_history import GetVerificationHistoryUseCase
 from api.dependencies import (
     get_launch_verification_use_case,
     get_create_release_use_case,
     get_verification_history_use_case,
     get_current_user,
 )
-from application.use_cases.launch_verification import LaunchVerificationUseCase, LaunchVerificationCommand
-from application.use_cases.create_release import CreateReleaseUseCase, CreateReleaseCommand
-from application.use_cases.get_verification_history import GetVerificationHistoryUseCase
-
-router = APIRouter(prefix="/releases", tags=["Releases"])
 
 class ReleaseCreate(BaseModel):
+    """Pydantic model for creating a release.
+    Attributes:
+        project_id (uuid.UUID): The ID of the project to which the release belongs.
+        profile_id (uuid.UUID): The ID of the profile associated with the release.
+        version (str): The version of the release.
+        description (str): An optional description of the release.
+    """
     project_id: uuid.UUID
     profile_id: uuid.UUID
     version: str
     description: str = ""
 
+router = APIRouter(
+    prefix="/releases",
+    tags=["Releases"]
+)
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_release(
@@ -33,6 +42,15 @@ async def create_release(
     ],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
+    """Endpoint to create a new release.
+    Args:
+        request (ReleaseCreate): The request body containing release details.
+        use_case (CreateReleaseUseCase): The use case for creating a release, injected via
+            FastAPI's dependency injection system.
+        current_user (User): The currently authenticated user, injected via FastAPI's dependency injection system.
+    Returns:
+        The result of the release creation, typically the created release's details or an identifier.
+    """
     command = CreateReleaseCommand(
         project_id=request.project_id,
         profile_id=request.profile_id,
@@ -52,6 +70,15 @@ async def get_results(
     ],
     _current_user: Annotated[User, Depends(get_current_user)],
 ):
+    """Endpoint to get the verification results for a specific release.
+    Args:
+        release_id (uuid.UUID): The ID of the release for which to get verification results.
+        use_case (GetVerificationHistoryUseCase): The use case for getting verification history, injected via
+            FastAPI's dependency injection system.
+        _current_user (User): The currently authenticated user, injected via FastAPI's dependency injection system.
+    Returns:
+        The verification results for the specified release.
+    """
     try:
         return await use_case.execute(release_id)
     except EntityNotFoundError as e:
@@ -72,6 +99,15 @@ async def verify_release(
     ],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
+    """Endpoint to launch asynchronous verification of a release.
+    Args:
+        release_id (uuid.UUID): The ID of the release to verify.
+        use_case (LaunchVerificationUseCase): The use case for launching verification, injected via
+            FastAPI's dependency injection system.
+        current_user (User): The currently authenticated user, injected via FastAPI's dependency injection system.
+    Returns:
+        A response indicating the verification task has been queued.
+    """
     command = LaunchVerificationCommand(release_id=release_id, user_id=current_user.id)
 
     try:

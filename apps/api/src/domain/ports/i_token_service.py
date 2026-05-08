@@ -3,19 +3,18 @@ from uuid import UUID
 
 
 class ITokenService(ABC):
-    """Outbound port for issuing and decoding authentication tokens.
-
+    """Outbound port for managing authentication tokens.
     Keeps the application layer independent of the concrete token format (JWT, opaque, etc.).
+    
+    Methods:
+        create_access_token(user_id: UUID, role: str) -> str: Generates an access token for a given user ID and role.
+        decode_token(token: str) -> dict: Decodes the token and returns its payload as a dictionary.
     """
 
     @abstractmethod
     def create_access_token(self, user_id: UUID, role: str) -> str:
-        """Creates a signed access token embedding the user identity and role."""
+        pass
 
     @abstractmethod
     def decode_token(self, token: str) -> dict:
-        """Decodes and validates a token, returning its payload as a dict.
-
-        Raises:
-            Exception: if the token is invalid, malformed, or expired.
-        """
+        pass

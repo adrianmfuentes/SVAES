@@ -117,7 +117,7 @@ class TestLoginUseCase:
         repo.get_by_email.return_value = None
         use_case = LoginUseCase(repo, password_hasher, token_service)
 
-        with pytest.raises(ValueError, match="inválidas"):
+        with pytest.raises(ValueError, match="Invalid credentials"):
             await use_case.execute(
                 LoginCommand(email="noexiste@x.com", password_plain="pw") # NOSONAR
             )
@@ -135,7 +135,7 @@ class TestLoginUseCase:
         bad_hasher.verify.return_value = False
         use_case = LoginUseCase(user_repo, bad_hasher, token_service)
 
-        with pytest.raises(ValueError, match="inválidas"):
+        with pytest.raises(ValueError, match="Invalid credentials"):
             await use_case.execute(
                 LoginCommand(email="operador@ejemplo.com", password_plain="wrong") # NOSONAR
             )

@@ -7,10 +7,17 @@ from .enums import UserRole
 
 @dataclass
 class User:
-    """Core domain entity for authenticated users.
+    """Entity representing a user within the system. Each user has a unique identifier, email, hashed password, role, and an optional association 
+    with an organization.
 
-    Role determines permissions across all organization resources.
-    organization_id is None for superadmins or users not yet assigned to a tenant.
+    Attributes:
+        id (UUID): Unique identifier for the user.
+        email (str): Email address of the user, used for authentication and communication.
+        hashed_password (str): Hashed password for secure authentication.
+        role (UserRole): Role of the user within the system (e.g., 'ADMIN', 'USER').
+        organization_id (Optional[UUID]): Optional identifier of the organization the user belongs to, if any.
+        created_at (datetime): Timestamp when the user was created.
+        updated_at (datetime): Timestamp when the user was last updated.
     """
     id: UUID
     email: str

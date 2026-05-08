@@ -5,10 +5,18 @@ from domain.exceptions import EntityNotFoundError
 
 
 class GetVerificationHistoryUseCase:
-    """Retrieves verification results for a release.
+    """Use case for retrieving the verification history of a release.
 
-    Note: currently returns a hardcoded stub. Pending full implementation
-    via IVerificationResultRepository once the verification engine is integrated.
+    Attributes:
+        release_repo (IReleaseRepository): Repository for managing release entities.
+
+    Raises:
+        EntityNotFoundError: If the release with the given ID does not exist.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the verification history details of the release.
+
+    Note: Now returns a dictionary with hardcoded values for demonstration purposes. 
     """
 
     def __init__(self, release_repo: IReleaseRepository):
@@ -16,8 +24,10 @@ class GetVerificationHistoryUseCase:
 
     async def execute(self, release_id: uuid.UUID) -> Dict[str, Any]:
         release = await self.release_repo.get_by_id(release_id)
+        
         if not release:
-            raise EntityNotFoundError("Release no encontrada")
+            raise EntityNotFoundError("Release not found with ID: {}".format(release_id))
+        
         return {
             "release_id": str(release_id),
             "verdict": "PASSED",
