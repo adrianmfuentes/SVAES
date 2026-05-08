@@ -287,7 +287,7 @@ class TestReleasesRouter:
         )
 
         assert result.task_id == "task-abc-123"
-        assert result.message == "Verificación encolada correctamente"
+        assert result.message == "Verification successfully queued"
 
     async def test_verify_release_not_found_raises_404(self, mock_user):
         use_case = AsyncMock()
