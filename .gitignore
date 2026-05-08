@@ -34,20 +34,20 @@ coverage/
 .nyc_output/
 *.lcov
 
-# IDE
+# IDE / editor
 .idea/
+.vscode/
+.claude/
 *.iml
 *.iws
 .DS_Store
 Thumbs.db
 
-# VSCode (keep shared settings, ignore personal)
-.vscode/*.code-workspace
-
 # Docker
 .docker/
 
 # Python
+**/__pycache__/
 __pycache__/
 *.py[cod]
 *.pyo
@@ -63,5 +63,3 @@ htmlcov/
 # Misc
 *.swp
 *.swo
-
-.claude/
