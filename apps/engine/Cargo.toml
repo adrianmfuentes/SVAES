@@ -4,3 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# Framework web para la interfaz de comunicación con el backend
+actix-web = "4.4" 
+
+# Procesamiento paralelo de reglas
+rayon = "1.8"
+
+# Serialización y validación de los payloads JSON
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Manejo de errores tipados para el motor
+thiserror = "1.0"
