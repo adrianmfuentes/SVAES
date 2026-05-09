@@ -67,3 +67,8 @@ htmlcov/
 # Agents and skills
 **/.agents/
 **/skills-lock.json
+
+
+# Added by cargo
+
+/target
