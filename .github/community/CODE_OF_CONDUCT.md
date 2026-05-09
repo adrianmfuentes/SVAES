@@ -1,0 +1,2 @@
+version: 2.1
+CODE_OF_CONDUCT: CODE_OF_CONDUCT.md

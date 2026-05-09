@@ -4,107 +4,122 @@
 
 ---
 
-## Versiones soportadas
+## Supported Versions
 
-SVAES se encuentra actualmente en fase de desarrollo activo como Trabajo de Fin de Grado. Solo la rama principal recibe correcciones de seguridad.
+SVAES is an academic project (TFG — Trabajo de Fin de Grado) under active development.
+Only the `main` branch receives security updates. Tagged releases are not yet issued.
 
-| Versión | Soporte de seguridad |
-|---------|----------------------|
-| `main` (desarrollo) | Activo |
-| Releases etiquetadas `v0.x.x` | Solo la última |
-| Versiones anteriores | Sin soporte |
-
----
-
-## Alcance de la política
-
-### En alcance
-
-Las siguientes superficies de ataque son relevantes para este proyecto:
-
-- **API REST** (`apps/api/`): inyección SQL, IDOR, broken authentication, RBAC incorrecto.
-- **Autenticación JWT**: algoritmos débiles, ausencia de validación de firma, tokens sin expiración.
-- **Aislamiento multi-tenant**: acceso cruzado entre organizaciones, filtración de datos entre tenants.
-- **Motor de verificación Rust**: vulnerabilidades en el canal de comunicación API → Motor (deserialización, path traversal en artefactos).
-- **Gestión de secretos**: credenciales expuestas en logs, variables de entorno o respuestas HTTP.
-- **Dependencias de terceros**: vulnerabilidades CVE conocidas en las dependencias declaradas en `pyproject.toml`.
-
-### Fuera de alcance
-
-- Ataques de denegación de servicio (DoS/DDoS).
-- Ingeniería social sobre los mantenedores.
-- Vulnerabilidades en la infraestructura de hosting (fuera del control del proyecto).
-- Reportes generados automáticamente por herramientas de escaneo sin evidencia de explotabilidad real.
+| Version | Security Support |
+|---------|-----------------|
+| `main` (development) | Active |
+| Tagged releases (`v0.x.x`) | Latest only |
+| Older versions | Unsupported |
 
 ---
 
-## Cómo reportar una vulnerabilidad
+## Supported Scope
 
-Este proyecto es de carácter académico; no existe un programa de recompensas (bug bounty). Se solicita **divulgación responsable** siguiendo estos pasos:
+### In Scope
 
-### Opción 1 — GitHub Private Vulnerability Reporting (preferida)
+The following attack surfaces are relevant to this project:
 
-1. Ve a la pestaña **Security** del repositorio en GitHub.
-2. Haz clic en **"Report a vulnerability"**.
-3. Completa el formulario con la información indicada a continuación.
+- **REST API** (`apps/api/`): SQL injection, IDOR, broken authentication, improper RBAC.
+- **JWT Authentication**: weak algorithms, missing signature validation, tokens without expiration.
+- **Multi-tenant Isolation**: cross-tenant data access, data leakage between organizations.
+- **Rust Verification Engine**: vulnerabilities in API → Engine communication channel,
+  deserialization attacks, path traversal in artifact handling.
+- **Secret Management**: credentials exposed in logs, environment variables, or HTTP responses.
+- **Third-party Dependencies**: known CVEs in `pyproject.toml` declared dependencies.
 
-### Opción 2 — Correo electrónico
+### Out of Scope
 
-Envía un mensaje a **amf13azul@gmail.com** con el asunto:
+- Denial-of-service (DoS/DDoS) attacks.
+- Social engineering against maintainers.
+- Vulnerabilities in hosting infrastructure (outside the project's control).
+- Automated scanner reports without evidence of real exploitability.
+
+---
+
+## How to Report a Vulnerability
+
+This is an academic project with no bug bounty program. We request **responsible disclosure**
+following the steps below.
+
+### Option 1 — GitHub Private Vulnerability Reporting (preferred)
+
+1. Go to the **Security** tab of the GitHub repository.
+2. Click **"Report a vulnerability"**.
+3. Fill in the form with the information described below.
+
+### Option 2 — Email
+
+Send a message to **amf13azul@gmail.com** with subject:
 
 ```
-[SVAES][SECURITY] <descripción breve>
+[SVAES][SECURITY] <brief description>
 ```
 
-### Información requerida en el reporte
+### Required Information
 
-Para agilizar el análisis, incluye:
+To expedite analysis, include:
 
-| Campo | Descripción |
+| Field | Description |
 |-------|-------------|
-| **Componente afectado** | `apps/api`, motor Rust, infraestructura, etc. |
-| **Tipo de vulnerabilidad** | OWASP Top 10, CWE, o descripción libre |
-| **Severidad estimada** | Crítica / Alta / Media / Baja |
-| **Pasos para reproducir** | Descripción detallada o PoC mínimo |
-| **Impacto potencial** | Qué datos o funcionalidades quedan expuestos |
-| **Versión o commit afectado** | Hash de commit o rama |
+| **Affected component** | `apps/api`, Rust engine, infrastructure, etc. |
+| **Vulnerability type** | OWASP Top 10, CWE, or free-text description |
+| **Estimated severity** | Critical / High / Medium / Low |
+| **Steps to reproduce** | Detailed description or minimal PoC |
+| **Potential impact** | What data or functionality is exposed |
+| **Affected version or commit** | Commit hash or branch |
 
 ---
 
-## Tiempos de respuesta
+## Response Timeline
 
-| Acción | Plazo objetivo |
-|--------|----------------|
-| Acuse de recibo del reporte | 72 horas |
-| Confirmación o descarte de la vulnerabilidad | 7 días |
-| Publicación de la corrección (si aplica) | 30 días |
-| Divulgación pública coordinada | Acordada con el reportador |
+| Action | Target SLA |
+|--------|------------|
+| Acknowledgement of report | 72 hours |
+| Confirmation or dismissal of vulnerability | 7 days |
+| Fix deployment (if applicable) | 30 days |
+| Coordinated public disclosure | Agreed with reporter |
 
-Dado que SVAES es un proyecto académico mantenido individualmente, los plazos son orientativos y pueden variar en periodos de evaluación.
-
----
-
-## Arquitectura de seguridad (referencia)
-
-Las siguientes medidas de seguridad están implementadas o planificadas en el sistema:
-
-| Mecanismo | Estado | Ubicación |
-|-----------|--------|-----------|
-| Autenticación JWT (HS256/RS256) | Planificado | `apps/api/src/api/` |
-| Control de acceso RBAC | Planificado | `apps/api/src/api/middleware/` |
-| Aislamiento multi-tenant por organización | Implementado (dominio) | `apps/api/src/domain/` |
-| Row-Level Security en PostgreSQL | Planificado | Migraciones Alembic |
-| Validación de entrada con Pydantic | Planificado | `apps/api/src/api/` |
-| Análisis estático de seguridad (CodeQL) | Activo | `.github/workflows/codeql.yml` |
-| Actualización automática de dependencias | Activo | `.github/dependabot.yml` |
-| Secretos gestionados por variables de entorno | Activo | `.env` (no versionado) |
+SVAES is maintained individually as an academic project. Timelines are targets and may
+shift during examination periods.
 
 ---
 
-## Divulgación pública
+## Implemented Security Controls
 
-Una vez corregida la vulnerabilidad, se realizará una divulgación pública coordinada con el reportador. Se dará crédito explícito en el historial de cambios salvo que el reportador prefiera el anonimato.
+| Mechanism | Status | Location |
+|-----------|--------|----------|
+| JWT Authentication (HS256) | Implemented | `apps/api/src/infrastructure/security/jwt_handler.py` |
+| RBAC on API endpoints | Implemented | `apps/api/src/api/dependencies.py` |
+| Multi-tenant isolation (domain layer) | Implemented | `apps/api/src/domain/` |
+| AES-256-GCM credential encryption | Implemented | `apps/api/src/infrastructure/security/credential_encryptor.py` |
+| Input validation with Pydantic | Implemented | `apps/api/src/api/schemas/` |
+| Static analysis (CodeQL) | Active | `.github/workflows/codeql.yml` |
+| Dependency updates (Dependabot) | Active | `.github/dependabot.yml` |
+| Secrets via environment variables | Active | `.env` (not versioned) |
+| Row-Level Security in PostgreSQL | Planned | Migraciones Alembic |
+| Rate limiting (Redis sliding window) | Planned | Pending worker integration |
+| Rust engine sandboxing | Planned | Pending engine implementation |
 
 ---
 
-*Política en vigor desde mayo de 2026. Mantenida por [@adrianmfuentes](https://github.com/adrianmfuentes).*
+## Security Announcements
+
+No security advisories have been published yet. Once a tagged release is issued,
+a `SECURITY.md` table will be maintained in the project root and referenced in
+GitHub Security Advisories.
+
+---
+
+## Coordinated Disclosure
+
+Once a vulnerability is fixed, coordinated public disclosure will be performed with
+the reporter. Credit will be given in the changelog unless the reporter prefers
+anonymity.
+
+---
+
+*Policy in effect as of May 2026. Maintained by [@adrianmfuentes](https://github.com/adrianmfuentes).*

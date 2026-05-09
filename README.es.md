@@ -1,6 +1,6 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adrianmfuentes_SVAES&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adrianmfuentes_SVAES)
 
-**[English](README.en.md)** · **[Français](README.fr.md)**
+**[English](README.en.md)** · **[Español](README.es.md)** · **[Français](README.fr.md)**
 
 # SVAES
 ## Sistema de Verificación Automática de Entregas de Software

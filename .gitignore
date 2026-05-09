@@ -63,3 +63,7 @@ htmlcov/
 # Misc
 *.swp
 *.swo
+
+# Agents and skills
+**/.agents/
+**/skills-lock.json
