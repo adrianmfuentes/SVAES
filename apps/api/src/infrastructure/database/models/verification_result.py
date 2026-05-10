@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -9,6 +9,8 @@ from infrastructure.database.base import Base
 if TYPE_CHECKING:
     from infrastructure.database.models.release import ReleaseModel
 
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 class VerificationResultModel(Base):
     __tablename__ = "verification_result"
@@ -25,7 +27,7 @@ class VerificationResultModel(Base):
     )
     rule_results: Mapped[dict] = mapped_column(JSONB, nullable=True)
     profile_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=True)
-    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     duration_ms: Mapped[int] = mapped_column(Integer, nullable=True)
 
     release: Mapped["ReleaseModel"] = relationship(back_populates="verification_results")

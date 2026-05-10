@@ -1,3 +1,4 @@
+from functools import lru_cache
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -71,6 +72,7 @@ def get_jwt_handler() -> JwtHandler:
 def get_credential_encryptor() -> ICredentialEncryptor:
     return FernetCredentialEncryptor(key=settings.encryption_key)
 
+@lru_cache(maxsize=1)
 def get_connector_registry() -> ConnectorRegistry:
     return ConnectorRegistry()
 

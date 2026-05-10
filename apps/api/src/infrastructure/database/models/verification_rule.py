@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -9,6 +9,8 @@ from infrastructure.database.base import Base
 if TYPE_CHECKING:
     from infrastructure.database.models.verification_profile import VerificationProfileModel
 
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 class VerificationRuleModel(Base):
     __tablename__ = "verification_rule"
@@ -26,6 +28,6 @@ class VerificationRuleModel(Base):
     )
     display_order: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     profile: Mapped["VerificationProfileModel"] = relationship(back_populates="rules")

@@ -3,8 +3,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
+from api.rate_limit import limiter
 from api.routers import auth, organizations, projects, profiles, releases, connectors
+from infrastructure.config import settings
 from infrastructure.logging.logger import _configure_root_logger, get_logger
 
 API_V1_PREFIX = "/api/v1"
@@ -15,7 +19,7 @@ _log = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _configure_root_logger()
-    _log.info("SVAES API starting up")
+    _log.info("SVAES API starting up (env=%s)", settings.environment)
     yield
     _log.info("SVAES API shutting down")
 
@@ -25,22 +29,22 @@ app = FastAPI(
     description="Automatic Software Delivery Verification System",
     version="1.0.0",
     lifespan=lifespan,
+    # Hide docs in production
+    docs_url=None if settings.is_production else "/docs",
+    redoc_url=None if settings.is_production else "/redoc",
 )
 
-# ---------------------------------------------------------------------------
-# CORS
-# ---------------------------------------------------------------------------
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production via ALLOWED_ORIGINS env var
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ---------------------------------------------------------------------------
-# Request logging middleware
-# ---------------------------------------------------------------------------
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -56,10 +60,6 @@ async def log_requests(request: Request, call_next):
     )
     return response
 
-
-# ---------------------------------------------------------------------------
-# Routers
-# ---------------------------------------------------------------------------
 
 app.include_router(auth.router, prefix=API_V1_PREFIX)
 app.include_router(organizations.router, prefix=API_V1_PREFIX)

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, LargeBinary, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -8,6 +8,9 @@ from infrastructure.database.base import Base
 
 if TYPE_CHECKING:
     from infrastructure.database.models.organization import OrganizationModel
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 class ConnectorInstanceModel(Base):
     __tablename__ = "connector_instance"
@@ -24,6 +27,6 @@ class ConnectorInstanceModel(Base):
         nullable=False,
     )
     last_tested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     organization: Mapped["OrganizationModel"] = relationship(back_populates="connectors")

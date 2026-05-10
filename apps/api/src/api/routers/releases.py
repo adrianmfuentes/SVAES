@@ -1,10 +1,9 @@
 import uuid
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 from domain.entities.user import User
 from domain.exceptions import EntityNotFoundError, ReleaseInvalidStateError
-from api.schemas.release import VerificationTaskResponse
+from api.schemas.release import ReleaseResponse, VerificationTaskResponse
 from application.use_cases.launch_verification import LaunchVerificationUseCase, LaunchVerificationCommand
 from application.use_cases.create_release import CreateReleaseUseCase, CreateReleaseCommand
 from application.use_cases.get_verification_history import GetVerificationHistoryUseCase
@@ -33,7 +32,7 @@ router = APIRouter(
     tags=["Releases"]
 )
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=ReleaseResponse)
 async def create_release(
     request: ReleaseCreate,
     use_case: Annotated[

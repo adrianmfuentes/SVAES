@@ -9,12 +9,16 @@ import uuid
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException
-from api.routers.auth import login, LoginRequest
-from api.routers.organizations import create_org, list_orgs, OrganizationCreate
-from api.routers.projects import create_project, ProjectCreate
-from api.routers.profiles import create_profile, ProfileCreate
+from api.routers.auth import login
+from api.routers.organizations import create_org, list_orgs
+from api.routers.projects import create_project
+from api.routers.profiles import create_profile
 from api.routers.releases import create_release, get_results, verify_release, ReleaseCreate
 from api.routers.connectors import create_connector
+from api.schemas.auth import LoginRequest
+from api.schemas.organization import OrganizationCreate
+from api.schemas.project import ProjectCreate
+from api.schemas.profile import ProfileCreate
 from api.schemas.connector import ConnectorCreateRequest
 from domain.entities.user import User
 from domain.entities.organization import Organization
@@ -33,10 +37,16 @@ def mock_user():
     return User(
         id=uuid.uuid4(),
         email="user@test.com",
-        hashed_password="hashed", # NOSONAR
+        hashed_password="hashed",  # NOSONAR
         role=UserRole.OPERATOR,
         organization_id=uuid.uuid4(),
     )
+
+
+@pytest.fixture
+def fake_request():
+    """Minimal mock of FastAPI Request, required by slowapi-decorated endpoints."""
+    return MagicMock()
 
 
 def _make_release():
@@ -53,41 +63,43 @@ def _make_release():
 # ---------------------------------------------------------------------------
 
 class TestAuthRouter:
-    async def test_login_success_returns_token(self):
+    async def test_login_success_returns_token(self, fake_request):
         use_case = AsyncMock()
         use_case.execute.return_value = "jwt_token_abc"
 
         response = await login(
-            request=LoginRequest(email="user@test.com", password="pass"),  # NOSONAR
+            request=fake_request,
+            body=LoginRequest(email="user@test.com", password="pass"),  # NOSONAR
             use_case=use_case,
         )
 
         assert response.access_token == "jwt_token_abc"
         assert response.token_type == "bearer"
 
-    async def test_login_exception_raises_401(self):
+    async def test_login_value_error_raises_401(self, fake_request):
         use_case = AsyncMock()
         use_case.execute.side_effect = ValueError("credenciales inválidas")
 
         with pytest.raises(HTTPException) as exc_info:
             await login(
-                request=LoginRequest(email="x@x.com", password="wrong"),  # NOSONAR
+                request=fake_request,
+                body=LoginRequest(email="x@x.com", password="wrong"),  # NOSONAR
                 use_case=use_case,
             )
 
         assert exc_info.value.status_code == 401
 
-    async def test_login_generic_exception_raises_401(self):
+    async def test_login_unexpected_exception_propagates(self, fake_request):
+        """RuntimeError is NOT caught — it should propagate (becomes HTTP 500 via FastAPI)."""
         use_case = AsyncMock()
         use_case.execute.side_effect = RuntimeError("unexpected")
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(RuntimeError):
             await login(
-                request=LoginRequest(email="x@x.com", password="pass"),  # NOSONAR
+                request=fake_request,
+                body=LoginRequest(email="x@x.com", password="pass"),  # NOSONAR
                 use_case=use_case,
             )
-
-        assert exc_info.value.status_code == 401
 
 
 # ---------------------------------------------------------------------------
@@ -128,7 +140,7 @@ class TestOrganizationsRouter:
         use_case = AsyncMock()
         use_case.execute.return_value = orgs
 
-        result = await list_orgs(use_case=use_case, _current_user=mock_user)
+        result = await list_orgs(use_case=use_case, _current_user=mock_user, skip=0, limit=50)
 
         assert result is orgs
 
@@ -136,7 +148,7 @@ class TestOrganizationsRouter:
         use_case = AsyncMock()
         use_case.execute.return_value = []
 
-        result = await list_orgs(use_case=use_case, _current_user=mock_user)
+        result = await list_orgs(use_case=use_case, _current_user=mock_user, skip=0, limit=50)
 
         assert result == []
 

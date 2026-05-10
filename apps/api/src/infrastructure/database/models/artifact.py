@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import DateTime, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -9,6 +9,8 @@ from infrastructure.database.base import Base
 if TYPE_CHECKING:
     from infrastructure.database.models.release import ReleaseModel
 
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 class ArtifactModel(Base):
     __tablename__ = "artifact"
     __table_args__ = (
@@ -22,6 +24,6 @@ class ArtifactModel(Base):
     artifact_type: Mapped[str] = mapped_column(String, nullable=False)  # TAREA, CODIGO, DOCUMENTO
     external_ref: Mapped[str] = mapped_column(String, nullable=False)
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     release: Mapped["ReleaseModel"] = relationship(back_populates="artifacts")

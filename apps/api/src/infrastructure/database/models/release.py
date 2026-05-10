@@ -1,6 +1,5 @@
 import uuid
-from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,6 +12,8 @@ if TYPE_CHECKING:
     from infrastructure.database.models.artifact import ArtifactModel
     from infrastructure.database.models.verification_result import VerificationResultModel
 
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 class ReleaseModel(Base):
     __tablename__ = "release"
@@ -29,8 +30,8 @@ class ReleaseModel(Base):
     )
     description: Mapped[str] = mapped_column(String, nullable=True)
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 
     project: Mapped["ProjectModel"] = relationship(back_populates="releases")
     artifacts: Mapped[list["ArtifactModel"]] = relationship(back_populates="release")

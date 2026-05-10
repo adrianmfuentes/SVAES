@@ -8,7 +8,7 @@ from infrastructure.database.models.user import UserModel
 
 
 class SqlUserRepository(IUserRepository):
-    """Async SQLAlchemy adapter for IUserRepository. Concrete outbound port for User persistence."""
+    """Async SQLAlchemy adapter for IUserRepository."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -19,6 +19,7 @@ class SqlUserRepository(IUserRepository):
             email=user.email,
             password_hash=user.hashed_password,
             display_name=user.email,
+            role=user.role.value,
             is_active=True,
         )
         self.session.add(model)
@@ -46,6 +47,7 @@ class SqlUserRepository(IUserRepository):
         if model:
             model.email = user.email
             model.password_hash = user.hashed_password
+            model.role = user.role.value
             await self.session.flush()
         return user
 
@@ -54,7 +56,7 @@ class SqlUserRepository(IUserRepository):
             id=model.id,
             email=model.email,
             hashed_password=model.password_hash,
-            role=UserRole.VIEWER,
+            role=UserRole(model.role),
             organization_id=None,
             created_at=model.created_at,
             updated_at=model.updated_at,

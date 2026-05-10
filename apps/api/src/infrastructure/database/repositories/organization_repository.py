@@ -6,7 +6,6 @@ from domain.entities.organization import Organization
 from domain.ports.i_organization_repository import IOrganizationRepository
 from infrastructure.database.models.organization import OrganizationModel
 
-
 class SqlOrganizationRepository(IOrganizationRepository):
     """Async SQLAlchemy adapter for IOrganizationRepository."""
 
@@ -29,14 +28,22 @@ class SqlOrganizationRepository(IOrganizationRepository):
         return self._to_entity(model) if model else None
 
     async def get_by_slug(self, slug: str) -> Optional[Organization]:
-        result = await self.session.execute(select(OrganizationModel).where(OrganizationModel.slug == slug))
+        result = await self.session.execute(
+            select(OrganizationModel).where(OrganizationModel.slug == slug)
+        )
         model = result.scalars().first()
         return self._to_entity(model) if model else None
 
-    async def list_all(self, active_only: bool = True) -> List[Organization]:
+    async def list_all(
+        self,
+        active_only: bool = True,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[Organization]:
         stmt = select(OrganizationModel)
         if active_only:
             stmt = stmt.where(OrganizationModel.is_active.is_(True))
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
