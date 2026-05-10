@@ -1,6 +1,8 @@
 import time
 from contextlib import asynccontextmanager
 
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -30,6 +32,9 @@ _log = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _configure_root_logger()
+    _log.info("Applying database migrations...")
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
     _log.info("SVAES API starting up (env=%s)", settings.environment)
     yield
     _log.info("SVAES API shutting down")
