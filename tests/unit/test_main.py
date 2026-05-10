@@ -1,14 +1,26 @@
-"""
-Tests for FastAPI application setup.
+from unittest.mock import AsyncMock, MagicMock, patch
 
-Uses TestClient (sync ASGI driver) to verify the health endpoint and the
-request-logging middleware without requiring an external server or database.
-The lifespan context manager is exercised via the `with TestClient(app)` block.
-"""
-
+import pytest
 from fastapi.testclient import TestClient
 
 from main import app
+
+
+@pytest.fixture(autouse=True)
+def _no_migrations():
+    with patch("main.command.upgrade"):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def _mock_db():
+    mock_session = AsyncMock()
+    mock_cm = MagicMock()
+    mock_cm.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_cm.__aexit__ = AsyncMock(return_value=False)
+    mock_factory = MagicMock(return_value=mock_cm)
+    with patch("infrastructure.database.session._get_engine", return_value=mock_factory):
+        yield
 
 
 class TestHealthEndpoint:

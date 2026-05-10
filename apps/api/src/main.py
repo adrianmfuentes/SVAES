@@ -1,5 +1,6 @@
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
@@ -33,7 +34,7 @@ _log = get_logger(__name__)
 async def lifespan(app: FastAPI):
     _configure_root_logger()
     _log.info("Applying database migrations...")
-    alembic_cfg = Config("alembic.ini")
+    alembic_cfg = Config(str(Path(__file__).parent.parent / "alembic.ini"))
     command.upgrade(alembic_cfg, "head")
     _log.info("SVAES API starting up (env=%s)", settings.environment)
     yield
