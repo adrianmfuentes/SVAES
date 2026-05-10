@@ -9,6 +9,7 @@ import uuid
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException
+from starlette.requests import Request as StarletteRequest
 from api.routers.auth import login
 from api.routers.organizations import create_org, list_orgs
 from api.routers.projects import create_project
@@ -45,8 +46,16 @@ def mock_user():
 
 @pytest.fixture
 def fake_request():
-    """Minimal mock of FastAPI Request, required by slowapi-decorated endpoints."""
-    return MagicMock()
+    """Minimal real Starlette Request required by slowapi isinstance check."""
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/auth/login",
+        "query_string": b"",
+        "headers": [],
+        "client": ("127.0.0.1", 8000),
+    }
+    return StarletteRequest(scope)
 
 
 def _make_release():

@@ -81,6 +81,7 @@ def _user_model(email="user@test.com", **kwargs):
     m.id = kwargs.get("id", uuid.uuid4())
     m.email = email
     m.password_hash = "$2b$12$hashed" # NOSONAR
+    m.role = kwargs.get("role", "OPERATOR")
     m.created_at = _NOW
     m.updated_at = _NOW
     return m

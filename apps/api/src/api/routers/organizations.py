@@ -32,7 +32,7 @@ async def create_org(
 async def list_orgs(
     use_case: Annotated[ListOrganizationsUseCase, Depends(get_list_organizations_use_case)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    skip: Annotated[int, Query(default=0, ge=0)],
-    limit: Annotated[int, Query(default=50, ge=1, le=500)],
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=500)] = 50,
 ):
     return await use_case.execute(skip=skip, limit=limit)

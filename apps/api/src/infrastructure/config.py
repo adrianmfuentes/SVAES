@@ -9,21 +9,18 @@ _log = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     # Auth
-    jwt_secret_key: str = "insecure-dev-secret-change-me-in-production"
-    jwt_algorithm: str = "HS256"
-    jwt_expire_minutes: int = 60
+    jwt_secret_key: str
+    jwt_algorithm: str
+    jwt_expire_minutes: int
 
-    # Encryption
-    encryption_key: str = ""
+    # Encryption — None triggers ephemeral key generation (see validator below)
+    encryption_key: str | None = None
 
-    # CORS — comma-separated in env: "http://localhost:4200,https://app.example.com"
-    allowed_origins: list[str] = [
-        "http://localhost:4200",
-        "http://localhost:3000",
-    ]
+    # CORS — JSON array in env: '["http://localhost:4200","https://app.example.com"]'
+    allowed_origins: list[str]
 
     # Environment
-    environment: str = "development"
+    environment: str
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

@@ -9,8 +9,7 @@ _AsyncSessionLocal = None
 def _get_engine():
     global _engine, _AsyncSessionLocal
     # Ensure both engine and sessionmaker are initialized. It's possible the
-    # engine exists but the sessionmaker was not created (e.g. after reloads),
-    # so check both.
+    # engine exists but the sessionmaker was not created, so check both.
     if _engine is None or _AsyncSessionLocal is None:
         database_url = os.environ.get("DATABASE_URL")
         if not database_url:

@@ -131,7 +131,7 @@ class TestListOrganizationsUseCase:
         result = await ListOrganizationsUseCase(repo).execute()
 
         assert result == orgs
-        repo.list_all.assert_called_once_with(active_only=True)
+        repo.list_all.assert_called_once_with(active_only=True, skip=0, limit=100)
 
     async def test_returns_empty_list_when_no_orgs(self):
         """
