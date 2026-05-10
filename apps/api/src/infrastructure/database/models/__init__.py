@@ -1,3 +1,4 @@
+from infrastructure.database.base import Base
 from infrastructure.database.models.user import UserModel
 from infrastructure.database.models.organization import OrganizationModel
 from infrastructure.database.models.user_membership import UserMembershipModel
@@ -20,4 +21,5 @@ __all__ = [
     "VerificationProfileModel",
     "VerificationRuleModel",
     "VerificationResultModel",
+    "Base",
 ]
