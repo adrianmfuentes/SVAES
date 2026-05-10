@@ -1,5 +1,5 @@
 # ── Stage 1: install dependencies ────────────────────────────────────────────
-FROM python:3.13-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir uv==0.11.11 --only-binary :all: \
     uv sync --frozen --no-dev --no-install-project --no-build
 
 # ── Stage 2: production runtime ───────────────────────────────────────────────
-FROM python:3.13-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 RUN groupadd --gid 1001 appgroup && \
     useradd --uid 1001 --gid appgroup --no-create-home appuser
