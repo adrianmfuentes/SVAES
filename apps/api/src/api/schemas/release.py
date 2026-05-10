@@ -1,10 +1,23 @@
-from pydantic import BaseModel
 import uuid
 from datetime import datetime
+
+from pydantic import BaseModel, Field
+
 from domain.entities.enums import ReleaseStatus
 
+
+class ReleaseCreate(BaseModel):
+    project_id: uuid.UUID
+    profile_id: uuid.UUID
+    version: str = Field(..., min_length=1, max_length=50)
+    description: str = Field(default="", max_length=1000)
+
+
+class ReleaseUpdate(BaseModel):
+    description: str | None = Field(None, max_length=1000)
+
+
 class ReleaseResponse(BaseModel):
-    """API response shape for a release entity."""
     id: uuid.UUID
     project_id: uuid.UUID
     profile_id: uuid.UUID
@@ -13,9 +26,10 @@ class ReleaseResponse(BaseModel):
     description: str
     created_at: datetime
     updated_at: datetime
+
     model_config = {"from_attributes": True}
 
+
 class VerificationTaskResponse(BaseModel):
-    """Response returned when a verification task is accepted and enqueued."""
     message: str
     task_id: str

@@ -25,3 +25,11 @@ class IProjectRepository(ABC):
     @abstractmethod
     async def list_by_organization(self, organization_id: UUID) -> List[Project]:
         pass
+
+    @abstractmethod
+    async def update(self, project: Project) -> Project:
+        pass
+
+    @abstractmethod
+    async def delete(self, project_id: UUID) -> None:
+        pass

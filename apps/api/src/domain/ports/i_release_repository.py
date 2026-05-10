@@ -29,3 +29,7 @@ class IReleaseRepository(ABC):
     @abstractmethod
     async def update(self, release: Release) -> Release:
         pass
+
+    @abstractmethod
+    async def delete(self, release_id: uuid.UUID) -> None:
+        pass

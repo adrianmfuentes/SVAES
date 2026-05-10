@@ -51,6 +51,12 @@ class SqlUserRepository(IUserRepository):
             await self.session.flush()
         return user
 
+    async def delete(self, user_id: UUID) -> None:
+        model = await self.session.get(UserModel, user_id)
+        if model:
+            model.is_active = False
+            await self.session.flush()
+
     def _to_entity(self, model: UserModel) -> User:
         return User(
             id=model.id,

@@ -10,6 +10,11 @@ class ProjectCreate(BaseModel):
     description: str = Field(default="", max_length=500)
 
 
+class ProjectUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=120)
+    description: str | None = Field(None, max_length=500)
+
+
 class ProjectResponse(BaseModel):
     id: uuid.UUID
     organization_id: uuid.UUID

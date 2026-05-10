@@ -51,6 +51,27 @@ class SqlProfileRepository(IProfileRepository):
         model = result.scalars().first()
         return self._to_entity(model) if model else None
 
+    async def update(self, profile: VerificationProfile) -> VerificationProfile:
+        model = await self.session.get(VerificationProfileModel, profile.id)
+        if model:
+            model.name = profile.name
+            await self.session.flush()
+        return profile
+
+    async def list_by_organization(self, organization_id: UUID) -> list[VerificationProfile]:
+        result = await self.session.execute(
+            select(VerificationProfileModel)
+            .options(selectinload(VerificationProfileModel.rules))
+            .where(VerificationProfileModel.organization_id == organization_id)
+        )
+        return [self._to_entity(m) for m in result.scalars().all()]
+
+    async def delete(self, profile_id: UUID) -> None:
+        model = await self.session.get(VerificationProfileModel, profile_id)
+        if model:
+            await self.session.delete(model)
+            await self.session.flush()
+
     def _to_entity(self, model: VerificationProfileModel) -> VerificationProfile:
         rules = [
             VerificationRule(

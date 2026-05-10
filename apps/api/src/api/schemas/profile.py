@@ -9,6 +9,10 @@ class ProfileCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=120)
 
 
+class ProfileUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=120)
+
+
 class ProfileResponse(BaseModel):
     id: uuid.UUID
     organization_id: uuid.UUID

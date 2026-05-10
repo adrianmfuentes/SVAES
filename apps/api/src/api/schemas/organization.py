@@ -11,6 +11,12 @@ class OrganizationCreate(BaseModel):
     plan: Literal["free", "pro", "enterprise"] = "free"
 
 
+class OrganizationUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=120)
+    slug: str | None = Field(None, min_length=1, max_length=60, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    is_active: bool | None = None
+
+
 class OrganizationResponse(BaseModel):
     id: uuid.UUID
     name: str

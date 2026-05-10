@@ -34,3 +34,7 @@ class IUserRepository(ABC):
     @abstractmethod
     async def update(self, user: User) -> User:
         pass
+
+    @abstractmethod
+    async def delete(self, user_id: uuid.UUID) -> None:
+        pass

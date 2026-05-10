@@ -95,6 +95,9 @@ class TestIUserRepository:
             async def update(self, user):
                 return await super().update(user)
 
+            async def delete(self, user_id):
+                return await super().delete(user_id)
+
         repo = ConcreteRepo()
         stub = MagicMock()
 
@@ -103,6 +106,7 @@ class TestIUserRepository:
         assert await repo.get_by_email("a@b.com") is None
         assert await repo.list_all() is None
         assert await repo.update(stub) is None
+        assert await repo.delete(uuid.uuid4()) is None
 
 
 # ---------------------------------------------------------------------------
@@ -153,12 +157,20 @@ class TestIProjectRepository:
             async def list_by_organization(self, organization_id):
                 return await super().list_by_organization(organization_id)
 
+            async def update(self, project):
+                return await super().update(project)
+
+            async def delete(self, project_id):
+                return await super().delete(project_id)
+
         repo = ConcreteRepo()
         stub = MagicMock()
 
         assert await repo.create(stub) is None
         assert await repo.get_by_id(uuid.uuid4()) is None
         assert await repo.list_by_organization(uuid.uuid4()) is None
+        assert await repo.update(stub) is None
+        assert await repo.delete(uuid.uuid4()) is None
 
 
 # ---------------------------------------------------------------------------
@@ -180,6 +192,9 @@ class TestIReleaseRepository:
             async def update(self, release):
                 return await super().update(release)
 
+            async def delete(self, release_id):
+                return await super().delete(release_id)
+
         repo = ConcreteRepo()
         stub = MagicMock()
 
@@ -187,6 +202,7 @@ class TestIReleaseRepository:
         assert await repo.get_by_id(uuid.uuid4()) is None
         assert await repo.list_by_project(uuid.uuid4()) is None
         assert await repo.update(stub) is None
+        assert await repo.delete(uuid.uuid4()) is None
 
 
 # ---------------------------------------------------------------------------
@@ -229,12 +245,24 @@ class TestIProfileRepository:
             async def get_default_for_organization(self, organization_id):
                 return await super().get_default_for_organization(organization_id)
 
+            async def update(self, profile):
+                return await super().update(profile)
+
+            async def list_by_organization(self, organization_id):
+                return await super().list_by_organization(organization_id)
+
+            async def delete(self, profile_id):
+                return await super().delete(profile_id)
+
         repo = ConcreteRepo()
         stub = MagicMock()
 
         assert await repo.create(stub) is None
         assert await repo.get_by_id(uuid.uuid4()) is None
         assert await repo.get_default_for_organization(uuid.uuid4()) is None
+        assert await repo.update(stub) is None
+        assert await repo.list_by_organization(uuid.uuid4()) is None
+        assert await repo.delete(uuid.uuid4()) is None
 
 
 # ---------------------------------------------------------------------------

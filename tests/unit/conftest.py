@@ -9,8 +9,16 @@ import os
 import sys
 from pathlib import Path
 
-# Must be set before any module imports infrastructure.database.session,
-# which raises ValueError if DATABASE_URL is missing.
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://test:test@localhost:5432/test_db")
+os.environ.setdefault("ENVIRONMENT", "development")
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-unit-tests-only")
+os.environ.setdefault("JWT_ALGORITHM", "HS256")
+os.environ.setdefault("JWT_EXPIRE_MINUTES", "60")
+os.environ.setdefault(
+    "ENCRYPTION_KEY", "ZOFHEQsSkoUeaU4Orkdn165PjxO-27Xg8YSQSynK-fM="
+)
+os.environ.setdefault(
+    "ALLOWED_ORIGINS", '["http://localhost:4200","http://localhost:3000"]'
+)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "apps" / "api" / "src"))

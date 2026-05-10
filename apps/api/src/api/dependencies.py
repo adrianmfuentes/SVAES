@@ -7,6 +7,7 @@ from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.entities.user import User
+from domain.entities.enums import UserRole
 from domain.ports.i_password_hasher import IPasswordHasher
 from domain.ports.i_token_service import ITokenService
 from domain.ports.i_credential_encryptor import ICredentialEncryptor
@@ -29,32 +30,39 @@ from infrastructure.database.repositories.project_repository import SqlProjectRe
 from application.use_cases.launch_verification import LaunchVerificationUseCase
 from application.use_cases.configure_connector import ConfigureConnectorUseCase
 from application.use_cases.auth_use_cases import LoginUseCase
-from application.use_cases.organization_use_cases import CreateOrganizationUseCase, ListOrganizationsUseCase
+from application.use_cases.organization_use_cases import (
+    CreateOrganizationUseCase,
+    GetOrganizationUseCase,
+    ListOrganizationsUseCase,
+    UpdateOrganizationUseCase,
+    DeleteOrganizationUseCase,
+)
 from application.use_cases.manage_profile import ManageProfileUseCase
-from application.use_cases.project_use_cases import CreateProjectUseCase
-from application.use_cases.create_release import CreateReleaseUseCase
+from application.use_cases.project_use_cases import (
+    CreateProjectUseCase,
+    GetProjectUseCase,
+    ListProjectsUseCase,
+    UpdateProjectUseCase,
+    DeleteProjectUseCase,
+)
+from application.use_cases.create_release import (
+    CreateReleaseUseCase,
+    GetReleaseUseCase,
+    ListReleasesUseCase,
+    UpdateReleaseUseCase,
+    DeleteReleaseUseCase,
+)
 from application.use_cases.get_verification_history import GetVerificationHistoryUseCase
+from application.use_cases.user_use_cases import (
+    RegisterUserUseCase,
+    CreateUserUseCase,
+    GetUserUseCase,
+    ListUsersUseCase,
+    UpdateUserUseCase,
+    DeleteUserUseCase,
+)
 
 _bearer_scheme = HTTPBearer()
-
-""" 
-This module defines dependency providers for FastAPI endpoints, including:
-    - Security services (password hasher, JWT handler, credential encryptor)
-    - Repository instances (SQL-based implementations)
-    - The get_current_user auth guard, which validates JWT tokens and retrieves the authenticated user
-    - Use case factories that assemble the necessary services and repositories for each application use case
-
-The dependency injection system allows for clean separation of concerns, easier testing, 
-nd flexible configuration of services and repositories.
-
-How it works:
-    - Each provider function is decorated with @Depends, which tells FastAPI to resolve its dependencies automatically
-    - For example, get_current_user depends on the JWT handler and user repository, which are themselves provided by other functions in this module
-    - When an endpoint includes get_current_user as a dependency, FastAPI will execute the provider function, which will validate the token and 
-        return the User entity or raise an HTTP 401 error if authentication fails
-    - Use case factories assemble the necessary components for each use case, allowing endpoints to simply declare the use case they need without 
-        worrying about the underlying dependencies
-"""
 
 # ---------------------------------------------------------------------------
 # Security service factories — stateless, safe to recreate per request
@@ -188,3 +196,119 @@ def get_configure_connector_use_case(
         connector_registry=registry,
         credential_encryptor=encryptor,
     )
+
+# ---------------------------------------------------------------------------
+# RBAC — place after get_current_user so the closure can reference it
+# ---------------------------------------------------------------------------
+_ROLE_LEVELS: dict[UserRole, int] = {
+    UserRole.VIEWER: 0,
+    UserRole.OPERATOR: 1,
+    UserRole.MANAGER: 2,
+    UserRole.ADMIN: 3,
+}
+
+
+def require_min_role(min_role: UserRole) -> Depends:
+    def _guard(current_user: User = Depends(get_current_user)) -> User:
+        if _ROLE_LEVELS[current_user.role] < _ROLE_LEVELS[min_role]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions",
+            )
+        return current_user
+    return Depends(_guard)
+
+# ---------------------------------------------------------------------------
+# New use case factories
+# ---------------------------------------------------------------------------
+def get_get_organization_use_case(
+    org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
+) -> GetOrganizationUseCase:
+    return GetOrganizationUseCase(org_repo=org_repo)
+
+def get_update_organization_use_case(
+    org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
+) -> UpdateOrganizationUseCase:
+    return UpdateOrganizationUseCase(org_repo=org_repo)
+
+def get_delete_organization_use_case(
+    org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
+) -> DeleteOrganizationUseCase:
+    return DeleteOrganizationUseCase(org_repo=org_repo)
+
+def get_get_project_use_case(
+    project_repo: SqlProjectRepository = Depends(get_project_repository),
+) -> GetProjectUseCase:
+    return GetProjectUseCase(project_repo=project_repo)
+
+def get_list_projects_use_case(
+    project_repo: SqlProjectRepository = Depends(get_project_repository),
+) -> ListProjectsUseCase:
+    return ListProjectsUseCase(project_repo=project_repo)
+
+def get_update_project_use_case(
+    project_repo: SqlProjectRepository = Depends(get_project_repository),
+) -> UpdateProjectUseCase:
+    return UpdateProjectUseCase(project_repo=project_repo)
+
+def get_delete_project_use_case(
+    project_repo: SqlProjectRepository = Depends(get_project_repository),
+) -> DeleteProjectUseCase:
+    return DeleteProjectUseCase(project_repo=project_repo)
+
+def get_get_release_use_case(
+    release_repo: SqlReleaseRepository = Depends(get_release_repository),
+) -> GetReleaseUseCase:
+    return GetReleaseUseCase(release_repo=release_repo)
+
+def get_list_releases_use_case(
+    release_repo: SqlReleaseRepository = Depends(get_release_repository),
+) -> ListReleasesUseCase:
+    return ListReleasesUseCase(release_repo=release_repo)
+
+def get_update_release_use_case(
+    release_repo: SqlReleaseRepository = Depends(get_release_repository),
+) -> UpdateReleaseUseCase:
+    return UpdateReleaseUseCase(release_repo=release_repo)
+
+def get_delete_release_use_case(
+    release_repo: SqlReleaseRepository = Depends(get_release_repository),
+) -> DeleteReleaseUseCase:
+    return DeleteReleaseUseCase(release_repo=release_repo)
+
+def get_register_use_case(
+    user_repo: SqlUserRepository = Depends(get_user_repository),
+    password_hasher: IPasswordHasher = Depends(get_password_hasher),
+    token_service: ITokenService = Depends(get_jwt_handler),
+) -> RegisterUserUseCase:
+    return RegisterUserUseCase(
+        user_repo=user_repo,
+        password_hasher=password_hasher,
+        token_service=token_service,
+    )
+
+def get_create_user_use_case(
+    user_repo: SqlUserRepository = Depends(get_user_repository),
+    password_hasher: IPasswordHasher = Depends(get_password_hasher),
+) -> CreateUserUseCase:
+    return CreateUserUseCase(user_repo=user_repo, password_hasher=password_hasher)
+
+def get_get_user_use_case(
+    user_repo: SqlUserRepository = Depends(get_user_repository),
+) -> GetUserUseCase:
+    return GetUserUseCase(user_repo=user_repo)
+
+def get_list_users_use_case(
+    user_repo: SqlUserRepository = Depends(get_user_repository),
+) -> ListUsersUseCase:
+    return ListUsersUseCase(user_repo=user_repo)
+
+def get_update_user_use_case(
+    user_repo: SqlUserRepository = Depends(get_user_repository),
+) -> UpdateUserUseCase:
+    return UpdateUserUseCase(user_repo=user_repo)
+
+def get_delete_user_use_case(
+    user_repo: SqlUserRepository = Depends(get_user_repository),
+) -> DeleteUserUseCase:
+    return DeleteUserUseCase(user_repo=user_repo)

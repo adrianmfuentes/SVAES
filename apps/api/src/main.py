@@ -3,12 +3,23 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.rate_limit import limiter
 from api.routers import auth, organizations, projects, profiles, releases, connectors
+from api.routers import users
+from domain.exceptions import (
+    EntityNotFoundError,
+    DomainException,
+    ReleaseInvalidStateError,
+    ConnectorConnectionFailedError,
+)
 from infrastructure.config import settings
+from infrastructure.database.session import get_db_session
 from infrastructure.logging.logger import _configure_root_logger, get_logger
 
 API_V1_PREFIX = "/api/v1"
@@ -29,13 +40,15 @@ app = FastAPI(
     description="Automatic Software Delivery Verification System",
     version="1.0.0",
     lifespan=lifespan,
-    # Hide docs in production
     docs_url=None if settings.is_production else "/docs",
     redoc_url=None if settings.is_production else "/redoc",
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+async def _rate_limit_exceeded_handler_wrapper(request: Request, exc: Exception):
+    return await _rate_limit_exceeded_handler(request, exc)  # type: ignore[arg-type]
+
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler_wrapper)
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,6 +59,38 @@ app.add_middleware(
 )
 
 
+# ---------------------------------------------------------------------------
+# Global domain exception handlers
+# ---------------------------------------------------------------------------
+@app.exception_handler(EntityNotFoundError)
+async def _not_found_handler(request: Request, exc: EntityNotFoundError) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(ReleaseInvalidStateError)
+async def _release_state_handler(request: Request, exc: ReleaseInvalidStateError) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(ConnectorConnectionFailedError)
+async def _connector_handler(request: Request, exc: ConnectorConnectionFailedError) -> JSONResponse:
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(DomainException)
+async def _domain_handler(request: Request, exc: DomainException) -> JSONResponse:
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
+@app.exception_handler(Exception)
+async def _unhandled_handler(request: Request, exc: Exception) -> JSONResponse:
+    _log.exception("Unhandled exception on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
+# ---------------------------------------------------------------------------
+# Request logging middleware
+# ---------------------------------------------------------------------------
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.perf_counter()
@@ -61,14 +106,36 @@ async def log_requests(request: Request, call_next):
     return response
 
 
+# ---------------------------------------------------------------------------
+# Routers
+# ---------------------------------------------------------------------------
 app.include_router(auth.router, prefix=API_V1_PREFIX)
 app.include_router(organizations.router, prefix=API_V1_PREFIX)
 app.include_router(projects.router, prefix=API_V1_PREFIX)
 app.include_router(profiles.router, prefix=API_V1_PREFIX)
 app.include_router(releases.router, prefix=API_V1_PREFIX)
 app.include_router(connectors.router, prefix=API_V1_PREFIX)
+app.include_router(users.router, prefix=API_V1_PREFIX)
 
 
+# ---------------------------------------------------------------------------
+# Health check
+# ---------------------------------------------------------------------------
 @app.get("/health", tags=["System"])
-def health():
-    return {"status": "ok", "message": "The backend is running correctly"}
+async def health():
+    db_ok = False
+    try:
+        from infrastructure.database.session import _get_engine
+        engine_factory = _get_engine()
+        async with engine_factory() as session:
+            await session.execute(text("SELECT 1"))
+        db_ok = True
+    except Exception:
+        _log.warning("Health check: database unreachable")
+
+    if not db_ok:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "db": "unreachable", "message": "Database is not reachable"},
+        )
+    return {"status": "ok", "db": "reachable", "message": "The backend is running correctly"}

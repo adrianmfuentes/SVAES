@@ -24,3 +24,15 @@ class IProfileRepository(ABC):
     @abstractmethod
     async def get_default_for_organization(self, organization_id: uuid.UUID) -> Optional[VerificationProfile]:
         pass
+
+    @abstractmethod
+    async def update(self, profile: VerificationProfile) -> VerificationProfile:
+        pass
+
+    @abstractmethod
+    async def list_by_organization(self, organization_id: uuid.UUID) -> List[VerificationProfile]:
+        pass
+
+    @abstractmethod
+    async def delete(self, profile_id: uuid.UUID) -> None:
+        pass

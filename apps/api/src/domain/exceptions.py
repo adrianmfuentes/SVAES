@@ -19,6 +19,8 @@ class ConnectorConnectionFailedError(DomainException):
     pass
 class InvalidConnectorConfigurationError(DomainException):
     pass
+class DuplicateEntityError(DomainException):
+    pass
 class UserNotBelongsToOrganizationError(DomainException):
     pass
 class VerificationProfileNotActiveError(DomainException):

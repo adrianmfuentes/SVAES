@@ -4,8 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from api.rate_limit import limiter
 from api.schemas.auth import LoginRequest, TokenResponse
+from api.schemas.user import RegisterRequest
 from application.use_cases.auth_use_cases import LoginUseCase, LoginCommand
-from api.dependencies import get_login_use_case
+from application.use_cases.user_use_cases import RegisterUserUseCase, RegisterUserCommand
+from api.dependencies import get_login_use_case, get_register_use_case
+from domain.exceptions import DuplicateEntityError
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -27,3 +30,18 @@ async def login(
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
+async def register(
+    request: Request,
+    body: RegisterRequest,
+    use_case: Annotated[RegisterUserUseCase, Depends(get_register_use_case)],
+):
+    try:
+        command = RegisterUserCommand(email=body.email, password_plain=body.password)
+        token = await use_case.execute(command)
+        return TokenResponse(access_token=token)
+    except DuplicateEntityError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))

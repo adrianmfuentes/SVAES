@@ -34,6 +34,20 @@ class SqlProjectRepository(IProjectRepository):
         )
         return [self._to_entity(m) for m in result.scalars().all()]
 
+    async def update(self, project: Project) -> Project:
+        model = await self.session.get(ProjectModel, project.id)
+        if model:
+            model.name = project.name
+            model.description = project.description
+            await self.session.flush()
+        return project
+
+    async def delete(self, project_id: UUID) -> None:
+        model = await self.session.get(ProjectModel, project_id)
+        if model:
+            await self.session.delete(model)
+            await self.session.flush()
+
     def _to_entity(self, model: ProjectModel) -> Project:
         return Project(
             id=model.id,

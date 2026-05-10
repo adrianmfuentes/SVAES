@@ -45,6 +45,12 @@ class SqlReleaseRepository(IReleaseRepository):
             await self.session.flush()
         return release
 
+    async def delete(self, release_id: UUID) -> None:
+        model = await self.session.get(ReleaseModel, release_id)
+        if model:
+            await self.session.delete(model)
+            await self.session.flush()
+
     def _to_entity(self, model: ReleaseModel) -> Release:
         return Release(
             id=model.id,
