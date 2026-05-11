@@ -286,10 +286,8 @@ SVAES/
 |   |   |-- exported/
 |   |   `-- plantuml/
 |   `-- tfg/
-|-- packages/
 |-- scripts/
 |-- tests/
-|-- workers/
 |-- .env.example
 |-- docker-compose.yml
 |-- LICENSE
