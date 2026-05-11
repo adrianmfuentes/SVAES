@@ -38,9 +38,6 @@ services:
     volumes:
       - redis_ephemeral:/data
 
-volumes:
-  redis_ephemeral:
-
   celery_worker:
     build:
       context: ./apps/api
@@ -58,6 +55,9 @@ volumes:
       CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://svaes:svaes@postgres:5432/svaes}
+
+volumes:
+  redis_ephemeral:
 
 networks:
   svaes-internal:
