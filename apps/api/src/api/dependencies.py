@@ -17,6 +17,8 @@ from infrastructure.database.session import get_db_session
 from infrastructure.security.password_hasher import BcryptPasswordHasher
 from infrastructure.security.jwt_handler import JwtHandler
 from infrastructure.security.credential_encryptor import FernetCredentialEncryptor
+from domain.ports.i_task_queue import ITaskQueue
+from infrastructure.queue import CeleryTaskQueue
 from infrastructure.security.mock_task_queue import MockTaskQueue
 from infrastructure.adapters.connector_registry import ConnectorRegistry
 
@@ -181,10 +183,15 @@ def get_verification_history_use_case(
 ) -> GetVerificationHistoryUseCase:
     return GetVerificationHistoryUseCase(release_repo=release_repo)
 
+def get_task_queue() -> ITaskQueue:
+    if settings.environment.lower() == "production":
+        return CeleryTaskQueue()
+    return MockTaskQueue()
+
 def get_launch_verification_use_case(
     release_repo: SqlReleaseRepository = Depends(get_release_repository),
 ) -> LaunchVerificationUseCase:
-    return LaunchVerificationUseCase(release_repo=release_repo, task_queue=MockTaskQueue())
+    return LaunchVerificationUseCase(release_repo=release_repo, task_queue=get_task_queue())
 
 def get_configure_connector_use_case(
     repo: SqlConnectorRepository = Depends(get_connector_repository),

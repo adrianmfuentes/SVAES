@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # Environment
     environment: str
 
+    # Celery
+    celery_broker_url: str = "redis://localhost:6379/0"
+    celery_result_backend: str = "redis://localhost:6379/0"
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     @field_validator("allowed_origins", mode="before")
