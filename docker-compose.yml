@@ -5,18 +5,22 @@ services:
       target: runtime
     environment:
       PYTHONPATH: /app/src
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
     networks:
       - svaes-internal
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
 
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: svaes
-      POSTGRES_PASSWORD: svaes
-      POSTGRES_DB: svaes
+      POSTGRES_USER: ${POSTGRES_USER:-svaes}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-svaes}
+      POSTGRES_DB: ${POSTGRES_DB:-svaes}
     networks:
       - svaes-internal
     healthcheck:
@@ -27,8 +31,33 @@ services:
 
   redis:
     image: redis:7
+    ports:
+      - "6379:6379"
     networks:
       - svaes-internal
+    volumes:
+      - redis_ephemeral:/data
+
+volumes:
+  redis_ephemeral:
+
+  celery_worker:
+    build:
+      context: ./apps/api
+      target: runtime
+    command: celery -A src.infrastructure.queue.celery_app worker --loglevel=info --concurrency=2
+    networks:
+      - svaes-internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      PYTHONPATH: /app/src
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://svaes:svaes@postgres:5432/svaes}
 
 networks:
   svaes-internal:
