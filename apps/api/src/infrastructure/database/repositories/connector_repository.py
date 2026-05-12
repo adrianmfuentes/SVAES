@@ -39,12 +39,13 @@ class SqlConnectorRepository(IConnectorRepository):
         model = await self.session.get(ConnectorInstanceModel, instance_id)
         return self._to_entity(model) if model else None
 
-    async def list_by_organization(self, organization_id: UUID, active_only: bool = True) -> List[ConnectorInstance]:
+    async def list_by_organization(self, organization_id: UUID, active_only: bool = True, skip: int = 0, limit: int = 50) -> List[ConnectorInstance]:
         query = select(ConnectorInstanceModel).where(
             ConnectorInstanceModel.organization_id == organization_id
         )
         if active_only:
             query = query.where(ConnectorInstanceModel.status == "ACTIVO")
+        query = query.offset(skip).limit(limit)
         result = await self.session.execute(query)
         return [self._to_entity(m) for m in result.scalars().all()]
 

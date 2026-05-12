@@ -48,7 +48,7 @@ def run_verification(self, release_id_str: str) -> dict:
         raise
 
     except Exception as exc:
-        _log.error("Verification failed for release %s: %s", release_id, exc, exc_info=True)
+        _log.exception("Verification failed for release %s: %s", release_id, exc)
         raise self.retry(exc=exc)
 
 

@@ -30,6 +30,7 @@ from infrastructure.database.repositories.profile_repository import SqlProfileRe
 from infrastructure.database.repositories.project_repository import SqlProjectRepository
 from infrastructure.database.repositories.artifact_repository import SqlArtifactRepository
 from infrastructure.database.repositories.verification_result_repository import SqlVerificationResultRepository
+from infrastructure.database.repositories.verification_rule_repository import SqlVerificationRuleRepository
 
 from application.use_cases.launch_verification import LaunchVerificationUseCase
 from application.use_cases.configure_connector import ConfigureConnectorUseCase
@@ -60,10 +61,18 @@ from application.use_cases.get_verification_history import GetVerificationHistor
 from application.use_cases.user_use_cases import (
     RegisterUserUseCase,
     CreateUserUseCase,
+    ChangePasswordUseCase,
     GetUserUseCase,
     ListUsersUseCase,
     UpdateUserUseCase,
     DeleteUserUseCase,
+)
+from application.use_cases.verification_rule_use_cases import (
+    CreateRuleUseCase,
+    ListRulesUseCase,
+    GetRuleUseCase,
+    UpdateRuleUseCase,
+    DeleteRuleUseCase,
 )
 
 _bearer_scheme = HTTPBearer()
@@ -115,6 +124,9 @@ def get_artifact_repository(session: AsyncSession = Depends(get_db_session)) -> 
 def get_verification_result_repository(session: AsyncSession = Depends(get_db_session)) -> SqlVerificationResultRepository:
     return SqlVerificationResultRepository(session)
 
+def get_verification_rule_repository(session: AsyncSession = Depends(get_db_session)) -> SqlVerificationRuleRepository:
+    return SqlVerificationRuleRepository(session)
+
 # ---------------------------------------------------------------------------
 # Auth guard — inject into any protected endpoint
 # ---------------------------------------------------------------------------
@@ -144,6 +156,9 @@ async def get_current_user(
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if user.organization_id is not None:
+        from infrastructure.database.session import set_current_organization_id
+        set_current_organization_id(user.organization_id)
     return user
 
 # ---------------------------------------------------------------------------
@@ -333,3 +348,36 @@ def get_delete_user_use_case(
     user_repo: SqlUserRepository = Depends(get_user_repository),
 ) -> DeleteUserUseCase:
     return DeleteUserUseCase(user_repo=user_repo)
+
+def get_change_password_use_case(
+    user_repo: SqlUserRepository = Depends(get_user_repository),
+    password_hasher: IPasswordHasher = Depends(get_password_hasher),
+) -> ChangePasswordUseCase:
+    return ChangePasswordUseCase(user_repo=user_repo, password_hasher=password_hasher)
+
+def get_create_rule_use_case(
+    rule_repo: SqlVerificationRuleRepository = Depends(get_verification_rule_repository),
+    profile_repo: SqlProfileRepository = Depends(get_profile_repository),
+) -> CreateRuleUseCase:
+    return CreateRuleUseCase(rule_repo=rule_repo, profile_repo=profile_repo)
+
+def get_list_rules_use_case(
+    rule_repo: SqlVerificationRuleRepository = Depends(get_verification_rule_repository),
+    profile_repo: SqlProfileRepository = Depends(get_profile_repository),
+) -> ListRulesUseCase:
+    return ListRulesUseCase(rule_repo=rule_repo, profile_repo=profile_repo)
+
+def get_get_rule_use_case(
+    rule_repo: SqlVerificationRuleRepository = Depends(get_verification_rule_repository),
+) -> GetRuleUseCase:
+    return GetRuleUseCase(rule_repo=rule_repo)
+
+def get_update_rule_use_case(
+    rule_repo: SqlVerificationRuleRepository = Depends(get_verification_rule_repository),
+) -> UpdateRuleUseCase:
+    return UpdateRuleUseCase(rule_repo=rule_repo)
+
+def get_delete_rule_use_case(
+    rule_repo: SqlVerificationRuleRepository = Depends(get_verification_rule_repository),
+) -> DeleteRuleUseCase:
+    return DeleteRuleUseCase(rule_repo=rule_repo)

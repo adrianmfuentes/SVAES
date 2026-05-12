@@ -12,10 +12,12 @@ Backend principal del **Sistema de Verificación Automática de Entregas de Soft
 4. [Tecnologías principales](#tecnologías-principales)
 5. [Endpoints disponibles](#endpoints-disponibles)
 6. [RBAC — Control de acceso por roles](#rbac--control-de-acceso-por-roles)
-7. [Puesta en marcha](#puesta-en-marcha)
-8. [Variables de entorno](#variables-de-entorno)
-9. [Migraciones de base de datos](#migraciones-de-base-de-datos)
-10. [Pendiente / en progreso](#pendiente--en-progreso)
+7. [Cola de tareas — Celery + Redis](#cola-de-tareas--celery--redis)
+8. [Puesta en marcha](#puesta-en-marcha)
+9. [Variables de entorno](#variables-de-entorno)
+10. [Migraciones de base de datos](#migraciones-de-base-de-datos)
+11. [Tests de integración](#tests-de-integración)
+12. [Pendiente / en progreso](#pendiente--en-progreso)
 
 ---
 
@@ -25,8 +27,10 @@ Este servicio actúa como el punto de entrada central de la plataforma SVAES. Es
 
 - Gestionar la autenticación y autorización de usuarios (JWT + RBAC por roles).
 - Exponer la API REST consumida por los clientes (web, CLI, integraciones CI/CD).
-- Orquestar los casos de uso de negocio: creación de organizaciones, gestión de releases, consulta de resultados.
-- Delegar las tareas computacionalmente intensivas (análisis estático, ejecución de tests, comparación de artefactos) al **motor de verificación en Rust** mediante colas asíncronas.
+- Orquestar los casos de uso de negocio: organizaciones, proyectos, perfiles de verificación, releases, conectores externos y reglas de verificación.
+- Gestionar artefactos de software (tareas, commits, documentos) asociados a cada release.
+- Delegar las tareas computacionalmente intensivas al **motor de verificación en Rust** mediante colas asíncronas (Celery + Redis).
+- Emitir resultados de verificación en tiempo real mediante **Server-Sent Events (SSE)**.
 
 ---
 
@@ -37,7 +41,7 @@ El servicio sigue los principios de **Arquitectura Hexagonal** (_Ports & Adapter
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                   Adaptadores Primarios                  │
-│           api/  ←  REST, JWT, RBAC, rate limiting        │
+│       api/  ←  REST, JWT, RBAC, rate limiting, SSE       │
 └──────────────────────────┬──────────────────────────────┘
                            │  invoca
 ┌──────────────────────────▼──────────────────────────────┐
@@ -48,12 +52,19 @@ El servicio sigue los principios de **Arquitectura Hexagonal** (_Ports & Adapter
 ┌──────────▼──────────┐        ┌───────────▼──────────────┐
 │      Dominio        │        │  Adaptadores Secundarios   │
 │  domain/            │        │  infrastructure/           │
-│  Entidades, Puertos │        │  PostgreSQL, Celery,       │
-│  (interfaces)       │        │  Redis, cliente Rust       │
+│  Entidades, Puertos │        │  PostgreSQL (RLS), Celery, │
+│  (interfaces)       │        │  Redis, psycopg3/2         │
 └─────────────────────┘        └───────────────────────────┘
 ```
 
 Las dependencias apuntan siempre hacia adentro: `infrastructure` y `api` dependen de `application`, que depende de `domain`. El dominio no importa nada externo.
+
+### Separación async / sync
+
+Los handlers HTTP (FastAPI) y repositorios usan **SQLAlchemy async** (`AsyncSession`, `psycopg3`). Los workers de Celery usan **SQLAlchemy síncrono** (`Session`, `psycopg2`) ya que corren en procesos separados sin event loop. Ambas capas coexisten:
+
+- `SqlArtifactRepository` / `SqlVerificationResultRepository` → para la API (async)
+- `SyncSqlArtifactRepository` / `SyncSqlVerificationResultRepository` → para workers (sync)
 
 ---
 
@@ -61,54 +72,85 @@ Las dependencias apuntan siempre hacia adentro: `infrastructure` y `api` depende
 
 ```
 apps/api/
-├── alembic.ini                         # Configuración de migraciones
+├── alembic.ini
 ├── alembic/
-│   ├── env.py                          # Entorno de migraciones (lee DATABASE_URL)
-│   └── versions/                       # Historial de migraciones generadas
+│   └── versions/
+│       ├── 2fd6efcfd6c9_initial_schema.py
+│       └── a1b2c3d4e5f6_rls_org_scoped_tables.py   # RLS en tablas org-scoped
 ├── pyproject.toml
 ├── uv.lock
 └── src/
-    ├── main.py                         # Punto de entrada FastAPI + lifespan
+    ├── main.py                              # Punto de entrada FastAPI + lifespan
     │
     ├── domain/
-    │   ├── entities/                   # Dataclasses puras (sin ORM)
-    │   │   ├── user.py
-    │   │   ├── organization.py
-    │   │   ├── project.py
-    │   │   ├── release.py
-    │   │   └── enums.py                # UserRole, ReleaseStatus, etc.
-    │   ├── ports/                      # Interfaces de repositorio (abstractos)
-    │   └── exceptions.py              # EntityNotFoundError, DuplicateEntityError, etc.
+    │   ├── entities/                        # Dataclasses puras (sin ORM)
+    │   │   ├── user.py, organization.py, project.py
+    │   │   ├── release.py, artifact.py
+    │   │   ├── connector_instance.py
+    │   │   ├── verification_profile.py, verification_rule.py
+    │   │   ├── verification_result.py
+    │   │   └── enums.py
+    │   ├── ports/                           # Interfaces abstractas (puertos de salida)
+    │   │   ├── i_user_repository.py         # list_all(skip, limit)
+    │   │   ├── i_project_repository.py      # list_by_organization(skip, limit)
+    │   │   ├── i_release_repository.py      # list_by_project(skip, limit)
+    │   │   ├── i_profile_repository.py      # list_by_organization(skip, limit)
+    │   │   ├── i_connector_repository.py    # list_by_organization(skip, limit)
+    │   │   ├── i_artifact_repository.py     # find_by_release(skip, limit)
+    │   │   └── i_verification_rule_repository.py
+    │   └── exceptions.py
     │
     ├── application/
-    │   └── use_cases/                  # Un caso de uso por archivo
-    │       ├── user_use_cases.py
+    │   └── use_cases/
+    │       ├── auth_use_cases.py
+    │       ├── user_use_cases.py            # + ChangePasswordUseCase
     │       ├── organization_use_cases.py
     │       ├── project_use_cases.py
     │       ├── manage_profile.py
     │       ├── create_release.py
-    │       └── launch_verification.py
+    │       ├── launch_verification.py
+    │       ├── get_verification_history.py
+    │       ├── configure_connector.py
+    │       ├── connector_use_cases.py       # Get, List, Update, Delete, Test
+    │       ├── artifact_use_cases.py        # Register, List, Get, Delete
+    │       └── verification_rule_use_cases.py  # Create, List, Get, Update, Delete
     │
     ├── infrastructure/
-    │   ├── config.py                   # Settings (pydantic-settings, todo desde .env)
-    │   └── database/
-    │       ├── base.py                 # DeclarativeBase de SQLAlchemy
-    │       ├── models/                 # Modelos ORM
-    │       ├── repositories/          # Implementaciones concretas de los puertos
-    │       └── session.py             # Factoría de sesiones async
+    │   ├── config.py                        # Settings (pydantic-settings)
+    │   ├── database/
+    │   │   ├── base.py
+    │   │   ├── models/                      # Modelos ORM (11 entidades)
+    │   │   ├── repositories/                # Implementaciones async (API) y sync (workers)
+    │   │   └── session.py
+    │   ├── queue/
+    │   │   ├── celery_app.py                # App Celery conectada a Redis
+    │   │   └── celery_task_queue.py         # Adaptador ITaskQueue → Celery
+    │   ├── workers/
+    │   │   └── verification_worker.py       # Tarea Celery de verificación
+    │   ├── security/
+    │   │   ├── jwt_handler.py, password_hasher.py
+    │   │   ├── credential_encryptor.py
+    │   │   └── mock_task_queue.py           # Fallback si Celery no disponible
+    │   └── adapters/
+    │       └── connector_registry.py
     │
     └── api/
-        ├── dependencies.py            # DI: use cases, get_current_user, require_min_role
-        ├── rate_limit.py              # Configuración de slowapi
-        ├── routers/                   # Un router por recurso
+        ├── dependencies.py                  # DI: factories, get_current_user, require_min_role
+        ├── rate_limit.py
+        ├── routers/
         │   ├── auth.py
-        │   ├── users.py
-        │   ├── organizations.py
-        │   ├── projects.py
+        │   ├── users.py                     # + PATCH /me/password (5/min)
+        │   ├── organizations.py, projects.py
         │   ├── profiles.py
-        │   ├── releases.py
-        │   └── connectors.py
-        └── schemas/                   # Pydantic request/response models
+        │   ├── releases.py                  # + paginación, rate limit en verify, SSE stream
+        │   ├── connectors.py                # + paginación, rate limit en POST
+        │   ├── artifacts.py                 # + paginación, rate limit en POST
+        │   └── verification_rules.py        # CRUD completo (nuevo)
+        └── schemas/
+            ├── artifact.py, connector.py
+            ├── release.py, user.py          # + ChangePasswordRequest
+            ├── verification_rule.py         # (nuevo)
+            └── ...
 ```
 
 ---
@@ -119,96 +161,174 @@ apps/api/
 |---|---|---|
 | Runtime | Python | 3.11+ |
 | Framework HTTP | FastAPI + Uvicorn | 0.136 |
-| Base de datos | PostgreSQL | 16 |
+| Base de datos | PostgreSQL (con RLS) | 16 |
 | ORM / migraciones | SQLAlchemy + Alembic | 2.x |
-| Driver async | psycopg3 (binary) | 3.2 |
+| Driver async (API) | psycopg3 (binary) | 3.2 |
+| Driver sync (workers) | psycopg2-binary | 2.9 |
 | Autenticación | PyJWT + passlib/bcrypt | — |
+| Cifrado de credenciales | cryptography (Fernet) | 46.x |
 | Rate limiting | slowapi | 0.1.9 |
-| Validación de email | email-validator | 2.2 |
+| Streaming en tiempo real | SSE (Server-Sent Events) | nativo FastAPI |
 | Configuración | pydantic-settings | 2.x |
 | Gestor de paquetes | uv | — |
-| Cola de tareas | Celery + Redis | 5.x / 7.x |
+| Cola de tareas | Celery | 5.x |
+| Broker / result backend | Redis | 7.x |
+| Tests | pytest + pytest-asyncio + httpx | — |
 | Contenedor | Docker | — |
 
 ---
 
 ## Endpoints disponibles
 
-Todos los endpoints llevan el prefijo `/api/v1`.
+Todos los endpoints llevan el prefijo `/api/v1`. Los endpoints marcados con rol requieren un JWT válido en `Authorization: Bearer <token>`.
+
+Los endpoints de listado aceptan `?skip=0&limit=N` para paginación.
 
 ### Auth
 | Método | Ruta | Acceso | Descripción |
 |---|---|---|---|
-| `POST` | `/auth/login` | Público | Login con email + password, devuelve JWT |
-| `POST` | `/auth/register` | Público (5 req/min) | Registro de nuevo usuario, devuelve JWT |
+| `POST` | `/auth/login` | Público | Email + password → JWT |
+| `POST` | `/auth/register` | Público (5 req/min) | Registro de usuario → JWT |
 
 ### Users
 | Método | Ruta | Rol mínimo | Descripción |
 |---|---|---|---|
 | `GET` | `/users/me` | Cualquiera | Perfil del usuario autenticado |
-| `GET` | `/users` | ADMIN | Listar todos los usuarios |
+| `PATCH` | `/users/me/password` | Cualquiera (5/min) | Cambiar contraseña propia |
+| `GET` | `/users` | ADMIN | Listar usuarios (paginado) |
 | `POST` | `/users` | ADMIN | Crear usuario con rol concreto |
 | `GET` | `/users/{id}` | ADMIN | Obtener usuario por ID |
 | `PATCH` | `/users/{id}` | ADMIN | Actualizar email o rol |
-| `DELETE` | `/users/{id}` | ADMIN | Desactivar usuario (soft delete) |
+| `DELETE` | `/users/{id}` | ADMIN | Eliminar usuario (soft-delete) |
 
 ### Organizations
 | Método | Ruta | Rol mínimo | Descripción |
 |---|---|---|---|
 | `POST` | `/organizations` | ADMIN | Crear organización |
-| `GET` | `/organizations` | Cualquiera | Listar organizaciones activas |
+| `GET` | `/organizations` | Cualquiera | Listar organizaciones (paginado) |
 | `GET` | `/organizations/{id}` | Cualquiera | Obtener organización |
 | `PATCH` | `/organizations/{id}` | MANAGER | Actualizar nombre |
-| `DELETE` | `/organizations/{id}` | ADMIN | Desactivar organización (soft delete) |
+| `DELETE` | `/organizations/{id}` | ADMIN | Eliminar organización |
 
 ### Projects
 | Método | Ruta | Rol mínimo | Descripción |
 |---|---|---|---|
 | `POST` | `/projects` | MANAGER | Crear proyecto |
-| `GET` | `/projects?organization_id=` | Cualquiera | Listar proyectos de una organización |
+| `GET` | `/projects?organization_id=` | Cualquiera | Listar proyectos (paginado) |
 | `GET` | `/projects/{id}` | Cualquiera | Obtener proyecto |
-| `PATCH` | `/projects/{id}` | MANAGER | Actualizar nombre o descripción |
-| `DELETE` | `/projects/{id}` | ADMIN | Eliminar proyecto |
+| `PATCH` | `/projects/{id}` | MANAGER | Actualizar |
+| `DELETE` | `/projects/{id}` | ADMIN | Eliminar |
 
 ### Profiles (perfiles de verificación)
 | Método | Ruta | Rol mínimo | Descripción |
 |---|---|---|---|
-| `POST` | `/profiles` | MANAGER | Crear perfil de verificación |
-| `GET` | `/profiles?organization_id=` | Cualquiera | Listar perfiles de una organización |
+| `POST` | `/profiles` | MANAGER | Crear perfil |
+| `GET` | `/profiles?organization_id=` | Cualquiera | Listar perfiles (paginado) |
 | `GET` | `/profiles/{id}` | Cualquiera | Obtener perfil |
-| `PATCH` | `/profiles/{id}` | MANAGER | Actualizar nombre |
-| `DELETE` | `/profiles/{id}` | ADMIN | Eliminar perfil |
+| `PATCH` | `/profiles/{id}` | MANAGER | Actualizar |
+| `DELETE` | `/profiles/{id}` | ADMIN | Eliminar |
+
+### Verification Rules (reglas de un perfil)
+| Método | Ruta | Rol mínimo | Descripción |
+|---|---|---|---|
+| `POST` | `/profiles/{id}/rules` | MANAGER (30/min) | Añadir regla al perfil |
+| `GET` | `/profiles/{id}/rules` | VIEWER | Listar reglas (ordenadas por `display_order`) |
+| `GET` | `/profiles/{id}/rules/{rule_id}` | VIEWER | Obtener regla |
+| `PATCH` | `/profiles/{id}/rules/{rule_id}` | MANAGER | Actualizar parámetros, severidad, estado |
+| `DELETE` | `/profiles/{id}/rules/{rule_id}` | MANAGER | Eliminar regla |
+
+Plantillas válidas: `RV-01` … `RV-10`. Severidades: `OBLIGATORIA`, `RECOMENDADA`, `INFORMATIVA`.
 
 ### Releases
 | Método | Ruta | Rol mínimo | Descripción |
 |---|---|---|---|
 | `POST` | `/releases` | OPERATOR | Crear release |
-| `GET` | `/releases?project_id=` | Cualquiera | Listar releases de un proyecto |
+| `GET` | `/releases?project_id=` | Cualquiera | Listar releases (paginado) |
 | `GET` | `/releases/{id}` | Cualquiera | Obtener release |
-| `PATCH` | `/releases/{id}` | OPERATOR | Actualizar descripción (solo en estado BORRADOR) |
-| `DELETE` | `/releases/{id}` | MANAGER | Eliminar release (solo en estado BORRADOR) |
-| `GET` | `/releases/{id}/results` | Cualquiera | Historial de verificaciones |
-| `POST` | `/releases/{id}/verify` | OPERATOR | Lanzar verificación |
+| `PATCH` | `/releases/{id}` | OPERATOR | Actualizar descripción |
+| `DELETE` | `/releases/{id}` | MANAGER | Eliminar release |
+| `GET` | `/releases/{id}/results` | VIEWER | Historial de verificaciones |
+| `POST` | `/releases/{id}/verify` | OPERATOR (10/min) | Lanzar verificación (encola tarea Celery) |
+| `GET` | `/releases/{id}/verify/stream` | VIEWER | **SSE** — stream en tiempo real de resultados |
+
+### Artifacts
+| Método | Ruta | Rol mínimo | Descripción |
+|---|---|---|---|
+| `POST` | `/releases/{id}/artifacts` | OPERATOR (30/min) | Registrar artefacto en la release |
+| `GET` | `/releases/{id}/artifacts` | VIEWER | Listar artefactos (paginado) |
+| `GET` | `/releases/{id}/artifacts/{artifact_id}` | VIEWER | Obtener artefacto |
+| `DELETE` | `/releases/{id}/artifacts/{artifact_id}` | MANAGER | Eliminar artefacto |
+
+Tipos de artefacto permitidos: `TAREA`, `CODIGO`, `DOCUMENTO`, `PRUEBA`, `INCIDENTE`. Cualquier otro valor es rechazado con `422`.
+
+### Connectors
+| Método | Ruta | Rol mínimo | Descripción |
+|---|---|---|---|
+| `POST` | `/organizations/{org_id}/connectors` | MANAGER (20/min) | Registrar conector |
+| `GET` | `/organizations/{org_id}/connectors` | VIEWER | Listar conectores (paginado, `?include_inactive=true`) |
+| `GET` | `/organizations/{org_id}/connectors/{id}` | VIEWER | Obtener conector |
+| `PATCH` | `/organizations/{org_id}/connectors/{id}` | MANAGER | Actualizar nombre o estado |
+| `DELETE` | `/organizations/{org_id}/connectors/{id}` | ADMIN | Eliminar conector |
+| `POST` | `/organizations/{org_id}/connectors/{id}/test` | MANAGER | Retestar conexión y actualizar estado |
+
+Las credenciales cifradas nunca aparecen en ninguna respuesta de la API.
 
 ### Sistema
 | Método | Ruta | Descripción |
 |---|---|---|
-| `GET` | `/health` | Estado del servicio y conectividad con la BD (503 si no alcanzable) |
+| `GET` | `/health` | Estado del servicio: PostgreSQL **y Redis** (`200 ok` / `503 degraded`) |
 
 ---
 
 ## RBAC — Control de acceso por roles
 
-Los roles siguen una jerarquía de niveles. Un rol de nivel superior incluye todos los permisos de los inferiores.
+Los roles siguen una jerarquía estricta. Un rol de nivel superior incluye todos los permisos de los inferiores.
 
-| Rol | Nivel |
-|---|---|
-| `VIEWER` | 0 |
-| `OPERATOR` | 1 |
-| `MANAGER` | 2 |
-| `ADMIN` | 3 |
+| Rol | Nivel | Puede hacer |
+|---|---|---|
+| `VIEWER` | 0 | Leer cualquier recurso |
+| `OPERATOR` | 1 | Crear releases y artefactos, lanzar verificaciones |
+| `MANAGER` | 2 | Crear proyectos/perfiles/conectores/reglas, actualizar recursos, eliminar artefactos |
+| `ADMIN` | 3 | Gestión completa: usuarios, organizaciones, eliminar conectores |
 
-La aplicación del rol se hace en `api/dependencies.py` mediante `require_min_role(UserRole.X)`, que se usa directamente como `Depends` en cada endpoint. Los errores de autorización devuelven `403 Forbidden`.
+La aplicación del rol se hace en `api/dependencies.py` mediante `require_min_role(UserRole.X)`. Los errores de autorización devuelven `403 Forbidden`. Los recursos inexistentes o que pertenecen a otra organización devuelven `404` (para no filtrar la existencia de organizaciones ajenas).
+
+---
+
+## Cola de tareas — Celery + Redis
+
+La verificación de releases es asíncrona. El flujo completo:
+
+```
+POST /releases/{id}/verify
+  → LaunchVerificationUseCase          # cambia status a EN_VERIFICACION
+      → CeleryTaskQueue.enqueue()       # manda mensaje a Redis
+          ↓ proceso separado
+      → verification_worker.run_verification()
+          → carga Release de DB (SQLAlchemy sync)
+          → TODO: IVerificationEngine.execute_verification()   ← pendiente motor Rust
+          → escribe VerificationResult en DB
+          → actualiza status de Release a VALIDA / CON_ADVERTENCIAS / NO_VALIDA
+
+GET /releases/{id}/verify/stream       # SSE — el cliente se suscribe y recibe el resultado
+```
+
+### Arrancar el worker
+
+```bash
+cd apps/api
+PYTHONPATH=src uv run celery -A infrastructure.queue.celery_app:celery_app worker \
+    --loglevel=info -Q verification
+```
+
+### Consultar estado de una tarea
+
+```python
+from infrastructure.queue.celery_app import celery_app
+result = celery_app.AsyncResult("task-id-aqui")
+print(result.status)   # PENDING | STARTED | SUCCESS | FAILURE
+print(result.result)   # dict con verdict y duration_ms si SUCCESS
+```
 
 ---
 
@@ -216,52 +336,54 @@ La aplicación del rol se hace en `api/dependencies.py` mediante `require_min_ro
 
 ### Con Docker Compose (recomendado)
 
-Desde la raíz del repositorio:
-
 ```bash
-# Solo la base de datos (para desarrollo local con uv)
-docker compose up postgres -d
+# Solo la base de datos y Redis (para desarrollo local con uv)
+docker compose up postgres redis -d
 
 # Toda la pila (API + Postgres + Redis)
 docker compose up --build
 ```
 
-### En local (desarrollo con uv)
+### En local (uv)
 
 ```bash
 cd apps/api
 
-# Instalar dependencias
+# Instalar dependencias (incluyendo dev)
 uv sync --extra dev
 
-# Arrancar servidor
+# Arrancar servidor (migraciones automáticas al arrancar)
 uv run uvicorn main:app --reload --port 8000 --app-dir src
+
+# En otra terminal: arrancar worker de Celery
+PYTHONPATH=src uv run celery -A infrastructure.queue.celery_app:celery_app worker \
+    --loglevel=info -Q verification
 ```
 
-Las migraciones se aplican automáticamente al arrancar el servidor.
-
-El endpoint de salud confirma que el servicio está operativo:
+Verificar que el servidor está operativo:
 
 ```bash
 curl http://localhost:8000/health
-# {"status": "ok", "db": "reachable", "message": "The backend is running correctly"}
+# {"status": "ok", "db": "reachable", "redis": "reachable"}
 ```
 
 ---
 
 ## Variables de entorno
 
-Todas las variables son obligatorias salvo `ENCRYPTION_KEY`. Copiar `.env.example` como `.env` y rellenar los valores.
+Copiar `.env.example` como `.env` y rellenar los valores. Todas son obligatorias salvo `ENCRYPTION_KEY`.
 
 | Variable | Descripción | Ejemplo |
 |---|---|---|
-| `DATABASE_URL` | DSN de conexión a PostgreSQL (psycopg3) | `postgresql+psycopg://user:pass@localhost:5432/svaes` |
-| `JWT_SECRET_KEY` | Clave para firma de tokens JWT | clave aleatoria larga |
-| `JWT_ALGORITHM` | Algoritmo de firma JWT | `HS256` |
-| `JWT_EXPIRE_MINUTES` | Tiempo de expiración del token en minutos | `60` |
-| `ENCRYPTION_KEY` | Clave Fernet para cifrar credenciales de conectores | generada automáticamente si se omite (efímera) |
-| `ALLOWED_ORIGINS` | Lista de orígenes CORS permitidos (JSON array) | `["http://localhost:4200"]` |
-| `ENVIRONMENT` | Entorno de ejecución (oculta `/docs` en producción) | `development` \| `production` |
+| `DATABASE_URL` | DSN de PostgreSQL (psycopg3 async) | `postgresql+psycopg://user:pass@localhost:5432/svaes` |
+| `JWT_SECRET_KEY` | Clave de firma JWT — nunca commitear | clave aleatoria ≥ 32 chars |
+| `JWT_ALGORITHM` | Algoritmo de firma | `HS256` |
+| `JWT_EXPIRE_MINUTES` | TTL del token en minutos | `60` |
+| `ENCRYPTION_KEY` | Clave Fernet para cifrado de credenciales de conectores | Generada automáticamente si se omite — **efímera** |
+| `ALLOWED_ORIGINS` | Orígenes CORS permitidos (JSON array o lista separada por comas) | `["http://localhost:4200"]` |
+| `ENVIRONMENT` | Entorno de ejecución — oculta `/docs` en `production` | `development` \| `production` |
+| `CELERY_BROKER_URL` | URL de Redis como broker de Celery | `redis://localhost:6379/0` |
+| `CELERY_RESULT_BACKEND` | URL de Redis como backend de resultados | `redis://localhost:6379/0` |
 
 ---
 
@@ -269,36 +391,48 @@ Todas las variables son obligatorias salvo `ENCRYPTION_KEY`. Copiar `.env.exampl
 
 Las migraciones se aplican automáticamente al arrancar el servidor (`alembic upgrade head` en el lifespan de FastAPI).
 
-Para crear una nueva migración tras modificar un modelo:
+| Revisión | Descripción |
+|---|---|
+| `2fd6efcfd6c9` | Schema inicial (todas las tablas) |
+| `a1b2c3d4e5f6` | Row-Level Security en `projects`, `verification_profiles`, `connector_instances` |
+
+Para crear una nueva migración tras modificar un modelo ORM:
 
 ```bash
 cd apps/api
-
-# Genera el archivo de migración comparando modelos vs BD
 uv run alembic revision --autogenerate -m "descripcion_del_cambio"
-
-# Revisar el archivo generado en alembic/versions/ antes de commitear
-# Aplicar manualmente si no quieres reiniciar el servidor
+# Revisar el archivo en alembic/versions/ antes de commitear
 uv run alembic upgrade head
 ```
 
 ---
 
+## Tests de integración
+
+Los tests de integración se encuentran en `tests/api/integration/` y requieren una base de datos PostgreSQL real.
+
+```bash
+cd apps/api
+TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/svaes_test \
+uv run pytest ../../tests/api/integration -v
+```
+
+Los tests cubren:
+- **Connectors** — CRUD, aislamiento entre organizaciones (distintas orgs no ven los conectores de las demás)
+- **Artifacts** — registro, paginación, rechazo de tipos inválidos, eliminación
+- **Verification rules** — CRUD completo, validación de plantillas, aislamiento entre perfiles
+- **Password change** — contraseña actual incorrecta → 400, contraseña nueva corta → 422, rate limit
+
+---
+
 ## Pendiente / en progreso
 
-### Sin implementar
+### Única dependencia bloqueante
 
-- **Motor de verificación Rust** — `LaunchVerificationUseCase` encola la tarea pero el cliente hacia el motor Rust (`infrastructure/rust_client/`) no existe todavía. Las verificaciones quedan en estado pendiente indefinidamente.
-- **Celery workers** — La infraestructura de Redis y Celery está declarada en Docker Compose pero los workers no están implementados. Las tareas de verificación no se procesan.
-- **WebSocket / notificaciones en tiempo real** — El flujo de resultados de verificación requiere notificar al cliente cuando termina. De momento solo hay polling via `GET /releases/{id}/results`.
-- **Row-Level Security (RLS)** — El aislamiento entre tenants está a nivel de aplicación (filtros en los repositorios). El RLS en PostgreSQL como segunda línea de defensa no está configurado.
-- **Endpoint de cambio de contraseña** — No existe `PATCH /users/me/password`. Actualmente no hay forma de cambiar la contraseña desde la API.
-- **Paginación** — Los endpoints de listado devuelven todos los registros sin límite. Necesitan `skip`/`limit` o cursor-based pagination.
-- **Router de conectores** — `api/routers/connectors.py` existe pero los endpoints de gestión de conectores (crear, probar conexión, listar) no están completamente implementados.
+- **Motor de verificación Rust** — `IVerificationEngine` está definida como puerto de salida pero no tiene implementación. El worker de Celery encola la tarea y actualiza el estado, pero la lógica de verificación real es un stub que siempre devuelve `VALIDA`. En cuanto exista el cliente Rust, se reemplaza el `TODO` en `infrastructure/workers/verification_worker.py`.
 
-### Parcialmente implementado / mockeado
+### Mejoras menores pendientes
 
-- **Perfiles de verificación** — El modelo y el CRUD están completos, pero las `VerificationRule` asociadas a un perfil no tienen endpoints propios todavía. Solo se pueden consultar indirectamente.
-- **Artefactos de release** — El modelo `ArtifactModel` existe y está en la migración, pero no hay endpoints para subir ni consultar artefactos de un release.
-- **Health check** — Prueba la conectividad con PostgreSQL pero no comprueba Redis ni la disponibilidad del motor Rust.
-- **Tests de nuevos endpoints** — Los endpoints de CRUD completo (GET, PATCH, DELETE) añadidos en la última iteración tienen cobertura parcial. Los tests de routers necesitan actualización para cubrir los nuevos casos de uso y la aplicación de roles.
+- **Enforcement de RLS a nivel de aplicación** — La migración `a1b2c3d4e5f6` habilita las políticas RLS en PostgreSQL, pero actualmente la condición de fallback las deja abiertas si no se establece `SET LOCAL app.current_organization_id`. Para activar el aislamiento total se necesita un middleware que inyecte esa variable de sesión antes de cada transacción.
+- **WebSocket bidireccional** — El SSE (`GET /releases/{id}/verify/stream`) cubre el caso de lectura en tiempo real, pero no hay canal bidireccional.
+- **Ejecutar y validar tests de integración en CI** — Los tests están escritos pero no hay pipeline de CI que los ejecute automáticamente contra una base de datos de prueba.

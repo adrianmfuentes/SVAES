@@ -30,7 +30,7 @@ class IProfileRepository(ABC):
         pass
 
     @abstractmethod
-    async def list_by_organization(self, organization_id: uuid.UUID) -> List[VerificationProfile]:
+    async def list_by_organization(self, organization_id: uuid.UUID, skip: int = 0, limit: int = 50) -> List[VerificationProfile]:
         pass
 
     @abstractmethod

@@ -1,10 +1,13 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
-from api.schemas.user import UserCreate, UserUpdate, UserResponse
+from api.rate_limit import limiter
+from api.schemas.user import ChangePasswordRequest, UserCreate, UserUpdate, UserResponse
 from application.use_cases.user_use_cases import (
+    ChangePasswordCommand,
+    ChangePasswordUseCase,
     CreateUserUseCase,
     CreateUserCommand,
     GetUserUseCase,
@@ -14,6 +17,7 @@ from application.use_cases.user_use_cases import (
     DeleteUserUseCase,
 )
 from api.dependencies import (
+    get_change_password_use_case,
     get_create_user_use_case,
     get_get_user_use_case,
     get_list_users_use_case,
@@ -32,6 +36,28 @@ router = APIRouter(prefix="/users", tags=["Users"])
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: Annotated[User, Depends(get_current_user)]):
     return current_user
+
+
+@router.patch("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
+async def change_my_password(
+    request: Request,
+    body: ChangePasswordRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    use_case: Annotated[ChangePasswordUseCase, Depends(get_change_password_use_case)],
+):
+    try:
+        await use_case.execute(
+            ChangePasswordCommand(
+                user_id=current_user.id,
+                current_password=body.current_password,
+                new_password=body.new_password,
+            )
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
@@ -55,8 +81,10 @@ async def create_user(
 async def list_users(
     use_case: Annotated[ListUsersUseCase, Depends(get_list_users_use_case)],
     _current_user: Annotated[User, require_min_role(UserRole.ADMIN)],
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
 ):
-    return await use_case.execute()
+    return await use_case.execute(skip=skip, limit=limit)
 
 
 @router.get("/{user_id}", response_model=UserResponse)

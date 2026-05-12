@@ -14,7 +14,7 @@ class IArtifactRepository(ABC):
         pass
 
     @abstractmethod
-    async def find_by_release(self, release_id: UUID) -> List[Artifact]:
+    async def find_by_release(self, release_id: UUID, skip: int = 0, limit: int = 100) -> List[Artifact]:
         pass
 
     @abstractmethod

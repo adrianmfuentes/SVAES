@@ -60,9 +60,9 @@ class ListConnectorsUseCase:
     def __init__(self, connector_repo: IConnectorRepository) -> None:
         self.connector_repo = connector_repo
 
-    async def execute(self, organization_id: uuid.UUID, include_inactive: bool = False) -> List[ConnectorInstance]:
+    async def execute(self, organization_id: uuid.UUID, include_inactive: bool = False, skip: int = 0, limit: int = 50) -> List[ConnectorInstance]:
         return await self.connector_repo.list_by_organization(
-            organization_id, active_only=not include_inactive
+            organization_id, active_only=not include_inactive, skip=skip, limit=limit
         )
 
 

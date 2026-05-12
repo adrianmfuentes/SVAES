@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from api.dependencies import (
     get_artifact_repository,
@@ -17,6 +17,7 @@ from application.use_cases.artifact_use_cases import (
     RegisterArtifactCommand,
     RegisterArtifactUseCase,
 )
+from api.rate_limit import limiter
 from domain.entities.enums import UserRole
 from domain.entities.user import User
 from domain.exceptions import EntityNotFoundError
@@ -30,7 +31,9 @@ router = APIRouter(prefix="/releases/{release_id}/artifacts", tags=["Artifacts"]
 # POST /releases/{release_id}/artifacts
 # ---------------------------------------------------------------------------
 @router.post("", response_model=ArtifactResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/minute")
 async def register_artifact(
+    req: Request,
     release_id: uuid.UUID,
     request: ArtifactCreateRequest,
     artifact_repo: Annotated[SqlArtifactRepository, Depends(get_artifact_repository)],
@@ -63,10 +66,12 @@ async def list_artifacts(
     artifact_repo: Annotated[SqlArtifactRepository, Depends(get_artifact_repository)],
     release_repo: Annotated[SqlReleaseRepository, Depends(get_release_repository)],
     _current_user: Annotated[User, require_min_role(UserRole.VIEWER)],
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
 ):
     use_case = ListArtifactsUseCase(artifact_repo=artifact_repo, release_repo=release_repo)
     try:
-        return await use_case.execute(release_id)
+        return await use_case.execute(release_id, skip=skip, limit=limit)
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 

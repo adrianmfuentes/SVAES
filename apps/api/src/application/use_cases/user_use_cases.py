@@ -97,8 +97,8 @@ class ListUsersUseCase:
     def __init__(self, user_repo: IUserRepository) -> None:
         self.user_repo = user_repo
 
-    async def execute(self, active_only: bool = True) -> List[User]:
-        return await self.user_repo.list_all(active_only=active_only)
+    async def execute(self, active_only: bool = True, skip: int = 0, limit: int = 100) -> List[User]:
+        return await self.user_repo.list_all(active_only=active_only, skip=skip, limit=limit)
 
 
 class UpdateUserUseCase:
@@ -127,3 +127,25 @@ class DeleteUserUseCase:
         if not user:
             raise EntityNotFoundError(f"User {user_id} not found")
         await self.user_repo.delete(user_id)
+
+
+@dataclass
+class ChangePasswordCommand:
+    user_id: uuid.UUID
+    current_password: str
+    new_password: str
+
+
+class ChangePasswordUseCase:
+    def __init__(self, user_repo: IUserRepository, password_hasher: IPasswordHasher) -> None:
+        self.user_repo = user_repo
+        self.password_hasher = password_hasher
+
+    async def execute(self, command: ChangePasswordCommand) -> None:
+        user = await self.user_repo.get_by_id(command.user_id)
+        if not user:
+            raise EntityNotFoundError(f"User {command.user_id} not found")
+        if not self.password_hasher.verify(command.current_password, user.hashed_password):
+            raise ValueError("Current password is incorrect")
+        user.hashed_password = self.password_hasher.hash(command.new_password)
+        await self.user_repo.update(user)

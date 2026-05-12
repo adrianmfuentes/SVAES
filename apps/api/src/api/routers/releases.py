@@ -1,9 +1,13 @@
+import asyncio
+import json
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from api.rate_limit import limiter
 from domain.entities.user import User
 from domain.entities.enums import ReleaseStatus, UserRole
 from domain.exceptions import EntityNotFoundError, ReleaseInvalidStateError
@@ -56,8 +60,10 @@ async def list_releases(
     use_case: Annotated[ListReleasesUseCase, Depends(get_list_releases_use_case)],
     _current_user: Annotated[User, Depends(get_current_user)],
     project_id: Annotated[uuid.UUID, Query()],
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
 ):
-    return await use_case.execute(project_id)
+    return await use_case.execute(project_id, skip=skip, limit=limit)
 
 
 @router.get("/{release_id}", response_model=ReleaseResponse)
@@ -131,7 +137,9 @@ async def get_results(
     status_code=status.HTTP_202_ACCEPTED,
     response_model=VerificationTaskResponse,
 )
+@limiter.limit("10/minute")
 async def verify_release(
+    request: Request,
     release_id: uuid.UUID,
     use_case: Annotated[LaunchVerificationUseCase, Depends(get_launch_verification_use_case)],
     current_user: Annotated[User, require_min_role(UserRole.OPERATOR)],
@@ -153,3 +161,43 @@ async def verify_release(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
         ) from e
+
+
+@router.get("/{release_id}/verify/stream")
+async def stream_verification_results(
+    release_id: uuid.UUID,
+    use_case: Annotated[GetVerificationHistoryUseCase, Depends(get_verification_history_use_case)],
+    _current_user: Annotated[User, require_min_role(UserRole.VIEWER)],
+):
+    """SSE stream — polls the verification results until a terminal verdict is available."""
+
+    async def _event_generator():
+        seen_ids: set[str] = set()
+        for _ in range(60):  # max 5 min at 5s intervals
+            try:
+                results = await use_case.execute(release_id)
+            except EntityNotFoundError:
+                yield f"event: error\ndata: {json.dumps({'detail': 'Release not found'})}\n\n"
+                return
+
+            for r in results:
+                rid = str(r.id)
+                if rid not in seen_ids:
+                    seen_ids.add(rid)
+                    payload = {
+                        "id": rid,
+                        "verdict": r.verdict.value,
+                        "executed_at": r.executed_at.isoformat(),
+                        "duration_ms": r.duration_ms,
+                    }
+                    yield f"data: {json.dumps(payload)}\n\n"
+
+            if results:
+                yield "event: done\ndata: {}\n\n"
+                return
+
+            await asyncio.sleep(5)
+
+        yield "event: timeout\ndata: {}\n\n"
+
+    return StreamingResponse(_event_generator(), media_type="text/event-stream")
