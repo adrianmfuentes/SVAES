@@ -1,23 +1,42 @@
-from pydantic import BaseModel
 import uuid
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any, Dict, Literal, Optional
+
+from pydantic import BaseModel
+
 from domain.entities.enums import ConnectorStatus
 
+
 class ConnectorCreateRequest(BaseModel):
-    """Request body for registering a new connector instance in an organization."""
     connector_type: str
     name: str
     config_data: Dict[str, Any]
 
+
+class ConnectorUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    status: Optional[Literal["ACTIVO", "INACTIVO"]] = None
+
+
 class ConnectorResponse(BaseModel):
-    """API response shape for a persisted connector instance."""
     id: uuid.UUID
     organization_id: uuid.UUID
     connector_type: str
     name: str
     status: ConnectorStatus
-    last_tested_at: datetime | None = None
+    last_tested_at: Optional[datetime] = None
     created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class VerificationResultResponse(BaseModel):
+    id: uuid.UUID
+    release_id: uuid.UUID
+    verdict: str
+    rule_results: dict
+    profile_snapshot: dict
+    executed_at: datetime
+    duration_ms: Optional[int]
 
     model_config = {"from_attributes": True}

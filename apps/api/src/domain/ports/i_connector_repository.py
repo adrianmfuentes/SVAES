@@ -23,3 +23,11 @@ class IConnectorRepository(ABC):
     @abstractmethod
     async def list_by_organization(self, organization_id: uuid.UUID, active_only: bool = True) -> List[ConnectorInstance]:
         pass
+
+    @abstractmethod
+    async def update(self, connector: ConnectorInstance) -> ConnectorInstance:
+        pass
+
+    @abstractmethod
+    async def delete(self, connector_id: uuid.UUID) -> None:
+        pass

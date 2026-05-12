@@ -1,36 +1,23 @@
 import uuid
-from typing import Dict, Any
-from domain.ports.i_release_repository import IReleaseRepository
+from typing import List
+
+from domain.entities.verification_result import VerificationResult
 from domain.exceptions import EntityNotFoundError
+from domain.ports.i_release_repository import IReleaseRepository
+from domain.ports.i_verification_result_repository import IVerificationResultRepository
 
 
 class GetVerificationHistoryUseCase:
-    """Use case for retrieving the verification history of a release.
-
-    Attributes:
-        release_repo (IReleaseRepository): Repository for managing release entities.
-
-    Raises:
-        EntityNotFoundError: If the release with the given ID does not exist.
-
-    Returns:
-        Dict[str, Any]: A dictionary containing the verification history details of the release.
-
-    Note: Now returns a dictionary with hardcoded values for demonstration purposes. 
-    """
-
-    def __init__(self, release_repo: IReleaseRepository):
+    def __init__(
+        self,
+        release_repo: IReleaseRepository,
+        verification_result_repo: IVerificationResultRepository,
+    ) -> None:
         self.release_repo = release_repo
+        self.verification_result_repo = verification_result_repo
 
-    async def execute(self, release_id: uuid.UUID) -> Dict[str, Any]:
+    async def execute(self, release_id: uuid.UUID) -> List[VerificationResult]:
         release = await self.release_repo.get_by_id(release_id)
-        
         if not release:
-            raise EntityNotFoundError("Release not found with ID: {}".format(release_id))
-        
-        return {
-            "release_id": str(release_id),
-            "verdict": "PASSED",
-            "duration_ms": 1450,
-            "rules_evaluated": 5,
-        }
+            raise EntityNotFoundError(f"Release not found with ID: {release_id}")
+        return await self.verification_result_repo.find_by_release(release_id)

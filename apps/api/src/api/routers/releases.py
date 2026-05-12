@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from domain.entities.user import User
-from domain.entities.enums import UserRole
+from domain.entities.enums import ReleaseStatus, UserRole
 from domain.exceptions import EntityNotFoundError, ReleaseInvalidStateError
 from api.schemas.release import ReleaseCreate, ReleaseUpdate, ReleaseResponse, VerificationTaskResponse
+from api.schemas.connector import VerificationResultResponse
 from application.use_cases.launch_verification import LaunchVerificationUseCase, LaunchVerificationCommand
 from application.use_cases.create_release import (
     CreateReleaseUseCase,
@@ -101,14 +102,26 @@ async def delete_release(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
 
-@router.get("/{release_id}/results")
+@router.get("/{release_id}/results", response_model=list[VerificationResultResponse])
 async def get_results(
     release_id: uuid.UUID,
     use_case: Annotated[GetVerificationHistoryUseCase, Depends(get_verification_history_use_case)],
-    _current_user: Annotated[User, Depends(get_current_user)],
+    _current_user: Annotated[User, require_min_role(UserRole.VIEWER)],
 ):
     try:
-        return await use_case.execute(release_id)
+        results = await use_case.execute(release_id)
+        return [
+            VerificationResultResponse(
+                id=r.id,
+                release_id=r.release_id,
+                verdict=r.verdict.value,
+                rule_results=r.rule_results,
+                profile_snapshot=r.profile_snapshot,
+                executed_at=r.executed_at,
+                duration_ms=r.duration_ms,
+            )
+            for r in results
+        ]
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 

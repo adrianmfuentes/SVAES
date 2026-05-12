@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.rate_limit import limiter
-from api.routers import auth, organizations, projects, profiles, releases, connectors
+from api.routers import auth, organizations, projects, profiles, releases, connectors, artifacts
 from api.routers import users
 from domain.exceptions import (
     EntityNotFoundError,
@@ -120,6 +120,7 @@ app.include_router(organizations.router, prefix=API_V1_PREFIX)
 app.include_router(projects.router, prefix=API_V1_PREFIX)
 app.include_router(profiles.router, prefix=API_V1_PREFIX)
 app.include_router(releases.router, prefix=API_V1_PREFIX)
+app.include_router(artifacts.router, prefix=API_V1_PREFIX)
 app.include_router(connectors.router, prefix=API_V1_PREFIX)
 app.include_router(users.router, prefix=API_V1_PREFIX)
 
