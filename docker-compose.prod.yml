@@ -17,13 +17,11 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_EXPIRE_MINUTES: "60"
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-    # No volume mounts — uses the baked image, not live source
 
   postgres:
     restart: always
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
-    # No port exposure — only accessible via the internal network
 
 volumes:
   postgres_prod_data:

@@ -16,8 +16,6 @@ Backend principal del **Sistema de Verificación Automática de Entregas de Soft
 8. [Puesta en marcha](#puesta-en-marcha)
 9. [Variables de entorno](#variables-de-entorno)
 10. [Migraciones de base de datos](#migraciones-de-base-de-datos)
-11. [Tests de integración](#tests-de-integración)
-12. [Pendiente / en progreso](#pendiente--en-progreso)
 
 ---
 
@@ -70,7 +68,7 @@ Los handlers HTTP (FastAPI) y repositorios usan **SQLAlchemy async** (`AsyncSess
 ## Estructura de directorios
 
 ```
-api/                          # Raíz del proyecto
+apps/api/                      # Raíz del proyecto
 ├── alembic/                  # Migraciones de base de datos
 │   └── versions/             # Historial de revisiones Alembic
 ├── src/                      # Código fuente principal
@@ -78,13 +76,13 @@ api/                          # Raíz del proyecto
 │   ├── main.py               # Punto de entrada
 │   │
 │   ├── domain/               # Lógica de negocio pura (sin dependencias externas)
-│   │   ├── entities/        
+│   │   ├── entities/
 │   │   │   ├── user.py, organization.py, project.py
 │   │   │   ├── release.py, artifact.py
 │   │   │   ├── verification_profile.py, verification_rule.py
 │   │   │   ├── verification_result.py
 │   │   │   ├── connector_instance.py
-│   │   │   └── enums.py     
+│   │   │   └── enums.py
 │   │   ├── ports/            # Contratos
 │   │   │   ├── i_user_repository.py, i_organization_repository.py
 │   │   │   ├── i_project_repository.py, i_release_repository.py
@@ -95,66 +93,65 @@ api/                          # Raíz del proyecto
 │   │   │   ├── i_task_queue.py, i_verification_engine.py
 │   │   │   ├── i_token_service.py, i_password_hasher.py
 │   │   │   ├── i_credential_encryptor.py, i_connector.py
-│   │   └── exceptions.py  
+│   │   └── exceptions.py
 │   │
 │   ├── application/          # Casos de uso
 │   │   └── use_cases/
-│   │       ├── auth_use_cases.py          
-│   │       ├── user_use_cases.py           
-│   │       ├── organization_use_cases.py   
-│   │       ├── project_use_cases.py        
-│   │       ├── manage_profile.py           
-│   │       ├── create_release.py           
-│   │       ├── launch_verification.py  
-│   │       ├── get_verification_history.py 
-│   │       ├── configure_connector.py     
-│   │       ├── connector_use_cases.py    
-│   │       ├── artifact_use_cases.py      
-│   │       └── verification_rule_use_cases.py  
+│   │       ├── auth_use_cases.py
+│   │       ├── user_use_cases.py
+│   │       ├── organization_use_cases.py
+│   │       ├── project_use_cases.py
+│   │       ├── manage_profile.py
+│   │       ├── create_release.py
+│   │       ├── launch_verification.py
+│   │       ├── get_verification_history.py
+│   │       ├── configure_connector.py
+│   │       ├── connector_use_cases.py
+│   │       ├── artifact_use_cases.py
+│   │       └── verification_rule_use_cases.py
 │   │
 │   ├── infrastructure/       # Adaptadores (implementan los puertos)
-│   │   ├── config.py         
+│   │   ├── config.py
 │   │   ├── database/         # Persistencia con PostgreSQL + SQLAlchemy
-│   │   │   ├── base.py     
+│   │   │   ├── base.py
 │   │   │   ├── session.py    # Sesiones async (API) y sync (workers)
-│   │   │   ├── models/       
-│   │   │   └── repositories/ 
+│   │   │   ├── models/
+│   │   │   └── repositories/
 │   │   ├── queue/            # Cola de tareas asíncronas
 │   │   │   ├── celery_app.py
-│   │   │   └── celery_task_queue.py 
+│   │   │   └── celery_task_queue.py
 │   │   ├── workers/          # Procesos en segundo plano
-│   │   │   └── verification_worker.py  
+│   │   │   └── verification_worker.py
 │   │   ├── security/         # Autenticación y cifrado
-│   │   │   ├── jwt_handler.py      
-│   │   │   ├── password_hasher.py   
-│   │   │   ├── credential_encryptor.py 
-│   │   │   └── mock_task_queue.py   
+│   │   │   ├── jwt_handler.py
+│   │   │   ├── password_hasher.py
+│   │   │   ├── credential_encryptor.py
+│   │   │   └── mock_task_queue.py
 │   │   ├── adapters/         # Registro e instanciación de conectores
 │   │   │   └── connector_registry.py
 │   │   └── logging/         # Configuración de logs
 │   │
-│   ├── routers/              # Endpoints HTTP (FastAPI)
-│   │   ├── auth.py                 # /auth/login, /auth/register
-│   │   ├── users.py                # /users, /users/me
-│   │   ├── organizations.py        # /organizations
-│   │   ├── projects.py             # /projects
-│   │   ├── profiles.py             # /profiles
-│   │   ├── releases.py             # /releases, /releases/{id}/verify
-│   │   ├── artifacts.py            # /releases/{id}/artifacts
-│   │   ├── connectors.py           # /organizations/{id}/connectors
-│   │   └── verification_rules.py   # /profiles/{id}/rules
+│   ├── api/              # Endpoints HTTP (FastAPI)
+│   │   ├── dependencies.py      # Inyección de dependencias + guards RBAC
+│   │   ├── routers/
+│   │   │   ├── auth.py                 # /auth/login, /auth/register
+│   │   │   ├── users.py                # /users, /users/me
+│   │   │   ├── organizations.py        # /organizations
+│   │   │   ├── projects.py             # /projects
+│   │   │   ├── profiles.py             # /profiles
+│   │   │   ├── releases.py             # /releases, /releases/{id}/verify
+│   │   │   ├── artifacts.py            # /releases/{id}/artifacts
+│   │   │   ├── connectors.py           # /organizations/{id}/connectors
+│   │   │   └── verification_rules.py   # /profiles/{id}/rules
+│   │   └── schemas/             # Modelos Pydantic (petición/respuesta HTTP)
+│   │       ├── auth.py, user.py, organization.py
+│   │       ├── project.py, release.py
+│   │       ├── profile.py, verification_rule.py
+│   │       ├── connector.py, artifact.py
 │   │
-│   ├── schemas/             # Modelos Pydantic (petición/respuesta HTTP)
-│   │   ├── auth.py, user.py, organization.py
-│   │   ├── project.py, release.py
-│   │   ├── profile.py, verification_rule.py
-│   │   ├── connector.py, artifact.py
-│   │
-│   ├── dependencies.py      # Inyección de dependencias + guards RBAC
 │   └── rate_limit.py        # Límite de peticiones (slowapi)
 │
 ├── tests/                   # Suite de tests (fuera de src/)
-│   └── ...                  # Estructura paralela a src/
 │
 ├── alembic.ini              # Configuración de migraciones
 ├── pyproject.toml           # Dependencias Python
@@ -314,7 +311,7 @@ POST /releases/{id}/verify
           ↓ proceso separado
       → verification_worker.run_verification()
           → carga Release de DB (SQLAlchemy sync)
-          → TODO: IVerificationEngine.execute_verification()   ← pendiente motor Rust
+          → IVerificationEngine.execute_verification()   # motor Rust
           → escribe VerificationResult en DB
           → actualiza status de Release a VALIDA / CON_ADVERTENCIAS / NO_VALIDA
 
@@ -361,7 +358,7 @@ cd apps/api
 uv sync --extra dev
 
 # Arrancar servidor (migraciones automáticas al arrancar)
-uv run uvicorn main:app --reload --port 8000 --app-dir src
+uv run uvicorn src.main:app --reload --port 8000 --app-dir src
 
 # En otra terminal: arrancar worker de Celery
 PYTHONPATH=src uv run celery -A infrastructure.queue.celery_app:celery_app worker \

@@ -73,8 +73,6 @@ Principio clave:
 
 Las dependencias solo pueden apuntar hacia el dominio.
 
----
-
 ## 4.2 Descomposición en contenedores
 
 El sistema se divide en los siguientes componentes:
@@ -85,8 +83,6 @@ El sistema se divide en los siguientes componentes:
 - Cola de tareas (Celery + Redis)
 - Base de datos (PostgreSQL)
 - Conectores externos
-
----
 
 ## 4.3 Flujo de ejecución
 
@@ -233,38 +229,37 @@ Peticiones protegidas:
 # 12. Estructura del proyecto
 
 ```
-SVAES/
-├── api/                    # Backend FastAPI (Python)
-│   ├── alembic/            # Migraciones de base de datos
-│   └── src/
-│       ├── main.py         # 🚀 Punto de entrada + lifespan
-│       ├── domain/         # 💎 Entidades y puertos (sin dependencias externas)
-│       │   ├── entities/   # User, Organization, Project, Release, Artifact...
-│       │   └── ports/      # Interfaces: IUserRepository, ITaskQueue, IConnector...
-│       ├── application/    # 🎯 Casos de uso
-│       │   └── use_cases/  # auth, users, organizations, projects, releases...
-│       ├── infrastructure/ # 🔌 Implementaciones (DB, seguridad, cola)
-│       │   ├── database/   # SQLAlchemy models + repositorios
-│       │   ├── queue/      # Celery + Redis
-│       │   ├── workers/    # verification_worker
-│       │   ├── security/   # JWT, bcrypt, Fernet
-│       │   └── adapters/   # connector_registry
-│       ├── routers/        # 📡 Endpoints HTTP
-│       └── schemas/        # 📋 Modelos Pydantic
-│
-├── engine/                 # Motor de verificación (Rust)
-│   └── src/
-│       ├── main.rs
-│       ├── pipeline.rs
-│       ├── models.rs
-│       └── rules/          # RV-01 a RV-10
-│
-├── web/                   # Frontend (Angular)
-│   └── src/app/
-│
-├── tests/                # Tests unitarios e integración
-├── docs/                 # Documentación y diagramas
+svaes/
+├── apps/
+│   ├── api/               # Backend FastAPI (Python)
+│   │   ├── alembic/       # Migraciones de base de datos
+│   │   ├── src/
+│   │   │   ├── main.py         # Punto de entrada + lifespan
+│   │   │   ├── domain/         # Entidades y puertos (sin dependencias externas)
+│   │   │   │   ├── entities/   # User, Organization, Project, Release, Artifact...
+│   │   │   │   └── ports/      # Interfaces: IUserRepository, ITaskQueue, IConnector...
+│   │   │   ├── application/    # Casos de uso
+│   │   │   │   └── use_cases/  # auth, users, organizations, projects, releases...
+│   │   │   ├── infrastructure/ # Implementaciones (DB, seguridad, cola)
+│   │   │   │   ├── database/   # SQLAlchemy models + repositorios
+│   │   │   │   ├── queue/      # Celery + Redis
+│   │   │   │   ├── workers/    # verification_worker
+│   │   │   │   ├── security/   # JWT, bcrypt, Fernet
+│   │   │   │   └── adapters/   # connector_registry
+│   │   │   └── api/       # Routers y schemas HTTP
+│   │   ├── tests/         # Tests propios de la API
+│   │   ├── pyproject.toml
+│   │   └── Dockerfile
+│   └── web/               # Frontend Angular
+├── packages/              # Paquetes internos compartidos
+├── tests/                 # Suite de pruebas completa
+│   ├── unit/              # Tests unitarios
+│   ├── integration/       # Tests de integración
+│   ├── e2e/               # Tests end-to-end
+│   ├── performance/       # Tests de rendimiento
+│   └── security/           # Tests de seguridad
 ├── scripts/              # Scripts auxiliares
+├── docs/                  # Documentación técnica
 ├── docker-compose.yml    # Servicios: api, postgres, redis
 └── README.md
 ```
@@ -328,7 +323,7 @@ Docker Compose arranca: API en `http://localhost:8000`, Swagger en `http://local
 # Solo la base de datos
 docker compose up postgres -d
 
-cd api
+cd apps/api
 uv sync
 uv run uvicorn src.main:app --reload --port 8000
 ```

@@ -73,8 +73,6 @@ Principe clé:
 
 Les dépendances ne peuvent pointer que vers le domaine.
 
----
-
 ## 4.2 Décomposition en conteneurs
 
 Le système est divisé en les composants suivants:
@@ -85,8 +83,6 @@ Le système est divisé en les composants suivants:
 - File de tâches (Celery + Redis)
 - Base de données (PostgreSQL)
 - Connecteurs externes
-
----
 
 ## 4.3 Flux d'exécution
 
@@ -149,23 +145,24 @@ EN_VERIFICACION
 
 ---
 
-# 7. Moteur de vérification
+# 7. Moteur de vérification (Rust)
 
-Implémenté en Rust.
+Traite le payload JSON du worker et renvoie le résultat de vérification.
 
 Caractéristiques:
+- Exécution parallèle (Rayon)
+- Pas d'appels réseau (tout en mémoire)
+- Déterministe et reproductible
 
-- Exécution parallèle
-- Pas d'appels réseau
-- Traitement en mémoire
-- Résultat déterministe
+Pipeline: Validation → Évaluation des règles → Agrégation → Verdict
 
-Pipeline:
-
-1. Validation
-2. Évaluation des règles
-3. Agrégation
-4. Verdict
+```
+engine/src/
+├── main.rs          # Point d'entrée (Actix-web)
+├── pipeline.rs      # Pipeline de vérification
+├── models.rs        # Modèles de données
+└── rules/           # RV-01 à RV-10
+```
 
 ---
 
@@ -229,71 +226,42 @@ Requêtes protégées:
 
 ---
 
-# 12. Structure
+# 12. Structure du projet
 
-```text
-SVAES/
-|-- apps/
-|   |-- api/                         # API principale (FastAPI + Python)
-|   |   |-- Dockerfile               # Multi-stage: builder → runtime
-|   |   |-- pyproject.toml           # Dépendances Python
-|   |   `-- src/
-|   |       |-- main.py              # Point d'entrée FastAPI (CORS, lifespan, routers)
-|   |       |-- api/
-|   |       |   |-- dependencies.py  # Injection de dépendances et get_current_user
-|   |       |   |-- routers/         # auth, organizations, projects, profiles, releases, connectors
-|   |       |   `-- schemas/         # Modèles Pydantic request/response
-|   |       |-- application/
-|   |       |   `-- use_cases/       # Cas d'utilisation de l'application
-|   |       |-- domain/
-|   |       |   |-- entities/        # User, Organization, Release, ...
-|   |       |   |-- ports/           # Interfaces: IUserRepository, IPasswordHasher, ...
-|   |       |   `-- exceptions.py
-|   |       `-- infrastructure/
-|   |           |-- config.py        # Settings (pydantic-settings, .env)
-|   |           |-- database/
-|   |           |   |-- base.py
-|   |           |   |-- session.py   # AsyncSession avec transactions automatiques
-|   |           |   |-- models/      # Modèles SQLAlchemy
-|   |           |   `-- repositories/
-|   |           |-- security/
-|   |           |   |-- password_hasher.py    # BcryptPasswordHasher
-|   |           |   |-- jwt_handler.py        # JwtHandler (HS256)
-|   |           |   |-- credential_encryptor.py # FernetCredentialEncryptor
-|   |           |   `-- mock_task_queue.py
-|   |           |-- adapters/
-|   |           |   `-- connector_registry.py
-|   |           `-- logging/
-|   |               `-- logger.py    # Usine get_logger()
-|   `-- web/                         # Application frontend
-|       |-- public/
-|       |-- src/
-|       |   |-- app/
-|       |   |-- components/
-|       |   |-- features/
-|       |   |-- hooks/
-|       |   |-- pages/
-|       |   |-- routes/
-|       |   |-- services/
-|       |   `-- styles/
-|       `-- package.json
-|-- docs/
-|   |-- api/
-|   |   `-- openapi.yaml
-|   |-- database/
-|   |   `-- erd.puml
-|   |-- diagrams/
-|   |   |-- exported/
-|   |   `-- plantuml/
-|   `-- tfg/
-|-- packages/
-|-- scripts/
-|-- tests/
-|-- workers/
-|-- .env.example
-|-- docker-compose.yml
-|-- LICENSE
-`-- README.md
+```
+svaes/
+├── apps/
+│   ├── api/               # Backend FastAPI (Python)
+│   │   ├── alembic/       # Migraciones de base de données
+│   │   ├── src/
+│   │   │   ├── main.py         # Point d'entrée + lifespan
+│   │   │   ├── domain/         # Entités et ports (sans dépendances externes)
+│   │   │   │   ├── entities/   # User, Organization, Project, Release, Artifact...
+│   │   │   │   └── ports/      # Interfaces: IUserRepository, ITaskQueue, IConnector...
+│   │   │   ├── application/    # Cas d'utilisation
+│   │   │   │   └── use_cases/  # auth, users, organizations, projects, releases...
+│   │   │   ├── infrastructure/ # Implémentations (DB, sécurité, file)
+│   │   │   │   ├── database/   # Modèles SQLAlchemy + dépôts
+│   │   │   │   ├── queue/      # Celery + Redis
+│   │   │   │   ├── workers/    # verification_worker
+│   │   │   │   ├── security/   # JWT, bcrypt, Fernet
+│   │   │   │   └── adapters/   # connector_registry
+│   │   │   └── api/       # Routeurs et schémas HTTP
+│   │   ├── tests/         # Tests de l'API
+│   │   ├── pyproject.toml
+│   │   └── Dockerfile
+│   └── web/               # Frontend Angular
+├── packages/              # Paquets internes partagés
+├── tests/                 # Suite de tests complète
+│   ├── unit/              # Tests unitaires
+│   ├── integration/       # Tests d'intégration
+│   ├── e2e/               # Tests end-to-end
+│   ├── performance/       # Tests de performance
+│   └── security/           # Tests de sécurité
+├── scripts/              # Scripts auxiliaires
+├── docs/                  # Documentation technique
+├── docker-compose.yml    # Services: api, postgres, redis
+└── README.md
 ```
 
 ---
@@ -347,39 +315,27 @@ cd svaes
 docker compose up --build
 ```
 
-Docker Compose charge automatiquement `docker-compose.yml` + `docker-compose.override.yml`:
-- API à `http://localhost:8000` avec **hot reload** — les changements dans `src/` sont reflétés sans rebuild
-- Swagger UI à `http://localhost:8000/docs`
-- PostgreSQL exposé à `localhost:5432` (utilisateur: `svaes`, mot de passe: `svaes`, db: `svaes`)
+Docker Compose démarre: API à `http://localhost:8000`, Swagger à `http://localhost:8000/docs`, PostgreSQL à `localhost:5432`.
 
-## Développement local (sans Docker, uvicorn seulement)
+## Développement local (sans Docker)
 
 ```bash
-# Démarrer seulement la base de données
+# Seulement la base de données
 docker compose up postgres -d
 
-# Créer apps/api/src/.env avec:
-# DATABASE_URL=postgresql+psycopg://svaes:svaes@localhost:5432/svaes
-# JWT_SECRET_KEY=any-string
-
 cd apps/api
-pip install .
-cd src
-uvicorn main:app --reload
+uv sync
+uv run uvicorn src.main:app --reload --port 8000
 ```
 
-## Production (serveur)
+## Production
 
 ```bash
-# Exporter les variables réelles sur le serveur
 export DATABASE_URL="postgresql+psycopg://user:pass@host:5432/svaes"
-export JWT_SECRET_KEY="long-random-secure-key"
+export JWT_SECRET_KEY="clé-longue-aléatoire-sécurisée"
 export ENCRYPTION_KEY="$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")"
-
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
-
-Différences avec dev: pas de hot reload, pas de port postgres exposé, `restart: always`.
 
 ---
 

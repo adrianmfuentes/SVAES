@@ -2,16 +2,16 @@
 # Run with: docker compose up
 #
 # What this adds vs base:
-#   - Hot reload (source mounted as volume — no rebuild needed on code changes)
-#   - Postgres port exposed so DBeaver / pgAdmin / psql can connect from host
-#   - Permissive dev secrets (not suitable for production)
+#   - Hot reload
+#   - Postgres port exposed
+#   - Permissive dev secrets
 
 services:
   api:
     build:
-      target: builder       # reuse builder stage — has pip packages, skips copy-only runtime stage
+      target: builder
     volumes:
-      - ./apps/api/src:/app/src   # mount source for hot reload
+      - ./api/src:/app/src  
     ports:
       - "8000:8000"
     environment:
@@ -22,7 +22,7 @@ services:
 
   postgres:
     ports:
-      - "5432:5432"         # expose to host so you can connect with any DB client
+      - "5432:5432" 
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
 
