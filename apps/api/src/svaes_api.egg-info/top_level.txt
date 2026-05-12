@@ -1,5 +1,0 @@
-api
-application
-domain
-infrastructure
-main
