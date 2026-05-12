@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from api.dependencies import (
     get_configure_connector_use_case,
@@ -24,6 +24,7 @@ from application.use_cases.connector_use_cases import (
     UpdateConnectorCommand,
     UpdateConnectorUseCase,
 )
+from api.rate_limit import limiter
 from domain.entities.enums import ConnectorStatus, UserRole
 from domain.entities.user import User
 from domain.exceptions import ConnectorConnectionFailedError, EntityNotFoundError
@@ -40,7 +41,9 @@ router = APIRouter(tags=["Connectors"])
     response_model=ConnectorResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("20/minute")
 async def create_connector(
+    req: Request,
     org_id: uuid.UUID,
     request: ConnectorCreateRequest,
     use_case: Annotated[ConfigureConnectorUseCase, Depends(get_configure_connector_use_case)],
@@ -72,9 +75,11 @@ async def list_connectors(
     repo: Annotated[SqlConnectorRepository, Depends(get_connector_repository)],
     _current_user: Annotated[User, require_min_role(UserRole.VIEWER)],
     include_inactive: bool = Query(default=False),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
 ):
     use_case = ListConnectorsUseCase(connector_repo=repo)
-    return await use_case.execute(org_id, include_inactive=include_inactive)
+    return await use_case.execute(org_id, include_inactive=include_inactive, skip=skip, limit=limit)
 
 
 # ---------------------------------------------------------------------------

@@ -28,9 +28,10 @@ class SqlProjectRepository(IProjectRepository):
         model = await self.session.get(ProjectModel, project_id)
         return self._to_entity(model) if model else None
 
-    async def list_by_organization(self, organization_id: UUID) -> List[Project]:
+    async def list_by_organization(self, organization_id: UUID, skip: int = 0, limit: int = 50) -> List[Project]:
         result = await self.session.execute(
             select(ProjectModel).where(ProjectModel.organization_id == organization_id)
+            .offset(skip).limit(limit)
         )
         return [self._to_entity(m) for m in result.scalars().all()]
 

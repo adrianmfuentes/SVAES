@@ -39,9 +39,10 @@ class SqlArtifactRepository(IArtifactRepository):
         model = await self.session.get(ArtifactModel, artifact_id)
         return self._to_entity(model) if model else None
 
-    async def find_by_release(self, release_id: UUID) -> List[Artifact]:
+    async def find_by_release(self, release_id: UUID, skip: int = 0, limit: int = 100) -> List[Artifact]:
         result = await self.session.execute(
             select(ArtifactModel).where(ArtifactModel.release_id == release_id)
+            .offset(skip).limit(limit)
         )
         return [self._to_entity(m) for m in result.scalars().all()]
 

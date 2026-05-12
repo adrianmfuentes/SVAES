@@ -23,7 +23,7 @@ class IReleaseRepository(ABC):
         pass
 
     @abstractmethod
-    async def list_by_project(self, project_id: uuid.UUID) -> List[Release]:
+    async def list_by_project(self, project_id: uuid.UUID, skip: int = 0, limit: int = 50) -> List[Release]:
         pass
 
     @abstractmethod

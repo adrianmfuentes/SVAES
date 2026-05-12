@@ -49,8 +49,8 @@ class ListProjectsUseCase:
     def __init__(self, project_repo: IProjectRepository):
         self.project_repo = project_repo
 
-    async def execute(self, organization_id: uuid.UUID) -> List[Project]:
-        return await self.project_repo.list_by_organization(organization_id)
+    async def execute(self, organization_id: uuid.UUID, skip: int = 0, limit: int = 50) -> List[Project]:
+        return await self.project_repo.list_by_organization(organization_id, skip=skip, limit=limit)
 
 
 class UpdateProjectUseCase:

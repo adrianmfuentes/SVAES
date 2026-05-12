@@ -35,10 +35,11 @@ class SqlUserRepository(IUserRepository):
         model = result.scalars().first()
         return self._to_entity(model) if model else None
 
-    async def list_all(self, active_only: bool = True) -> List[User]:
+    async def list_all(self, active_only: bool = True, skip: int = 0, limit: int = 100) -> List[User]:
         stmt = select(UserModel)
         if active_only:
             stmt = stmt.where(UserModel.is_active.is_(True))
+        stmt = stmt.offset(skip).limit(limit)
         result = await self.session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 

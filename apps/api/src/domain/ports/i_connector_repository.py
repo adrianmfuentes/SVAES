@@ -21,7 +21,7 @@ class IConnectorRepository(ABC):
         pass
 
     @abstractmethod
-    async def list_by_organization(self, organization_id: uuid.UUID, active_only: bool = True) -> List[ConnectorInstance]:
+    async def list_by_organization(self, organization_id: uuid.UUID, active_only: bool = True, skip: int = 0, limit: int = 50) -> List[ConnectorInstance]:
         pass
 
     @abstractmethod

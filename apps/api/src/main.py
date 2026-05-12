@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.rate_limit import limiter
-from api.routers import auth, organizations, projects, profiles, releases, connectors, artifacts
+from api.routers import auth, organizations, projects, profiles, releases, connectors, artifacts, verification_rules
 from api.routers import users
 from domain.exceptions import (
     EntityNotFoundError,
@@ -122,6 +122,7 @@ app.include_router(profiles.router, prefix=API_V1_PREFIX)
 app.include_router(releases.router, prefix=API_V1_PREFIX)
 app.include_router(artifacts.router, prefix=API_V1_PREFIX)
 app.include_router(connectors.router, prefix=API_V1_PREFIX)
+app.include_router(verification_rules.router, prefix=API_V1_PREFIX)
 app.include_router(users.router, prefix=API_V1_PREFIX)
 
 
@@ -131,6 +132,8 @@ app.include_router(users.router, prefix=API_V1_PREFIX)
 @app.get("/health", tags=["System"])
 async def health():
     db_ok = False
+    redis_ok = False
+
     try:
         from infrastructure.database.session import _get_engine
         engine_factory = _get_engine()
@@ -140,9 +143,22 @@ async def health():
     except Exception:
         _log.warning("Health check: database unreachable")
 
-    if not db_ok:
-        return JSONResponse(
-            status_code=503,
-            content={"status": "degraded", "db": "unreachable", "message": "Database is not reachable"},
-        )
-    return {"status": "ok", "db": "reachable", "message": "The backend is running correctly"}
+    try:
+        import redis.asyncio as aioredis
+        r = aioredis.from_url(settings.celery_broker_url, socket_connect_timeout=2)
+        await r.ping()
+        await r.aclose()
+        redis_ok = True
+    except Exception:
+        _log.warning("Health check: Redis unreachable")
+
+    overall = "ok" if (db_ok and redis_ok) else "degraded"
+    payload = {
+        "status": overall,
+        "db": "reachable" if db_ok else "unreachable",
+        "redis": "reachable" if redis_ok else "unreachable",
+    }
+    return JSONResponse(
+        status_code=200 if overall == "ok" else 503,
+        content=payload,
+    )

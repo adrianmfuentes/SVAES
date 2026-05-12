@@ -31,9 +31,10 @@ class SqlReleaseRepository(IReleaseRepository):
         model = await self.session.get(ReleaseModel, release_id)
         return self._to_entity(model) if model else None
 
-    async def list_by_project(self, project_id: UUID) -> List[Release]:
+    async def list_by_project(self, project_id: UUID, skip: int = 0, limit: int = 50) -> List[Release]:
         result = await self.session.execute(
             select(ReleaseModel).where(ReleaseModel.project_id == project_id)
+            .offset(skip).limit(limit)
         )
         return [self._to_entity(m) for m in result.scalars().all()]
 

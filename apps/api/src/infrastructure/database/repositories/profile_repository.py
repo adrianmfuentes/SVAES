@@ -58,11 +58,12 @@ class SqlProfileRepository(IProfileRepository):
             await self.session.flush()
         return profile
 
-    async def list_by_organization(self, organization_id: UUID) -> list[VerificationProfile]:
+    async def list_by_organization(self, organization_id: UUID, skip: int = 0, limit: int = 50) -> list[VerificationProfile]:
         result = await self.session.execute(
             select(VerificationProfileModel)
             .options(selectinload(VerificationProfileModel.rules))
             .where(VerificationProfileModel.organization_id == organization_id)
+            .offset(skip).limit(limit)
         )
         return [self._to_entity(m) for m in result.scalars().all()]
 
@@ -75,9 +76,15 @@ class SqlProfileRepository(IProfileRepository):
     def _to_entity(self, model: VerificationProfileModel) -> VerificationProfile:
         rules = [
             VerificationRule(
-                rule_id=r.rule_template,
-                enabled=r.is_active,
-                config=r.params or {},
+                profile_id=model.id,
+                rule_template=r.rule_template,
+                severity=r.severity,
+                params=r.params or {},
+                connector_instance_id=r.connector_instance_id,
+                display_order=r.display_order,
+                is_active=r.is_active,
+                id=r.id,
+                created_at=r.created_at,
             )
             for r in model.rules
         ]

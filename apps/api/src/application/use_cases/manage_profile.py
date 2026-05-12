@@ -37,8 +37,8 @@ class ManageProfileUseCase:
             raise EntityNotFoundError(f"Profile {profile_id} not found")
         return profile
 
-    async def list_profiles(self, organization_id: uuid.UUID) -> List[VerificationProfile]:
-        return await self.profile_repo.list_by_organization(organization_id)
+    async def list_profiles(self, organization_id: uuid.UUID, skip: int = 0, limit: int = 50) -> List[VerificationProfile]:
+        return await self.profile_repo.list_by_organization(organization_id, skip=skip, limit=limit)
 
     async def update_profile(self, command: UpdateProfileCommand) -> VerificationProfile:
         profile = await self.profile_repo.get_by_id(command.profile_id)

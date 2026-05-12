@@ -42,11 +42,11 @@ class ListArtifactsUseCase:
         self.artifact_repo = artifact_repo
         self.release_repo = release_repo
 
-    async def execute(self, release_id: uuid.UUID) -> List[Artifact]:
+    async def execute(self, release_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[Artifact]:
         release = await self.release_repo.get_by_id(release_id)
         if not release:
             raise EntityNotFoundError(f"Release not found with ID: {release_id}")
-        return await self.artifact_repo.find_by_release(release_id)
+        return await self.artifact_repo.find_by_release(release_id, skip=skip, limit=limit)
 
 
 class GetArtifactUseCase:

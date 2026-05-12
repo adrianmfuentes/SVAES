@@ -67,8 +67,8 @@ class ListReleasesUseCase:
     def __init__(self, release_repo: IReleaseRepository):
         self.release_repo = release_repo
 
-    async def execute(self, project_id: uuid.UUID) -> List[Release]:
-        return await self.release_repo.list_by_project(project_id)
+    async def execute(self, project_id: uuid.UUID, skip: int = 0, limit: int = 50) -> List[Release]:
+        return await self.release_repo.list_by_project(project_id, skip=skip, limit=limit)
 
 
 class UpdateReleaseUseCase:

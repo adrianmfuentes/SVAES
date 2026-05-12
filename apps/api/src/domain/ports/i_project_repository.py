@@ -23,7 +23,7 @@ class IProjectRepository(ABC):
         pass
 
     @abstractmethod
-    async def list_by_organization(self, organization_id: UUID) -> List[Project]:
+    async def list_by_organization(self, organization_id: UUID, skip: int = 0, limit: int = 50) -> List[Project]:
         pass
 
     @abstractmethod
