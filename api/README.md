@@ -25,11 +25,11 @@ Backend principal del **Sistema de Verificación Automática de Entregas de Soft
 
 Este servicio actúa como el punto de entrada central de la plataforma SVAES. Es responsable de:
 
-- Gestionar la autenticación y autorización de usuarios (JWT + RBAC por roles).
-- Exponer la API REST consumida por los clientes (web, CLI, integraciones CI/CD).
+- Gestionar la autenticación y autorización de usuarios.
+- Exponer la API REST consumida por los clientes.
 - Orquestar los casos de uso de negocio: organizaciones, proyectos, perfiles de verificación, releases, conectores externos y reglas de verificación.
 - Gestionar artefactos de software (tareas, commits, documentos) asociados a cada release.
-- Delegar las tareas computacionalmente intensivas al **motor de verificación en Rust** mediante colas asíncronas (Celery + Redis).
+- Delegar las tareas computacionalmente intensivas al **motor de verificación en Rust** mediante colas asíncronas.
 - Emitir resultados de verificación en tiempo real mediante **Server-Sent Events (SSE)**.
 
 ---
@@ -40,15 +40,14 @@ El servicio sigue los principios de **Arquitectura Hexagonal** (_Ports & Adapter
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   Adaptadores Primarios                  │
-│       api/  ←  REST, JWT, RBAC, rate limiting, SSE       │
+│                   Adaptadores Primarios                 │
 └──────────────────────────┬──────────────────────────────┘
-                           │  invoca
+                           │  invocan
 ┌──────────────────────────▼──────────────────────────────┐
 │                      Aplicación                          │
-│          application/  ←  Casos de uso, comandos         │
+│             application/  ←  Casos de uso                │
 └──────────┬───────────────────────────────┬──────────────┘
-           │  lee/escribe via puertos       │
+           │  lee/escribe vía puertos      │
 ┌──────────▼──────────┐        ┌───────────▼──────────────┐
 │      Dominio        │        │  Adaptadores Secundarios   │
 │  domain/            │        │  infrastructure/           │
@@ -71,86 +70,95 @@ Los handlers HTTP (FastAPI) y repositorios usan **SQLAlchemy async** (`AsyncSess
 ## Estructura de directorios
 
 ```
-apps/api/
-├── alembic.ini
-├── alembic/
-│   └── versions/
-│       ├── 2fd6efcfd6c9_initial_schema.py
-│       └── a1b2c3d4e5f6_rls_org_scoped_tables.py   # RLS en tablas org-scoped
-├── pyproject.toml
-├── uv.lock
-└── src/
-    ├── main.py                              # Punto de entrada FastAPI + lifespan
-    │
-    ├── domain/
-    │   ├── entities/                        # Dataclasses puras (sin ORM)
-    │   │   ├── user.py, organization.py, project.py
-    │   │   ├── release.py, artifact.py
-    │   │   ├── connector_instance.py
-    │   │   ├── verification_profile.py, verification_rule.py
-    │   │   ├── verification_result.py
-    │   │   └── enums.py
-    │   ├── ports/                           # Interfaces abstractas (puertos de salida)
-    │   │   ├── i_user_repository.py         # list_all(skip, limit)
-    │   │   ├── i_project_repository.py      # list_by_organization(skip, limit)
-    │   │   ├── i_release_repository.py      # list_by_project(skip, limit)
-    │   │   ├── i_profile_repository.py      # list_by_organization(skip, limit)
-    │   │   ├── i_connector_repository.py    # list_by_organization(skip, limit)
-    │   │   ├── i_artifact_repository.py     # find_by_release(skip, limit)
-    │   │   └── i_verification_rule_repository.py
-    │   └── exceptions.py
-    │
-    ├── application/
-    │   └── use_cases/
-    │       ├── auth_use_cases.py
-    │       ├── user_use_cases.py            # + ChangePasswordUseCase
-    │       ├── organization_use_cases.py
-    │       ├── project_use_cases.py
-    │       ├── manage_profile.py
-    │       ├── create_release.py
-    │       ├── launch_verification.py
-    │       ├── get_verification_history.py
-    │       ├── configure_connector.py
-    │       ├── connector_use_cases.py       # Get, List, Update, Delete, Test
-    │       ├── artifact_use_cases.py        # Register, List, Get, Delete
-    │       └── verification_rule_use_cases.py  # Create, List, Get, Update, Delete
-    │
-    ├── infrastructure/
-    │   ├── config.py                        # Settings (pydantic-settings)
-    │   ├── database/
-    │   │   ├── base.py
-    │   │   ├── models/                      # Modelos ORM (11 entidades)
-    │   │   ├── repositories/                # Implementaciones async (API) y sync (workers)
-    │   │   └── session.py
-    │   ├── queue/
-    │   │   ├── celery_app.py                # App Celery conectada a Redis
-    │   │   └── celery_task_queue.py         # Adaptador ITaskQueue → Celery
-    │   ├── workers/
-    │   │   └── verification_worker.py       # Tarea Celery de verificación
-    │   ├── security/
-    │   │   ├── jwt_handler.py, password_hasher.py
-    │   │   ├── credential_encryptor.py
-    │   │   └── mock_task_queue.py           # Fallback si Celery no disponible
-    │   └── adapters/
-    │       └── connector_registry.py
-    │
-    └── api/
-        ├── dependencies.py                  # DI: factories, get_current_user, require_min_role
-        ├── rate_limit.py
-        ├── routers/
-        │   ├── auth.py
-        │   ├── users.py                     # + PATCH /me/password (5/min)
-        │   ├── organizations.py, projects.py
-        │   ├── profiles.py
-        │   ├── releases.py                  # + paginación, rate limit en verify, SSE stream
-        │   ├── connectors.py                # + paginación, rate limit en POST
-        │   ├── artifacts.py                 # + paginación, rate limit en POST
-        │   └── verification_rules.py        # CRUD completo (nuevo)
-        └── schemas/
-            ├── artifact.py, connector.py
-            ├── release.py, user.py          # + ChangePasswordRequest
-            ├── verification_rule.py         # (nuevo)
-            └── ...
+api/                          # Raíz del proyecto
+├── alembic/                  # Migraciones de base de datos
+│   └── versions/             # Historial de revisiones Alembic
+├── src/                      # Código fuente principal
+│   │
+│   ├── main.py               # Punto de entrada
+│   │
+│   ├── domain/               # Lógica de negocio pura (sin dependencias externas)
+│   │   ├── entities/        
+│   │   │   ├── user.py, organization.py, project.py
+│   │   │   ├── release.py, artifact.py
+│   │   │   ├── verification_profile.py, verification_rule.py
+│   │   │   ├── verification_result.py
+│   │   │   ├── connector_instance.py
+│   │   │   └── enums.py     
+│   │   ├── ports/            # Contratos
+│   │   │   ├── i_user_repository.py, i_organization_repository.py
+│   │   │   ├── i_project_repository.py, i_release_repository.py
+│   │   │   ├── i_profile_repository.py, i_connector_repository.py
+│   │   │   ├── i_artifact_repository.py
+│   │   │   ├── i_verification_rule_repository.py
+│   │   │   ├── i_verification_result_repository.py
+│   │   │   ├── i_task_queue.py, i_verification_engine.py
+│   │   │   ├── i_token_service.py, i_password_hasher.py
+│   │   │   ├── i_credential_encryptor.py, i_connector.py
+│   │   └── exceptions.py  
+│   │
+│   ├── application/          # Casos de uso
+│   │   └── use_cases/
+│   │       ├── auth_use_cases.py          
+│   │       ├── user_use_cases.py           
+│   │       ├── organization_use_cases.py   
+│   │       ├── project_use_cases.py        
+│   │       ├── manage_profile.py           
+│   │       ├── create_release.py           
+│   │       ├── launch_verification.py  
+│   │       ├── get_verification_history.py 
+│   │       ├── configure_connector.py     
+│   │       ├── connector_use_cases.py    
+│   │       ├── artifact_use_cases.py      
+│   │       └── verification_rule_use_cases.py  
+│   │
+│   ├── infrastructure/       # Adaptadores (implementan los puertos)
+│   │   ├── config.py         
+│   │   ├── database/         # Persistencia con PostgreSQL + SQLAlchemy
+│   │   │   ├── base.py     
+│   │   │   ├── session.py    # Sesiones async (API) y sync (workers)
+│   │   │   ├── models/       
+│   │   │   └── repositories/ 
+│   │   ├── queue/            # Cola de tareas asíncronas
+│   │   │   ├── celery_app.py
+│   │   │   └── celery_task_queue.py 
+│   │   ├── workers/          # Procesos en segundo plano
+│   │   │   └── verification_worker.py  
+│   │   ├── security/         # Autenticación y cifrado
+│   │   │   ├── jwt_handler.py      
+│   │   │   ├── password_hasher.py   
+│   │   │   ├── credential_encryptor.py 
+│   │   │   └── mock_task_queue.py   
+│   │   ├── adapters/         # Registro e instanciación de conectores
+│   │   │   └── connector_registry.py
+│   │   └── logging/         # Configuración de logs
+│   │
+│   ├── routers/              # Endpoints HTTP (FastAPI)
+│   │   ├── auth.py                 # /auth/login, /auth/register
+│   │   ├── users.py                # /users, /users/me
+│   │   ├── organizations.py        # /organizations
+│   │   ├── projects.py             # /projects
+│   │   ├── profiles.py             # /profiles
+│   │   ├── releases.py             # /releases, /releases/{id}/verify
+│   │   ├── artifacts.py            # /releases/{id}/artifacts
+│   │   ├── connectors.py           # /organizations/{id}/connectors
+│   │   └── verification_rules.py   # /profiles/{id}/rules
+│   │
+│   ├── schemas/             # Modelos Pydantic (petición/respuesta HTTP)
+│   │   ├── auth.py, user.py, organization.py
+│   │   ├── project.py, release.py
+│   │   ├── profile.py, verification_rule.py
+│   │   ├── connector.py, artifact.py
+│   │
+│   ├── dependencies.py      # Inyección de dependencias + guards RBAC
+│   └── rate_limit.py        # Límite de peticiones (slowapi)
+│
+├── tests/                   # Suite de tests (fuera de src/)
+│   └── ...                  # Estructura paralela a src/
+│
+├── alembic.ini              # Configuración de migraciones
+├── pyproject.toml           # Dependencias Python
+└── Dockerfile               # Imagen Docker
 ```
 
 ---
@@ -404,35 +412,3 @@ uv run alembic revision --autogenerate -m "descripcion_del_cambio"
 # Revisar el archivo en alembic/versions/ antes de commitear
 uv run alembic upgrade head
 ```
-
----
-
-## Tests de integración
-
-Los tests de integración se encuentran en `tests/api/integration/` y requieren una base de datos PostgreSQL real.
-
-```bash
-cd apps/api
-TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/svaes_test \
-uv run pytest ../../tests/api/integration -v
-```
-
-Los tests cubren:
-- **Connectors** — CRUD, aislamiento entre organizaciones (distintas orgs no ven los conectores de las demás)
-- **Artifacts** — registro, paginación, rechazo de tipos inválidos, eliminación
-- **Verification rules** — CRUD completo, validación de plantillas, aislamiento entre perfiles
-- **Password change** — contraseña actual incorrecta → 400, contraseña nueva corta → 422, rate limit
-
----
-
-## Pendiente / en progreso
-
-### Única dependencia bloqueante
-
-- **Motor de verificación Rust** — `IVerificationEngine` está definida como puerto de salida pero no tiene implementación. El worker de Celery encola la tarea y actualiza el estado, pero la lógica de verificación real es un stub que siempre devuelve `VALIDA`. En cuanto exista el cliente Rust, se reemplaza el `TODO` en `infrastructure/workers/verification_worker.py`.
-
-### Mejoras menores pendientes
-
-- **Enforcement de RLS a nivel de aplicación** — La migración `a1b2c3d4e5f6` habilita las políticas RLS en PostgreSQL, pero actualmente la condición de fallback las deja abiertas si no se establece `SET LOCAL app.current_organization_id`. Para activar el aislamiento total se necesita un middleware que inyecte esa variable de sesión antes de cada transacción.
-- **WebSocket bidireccional** — El SSE (`GET /releases/{id}/verify/stream`) cubre el caso de lectura en tiempo real, pero no hay canal bidireccional.
-- **Ejecutar y validar tests de integración en CI** — Los tests están escritos pero no hay pipeline de CI que los ejecute automáticamente contra una base de datos de prueba.

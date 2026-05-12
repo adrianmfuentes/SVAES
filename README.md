@@ -149,23 +149,24 @@ Estados finales: `VALIDA`, `NO_VALIDA` y `CON_ADVERTENCIAS`.
 
 ---
 
-# 7. Motor de verificación
+# 7. Motor de verificación (Rust)
 
-Implementado en Rust.
+Procesa el payload JSON del worker y devuelve el resultado de verificación.
 
 Características:
+- Ejecución paralela (Rayon)
+- Sin llamadas de red (todo en memoria)
+- Determinista y reproducible
 
-- Ejecución paralela
-- Sin llamadas de red
-- Procesamiento en memoria
-- Resultado determinista
+Pipeline: Validación → Evaluación de reglas → Agregación → Veredicto
 
-Pipeline:
-
-1. Validación
-2. Evaluación de reglas
-3. Agregación
-4. Veredicto
+```
+engine/src/
+├── main.rs          # Entry point (Actix-web)
+├── pipeline.rs      # Pipeline de verificación
+├── models.rs        # Modelos de datos
+└── rules/           # RV-01 a RV-10
+```
 
 ---
 
@@ -229,69 +230,43 @@ Peticiones protegidas:
 
 ---
 
-# 12. Estructura
+# 12. Estructura del proyecto
 
-```text
+```
 SVAES/
-|-- apps/
-|   |-- api/                         # API principal (FastAPI + Python)
-|   |   |-- Dockerfile               # Multi-stage: builder → runtime
-|   |   |-- pyproject.toml           # Dependencias Python
-|   |   `-- src/
-|   |       |-- main.py              # Entrada FastAPI (CORS, lifespan, routers)
-|   |       |-- api/
-|   |       |   |-- dependencies.py  # Inyección de dependencias y get_current_user
-|   |       |   |-- routers/         # auth, organizations, projects, profiles, releases, connectors
-|   |       |   `-- schemas/         # Pydantic request/response models
-|   |       |-- application/
-|   |       |   `-- use_cases/       # Casos de uso de la aplicación
-|   |       |-- domain/
-|   |       |   |-- entities/        # User, Organization, Release, ...
-|   |       |   |-- ports/           # Interfaces: IUserRepository, IPasswordHasher, ...
-|   |       |   `-- exceptions.py
-|   |       `-- infrastructure/
-|   |           |-- config.py        # Settings (pydantic-settings, .env)
-|   |           |-- database/
-|   |           |   |-- base.py
-|   |           |   |-- session.py   # AsyncSession con transacciones automáticas
-|   |           |   |-- models/      # Modelos SQLAlchemy
-|   |           |   `-- repositories/
-|   |           |-- security/
-|   |           |   |-- password_hasher.py    # BcryptPasswordHasher
-|   |           |   |-- jwt_handler.py        # JwtHandler (HS256)
-|   |           |   |-- credential_encryptor.py # FernetCredentialEncryptor
-|   |           |   `-- mock_task_queue.py
-|   |           |-- adapters/
-|   |           |   `-- connector_registry.py
-|   |           `-- logging/
-|   |               `-- logger.py    # get_logger() factory
-|   `-- web/                         # Aplicacion frontend
-|       |-- public/
-|       |-- src/
-|       |   |-- app/
-|       |   |-- components/
-|       |   |-- features/
-|       |   |-- hooks/
-|       |   |-- pages/
-|       |   |-- routes/
-|       |   |-- services/
-|       |   `-- styles/
-|       `-- package.json
-|-- docs/
-|   |-- api/
-|   |   `-- openapi.yaml
-|   |-- database/
-|   |   `-- erd.puml
-|   |-- diagrams/
-|   |   |-- exported/
-|   |   `-- plantuml/
-|   `-- tfg/
-|-- scripts/
-|-- tests/
-|-- .env.example
-|-- docker-compose.yml
-|-- LICENSE
-`-- README.md
+├── api/                    # Backend FastAPI (Python)
+│   ├── alembic/            # Migraciones de base de datos
+│   └── src/
+│       ├── main.py         # 🚀 Punto de entrada + lifespan
+│       ├── domain/         # 💎 Entidades y puertos (sin dependencias externas)
+│       │   ├── entities/   # User, Organization, Project, Release, Artifact...
+│       │   └── ports/      # Interfaces: IUserRepository, ITaskQueue, IConnector...
+│       ├── application/    # 🎯 Casos de uso
+│       │   └── use_cases/  # auth, users, organizations, projects, releases...
+│       ├── infrastructure/ # 🔌 Implementaciones (DB, seguridad, cola)
+│       │   ├── database/   # SQLAlchemy models + repositorios
+│       │   ├── queue/      # Celery + Redis
+│       │   ├── workers/    # verification_worker
+│       │   ├── security/   # JWT, bcrypt, Fernet
+│       │   └── adapters/   # connector_registry
+│       ├── routers/        # 📡 Endpoints HTTP
+│       └── schemas/        # 📋 Modelos Pydantic
+│
+├── engine/                 # Motor de verificación (Rust)
+│   └── src/
+│       ├── main.rs
+│       ├── pipeline.rs
+│       ├── models.rs
+│       └── rules/          # RV-01 a RV-10
+│
+├── web/                   # Frontend (Angular)
+│   └── src/app/
+│
+├── tests/                # Tests unitarios e integración
+├── docs/                 # Documentación y diagramas
+├── scripts/              # Scripts auxiliares
+├── docker-compose.yml    # Servicios: api, postgres, redis
+└── README.md
 ```
 
 ---
@@ -345,39 +320,27 @@ cd svaes
 docker compose up --build
 ```
 
-Docker Compose carga automáticamente `docker-compose.yml` + `docker-compose.override.yml`:
-- API en `http://localhost:8000` con **hot reload** — los cambios en `src/` se reflejan sin rebuild
-- Swagger UI en `http://localhost:8000/docs`
-- PostgreSQL expuesto en `localhost:5432` (usuario: `svaes`, contraseña: `svaes`, db: `svaes`)
+Docker Compose arranca: API en `http://localhost:8000`, Swagger en `http://localhost:8000/docs`, PostgreSQL en `localhost:5432`.
 
-## Desarrollo local (sin Docker, solo uvicorn)
+## Desarrollo local (sin Docker)
 
 ```bash
-# Levantar solo la BD
+# Solo la base de datos
 docker compose up postgres -d
 
-# Crear apps/api/src/.env con:
-# DATABASE_URL=postgresql+psycopg://svaes:svaes@localhost:5432/svaes
-# JWT_SECRET_KEY=cualquier-string
-
-cd apps/api
-pip install .
-cd src
-uvicorn main:app --reload
+cd api
+uv sync
+uv run uvicorn src.main:app --reload --port 8000
 ```
 
-## Producción (servidor)
+## Producción
 
 ```bash
-# Exportar variables reales en el servidor
 export DATABASE_URL="postgresql+psycopg://user:pass@host:5432/svaes"
-export JWT_SECRET_KEY="clave-larga-aleatoria-segura"
+export JWT_SECRET_KEY="clave-larga-aleatoria"
 export ENCRYPTION_KEY="$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")"
-
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
-
-Diferencias con dev: sin hot reload, sin puerto de postgres expuesto, `restart: always`.
 
 ---
 
