@@ -31,8 +31,8 @@ async def list_profiles(
     use_case: Annotated[ManageProfileUseCase, Depends(get_manage_profile_use_case)],
     _current_user: Annotated[User, Depends(get_current_user)],
     organization_id: Annotated[uuid.UUID, Query()],
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=50, ge=1, le=200),
+    skip: Annotated[int, Query(default=0, ge=0)] = 0,
+    limit: Annotated[int, Query(default=50, ge=1, le=200)] = 50,
 ):
     return await use_case.list_profiles(organization_id, skip=skip, limit=limit)
 

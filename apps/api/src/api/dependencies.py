@@ -91,6 +91,7 @@ def get_jwt_handler() -> JwtHandler:
     )
 
 def get_credential_encryptor() -> ICredentialEncryptor:
+    assert settings.encryption_key is not None, "encryption_key must be set"
     return FernetCredentialEncryptor(key=settings.encryption_key)
 
 @lru_cache(maxsize=1)
@@ -244,7 +245,7 @@ _ROLE_LEVELS: dict[UserRole, int] = {
 }
 
 
-def require_min_role(min_role: UserRole) -> Depends:
+def require_min_role(min_role: UserRole):
     def _guard(current_user: User = Depends(get_current_user)) -> User:
         if _ROLE_LEVELS[current_user.role] < _ROLE_LEVELS[min_role]:
             raise HTTPException(

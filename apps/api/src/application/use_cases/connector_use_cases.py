@@ -43,7 +43,7 @@ class TestConnectorCommand:
 def _check_ownership(connector: Optional[ConnectorInstance], organization_id: uuid.UUID) -> ConnectorInstance:
     """Raises EntityNotFoundError if connector is missing or belongs to a different org."""
     if not connector or connector.organization_id != organization_id:
-        raise EntityNotFoundError(f"Connector not found")
+        raise EntityNotFoundError("Connector not found")
     return connector
 
 
@@ -72,7 +72,7 @@ class UpdateConnectorUseCase:
 
     async def execute(self, command: UpdateConnectorCommand) -> ConnectorInstance:
         connector = await self.connector_repo.get_by_id(command.connector_id)
-        _check_ownership(connector, command.organization_id)
+        connector = _check_ownership(connector, command.organization_id)
         if command.name is not None:
             connector.name = command.name
         if command.status is not None:
@@ -103,7 +103,7 @@ class TestConnectorUseCase:
 
     async def execute(self, command: TestConnectorCommand) -> ConnectorInstance:
         connector = await self.connector_repo.get_by_id(command.connector_id)
-        _check_ownership(connector, command.organization_id)
+        connector = _check_ownership(connector, command.organization_id)
 
         try:
             config_data = json.loads(self.credential_encryptor.decrypt(connector.encrypted_credentials))

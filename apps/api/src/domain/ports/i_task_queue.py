@@ -20,3 +20,8 @@ class ITaskQueue(ABC):
     async def get_task_status(self, task_id: str) -> str:
         """Returns the current status of an enqueued task."""
         pass
+
+    @abstractmethod
+    async def cancel_task(self, task_id: str) -> bool:
+        """Requests cancellation of a running or pending task. Returns True if the cancellation was accepted."""
+        pass
