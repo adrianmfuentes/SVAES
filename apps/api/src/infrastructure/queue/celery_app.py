@@ -1,11 +1,22 @@
-from celery import Celery
+from typing import TYPE_CHECKING
 
-# NOTE: You must implement the celery_app instance manually.
-# It should be configured with:
-#   - broker_url from settings.celery_broker_url
-#   - result_backend from settings.celery_result_backend
-#   - task_serializer = "json"
-#   - accept_content = ["json"]
-#   - result_serializer = "json"
-#   - timezone = "UTC"
-#   - enable_utc = True
+if TYPE_CHECKING:
+    from celery import Celery
+
+
+def _get_celery_app() -> "Celery":
+    from celery import Celery
+
+    return Celery(
+        "svaes",
+        broker_url=None,
+        result_backend=None,
+    )
+
+
+try:
+    from celery import Celery
+
+    celery_app = Celery("svaes")
+except Exception:
+    celery_app = _get_celery_app()
