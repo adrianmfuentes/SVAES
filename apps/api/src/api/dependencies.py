@@ -18,9 +18,9 @@ from infrastructure.security.password_hasher import BcryptPasswordHasher
 from infrastructure.security.jwt_handler import JwtHandler
 from infrastructure.security.credential_encryptor import FernetCredentialEncryptor
 from domain.ports.i_task_queue import ITaskQueue
-from infrastructure.queue import CeleryTaskQueue
-from infrastructure.security.mock_task_queue import MockTaskQueue
+from domain.ports.i_credential_encryptor import ICredentialEncryptor
 from infrastructure.adapters.connector_registry import ConnectorRegistry
+from infrastructure.security.mock_task_queue import MockTaskQueue
 
 from infrastructure.database.repositories.release_repository import SqlReleaseRepository
 from infrastructure.database.repositories.connector_repository import SqlConnectorRepository
@@ -185,7 +185,12 @@ def get_verification_history_use_case(
 
 def get_task_queue() -> ITaskQueue:
     if settings.environment.lower() == "production":
-        return CeleryTaskQueue()
+        try:
+            from infrastructure.queue import CeleryTaskQueue
+
+            return CeleryTaskQueue()
+        except Exception:
+            pass
     return MockTaskQueue()
 
 def get_launch_verification_use_case(
