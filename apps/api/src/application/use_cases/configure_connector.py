@@ -69,6 +69,7 @@ class ConfigureConnectorUseCase:
             id=uuid.uuid4(),
             organization_id=command.organization_id,
             connector_type=command.connector_type,
+            name=command.name,
             encrypted_credentials=encrypted,
             status=status,
         )

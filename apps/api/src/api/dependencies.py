@@ -28,6 +28,8 @@ from infrastructure.database.repositories.user_repository import SqlUserReposito
 from infrastructure.database.repositories.organization_repository import SqlOrganizationRepository
 from infrastructure.database.repositories.profile_repository import SqlProfileRepository
 from infrastructure.database.repositories.project_repository import SqlProjectRepository
+from infrastructure.database.repositories.artifact_repository import SqlArtifactRepository
+from infrastructure.database.repositories.verification_result_repository import SqlVerificationResultRepository
 
 from application.use_cases.launch_verification import LaunchVerificationUseCase
 from application.use_cases.configure_connector import ConfigureConnectorUseCase
@@ -107,6 +109,12 @@ def get_profile_repository(session: AsyncSession = Depends(get_db_session)) -> S
 def get_project_repository(session: AsyncSession = Depends(get_db_session)) -> SqlProjectRepository:
     return SqlProjectRepository(session)
 
+def get_artifact_repository(session: AsyncSession = Depends(get_db_session)) -> SqlArtifactRepository:
+    return SqlArtifactRepository(session)
+
+def get_verification_result_repository(session: AsyncSession = Depends(get_db_session)) -> SqlVerificationResultRepository:
+    return SqlVerificationResultRepository(session)
+
 # ---------------------------------------------------------------------------
 # Auth guard — inject into any protected endpoint
 # ---------------------------------------------------------------------------
@@ -180,18 +188,19 @@ def get_create_release_use_case(
 
 def get_verification_history_use_case(
     release_repo: SqlReleaseRepository = Depends(get_release_repository),
+    verification_result_repo: SqlVerificationResultRepository = Depends(get_verification_result_repository),
 ) -> GetVerificationHistoryUseCase:
-    return GetVerificationHistoryUseCase(release_repo=release_repo)
+    return GetVerificationHistoryUseCase(
+        release_repo=release_repo,
+        verification_result_repo=verification_result_repo,
+    )
 
 def get_task_queue() -> ITaskQueue:
-    if settings.environment.lower() == "production":
-        try:
-            from infrastructure.queue import CeleryTaskQueue
-
-            return CeleryTaskQueue()
-        except Exception:
-            pass
-    return MockTaskQueue()
+    try:
+        from infrastructure.queue import CeleryTaskQueue
+        return CeleryTaskQueue()
+    except Exception:
+        return MockTaskQueue()
 
 def get_launch_verification_use_case(
     release_repo: SqlReleaseRepository = Depends(get_release_repository),

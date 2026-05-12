@@ -1,3 +1,3 @@
-from .verification_worker import process_verification
+from .verification_worker import run_verification
 
-__all__ = ["process_verification"]
+__all__ = ["run_verification"]

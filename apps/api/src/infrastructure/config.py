@@ -8,6 +8,9 @@ from pydantic_settings import BaseSettings
 _log = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
+    # Database
+    database_url: str
+
     # Auth
     jwt_secret_key: str
     jwt_algorithm: str
