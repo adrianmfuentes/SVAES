@@ -59,7 +59,7 @@ class RuleResponse(BaseModel):
     rule_template: str
     severity: str
     params: dict
-    connector_instance_id: Optional[uuid.UUID]
+    connector_instance_id: Optional[uuid.UUID] = None
     display_order: int
     is_active: bool
     created_at: datetime

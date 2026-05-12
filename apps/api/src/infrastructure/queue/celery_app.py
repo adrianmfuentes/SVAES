@@ -1,4 +1,4 @@
-from celery import Celery
+from celery import Celery  # type: ignore[import-not-found]
 from infrastructure.config import settings
 
 celery_app = Celery(

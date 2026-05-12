@@ -37,6 +37,6 @@ class VerificationResultResponse(BaseModel):
     rule_results: dict
     profile_snapshot: dict
     executed_at: datetime
-    duration_ms: Optional[int]
+    duration_ms: Optional[int] = None
 
     model_config = {"from_attributes": True}

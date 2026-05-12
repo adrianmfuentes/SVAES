@@ -1,8 +1,6 @@
 import uuid
-from typing import Annotated
-
+from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-
 from api.dependencies import (
     get_configure_connector_use_case,
     get_connector_repository,
@@ -30,6 +28,7 @@ from domain.entities.user import User
 from domain.exceptions import ConnectorConnectionFailedError, EntityNotFoundError
 from infrastructure.database.repositories.connector_repository import SqlConnectorRepository
 
+CONNECTOR_NOT_FOUND = "Connector not found"
 router = APIRouter(tags=["Connectors"])
 
 
@@ -74,9 +73,9 @@ async def list_connectors(
     org_id: uuid.UUID,
     repo: Annotated[SqlConnectorRepository, Depends(get_connector_repository)],
     _current_user: Annotated[User, require_min_role(UserRole.VIEWER)],
-    include_inactive: bool = Query(default=False),
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=50, ge=1, le=200),
+    include_inactive: Annotated[bool, Query(default=False)],
+    skip: Annotated[int, Query(default=0, ge=0)],
+    limit: Annotated[int, Query(default=50, ge=1, le=200)],
 ):
     use_case = ListConnectorsUseCase(connector_repo=repo)
     return await use_case.execute(org_id, include_inactive=include_inactive, skip=skip, limit=limit)
@@ -99,7 +98,7 @@ async def get_connector(
     try:
         return await use_case.execute(GetConnectorCommand(organization_id=org_id, connector_id=connector_id))
     except EntityNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connector not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=CONNECTOR_NOT_FOUND)
 
 
 # ---------------------------------------------------------------------------
@@ -128,7 +127,7 @@ async def update_connector(
             )
         )
     except EntityNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connector not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=CONNECTOR_NOT_FOUND)
 
 
 # ---------------------------------------------------------------------------
@@ -148,7 +147,7 @@ async def delete_connector(
     try:
         await use_case.execute(DeleteConnectorCommand(organization_id=org_id, connector_id=connector_id))
     except EntityNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connector not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=CONNECTOR_NOT_FOUND)
 
 
 # ---------------------------------------------------------------------------
@@ -163,8 +162,8 @@ async def test_connector(
     connector_id: uuid.UUID,
     repo: Annotated[SqlConnectorRepository, Depends(get_connector_repository)],
     _current_user: Annotated[User, require_min_role(UserRole.MANAGER)],
-    registry=Depends(get_connector_registry),
-    encryptor=Depends(get_credential_encryptor),
+    registry: Annotated[Any, Depends(get_connector_registry)],
+    encryptor: Annotated[Any, Depends(get_credential_encryptor)],
 ):
     use_case = TestConnectorUseCase(
         connector_repo=repo,
@@ -174,6 +173,6 @@ async def test_connector(
     try:
         return await use_case.execute(TestConnectorCommand(organization_id=org_id, connector_id=connector_id))
     except EntityNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Connector not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=CONNECTOR_NOT_FOUND)
     except KeyError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Unknown connector type: {e}")

@@ -25,7 +25,7 @@ class ArtifactCreateRequest(BaseModel):
 class ArtifactResponse(BaseModel):
     id: uuid.UUID
     release_id: uuid.UUID
-    connector_instance_id: Optional[uuid.UUID]
+    connector_instance_id: Optional[uuid.UUID] = None
     artifact_type: str
     external_ref: str
     metadata: dict

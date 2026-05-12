@@ -81,8 +81,8 @@ async def create_user(
 async def list_users(
     use_case: Annotated[ListUsersUseCase, Depends(get_list_users_use_case)],
     _current_user: Annotated[User, require_min_role(UserRole.ADMIN)],
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=100, ge=1, le=500),
+    skip: Annotated[int, Query(default=0, ge=0)] = 0,
+    limit: Annotated[int, Query(default=100, ge=1, le=500)] = 100,
 ):
     return await use_case.execute(skip=skip, limit=limit)
 

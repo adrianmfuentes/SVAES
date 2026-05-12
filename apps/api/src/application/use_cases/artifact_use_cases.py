@@ -29,7 +29,7 @@ class RegisterArtifactUseCase:
 
         artifact = Artifact(
             release_id=command.release_id,
-            connector_instance_id=command.connector_instance_id,
+            connector_instance_id=command.connector_instance_id or uuid.uuid4(),
             artifact_type=command.artifact_type,
             external_ref=command.external_ref,
             metadata=command.metadata,

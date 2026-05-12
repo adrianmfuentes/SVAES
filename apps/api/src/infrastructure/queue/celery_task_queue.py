@@ -15,3 +15,8 @@ class CeleryTaskQueue(ITaskQueue):
     async def get_task_status(self, task_id: str) -> str:
         result = celery_app.AsyncResult(task_id)
         return result.status  # PENDING | STARTED | SUCCESS | FAILURE | RETRY
+
+    async def cancel_task(self, task_id: str) -> bool:
+        result = celery_app.AsyncResult(task_id)
+        result.revoke(terminate=True)
+        return True

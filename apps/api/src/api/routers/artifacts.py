@@ -66,8 +66,8 @@ async def list_artifacts(
     artifact_repo: Annotated[SqlArtifactRepository, Depends(get_artifact_repository)],
     release_repo: Annotated[SqlReleaseRepository, Depends(get_release_repository)],
     _current_user: Annotated[User, require_min_role(UserRole.VIEWER)],
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=100, ge=1, le=500),
+    skip: Annotated[int, Query(default=0, ge=0)],
+    limit: Annotated[int, Query(default=100, ge=1, le=500)],
 ):
     use_case = ListArtifactsUseCase(artifact_repo=artifact_repo, release_repo=release_repo)
     try:
