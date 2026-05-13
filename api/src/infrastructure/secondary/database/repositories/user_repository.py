@@ -10,6 +10,21 @@ from infrastructure.secondary.database.get_async_session import get_async_sessio
 
 
 class SqlUserRepository(IUserRepository):
+    def _model_to_entity(self, row: UserModel) -> User:
+        return User(
+            id=row.id,
+            email=row.email,
+            hashed_password=row.hashed_password,
+            display_name=row.display_name,
+            role=UserRole(row.role),
+            organization_id=row.organization_id,
+            is_active=row.is_active,
+            failed_login_attempts=row.failed_login_attempts,
+            locked_until=row.locked_until,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+
     async def create(self, user: User) -> User:
         session = await get_async_session().__anext__()
 
@@ -22,6 +37,8 @@ class SqlUserRepository(IUserRepository):
                 role=user.role.value,
                 organization_id=user.organization_id,
                 is_active=user.is_active,
+                failed_login_attempts=user.failed_login_attempts,
+                locked_until=user.locked_until,
                 created_at=user.created_at,
                 updated_at=user.updated_at,
             )
@@ -29,17 +46,7 @@ class SqlUserRepository(IUserRepository):
             await session.commit()
             await session.refresh(user_model)
 
-            return User(
-                id=user_model.id,
-                email=user_model.email,
-                hashed_password=user_model.hashed_password,
-                display_name=user_model.display_name,
-                role=UserRole(user_model.role),
-                organization_id=user_model.organization_id,
-                is_active=user_model.is_active,
-                created_at=user_model.created_at,
-                updated_at=user_model.updated_at,
-            )
+            return self._model_to_entity(user_model)
         except Exception as e:
             await session.rollback()
             raise e
@@ -55,17 +62,7 @@ class SqlUserRepository(IUserRepository):
             if not user_row:
                 return None
 
-            return User(
-                id=user_row.id,
-                email=user_row.email,
-                hashed_password=user_row.hashed_password,
-                display_name=user_row.display_name,
-                role=UserRole(user_row.role),
-                organization_id=user_row.organization_id,
-                is_active=user_row.is_active,
-                created_at=user_row.created_at,
-                updated_at=user_row.updated_at,
-            )
+            return self._model_to_entity(user_row)
         except Exception as e:
             await session.rollback()
             raise e
@@ -81,28 +78,20 @@ class SqlUserRepository(IUserRepository):
             if not user_row:
                 return None
 
-            return User(
-                id=user_row.id,
-                email=user_row.email,
-                hashed_password=user_row.hashed_password,
-                display_name=user_row.display_name,
-                role=UserRole(user_row.role),
-                organization_id=user_row.organization_id,
-                is_active=user_row.is_active,
-                created_at=user_row.created_at,
-                updated_at=user_row.updated_at,
-            )
+            return self._model_to_entity(user_row)
         except Exception as e:
             await session.rollback()
             raise e
         finally:
             await session.close()
 
-    async def list_all(self, active_only: bool = True, skip: int = 0, limit: int = 100) -> List[User]:
+    async def list_all(self, organization_id: Optional[uuid.UUID] = None, active_only: bool = True, skip: int = 0, limit: int = 100) -> List[User]:
         session = await get_async_session().__anext__()
 
         try:
             query = select(UserModel)
+            if organization_id is not None:
+                query = query.where(UserModel.organization_id == organization_id)
             if active_only:
                 query = query.where(UserModel.is_active == True)
             query = query.offset(skip).limit(limit)
@@ -110,20 +99,7 @@ class SqlUserRepository(IUserRepository):
             result = await session.execute(query)
             user_rows = result.scalars().all()
 
-            return [
-                User(
-                    id=row.id,
-                    email=row.email,
-                    hashed_password=row.hashed_password,
-                    display_name=row.display_name,
-                    role=UserRole(row.role),
-                    organization_id=row.organization_id,
-                    is_active=row.is_active,
-                    created_at=row.created_at,
-                    updated_at=row.updated_at,
-                )
-                for row in user_rows
-            ]
+            return [self._model_to_entity(row) for row in user_rows]
         except Exception as e:
             await session.rollback()
             raise e
@@ -144,22 +120,14 @@ class SqlUserRepository(IUserRepository):
             user_model.role = user.role.value
             user_model.organization_id = user.organization_id
             user_model.is_active = user.is_active
+            user_model.failed_login_attempts = user.failed_login_attempts
+            user_model.locked_until = user.locked_until
             user_model.updated_at = datetime.utcnow()
 
             await session.commit()
             await session.refresh(user_model)
 
-            return User(
-                id=user_model.id,
-                email=user_model.email,
-                hashed_password=user_model.hashed_password,
-                display_name=user_model.display_name,
-                role=UserRole(user_model.role),
-                organization_id=user_model.organization_id,
-                is_active=user_model.is_active,
-                created_at=user_model.created_at,
-                updated_at=user_model.updated_at,
-            )
+            return self._model_to_entity(user_model)
         except Exception as e:
             await session.rollback()
             raise e

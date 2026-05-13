@@ -4,11 +4,13 @@ from typing import Optional
 from uuid import UUID
 from ..enums import ConnectorStatus
 
+
 @dataclass
 class ConnectorInstance:
     id: UUID
     organization_id: UUID
     connector_type: str
+    connector_implementation: str
     name: str
     encrypted_credentials: bytes
     status: ConnectorStatus

@@ -4,7 +4,11 @@ from domain.entities.connector_instance import ConnectorInstance
 from domain.enums import ConnectorStatus
 from domain.exceptions import EntityNotFoundError
 
-
+"""
+Este módulo define el caso de uso para alternar el estado de un conector, que es responsable de cambiar el estado de un conector específico a activo o inactivo.
+Incluye la lógica de negocio para validar que el conector existe antes de actualizar su estado. Si el conector no se encuentra, se lanza una excepción
+indicando que el conector no fue encontrado.
+"""
 class ToggleConnectorStatusUseCase:
     def __init__(self, connector_repository: IConnectorRepository) -> None:
         self._connector_repo = connector_repository

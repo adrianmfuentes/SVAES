@@ -22,6 +22,16 @@ class IConnector(Protocol):
     def get_metadata(self) -> Dict[str, Any]:
         pass
 
+    @property
+    @abstractmethod
+    def connector_type(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def connector_implementation(self) -> str:
+        pass
+
 
 class YouTubeConnector(IConnector):
     async def test_connection(self, config: Dict[str, Any]) -> bool:
@@ -37,6 +47,14 @@ class YouTubeConnector(IConnector):
 
     def get_metadata(self) -> Dict[str, Any]:
         return {"name": "YouTube", "version": "1.0", "artifact_types": ["video", "playlist"]}
+
+    @property
+    def connector_type(self) -> str:
+        return "YOUTUBE"
+
+    @property
+    def connector_implementation(self) -> str:
+        return "YOUTUBE"
 
 
 class YouTube:

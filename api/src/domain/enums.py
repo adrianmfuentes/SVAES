@@ -1,5 +1,13 @@
 from enum import Enum
 
+class TaskStatus(str, Enum):
+    PENDING = "PENDING"
+    STARTED = "STARTED"
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+    RETRY = "RETRY"
+    REVOKED = "REVOKED"
+
 class ReleaseStatus(str, Enum):
     BORRADOR = "BORRADOR"
     PENDIENTE = "PENDIENTE"
@@ -19,6 +27,38 @@ class ConnectorStatus(str, Enum):
     INACTIVO = "INACTIVO"
     ERROR = "ERROR"
 
+
+class ConnectorType(str, Enum):
+    GESTOR_TAREAS = "GESTOR_TAREAS"
+    REPO_CODIGO = "REPO_CODIGO"
+    SISTEMA_DOCUMENTAL = "SISTEMA_DOCUMENTAL"
+    HERRAMIENTA_PLANIFICACION = "HERRAMIENTA_PLANIFICACION"
+    GESTION_CAMBIOS = "GESTION_CAMBIOS"
+
+
+class ConnectorImplementation(str, Enum):
+    JIRA = "JIRA"
+    LINEAR = "LINEAR"
+    TRELLO = "TRELLO"
+    ASANA = "ASANA"
+    GITLAB = "GITLAB"
+    GITHUB = "GITHUB"
+    BITBUCKET = "BITBUCKET"
+    GITEA = "GITEA"
+    CONFLUENCE = "CONFLUENCE"
+    NOTION = "NOTION"
+    WIKIJS = "WIKIJS"
+    BOOKSTACK = "BOOKSTACK"
+    CLICKUP = "CLICKUP"
+    TAIGA = "TAIGA"
+    PLANE = "PLANE"
+    MIRO = "MIRO"
+    JIRA_SM = "JIRA_SM"
+    GLPI = "GLPI"
+    ZAMMAD = "ZAMMAD"
+    REDMINE = "REDMINE"
+    YOUTUBE = "YOUTUBE"
+
 class SeverityType(str, Enum):
     INFO = "INFO"
     LOW = "LOW"
@@ -32,7 +72,72 @@ class UserRole(str, Enum):
     MANAGER = "MANAGER"
     ADMIN = "ADMIN"
 
+    def has_permission(self, permission: "Permission") -> bool:
+        hierarchy = {
+            UserRole.VIEWER: [
+                Permission.VIEW_DASHBOARD, 
+                Permission.VIEW_OWN_PROJECTS
+            ],
+            UserRole.OPERATOR: [
+                Permission.VIEW_DASHBOARD, 
+                Permission.VIEW_OWN_PROJECTS,
+                Permission.CREATE_RELEASE, 
+                Permission.UPDATE_OWN_RELEASES, 
+                Permission.ARCHIVE_RELEASE,
+                Permission.EXECUTE_VERIFICATION, 
+                Permission.VIEW_OWN_HISTORY,
+                Permission.MANAGE_OWN_API_KEYS,
+            ],
+            UserRole.MANAGER: [
+                Permission.VIEW_DASHBOARD, 
+                Permission.VIEW_OWN_PROJECTS,
+                Permission.CREATE_RELEASE, 
+                Permission.UPDATE_OWN_RELEASES, 
+                Permission.ARCHIVE_RELEASE,
+                Permission.EXECUTE_VERIFICATION, 
+                Permission.VIEW_OWN_HISTORY,
+                Permission.MANAGE_OWN_API_KEYS,
+                Permission.VIEW_ORG_PROJECTS, 
+                Permission.CREATE_PROJECT, 
+                Permission.UPDATE_PROJECT, 
+                Permission.DELETE_PROJECT,
+                Permission.MANAGE_CONNECTORS, 
+                Permission.MANAGE_PROFILES, 
+                Permission.MANAGE_RULES,
+                Permission.VIEW_ORG_DASHBOARD, 
+                Permission.INVITE_USERS, 
+                Permission.MANAGE_ROLES,
+            ],
+            UserRole.ADMIN: list(
+                Permission
+            ),
+        }
+        return permission in hierarchy.get(self, [])
+
+class Permission(str, Enum):
+    VIEW_DASHBOARD = "VIEW_DASHBOARD"
+    VIEW_OWN_PROJECTS = "VIEW_OWN_PROJECTS"
+    CREATE_RELEASE = "CREATE_RELEASE"
+    UPDATE_OWN_RELEASES = "UPDATE_OWN_RELEASES"
+    ARCHIVE_RELEASE = "ARCHIVE_RELEASE"
+    EXECUTE_VERIFICATION = "EXECUTE_VERIFICATION"
+    VIEW_OWN_HISTORY = "VIEW_OWN_HISTORY"
+    MANAGE_OWN_API_KEYS = "MANAGE_OWN_API_KEYS"
+    VIEW_ORG_PROJECTS = "VIEW_ORG_PROJECTS"
+    CREATE_PROJECT = "CREATE_PROJECT"
+    UPDATE_PROJECT = "UPDATE_PROJECT"
+    DELETE_PROJECT = "DELETE_PROJECT"
+    MANAGE_CONNECTORS = "MANAGE_CONNECTORS"
+    MANAGE_PROFILES = "MANAGE_PROFILES"
+    MANAGE_RULES = "MANAGE_RULES"
+    VIEW_ORG_DASHBOARD = "VIEW_ORG_DASHBOARD"
+    INVITE_USERS = "INVITE_USERS"
+    MANAGE_ROLES = "MANAGE_ROLES"
+    TRANSFER_OWNERSHIP = "TRANSFER_OWNERSHIP"
+    MANAGE_ORGANIZATIONS = "MANAGE_ORGANIZATIONS"
+    MANAGE_ALL_USERS = "MANAGE_ALL_USERS"
+
 class ArtifactType(str, Enum):
-    TAREA = "TAREA"         # Historias de usuario, incidencias o tareas (ej. Jira)
-    CODIGO = "CODIGO"       # Commits, ramas o etiquetas (ej. GitLab)
-    DOCUMENTO = "DOCUMENTO" # Archivos o páginas de documentación (ej. Confluence)
+    TAREA = "TAREA"
+    CODIGO = "CODIGO"
+    DOCUMENTO = "DOCUMENTO"

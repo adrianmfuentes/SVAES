@@ -5,15 +5,8 @@ from application.ports.output.i_organization_repository import IOrganizationRepo
 from application.ports.output.i_project_repository import IProjectRepository
 from domain.entities.organization import Organization
 from domain.entities.project import Project
-from domain.exceptions import DuplicateEntityError, EntityNotFoundError
+from domain.exceptions import DuplicateEntityError, EntityNotFoundError, ValidationError
 
-"""
-Este módulo define el servicio de organización, que es responsable de gestionar las organizaciones y proyectos dentro del sistema. Incluye la lógica d
-e negocio para crear organizaciones, listar organizaciones, crear proyectos dentro de una organización, y listar proyectos de una organización.
-
-El servicio interactúa con los repositorios de organización y proyecto para persistir y recuperar datos, y aplica las validaciones necesarias para asegurar 
-la integridad de los datos y el correcto funcionamiento del sistema.
-"""
 
 class OrganizationService(IOrganizationService):
     def __init__(
@@ -30,12 +23,13 @@ class OrganizationService(IOrganizationService):
         name: str,
         slug: str,
         plan: str = "default",
+        owner_id: Optional[UUID] = None,
     ) -> Organization:
         existing = await self._org_repo.get_by_slug(slug)
         if existing:
             raise DuplicateEntityError(f"Ya existe una organización con slug: {slug}")
 
-        org = Organization(name=name, slug=slug, plan=plan)
+        org = Organization(name=name, slug=slug, owner_id=owner_id, plan=plan)
         return await self._org_repo.create(org)
 
 
@@ -83,3 +77,16 @@ class OrganizationService(IOrganizationService):
 
     async def get_project(self, project_id: UUID) -> Optional[Project]:
         return await self._project_repo.get_by_id(project_id)
+
+
+    async def transfer_ownership(
+        self,
+        organization_id: UUID,
+        new_owner_id: UUID,
+    ) -> Organization:
+        org = await self._org_repo.get_by_id(organization_id)
+        if not org:
+            raise EntityNotFoundError(f"Organización no encontrada: {organization_id}")
+
+        org.owner_id = new_owner_id
+        return await self._org_repo.update(org)

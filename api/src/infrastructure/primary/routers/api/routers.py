@@ -8,6 +8,8 @@ from infrastructure.primary.routers.api.v1.organizations import router as organi
 from infrastructure.primary.routers.api.v1.connectors import router as connectors_router
 from infrastructure.primary.routers.api.v1.profiles import router as profiles_router
 from infrastructure.primary.routers.api.v1.tasks import router as tasks_router
+from infrastructure.primary.routers.api.v1.users import router as users_router
+from infrastructure.primary.routers.api.v1.custom_roles import router as custom_roles_router
 
 __all__ = [
     "auth_router",
@@ -16,4 +18,6 @@ __all__ = [
     "connectors_router",
     "profiles_router",
     "tasks_router",
+    "users_router",
+    "custom_roles_router",
 ]

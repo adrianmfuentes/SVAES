@@ -1,4 +1,5 @@
 from typing import Optional, Tuple
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from application.ports.input.i_auth_service import IAuthService, AuthTokens
 from application.ports.output.i_user_repository import IUserRepository
@@ -8,10 +9,11 @@ from domain.entities.user import User
 from domain.enums import UserRole
 from domain.exceptions import ValidationError
 
-"""
-Este módulo define el servicio de autenticación, que es responsable de gestionar la autenticación de usuarios dentro del sistema. Incluye la lógica de 
-negocio para autenticar a los usuarios, generar tokens de acceso y refresco, y validar tokens.
-"""
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_WINDOW_MINUTES = 10
+LOCKOUT_DURATION_MINUTES = 15
+
+
 class AuthService(IAuthService):
     def __init__(
         self,
@@ -36,8 +38,27 @@ class AuthService(IAuthService):
         if not user.is_active:
             raise ValidationError("Usuario inactivo")
 
+        now = datetime.now(timezone.utc)
+        if user.locked_until and user.locked_until > now:
+            remaining = (user.locked_until - now).seconds // 60
+            raise ValidationError(f"Cuenta bloqueada. Intenta en {remaining} minutos.")
+
+        if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
+            user.locked_until = now + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+            user.failed_login_attempts = 0
+            await self._user_repo.update(user)
+            raise ValidationError(f"Demasiados intentos fallidos. Cuenta bloqueada por {LOCKOUT_DURATION_MINUTES} minutos.")
+
         if not self._password_hasher.verify_password(password, user.hashed_password):
-            raise ValidationError("Credenciales inválidas")
+            user.failed_login_attempts = user.failed_login_attempts + 1
+            await self._user_repo.update(user)
+            remaining = MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
+            raise ValidationError(f"Credenciales inválidas. Intentos restantes: {remaining}")
+
+        if user.failed_login_attempts > 0 or user.locked_until:
+            user.failed_login_attempts = 0
+            user.locked_until = None
+            await self._user_repo.update(user)
 
         access_token = self._token_service.create_access_token(
             user_id=user.id,

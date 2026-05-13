@@ -2,7 +2,15 @@ from typing import List, Optional
 from uuid import UUID
 from domain.exceptions import EntityNotFoundError, ValidationError
 
+"""
+Este módulo define el caso de uso para gestionar API keys, que incluye la creación, listado y revocación de API keys para una organización.
+La creación de un API key requiere un nombre y opcionalmente una fecha de expiración. El listado devuelve todas las API keys asociadas a una organización, 
+y la revocación permite desactivar un API key específico. Cada API key generado tiene un formato único y seguro, y se almacena con información relevante 
+como su fecha de creación, fecha de expiración y estado de activación.
 
+Las API keys sirven como credenciales para que aplicaciones externas puedan interactuar con la API de SVAES en nombre de una organización, 
+permitiendo integraciones seguras y controladas.
+"""
 class ManageApiKeysUseCase:
     async def create_api_key(
         self, organization_id: UUID, name: str, expires_in_days: Optional[int] = None

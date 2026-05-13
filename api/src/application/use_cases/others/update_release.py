@@ -4,7 +4,10 @@ from application.ports.output.i_release_repository import IReleaseRepository
 from domain.entities.release import Release
 from domain.exceptions import ValidationError
 
-
+"""
+Este módulo define el caso de uso para actualizar una release, que es responsable de validar los datos de entrada y actualizar la información de una 
+release existente en el sistema.
+"""
 class UpdateReleaseUseCase:
     def __init__(self, release_repository: IReleaseRepository) -> None:
         self._release_repo = release_repository

@@ -4,7 +4,11 @@ from application.ports.output.i_task_queue import ITaskQueue
 from domain.enums import ReleaseStatus
 from domain.exceptions import ValidationError
 
-
+"""
+Este módulo define el caso de uso para lanzar la verificación de una release. Incluye la lógica de negocio para validar el estado de la release, 
+asegurarse de que tiene artefactos asociados, actualizar el estado de la release a "EN_VERIFICACION", y encolar una tarea asíncrona para ejecutar el 
+proceso de verificación.
+"""
 class LaunchVerificationUseCase:
     def __init__(
         self,
@@ -13,6 +17,7 @@ class LaunchVerificationUseCase:
     ) -> None:
         self._release_repo = release_repository
         self._task_queue = task_queue
+
 
     async def execute(self, release_id: UUID) -> str:
         release = await self._release_repo.get_by_id(release_id)

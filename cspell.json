@@ -24,6 +24,8 @@
     "fastapi",
     "fernet",
     "Fernet",
+    "GESTION",
+    "Gitea",
     "github",
     "GITHUB",
     "hexagonal",
@@ -48,6 +50,7 @@
     "pyproject",
     "pytest",
     "rbac",
+    "Redmine",
     "redoc",
     "serialización",
     "sessionmaker",
@@ -59,13 +62,15 @@
     "svaes",
     "toml",
     "transiciona",
+    "trello",
     "unauthorised",
     "uuid",
     "uuids",
     "uvicorn",
     "venv",
     "verificacion",
-    "VERIFICACION"
+    "VERIFICACION",
+    "Zammad"
   ],
   "ignorePaths": [
     ".git",

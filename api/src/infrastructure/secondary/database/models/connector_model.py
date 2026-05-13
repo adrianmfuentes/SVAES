@@ -13,6 +13,7 @@ class ConnectorInstanceModel(Base):
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id = Column(PG_UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
     connector_type = Column(String(50), nullable=False)
+    connector_implementation = Column(String(50), nullable=False)
     name = Column(String(100), nullable=False)
     encrypted_credentials = Column(LargeBinary, nullable=False)
     status = Column(String(20), nullable=False, default=ConnectorStatus.INACTIVO.value)

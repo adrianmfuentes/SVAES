@@ -11,7 +11,9 @@ class User:
     hashed_password: str
     display_name: str
     role: UserRole
-    organization_id: Optional[UUID] # Referencia a la organización a la que pertenece el usuario, puede ser None si el usuario no está asociado a ninguna organización
+    organization_id: Optional[UUID]
     is_active: bool = True
+    failed_login_attempts: int = 0
+    locked_until: Optional[datetime] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

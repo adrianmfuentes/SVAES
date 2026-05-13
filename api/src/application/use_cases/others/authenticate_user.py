@@ -5,7 +5,6 @@ from application.ports.output.i_token_service import ITokenService
 from application.ports.output.i_password_hasher import IPasswordHasher
 from domain.enums import UserRole
 
-
 @dataclass
 class AuthResult:
     access_token: str
@@ -14,7 +13,16 @@ class AuthResult:
     role: UserRole
     token_type: str = "bearer"
 
+"""
+Este módulo define el caso de uso para autenticar a un usuario, que es responsable de validar las credenciales del usuario y generar tokens de acceso y
+refresco. Incluye la lógica de negocio para verificar que el usuario existe, que está activo, y que las credenciales son correctas. 
 
+Si la autenticación es exitosa, se generan un token de acceso con una duración corta (por ejemplo, 1 hora) y un token de refresco con una duración más larga 
+(por ejemplo, 24 horas).
+
+Si la autenticación falla por cualquier motivo (usuario no encontrado, usuario inactivo, contraseña incorrecta), se lanza una excepción con un mensaje 
+de error genérico para evitar revelar información sensible.
+"""
 class AuthenticateUserUseCase:
     def __init__(
         self,

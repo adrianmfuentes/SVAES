@@ -7,7 +7,10 @@ from domain.entities.verification_rule import VerificationRule
 from domain.enums import SeverityType
 from domain.exceptions import EntityNotFoundError
 
-
+"""
+Este módulo define el caso de uso para gestionar los perfiles de verificación, que es responsable de crear, actualizar, obtener, listar, duplicar y 
+eliminar perfiles de verificación, así como agregar, actualizar, eliminar y reordenar las reglas dentro de un perfil.
+"""
 class ManageProfileUseCase:
     def __init__(
         self,
@@ -16,6 +19,7 @@ class ManageProfileUseCase:
     ) -> None:
         self._profile_repo = profile_repository
         self._rule_repo = rule_repository
+
 
     async def create_profile(
         self,
@@ -39,6 +43,7 @@ class ManageProfileUseCase:
             rules=[],
         )
         return await self._profile_repo.create(profile)
+
 
     async def update_profile(
         self,
@@ -66,8 +71,10 @@ class ManageProfileUseCase:
 
         return await self._profile_repo.update(profile)
 
+
     async def get_profile(self, profile_id: UUID) -> Optional[VerificationProfile]:
         return await self._profile_repo.get_by_id(profile_id)
+
 
     async def list_profiles(
         self, organization_id: UUID, skip: int = 0, limit: int = 50
@@ -106,11 +113,13 @@ class ManageProfileUseCase:
             raise EntityNotFoundError(f"Perfil no encontrado: {created.id}")
         return duplicated
 
+
     async def delete_profile(self, profile_id: UUID) -> None:
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
         await self._profile_repo.delete(profile_id)
+
 
     async def add_rule(
         self,
@@ -134,6 +143,7 @@ class ManageProfileUseCase:
             display_order=display_order,
         )
         return await self._rule_repo.create(rule)
+
 
     async def update_rule(
         self,
@@ -161,11 +171,13 @@ class ManageProfileUseCase:
 
         return await self._rule_repo.update(rule)
 
+
     async def delete_rule(self, rule_id: UUID) -> None:
         rule = await self._rule_repo.get_by_id(rule_id)
         if not rule:
             raise EntityNotFoundError(f"Regla no encontrada: {rule_id}")
         await self._rule_repo.delete(rule_id)
+
 
     async def reorder_rules(self, profile_id: UUID, rule_ids: List[UUID]) -> List[VerificationRule]:
         profile = await self._profile_repo.get_by_id(profile_id)

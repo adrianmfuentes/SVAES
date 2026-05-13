@@ -17,7 +17,7 @@ class IUserRepository(ABC):
         pass
 
     @abstractmethod
-    async def list_all(self, active_only: bool = True, skip: int = 0, limit: int = 100) -> List[User]:
+    async def list_all(self, organization_id: Optional[uuid.UUID] = None, active_only: bool = True, skip: int = 0, limit: int = 100) -> List[User]:
         pass
 
     @abstractmethod

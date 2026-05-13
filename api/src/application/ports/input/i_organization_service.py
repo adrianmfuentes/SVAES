@@ -13,6 +13,7 @@ class IOrganizationService(ABC):
         name: str,
         slug: str,
         plan: str = "default",
+        owner_id: Optional[UUID] = None,
     ) -> Organization:
         pass
 
@@ -50,4 +51,12 @@ class IOrganizationService(ABC):
 
     @abstractmethod
     async def get_project(self, project_id: UUID) -> Optional[Project]:
+        pass
+
+    @abstractmethod
+    async def transfer_ownership(
+        self,
+        organization_id: UUID,
+        new_owner_id: UUID,
+    ) -> Organization:
         pass

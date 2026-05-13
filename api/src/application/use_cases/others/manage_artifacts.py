@@ -6,7 +6,12 @@ from application.ports.output.i_artifact_repository import IArtifactRepository
 from application.ports.output.i_release_repository import IReleaseRepository
 from domain.exceptions import ValidationError
 
-
+"""
+Este módulo define el caso de uso para gestionar artefactos, que incluye la adición, listado y eliminación de artefactos asociados a una release.
+La adición de un artefacto requiere el ID de la release, el ID de la instancia del conector, el tipo de artefacto, una referencia externa y opcionalmente
+metadatos adicionales. El listado devuelve todos los artefactos asociados a una release específica, y la eliminación permite eliminar un artefacto 
+específico de una release.
+"""
 class ManageArtifactsUseCase:
     def __init__(
         self,

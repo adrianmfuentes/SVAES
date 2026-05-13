@@ -12,6 +12,7 @@ class IConnectorService(ABC):
         self,
         organization_id: UUID,
         connector_type: str,
+        connector_implementation: str,
         name: str,
         config: dict,
     ) -> ConnectorInstance:

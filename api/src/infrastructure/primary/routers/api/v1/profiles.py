@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from application.ports.input.i_profile_service import IProfileService
-from core.dependencies import get_profile_service, get_current_user_id
-from domain.enums import SeverityType
+from core.dependencies import get_profile_service, get_current_user, CurrentUser, require_permission, require_role, require_org_access
+from domain.enums import SeverityType, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError
 
 router = APIRouter(tags=["Profiles"])
@@ -44,6 +44,7 @@ async def list_profiles(
     org_id: UUID,
     skip: int = 0,
     limit: int = 50,
+    current_user: CurrentUser = Depends(require_org_access()),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para listar los perfiles de una organización.
@@ -52,11 +53,13 @@ async def list_profiles(
         - org_id: UUID - El ID de la organización.
         - skip: int - Número de registros a omitir para paginación.
         - limit: int - Número máximo de registros a retornar.
+        - current_user: Usuario autenticado con permisos del token JWT.
         - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias
 
     Retorna:
         - Una lista de diccionarios con la información de cada perfil, incluyendo el conteo de reglas asociadas.
-        - Lanza HTTPException con status 500 para cualquier error inesperado    
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organización.
+        - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
     try:
         profiles = await service.list_profiles(organization_id=org_id, skip=skip, limit=limit)
@@ -78,7 +81,7 @@ async def list_profiles(
 async def create_profile(
     org_id: UUID,
     payload: ProfileCreateRequest,
-    user_id: UUID = Depends(get_current_user_id),
+    current_user: CurrentUser = Depends(require_org_access()),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para crear un nuevo perfil dentro de una organización.
@@ -86,11 +89,12 @@ async def create_profile(
     Atributos:
         - org_id: UUID - El ID de la organización.
         - payload: ProfileCreateRequest - El cuerpo de la solicitud con los datos del perfil a crear.
-        - user_id: UUID - El ID del usuario actual, inyectado mediante dependencias.
+        - current_user: Usuario autenticado con permisos del token JWT.
         - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.
 
     Retorna:
         - Un diccionario con la información del perfil creado (id, name, is_default).
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organización.
         - Lanza HTTPException con status 409 si hay un error de validación.
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
@@ -112,6 +116,7 @@ async def create_profile(
 async def update_profile(
     profile_id: UUID,
     payload: ProfileUpdateRequest,
+    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para actualizar un perfil existente.
@@ -119,10 +124,12 @@ async def update_profile(
     Atributos:
         - profile_id: UUID - El ID del perfil a actualizar.
         - payload: ProfileUpdateRequest - El cuerpo de la solicitud con los datos del perfil a actualizar.
+        - current_user: Usuario autenticado con permisos del token JWT.
         - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.
-    
+
     Retorna:
         - Un diccionario con la información del perfil actualizado (id, name, is_default).
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso.
         - Lanza HTTPException con status 404 si el perfil no existe.
         - Lanza HTTPException con status 409 si hay un error de validación.
         - Lanza HTTPException con status 500 para cualquier error inesperado.
@@ -146,15 +153,18 @@ async def update_profile(
 @router.delete("/api/v1/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile(
     profile_id: UUID,
+    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para eliminar un perfil existente.
-    
+
     Atributos:
         - profile_id: UUID - El ID del perfil a eliminar.
+        - current_user: Usuario autenticado con permisos del token JWT.
         - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.
     Retorna:
         - No retorna contenido (204 No Content) si la eliminación es exitosa.
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso.
         - Lanza HTTPException con status 404 si el perfil no existe.
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
@@ -170,17 +180,20 @@ async def delete_profile(
 async def add_rule(
     profile_id: UUID,
     payload: RuleCreateRequest,
+    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_RULES)),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para agregar una nueva regla a un perfil existente.
-    
+
     Atributos:
         - profile_id: UUID - El ID del perfil al que se agregará la regla.
         - payload: RuleCreateRequest - El cuerpo de la solicitud con los datos de la regla a crear.
+        - current_user: Usuario autenticado con permisos del token JWT.
         - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.
-    
+
     Retorna:
         - Un diccionario con la información de la regla creada (id, rule_template).
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso.
         - Lanza HTTPException con status 404 si el perfil no existe.
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
@@ -204,17 +217,20 @@ async def add_rule(
 async def update_rule(
     rule_id: UUID,
     payload: RuleUpdateRequest,
+    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_RULES)),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para actualizar una regla existente.
-    
+
     Atributos:
         - rule_id: UUID - El ID de la regla a actualizar.
         - payload: RuleUpdateRequest - El cuerpo de la solicitud con los datos de la regla a actualizar.
+        - current_user: Usuario autenticado con permisos del token JWT.
         - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.
-    
+
     Retorna:
         - Un diccionario con la información de la regla actualizada (id, is_active).
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso.
         - Lanza HTTPException con status 404 si la regla no existe.
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
@@ -237,16 +253,19 @@ async def update_rule(
 @router.delete("/api/v1/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_rule(
     rule_id: UUID,
+    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_RULES)),
     service: IProfileService = Depends(get_profile_service),
 ):
-    """Endpoint para eliminar una regla existente. 
-    
+    """Endpoint para eliminar una regla existente.
+
     Atributos:
         - rule_id: UUID - El ID de la regla a eliminar.
+        - current_user: Usuario autenticado con permisos del token JWT.
         - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias
 
     Retorna:
         - No retorna contenido (204 No Content) si la eliminación es exitosa.
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso.
         - Lanza HTTPException con status 404 si la regla no existe.
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """

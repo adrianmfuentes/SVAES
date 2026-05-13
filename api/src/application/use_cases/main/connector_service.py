@@ -2,28 +2,27 @@ from typing import List, Optional
 from uuid import UUID
 from application.ports.input.i_connector_service import IConnectorService
 from application.ports.output.i_connector_repository import IConnectorRepository
+from application.ports.output.i_connector_registry import IConnectorRegistry
 from domain.entities.connector_instance import ConnectorInstance
 from domain.enums import ConnectorStatus
 from domain.exceptions import EntityNotFoundError, ValidationError
 
-from infrastructure.secondary.connectors.jira_connector import JiraConnector
-from infrastructure.secondary.connectors.gitlab_connector import GitLabConnector
-from infrastructure.secondary.connectors.confluence_connector import ConfluenceConnector
 
-"""
-Este módulo define el servicio de conector, que es responsable de gestionar los conectores dentro del sistema. Incluye la lógica de negocio para 
-registrar nuevos conectores, actualizar su configuración, probar la conexión, listar conectores de una organización, obtener detalles de un conector 
-específico, eliminar conectores y activar/desactivar conectores.
-"""
 class ConnectorService(IConnectorService):
-    def __init__(self, connector_repository: IConnectorRepository) -> None:
+    def __init__(
+        self,
+        connector_repository: IConnectorRepository,
+        connector_registry: IConnectorRegistry,
+    ) -> None:
         self._connector_repo = connector_repository
+        self._connector_registry = connector_registry
 
 
     async def register_connector(
         self,
         organization_id: UUID,
         connector_type: str,
+        connector_implementation: str,
         name: str,
         config: dict,
     ) -> ConnectorInstance:
@@ -38,6 +37,7 @@ class ConnectorService(IConnectorService):
             id=UUID(),
             organization_id=organization_id,
             connector_type=connector_type,
+            connector_implementation=connector_implementation,
             name=name,
             encrypted_credentials=encrypted_credentials,
             status=ConnectorStatus.INACTIVO,
@@ -75,9 +75,9 @@ class ConnectorService(IConnectorService):
         from domain.exceptions import ConnectorConnectionFailedError
         from application.ports.output.i_connector import IConnector
 
-        connector_impl = self._get_connector_impl(connector.connector_type)
+        connector_impl = self._get_connector_impl(connector.connector_implementation)
         if not connector_impl:
-            raise ValidationError(f"Tipo de conector no soportado: {connector.connector_type}")
+            raise ValidationError(f"Implementación '{connector.connector_implementation}' no soportada")
 
         try:
             result = connector_impl.test_connection(connector)
@@ -91,16 +91,9 @@ class ConnectorService(IConnectorService):
             raise ConnectorConnectionFailedError(f"Error al probar conexión del conector: {connector_id}")
 
 
-    def _get_connector_impl(self, connector_type: str):
-        connectors = {
-            "JIRA": JiraConnector,
-            "GITLAB": GitLabConnector,
-            "CONFLUENCE": ConfluenceConnector,
-        }
-        connector_class = connectors.get(connector_type.upper())
-        if connector_class:
-            return connector_class()
-        return None
+    def _get_connector_impl(self, connector_implementation: str):
+        connector_impl = self._connector_registry.get_by_implementation(connector_implementation)
+        return connector_impl
 
 
     async def list_connectors(

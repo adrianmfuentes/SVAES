@@ -4,7 +4,6 @@ from application.ports.output.i_verification_result_repository import IVerificat
 from application.ports.output.i_release_repository import IReleaseRepository
 from domain.enums import ReleaseStatus, VerdictType
 
-
 @dataclass
 class DashboardMetrics:
     total_releases: int
@@ -14,7 +13,14 @@ class DashboardMetrics:
     total_verifications: int
     pass_rate: float
 
-
+"""
+Este módulo define el caso de uso para obtener métricas del dashboard, que es responsable de recopilar y calcular estadísticas clave sobre las 
+releases y sus verificaciones asociadas para una organización específica. Incluye la lógica de negocio para contar el total de releases, categorizar 
+las releases por su estado (válida, no válida, pendiente), contar el total de verificaciones realizadas y calcular la tasa de aprobación (pass rate)
+ basada en el número de verificaciones válidas en relación con el total de verificaciones. 
+ 
+ Estas métricas proporcionan una visión general del rendimiento y la calidad de las releases dentro de la organización.
+"""
 class GetDashboardMetricsUseCase:
     def __init__(
         self,
