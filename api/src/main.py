@@ -6,7 +6,8 @@ from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
@@ -66,8 +67,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    max_age=600,
 )
 
 
@@ -100,12 +102,29 @@ async def _unhandled_handler(request: Request, exc: Exception) -> JSONResponse:
 # Request logging middleware
 # ---------------------------------------------------------------------------
 @app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    if settings.is_production:
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+
+@app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.perf_counter()
+    import uuid
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
     response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
     duration_ms = (time.perf_counter() - start) * 1000
     _log.info(
-        "%s %s → %d (%.1fms)",
+        "request_id=%s %s %s → %d (%.1fms)",
+        request_id,
         request.method,
         request.url.path,
         response.status_code,

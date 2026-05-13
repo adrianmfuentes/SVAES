@@ -58,5 +58,6 @@ class IOrganizationService(ABC):
         self,
         organization_id: UUID,
         new_owner_id: UUID,
+        requested_by: UUID,
     ) -> Organization:
         pass

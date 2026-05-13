@@ -9,6 +9,10 @@ from application.ports.output.i_connector import IConnector
 from domain.entities.verification_result import VerificationResult
 from domain.enums import ReleaseStatus
 from domain.exceptions import ValidationError
+from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.logger import get_logger
+
+_log = get_logger(__name__)
 
 
 class VerificationService(IVerificationService):
@@ -48,6 +52,18 @@ class VerificationService(IVerificationService):
 
         await self._release_repo.update_status(release_id, ReleaseStatus.EN_VERIFICACION)
         task_id = await self._task_queue.enqueue_verification_task(release_id)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.RELEASE_VERIFIED,
+            user_id=UUID(),
+            organization_id=None,
+            resource_type="release",
+            resource_id=release_id,
+            details={"task_id": task_id},
+        ))
+        _log.info("Verification launched: release=%s task=%s", release_id, task_id)
+
         return task_id
 
 

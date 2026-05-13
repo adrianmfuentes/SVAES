@@ -3,9 +3,14 @@ from uuid import UUID
 from application.ports.input.i_connector_service import IConnectorService
 from application.ports.output.i_connector_repository import IConnectorRepository
 from application.ports.output.i_connector_registry import IConnectorRegistry
+from core.config import settings
+from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.logger import get_logger
 from domain.entities.connector_instance import ConnectorInstance
 from domain.enums import ConnectorStatus
 from domain.exceptions import EntityNotFoundError, ValidationError
+
+_log = get_logger(__name__)
 
 
 class ConnectorService(IConnectorService):
@@ -25,12 +30,11 @@ class ConnectorService(IConnectorService):
         connector_implementation: str,
         name: str,
         config: dict,
+        requested_by: UUID,
     ) -> ConnectorInstance:
         from cryptography.fernet import Fernet
-        import base64
 
-        key = base64.urlsafe_b64encode(b"SVAES_ENCRYPTION_KEY_32_BYTES!!")
-        fernet = Fernet(key)
+        fernet = Fernet(settings.encryption_key.encode())
         encrypted_credentials = fernet.encrypt(str(config).encode())
 
         connector = ConnectorInstance(
@@ -42,7 +46,20 @@ class ConnectorService(IConnectorService):
             encrypted_credentials=encrypted_credentials,
             status=ConnectorStatus.INACTIVO,
         )
-        return await self._connector_repo.save(connector)
+        saved = await self._connector_repo.save(connector)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.CONNECTOR_CREATED,
+            user_id=requested_by,
+            organization_id=organization_id,
+            resource_type="connector",
+            resource_id=saved.id,
+            details={"name": name, "type": connector_type},
+        ))
+        _log.info("Connector registered: by=%s org=%s name=%s type=%s", requested_by, organization_id, name, connector_type)
+
+        return saved
 
 
     async def update_connector(
@@ -50,6 +67,7 @@ class ConnectorService(IConnectorService):
         connector_id: UUID,
         name: Optional[str] = None,
         config: Optional[dict] = None,
+        requested_by: Optional[UUID] = None,
     ) -> ConnectorInstance:
         connector = await self._connector_repo.get_by_id(connector_id)
         if not connector:
@@ -59,15 +77,26 @@ class ConnectorService(IConnectorService):
             connector.name = name
         if config:
             from cryptography.fernet import Fernet
-            import base64
-            key = base64.urlsafe_b64encode(b"SVAES_ENCRYPTION_KEY_32_BYTES!!")
-            fernet = Fernet(key)
+            fernet = Fernet(settings.encryption_key.encode())
             connector.encrypted_credentials = fernet.encrypt(str(config).encode())
 
-        return await self._connector_repo.update(connector)
+        updated = await self._connector_repo.update(connector)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.CONNECTOR_UPDATED,
+            user_id=requested_by or UUID(),
+            organization_id=connector.organization_id,
+            resource_type="connector",
+            resource_id=connector_id,
+            details={"name": connector.name} if name else {},
+        ))
+        _log.info("Connector updated: by=%s id=%s org=%s", requested_by, connector_id, connector.organization_id)
+
+        return updated
 
 
-    async def test_connector_connection(self, connector_id: UUID) -> bool:
+    async def test_connector_connection(self, connector_id: UUID, requested_by: UUID) -> bool:
         connector = await self._connector_repo.get_by_id(connector_id)
         if not connector:
             raise EntityNotFoundError(f"Conector no encontrado: {connector_id}")
@@ -79,11 +108,27 @@ class ConnectorService(IConnectorService):
         if not connector_impl:
             raise ValidationError(f"Implementación '{connector.connector_implementation}' no soportada")
 
+        from cryptography.fernet import Fernet
+        fernet = Fernet(settings.encryption_key.encode())
+        decrypted_config = eval(fernet.decrypt(connector.encrypted_credentials).decode())
+
         try:
-            result = connector_impl.test_connection(connector)
+            result = connector_impl.test_connection(decrypted_config)
             if result:
                 connector.status = ConnectorStatus.ACTIVO
                 await self._connector_repo.update(connector)
+
+            audit = get_audit_logger()
+            audit.log(AuditEntry(
+                event=AuditEvent.CONNECTOR_TESTED,
+                user_id=requested_by,
+                organization_id=connector.organization_id,
+                resource_type="connector",
+                resource_id=connector_id,
+                details={"success": result, "implementation": connector.connector_implementation},
+            ))
+            _log.info("Connector tested: by=%s id=%s org=%s result=%s", requested_by, connector_id, connector.organization_id, result)
+
             return result
         except Exception:
             connector.status = ConnectorStatus.ERROR
@@ -110,11 +155,24 @@ class ConnectorService(IConnectorService):
         return await self._connector_repo.get_by_id(connector_id)
 
 
-    async def delete_connector(self, connector_id: UUID) -> None:
+    async def delete_connector(self, connector_id: UUID, requested_by: UUID) -> None:
         connector = await self._connector_repo.get_by_id(connector_id)
         if not connector:
             raise EntityNotFoundError(f"Conector no encontrado: {connector_id}")
+
+        org_id = connector.organization_id
         await self._connector_repo.delete(connector_id)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.CONNECTOR_DELETED,
+            user_id=requested_by,
+            organization_id=org_id,
+            resource_type="connector",
+            resource_id=connector_id,
+            details={"name": connector.name},
+        ))
+        _log.info("Connector deleted: by=%s id=%s org=%s", requested_by, connector_id, org_id)
 
 
     async def toggle_connector_status(

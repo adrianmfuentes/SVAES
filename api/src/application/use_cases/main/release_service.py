@@ -7,7 +7,11 @@ from application.ports.output.i_project_repository import IProjectRepository
 from domain.entities.release import Release
 from domain.entities.artifact import Artifact
 from domain.enums import ReleaseStatus
-from domain.exceptions import ValidationError 
+from domain.exceptions import ValidationError
+from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.logger import get_logger
+
+_log = get_logger(__name__) 
 
 """
 Clase de servicio (Use Case) que implementa la lógica de negocio para gestionar releases y sus artifacts.
@@ -40,13 +44,25 @@ class CreateReleaseUseCase(IReleaseService):
             name=name,
             version=version,
             project_id=project_id,
-            profile_id=project.profile_id,  
-            created_by=user_id,          
-            status=ReleaseStatus.BORRADOR           
+            profile_id=project.profile_id,
+            created_by=user_id,
+            status=ReleaseStatus.BORRADOR
         )
-        
-        await self.release_repository.create(new_release)
-        return new_release
+
+        created = await self.release_repository.create(new_release)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.RELEASE_CREATED,
+            user_id=user_id,
+            organization_id=project.organization_id,
+            resource_type="release",
+            resource_id=created.id,
+            details={"name": name, "version": version},
+        ))
+        _log.info("Release created: id=%s project=%s name=%s v=%s", created.id, project_id, name, version)
+
+        return created
            
 
     async def get_release(self, release_id: UUID) -> Release | None:

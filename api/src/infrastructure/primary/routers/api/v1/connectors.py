@@ -3,7 +3,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_connector_service import IConnectorService
-from core.dependencies import get_connector_service, get_current_user, CurrentUser, require_permission, require_org_access
+from core.dependencies import get_connector_service, get_current_user, CurrentUser, require_permission, require_org_access, require_connector_access
+from core.rate_limit import rate_limit_default
 from domain.enums import ConnectorStatus, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError, ConnectorConnectionFailedError
 
@@ -225,6 +226,7 @@ async def register_connector(
             connector_implementation=payload.connector_implementation,
             name=payload.name,
             config=payload.config,
+            requested_by=current_user.user_id,
         )
         return {"id": str(connector.id), "name": connector.name, "status": connector.status.value}
     except ValidationError as e:
@@ -238,6 +240,7 @@ async def update_connector(
     connector_id: UUID,
     payload: ConnectorUpdateRequest,
     current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_CONNECTORS)),
+    _ = Depends(require_connector_access()),
     service: IConnectorService = Depends(get_connector_service),
 ):
     """Endpoint para actualizar un conector existente.
@@ -260,6 +263,7 @@ async def update_connector(
             connector_id=connector_id,
             name=payload.name,
             config=payload.config,
+            requested_by=current_user.user_id,
         )
         return {"id": str(connector.id), "name": connector.name, "status": connector.status.value}
     except EntityNotFoundError as e:
@@ -274,6 +278,7 @@ async def update_connector(
 async def delete_connector(
     connector_id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_CONNECTORS)),
+    _ = Depends(require_connector_access()),
     service: IConnectorService = Depends(get_connector_service),
 ):
     """Endpoint para eliminar un conector existente.
@@ -290,17 +295,21 @@ async def delete_connector(
         - Lanza HTTPException con status 500 para cualquier otro error inesperado.
     """
     try:
-        await service.delete_connector(connector_id)
+        await service.delete_connector(
+            connector_id=connector_id,
+            requested_by=current_user.user_id,
+        )
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.post("/api/v1/connectors/{connector_id}/test", status_code=status.HTTP_200_OK)
+@router.post("/api/v1/connectors/{connector_id}/test", status_code=status.HTTP_200_OK, dependencies=[Depends(rate_limit_default())])
 async def test_connector(
     connector_id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_CONNECTORS)),
+    _ = Depends(require_connector_access()),
     service: IConnectorService = Depends(get_connector_service),
 ):
     """Endpoint para probar la conexión de un conector existente.
@@ -318,7 +327,10 @@ async def test_connector(
         - Lanza HTTPException con status 500 para cualquier otro error inesperado.
     """
     try:
-        result = await service.test_connector_connection(connector_id)
+        result = await service.test_connector_connection(
+            connector_id=connector_id,
+            requested_by=current_user.user_id,
+        )
         return {"success": result, "message": "Conexión exitosa" if result else "Conexión fallida"}
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

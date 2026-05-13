@@ -15,6 +15,7 @@ class IProfileService(ABC):
         name: str,
         description: str = "",
         is_default: bool = False,
+        requested_by: Optional[UUID] = None,
     ) -> VerificationProfile:
         pass
 
@@ -25,6 +26,7 @@ class IProfileService(ABC):
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_default: Optional[bool] = None,
+        requested_by: Optional[UUID] = None,
     ) -> VerificationProfile:
         pass
 
@@ -40,12 +42,12 @@ class IProfileService(ABC):
 
     @abstractmethod
     async def duplicate_profile(
-        self, profile_id: UUID, new_name: str
+        self, profile_id: UUID, new_name: str, requested_by: Optional[UUID] = None
     ) -> VerificationProfile:
         pass
 
     @abstractmethod
-    async def delete_profile(self, profile_id: UUID) -> None:
+    async def delete_profile(self, profile_id: UUID, requested_by: UUID) -> None:
         pass
 
     @abstractmethod
@@ -57,6 +59,7 @@ class IProfileService(ABC):
         connector_instance_id: Optional[UUID] = None,
         params: Optional[dict] = None,
         display_order: int = 0,
+        requested_by: Optional[UUID] = None,
     ) -> VerificationRule:
         pass
 
@@ -69,11 +72,12 @@ class IProfileService(ABC):
         params: Optional[dict] = None,
         display_order: Optional[int] = None,
         is_active: Optional[bool] = None,
+        requested_by: Optional[UUID] = None,
     ) -> VerificationRule:
         pass
 
     @abstractmethod
-    async def delete_rule(self, rule_id: UUID) -> None:
+    async def delete_rule(self, rule_id: UUID, requested_by: UUID) -> None:
         pass
 
     @abstractmethod

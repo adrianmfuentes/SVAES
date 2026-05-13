@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_custom_role_service import ICustomRoleService
-from core.dependencies import get_custom_role_service, get_current_user, CurrentUser, require_permission
+from core.dependencies import get_custom_role_service, get_current_user, CurrentUser, require_permission, require_custom_role_access
 from domain.enums import Permission
 from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError
 
@@ -105,6 +105,7 @@ async def update_custom_role(
     role_id: UUID,
     payload: CustomRoleUpdateRequest,
     current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_ROLES)),
+    _ = Depends(require_custom_role_access()),
     service: ICustomRoleService = Depends(get_custom_role_service),
 ):
     """Actualiza un rol personalizado existente.
@@ -148,6 +149,7 @@ async def update_custom_role(
 async def delete_custom_role(
     role_id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_ROLES)),
+    _ = Depends(require_custom_role_access()),
     service: ICustomRoleService = Depends(get_custom_role_service),
 ):
     """Elimina un rol personalizado.

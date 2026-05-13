@@ -5,6 +5,10 @@ from application.ports.output.i_custom_role_repository import ICustomRoleReposit
 from domain.entities.custom_role import CustomRole
 from domain.enums import Permission
 from domain.exceptions import EntityNotFoundError, DuplicateEntityError, ValidationError
+from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.logger import get_logger
+
+_log = get_logger(__name__)
 
 """
 Este módulo define el servicio de roles personalizados, que es responsable de gestionar los roles personalizados dentro del sistema. Incluye la lógica de
@@ -16,7 +20,7 @@ class CustomRoleService(ICustomRoleService):
         self._repo = custom_role_repository
 
 
-    async def create_role(self, organization_id: UUID, name: str, permissions: List[Permission]) -> CustomRole:
+    async def create_role(self, organization_id: UUID, name: str, permissions: List[Permission], requested_by: UUID) -> CustomRole:
         existing = await self._repo.list_by_organization(organization_id)
         if any(r.name == name for r in existing):
             raise DuplicateEntityError(f"Ya existe un rol con el nombre: {name}")
@@ -29,7 +33,20 @@ class CustomRoleService(ICustomRoleService):
             name=name,
             permissions=permissions,
         )
-        return await self._repo.create(role)
+        created = await self._repo.create(role)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.CUSTOM_ROLE_CREATED,
+            user_id=requested_by,
+            organization_id=organization_id,
+            resource_type="custom_role",
+            resource_id=created.id,
+            details={"name": name, "permissions": [p.value for p in permissions]},
+        ))
+        _log.info("Custom role created: by=%s org=%s name=%s", requested_by, organization_id, name)
+
+        return created
 
 
     async def get_role(self, role_id: UUID) -> Optional[CustomRole]:

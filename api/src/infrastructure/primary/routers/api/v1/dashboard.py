@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from application.ports.output.i_release_repository import IReleaseRepository
 from application.use_cases.others.get_dashboard_metrics import GetDashboardMetricsUseCase
-from core.dependencies import get_current_user, CurrentUser, get_release_repository, get_verification_result_repository
+from core.dependencies import get_current_user, CurrentUser, get_release_repository, get_verification_result_repository, require_org_access
 
 router = APIRouter(tags=["Dashboard"])
 
@@ -21,7 +21,7 @@ class DashboardMetricsResponse(BaseModel):
 @router.get("/api/v1/organizations/{org_id}/dashboard/metrics")
 async def get_dashboard_metrics(
     org_id: UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_org_access()),
     release_repo: IReleaseRepository = Depends(get_release_repository),
     verification_repo: IVerificationResultRepository = Depends(get_verification_result_repository),
 ):

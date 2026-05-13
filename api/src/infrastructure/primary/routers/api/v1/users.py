@@ -208,6 +208,7 @@ async def invite_user(
             organization_id=org_id,
             email=payload.email,
             role=payload.role,
+            requested_by=current_user.user_id,
         )
         return {
             "id": str(user.id),
@@ -253,6 +254,7 @@ async def update_user_role(
             user_id=user_id,
             organization_id=org_id,
             new_role=payload.role,
+            requested_by=current_user.user_id,
         )
         return {
             "id": str(user.id),
@@ -292,7 +294,11 @@ async def remove_user_from_org(
         - 500 Internal Server Error para cualquier otro error inesperado.
     """
     try:
-        await service.remove_user_from_organization(user_id=user_id, organization_id=org_id)
+        await service.remove_user_from_organization(
+            user_id=user_id,
+            organization_id=org_id,
+            requested_by=current_user.user_id,
+        )
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:

@@ -23,13 +23,13 @@ class IUserService(ABC):
         pass
 
     @abstractmethod
-    async def invite_user(self, organization_id: UUID, email: str, role: UserRole) -> User:
+    async def invite_user(self, organization_id: UUID, email: str, role: UserRole, requested_by: UUID) -> User:
         pass
 
     @abstractmethod
-    async def update_user_role(self, user_id: UUID, organization_id: UUID, new_role: UserRole) -> User:
+    async def update_user_role(self, user_id: UUID, organization_id: UUID, new_role: UserRole, requested_by: UUID) -> User:
         pass
 
     @abstractmethod
-    async def remove_user_from_organization(self, user_id: UUID, organization_id: UUID) -> None:
+    async def remove_user_from_organization(self, user_id: UUID, organization_id: UUID, requested_by: UUID) -> None:
         pass

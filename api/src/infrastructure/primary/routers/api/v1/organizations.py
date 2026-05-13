@@ -177,6 +177,7 @@ async def transfer_ownership(
         org = await service.transfer_ownership(
             organization_id=org_id,
             new_owner_id=payload.new_owner_id,
+            requested_by=current_user.user_id,
         )
         return {"id": str(org.id), "name": org.name, "owner_id": str(org.owner_id) if org.owner_id else None}
     except EntityNotFoundError as e:

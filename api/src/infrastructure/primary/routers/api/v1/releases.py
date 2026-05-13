@@ -7,7 +7,7 @@ from application.ports.input.i_release_service import IReleaseService
 from application.ports.input.i_artifact_service import IArtifactService
 from application.ports.input.i_verification_service import IVerificationService
 
-from core.dependencies import get_release_service, get_artifact_service, get_verification_service, get_current_user, CurrentUser, require_permission, require_project_access
+from core.dependencies import get_release_service, get_artifact_service, get_verification_service, get_current_user, CurrentUser, require_permission, require_project_access, require_release_access
 from domain.enums import ArtifactType, ReleaseStatus, Permission
 from domain.exceptions import ValidationError
 
@@ -104,6 +104,7 @@ async def list_releases(
 async def get_release(
     id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.VIEW_ORG_PROJECTS)),
+    _ = Depends(require_release_access()),
     service: IReleaseService = Depends(get_release_service),
 ):
     """Obtiene los detalles de una release específica por su ID.
@@ -135,6 +136,7 @@ async def update_release(
     id: UUID,
     payload: ReleaseCreateRequest,
     current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
+    _ = Depends(require_release_access()),
     service: IReleaseService = Depends(get_release_service),
 ):
     """Actualiza los detalles de una release específica por su ID.
@@ -170,6 +172,7 @@ async def update_release(
 async def delete_release(
     id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
+    _ = Depends(require_release_access()),
     service: IReleaseService = Depends(get_release_service),
 ):
     """Elimina una release específica por su ID.
@@ -195,6 +198,7 @@ async def delete_release(
 async def archive_release(
     id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.ARCHIVE_RELEASE)),
+    _ = Depends(require_release_access()),
     service: IReleaseService = Depends(get_release_service),
 ):
     """Archiva una release específica por su ID, cambiando su estado a 'ARCHIVADA'.
@@ -224,6 +228,7 @@ async def archive_release(
 async def list_artifacts(
     id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.VIEW_ORG_PROJECTS)),
+    _ = Depends(require_release_access()),
     service: IArtifactService = Depends(get_artifact_service),
 ):
     """Lista todos los artefactos asociados a una release específica por su ID.
@@ -252,6 +257,7 @@ async def add_artifact(
     id: UUID,
     payload: ArtifactCreateRequest,
     current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
+    _ = Depends(require_release_access()),
     service: IArtifactService = Depends(get_artifact_service),
 ):
     """Agrega un nuevo artefacto a una release específica por su ID.
@@ -292,6 +298,7 @@ async def remove_artifact(
     id: UUID,
     artifact_id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
+    _ = Depends(require_release_access()),
     service: IArtifactService = Depends(get_artifact_service),
 ):
     """Elimina un artefacto específico de una release por sus IDs.
@@ -324,6 +331,7 @@ async def remove_artifact(
 async def verify_release(
     id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.EXECUTE_VERIFICATION)),
+    _ = Depends(require_release_access()),
     service: IVerificationService = Depends(get_verification_service),
 ):
     """ Lanza la verificación asíncrona.
@@ -342,7 +350,10 @@ async def verify_release(
         - 500 Internal Server Error para cualquier otro error inesperado
     """
     try:
-        task_id = await service.launch_verification(release_id=id)
+        task_id = await service.launch_verification(
+            release_id=id,
+            requested_by=current_user.user_id,
+        )
         return {
             "task_id": task_id,
             "status": ReleaseStatus.EN_VERIFICACION
@@ -355,6 +366,7 @@ async def verify_release(
 async def get_results(
     id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.VIEW_OWN_HISTORY)),
+    _ = Depends(require_release_access()),
     service: IVerificationService = Depends(get_verification_service),
 ):
     """Obtiene el historial paginado de verificaciones de esta release.
@@ -384,6 +396,7 @@ async def get_result_detail(
     id: UUID,
     rid: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.VIEW_OWN_HISTORY)),
+    _ = Depends(require_release_access()),
     service: IVerificationService = Depends(get_verification_service),
 ):
     """Obtiene el informe detallado de una validación individual.

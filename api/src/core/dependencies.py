@@ -244,6 +244,149 @@ def get_release_repository() -> SqlReleaseRepository:
     return SqlReleaseRepository()
 
 
+def require_release_access(release_id_param: str = "id"):
+    async def dependency(
+        release_id: UUID,
+        current_user: CurrentUser = Depends(get_current_user),
+        release_repo: SqlReleaseRepository = Depends(get_release_repository),
+        project_repo: SqlProjectRepository = Depends(get_project_repository),
+    ) -> CurrentUser:
+        if current_user.role == UserRole.ADMIN:
+            return current_user
+
+        release = await release_repo.get_by_id(release_id)
+        if not release:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release no encontrada")
+
+        project = await project_repo.get_by_id(release.project_id)
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyecto no encontrado")
+
+        if project.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes acceso a esta release",
+            )
+        return current_user
+    return dependency
+
+
+def require_connector_access(connector_id_param: str = "connector_id"):
+    async def dependency(
+        connector_id: UUID,
+        current_user: CurrentUser = Depends(get_current_user),
+        connector_repo: SqlConnectorRepository = Depends(get_connector_repository),
+    ) -> CurrentUser:
+        if current_user.role == UserRole.ADMIN:
+            return current_user
+
+        connector = await connector_repo.get_by_id(connector_id)
+        if not connector:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conector no encontrado")
+
+        if connector.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes acceso a este conector",
+            )
+        return current_user
+    return dependency
+
+
+def require_profile_access(profile_id_param: str = "profile_id"):
+    async def dependency(
+        profile_id: UUID,
+        current_user: CurrentUser = Depends(get_current_user),
+        profile_repo: SqlProfileRepository = Depends(get_profile_repository),
+    ) -> CurrentUser:
+        if current_user.role == UserRole.ADMIN:
+            return current_user
+
+        profile = await profile_repo.get_by_id(profile_id)
+        if not profile:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil no encontrado")
+
+        if profile.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes acceso a este perfil",
+            )
+        return current_user
+    return dependency
+
+
+def require_rule_access(rule_id_param: str = "rule_id"):
+    async def dependency(
+        rule_id: UUID,
+        current_user: CurrentUser = Depends(get_current_user),
+        rule_repo: SqlVerificationRuleRepository = Depends(get_rule_repository),
+        profile_repo: SqlProfileRepository = Depends(get_profile_repository),
+    ) -> CurrentUser:
+        if current_user.role == UserRole.ADMIN:
+            return current_user
+
+        rule = await rule_repo.get_by_id(rule_id)
+        if not rule:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Regla no encontrada")
+
+        profile = await profile_repo.get_by_id(rule.profile_id)
+        if profile and profile.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes acceso a esta regla",
+            )
+        return current_user
+    return dependency
+
+
+def require_custom_role_access(role_id_param: str = "role_id"):
+    async def dependency(
+        role_id: UUID,
+        current_user: CurrentUser = Depends(get_current_user),
+        role_repo: SqlCustomRoleRepository = Depends(get_custom_role_repository),
+    ) -> CurrentUser:
+        if current_user.role == UserRole.ADMIN:
+            return current_user
+
+        role = await role_repo.get_by_id(role_id)
+        if not role:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rol no encontrado")
+
+        if role.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes acceso a este rol",
+            )
+        return current_user
+    return dependency
+
+
+def require_api_key_access(key_id_param: str = "key_id"):
+    async def dependency(
+        key_id: UUID,
+        current_user: CurrentUser = Depends(get_current_user),
+        api_key_repo: SqlAPIKeyRepository = Depends(get_api_key_repository),
+    ) -> CurrentUser:
+        if current_user.role == UserRole.ADMIN:
+            return current_user
+
+        api_key = await api_key_repo.get_by_id(key_id)
+        if not api_key:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key no encontrada")
+
+        if api_key.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes acceso a esta API key",
+            )
+        return current_user
+    return dependency
+
+
+def get_release_repository() -> SqlReleaseRepository:
+    return SqlReleaseRepository()
+
+
 def get_artifact_repository() -> SqlArtifactRepository:
     return SqlArtifactRepository()
 

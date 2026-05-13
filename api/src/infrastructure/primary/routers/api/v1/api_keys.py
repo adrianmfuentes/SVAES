@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.output.i_api_key_repository import IAPIKeyRepository
 from application.use_cases.others.manage_api_keys import ManageApiKeysUseCase
-from core.dependencies import get_current_user, CurrentUser, get_api_key_repository, require_org_access
+from core.dependencies import get_current_user, CurrentUser, get_api_key_repository, require_org_access, require_api_key_access
 
 router = APIRouter(tags=["API Keys"])
 
@@ -64,6 +64,7 @@ async def list_api_keys(
 async def revoke_api_key(
     key_id: UUID,
     current_user: CurrentUser = Depends(get_current_user),
+    _ = Depends(require_api_key_access()),
     api_key_repo: IAPIKeyRepository = Depends(get_api_key_repository),
 ):
     try:

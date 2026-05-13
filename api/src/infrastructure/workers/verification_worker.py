@@ -1,48 +1,20 @@
 import uuid
 import asyncio
+import httpx
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
+from celery import shared_task
 from infrastructure.secondary.queue.celery_app import celery_app
+from core.config import settings
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from application.ports.output.i_release_repository import IReleaseRepository
 from application.ports.output.i_connector_registry import IConnectorRegistry
 from domain.entities.verification_result import VerificationResult
-from domain.entities.verification_rule import VerificationRule
 from domain.enums import ReleaseStatus, VerdictType, SeverityType
 from infrastructure.secondary.database.repositories.release_repository import SqlReleaseRepository
 from infrastructure.secondary.database.repositories.verification_result_repository import SqlVerificationResultRepository
 from infrastructure.secondary.connectors import create_registered_connector_registry
-
-
-class MockVerificationEngine:
-    async def execute_verification(
-        self,
-        release_id: str,
-        artifacts_data: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
-        await asyncio.sleep(0.1)
-        rule_results = []
-        for artifact in artifacts_data:
-            rule_results.append({
-                "rule_id": str(uuid.uuid4()),
-                "rule_name": "RV-01_EXISTENCE",
-                "passed": True,
-                "severity": SeverityType.INFO,
-                "message": f"Artifact {artifact.get('external_ref', 'unknown')} verified",
-                "details": {},
-            })
-        verdict = VerdictType.VALID
-        return {
-            "verdict": verdict,
-            "rule_results": rule_results,
-            "summary": {
-                "total": len(rule_results),
-                "passed": len(rule_results),
-                "failed": 0,
-                "warnings": 0,
-            },
-        }
 
 
 async def _fetch_artifacts_via_connectors(
@@ -50,6 +22,22 @@ async def _fetch_artifacts_via_connectors(
     connector_registry: IConnectorRegistry,
 ) -> List[Dict[str, Any]]:
     return []
+
+
+async def _call_verification_engine(
+    release_id: str,
+    artifacts_data: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(
+            f"{settings.engine_url}/api/v1/verify",
+            json={
+                "release_id": release_id,
+                "artifacts": artifacts_data,
+            },
+        )
+        response.raise_for_status()
+        return response.json()
 
 
 @celery_app.task(name="infrastructure.workers.verification_worker.run_verification", bind=True)
@@ -92,8 +80,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str) -> Dict[s
             except Exception:
                 pass
 
-    engine = MockVerificationEngine()
-    result_data = await engine.execute_verification(str(release_id), artifacts_data)
+    result_data = await _call_verification_engine(str(release_id), artifacts_data)
 
     verification_result = VerificationResult(
         id=uuid.uuid4(),

@@ -6,6 +6,10 @@ from datetime import datetime, timedelta, timezone
 from domain.entities.api_key import APIKey
 from domain.exceptions import EntityNotFoundError, ValidationError
 from application.ports.output.i_api_key_repository import IAPIKeyRepository
+from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.logger import get_logger
+
+_log = get_logger(__name__)
 
 
 class ManageApiKeysUseCase:
@@ -36,6 +40,17 @@ class ManageApiKeysUseCase:
             expires_at=expires_at,
         )
         saved = await self._repo.save(api_key)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.API_KEY_CREATED,
+            user_id=UUID(),
+            organization_id=organization_id,
+            resource_type="api_key",
+            resource_id=saved.id,
+            details={"name": name, "expires_in_days": expires_in_days},
+        ))
+        _log.info("API key created: org=%s name=%s id=%s", organization_id, name, saved.id)
 
         return {
             "id": str(saved.id),
@@ -73,6 +88,18 @@ class ManageApiKeysUseCase:
 
         api_key.is_active = False
         updated = await self._repo.update(api_key)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.API_KEY_REVOKED,
+            user_id=UUID(),
+            organization_id=api_key.organization_id,
+            resource_type="api_key",
+            resource_id=key_id,
+            details={"name": api_key.name},
+        ))
+        _log.info("API key revoked: id=%s org=%s", key_id, api_key.organization_id)
+
         return {"id": str(updated.id), "is_active": updated.is_active}
 
     async def validate_api_key(self, raw_key: str) -> Optional[APIKey]:

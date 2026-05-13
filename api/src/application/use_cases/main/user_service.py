@@ -7,6 +7,10 @@ from application.ports.output.i_password_hasher import IPasswordHasher
 from domain.entities.user import User
 from domain.enums import UserRole
 from domain.exceptions import EntityNotFoundError, DuplicateEntityError, ValidationError
+from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.logger import get_logger
+
+_log = get_logger(__name__)
 
 """
 Este módulo define el servicio de usuario, que es responsable de gestionar los usuarios dentro del sistema. Incluye la lógica de negocio para obtener 
@@ -57,7 +61,7 @@ class UserService(IUserService):
         return await self._user_repo.list_all(organization_id=organization_id, skip=skip, limit=limit)
 
 
-    async def invite_user(self, organization_id: UUID, email: str, role: UserRole) -> User:
+    async def invite_user(self, organization_id: UUID, email: str, role: UserRole, requested_by: UUID) -> User:
         org = await self._org_repo.get_by_id(organization_id)
         if not org:
             raise EntityNotFoundError(f"Organización no encontrada: {organization_id}")
@@ -77,10 +81,23 @@ class UserService(IUserService):
             organization_id=organization_id,
             is_active=False,
         )
-        return await self._user_repo.create(user)
+        created = await self._user_repo.create(user)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.USER_INVITED,
+            user_id=requested_by,
+            organization_id=organization_id,
+            resource_type="user",
+            resource_id=created.id,
+            details={"email": email, "role": role.value},
+        ))
+        _log.info("User invited: by=%s email=%s org=%s role=%s", requested_by, email, organization_id, role.value)
+
+        return created
 
 
-    async def update_user_role(self, user_id: UUID, organization_id: UUID, new_role: UserRole) -> User:
+    async def update_user_role(self, user_id: UUID, organization_id: UUID, new_role: UserRole, requested_by: UUID) -> User:
         user = await self._user_repo.get_by_id(user_id)
         if not user or user.organization_id != organization_id:
             raise EntityNotFoundError(f"Usuario no encontrado en esta organización: {user_id}")
@@ -92,11 +109,25 @@ class UserService(IUserService):
         if org.owner_id == user_id:
             raise ValidationError("No se puede cambiar el rol del Owner de la organización")
 
+        old_role = user.role
         user.role = new_role
-        return await self._user_repo.update(user)
+        updated = await self._user_repo.update(user)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.USER_ROLE_CHANGED,
+            user_id=requested_by,
+            organization_id=organization_id,
+            resource_type="user",
+            resource_id=user_id,
+            details={"target_user": str(user_id), "old_role": old_role.value, "new_role": new_role.value},
+        ))
+        _log.info("User role changed: by=%s user=%s org=%s %s->%s", requested_by, user_id, organization_id, old_role.value, new_role.value)
+
+        return updated
 
 
-    async def remove_user_from_organization(self, user_id: UUID, organization_id: UUID) -> None:
+    async def remove_user_from_organization(self, user_id: UUID, organization_id: UUID, requested_by: UUID) -> None:
         user = await self._user_repo.get_by_id(user_id)
         if not user or user.organization_id != organization_id:
             raise EntityNotFoundError(f"Usuario no encontrado en esta organización: {user_id}")
@@ -107,6 +138,17 @@ class UserService(IUserService):
 
         if org.owner_id == user_id:
             raise ValidationError("No se puede eliminar al Owner de la organización")
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.USER_REMOVED,
+            user_id=requested_by,
+            organization_id=organization_id,
+            resource_type="user",
+            resource_id=user_id,
+            details={"removed_user": str(user_id), "email": user.email},
+        ))
+        _log.info("User removed from org: by=%s user=%s org=%s", requested_by, user_id, organization_id)
 
         user.organization_id = None
         user.role = UserRole.VIEWER

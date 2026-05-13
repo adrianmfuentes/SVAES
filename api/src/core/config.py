@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/0"
 
+    # Verification Engine
+    engine_url: str = "http://localhost:8080"
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     @field_validator("allowed_origins", mode="before")

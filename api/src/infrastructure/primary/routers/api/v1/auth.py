@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_auth_service import IAuthService
 from core.dependencies import get_auth_service
+from core.rate_limit import rate_limit_auth
+from slowapi import Limiter
 from domain.exceptions import ValidationError
 
 router = APIRouter(tags=["Auth"])
@@ -16,7 +18,7 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-@router.post("/api/v1/auth/login")
+@router.post("/api/v1/auth/login", dependencies=[Depends(rate_limit_auth())])
 async def login(
     payload: LoginRequest,
     service: IAuthService = Depends(get_auth_service),
@@ -50,7 +52,7 @@ async def login(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.post("/api/v1/auth/refresh")
+@router.post("/api/v1/auth/refresh", dependencies=[Depends(rate_limit_auth())])
 async def refresh(
     payload: RefreshRequest,
     service: IAuthService = Depends(get_auth_service),

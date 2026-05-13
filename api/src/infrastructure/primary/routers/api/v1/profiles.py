@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from application.ports.input.i_profile_service import IProfileService
-from core.dependencies import get_profile_service, get_current_user, CurrentUser, require_permission, require_role, require_org_access
+from core.dependencies import get_profile_service, get_current_user, CurrentUser, require_permission, require_role, require_org_access, require_profile_access, require_rule_access
 from domain.enums import SeverityType, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError
 
@@ -117,6 +117,7 @@ async def update_profile(
     profile_id: UUID,
     payload: ProfileUpdateRequest,
     current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
+    _ = Depends(require_profile_access()),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para actualizar un perfil existente.
@@ -154,6 +155,7 @@ async def update_profile(
 async def delete_profile(
     profile_id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
+    _ = Depends(require_profile_access()),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para eliminar un perfil existente.
@@ -181,6 +183,7 @@ async def add_rule(
     profile_id: UUID,
     payload: RuleCreateRequest,
     current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_RULES)),
+    _ = Depends(require_profile_access()),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para agregar una nueva regla a un perfil existente.
@@ -218,6 +221,7 @@ async def update_rule(
     rule_id: UUID,
     payload: RuleUpdateRequest,
     current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_RULES)),
+    _ = Depends(require_rule_access()),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para actualizar una regla existente.
@@ -254,6 +258,7 @@ async def update_rule(
 async def delete_rule(
     rule_id: UUID,
     current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_RULES)),
+    _ = Depends(require_rule_access()),
     service: IProfileService = Depends(get_profile_service),
 ):
     """Endpoint para eliminar una regla existente.

@@ -6,6 +6,10 @@ from application.ports.output.i_project_repository import IProjectRepository
 from domain.entities.organization import Organization
 from domain.entities.project import Project
 from domain.exceptions import DuplicateEntityError, EntityNotFoundError, ValidationError
+from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.logger import get_logger
+
+_log = get_logger(__name__)
 
 
 class OrganizationService(IOrganizationService):
@@ -83,10 +87,25 @@ class OrganizationService(IOrganizationService):
         self,
         organization_id: UUID,
         new_owner_id: UUID,
+        requested_by: UUID,
     ) -> Organization:
         org = await self._org_repo.get_by_id(organization_id)
         if not org:
             raise EntityNotFoundError(f"Organización no encontrada: {organization_id}")
 
+        old_owner = org.owner_id
         org.owner_id = new_owner_id
-        return await self._org_repo.update(org)
+        updated = await self._org_repo.update(org)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.ORG_OWNERSHIP_TRANSFERRED,
+            user_id=requested_by,
+            organization_id=organization_id,
+            resource_type="organization",
+            resource_id=organization_id,
+            details={"old_owner": str(old_owner), "new_owner": str(new_owner_id)},
+        ))
+        _log.info("Org ownership transferred: by=%s org=%s %s->%s", requested_by, organization_id, old_owner, new_owner_id)
+
+        return updated

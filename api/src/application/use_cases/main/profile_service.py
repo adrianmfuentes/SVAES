@@ -7,6 +7,10 @@ from domain.entities.verification_profile import VerificationProfile
 from domain.entities.verification_rule import VerificationRule
 from domain.enums import SeverityType
 from domain.exceptions import EntityNotFoundError
+from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.logger import get_logger
+
+_log = get_logger(__name__)
 
 """
 Este servicio maneja toda la lógica relacionada con los perfiles de verificación, incluyendo:
@@ -56,6 +60,7 @@ class ProfileService(IProfileService):
         name: str,
         description: str = "",
         is_default: bool = False,
+        requested_by: Optional[UUID] = None,
     ) -> VerificationProfile:
         if is_default:
             existing_default = await self._profile_repo.get_default_for_organization(organization_id)
@@ -71,7 +76,20 @@ class ProfileService(IProfileService):
             is_default=is_default,
             rules=[],
         )
-        return await self._profile_repo.create(profile)
+        created = await self._profile_repo.create(profile)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.PROFILE_CREATED,
+            user_id=requested_by or UUID(),
+            organization_id=organization_id,
+            resource_type="profile",
+            resource_id=created.id,
+            details={"name": name, "is_default": is_default},
+        ))
+        _log.info("Profile created: by=%s org=%s name=%s is_default=%s", requested_by, organization_id, name, is_default)
+
+        return created
 
 
     async def update_profile(
@@ -98,7 +116,20 @@ class ProfileService(IProfileService):
         if is_default is not None:
             profile.is_default = is_default
 
-        return await self._profile_repo.update(profile)
+        updated = await self._profile_repo.update(profile)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.PROFILE_UPDATED,
+            user_id=UUID(),
+            organization_id=profile.organization_id,
+            resource_type="profile",
+            resource_id=profile_id,
+            details={"name": profile.name},
+        ))
+        _log.info("Profile updated: id=%s org=%s", profile_id, profile.organization_id)
+
+        return updated
 
 
     async def list_profiles(
@@ -150,7 +181,20 @@ class ProfileService(IProfileService):
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
+
+        org_id = profile.organization_id
         await self._profile_repo.delete(profile_id)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.PROFILE_DELETED,
+            user_id=UUID(),
+            organization_id=org_id,
+            resource_type="profile",
+            resource_id=profile_id,
+            details={"name": profile.name},
+        ))
+        _log.info("Profile deleted: id=%s org=%s", profile_id, org_id)
 
     async def add_rule(
         self,
@@ -173,7 +217,20 @@ class ProfileService(IProfileService):
             connector_instance_id=connector_instance_id,
             display_order=display_order,
         )
-        return await self._rule_repo.create(rule)
+        created = await self._rule_repo.create(rule)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.RULE_CREATED,
+            user_id=UUID(),
+            organization_id=profile.organization_id,
+            resource_type="rule",
+            resource_id=created.id,
+            details={"template": rule_template, "severity": severity.value},
+        ))
+        _log.info("Rule added: profile=%s template=%s", profile_id, rule_template)
+
+        return created
 
 
     async def update_rule(
@@ -200,7 +257,20 @@ class ProfileService(IProfileService):
         if is_active is not None:
             rule.is_active = is_active
 
-        return await self._rule_repo.update(rule)
+        updated = await self._rule_repo.update(rule)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.RULE_UPDATED,
+            user_id=UUID(),
+            organization_id=None,
+            resource_type="rule",
+            resource_id=rule_id,
+            details={"template": rule.rule_template},
+        ))
+        _log.info("Rule updated: id=%s", rule_id)
+
+        return updated
 
 
     async def delete_rule(self, rule_id: UUID) -> None:

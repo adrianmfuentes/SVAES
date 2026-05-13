@@ -8,6 +8,7 @@ from application.ports.output.i_password_hasher import IPasswordHasher
 from domain.entities.user import User
 from domain.enums import UserRole
 from domain.exceptions import ValidationError
+from core.audit import AuditEntry, AuditEvent, get_audit_logger
 
 MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_WINDOW_MINUTES = 10
@@ -37,6 +38,16 @@ class AuthService(IAuthService):
 
         if not user.is_active:
             raise ValidationError("Usuario inactivo")
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.LOGIN_FAILED,
+            user_id=user.id,
+            organization_id=user.organization_id,
+            resource_type="user",
+            resource_id=user.id,
+            details={"reason": "user_inactive"},
+        ))
 
         now = datetime.now(timezone.utc)
         if user.locked_until and user.locked_until > now:
@@ -76,6 +87,16 @@ class AuthService(IAuthService):
         )
 
         tokens = AuthTokens(access_token=access_token, refresh_token=refresh_token)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.LOGIN_SUCCESS,
+            user_id=user.id,
+            organization_id=user.organization_id,
+            resource_type="user",
+            resource_id=user.id,
+        ))
+
         return tokens, user.id, user.role
 
 

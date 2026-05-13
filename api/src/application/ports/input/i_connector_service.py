@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from uuid import UUID
 
-# Dominio y entidades
 from domain.entities.connector_instance import ConnectorInstance
 from domain.enums import ConnectorStatus
 
@@ -15,6 +14,7 @@ class IConnectorService(ABC):
         connector_implementation: str,
         name: str,
         config: dict,
+        requested_by: UUID,
     ) -> ConnectorInstance:
         pass
 
@@ -24,11 +24,12 @@ class IConnectorService(ABC):
         connector_id: UUID,
         name: Optional[str] = None,
         config: Optional[dict] = None,
+        requested_by: Optional[UUID] = None,
     ) -> ConnectorInstance:
         pass
 
     @abstractmethod
-    async def test_connector_connection(self, connector_id: UUID) -> bool:
+    async def test_connector_connection(self, connector_id: UUID, requested_by: UUID) -> bool:
         pass
 
     @abstractmethod
@@ -44,11 +45,11 @@ class IConnectorService(ABC):
         pass
 
     @abstractmethod
-    async def delete_connector(self, connector_id: UUID) -> None:
+    async def delete_connector(self, connector_id: UUID, requested_by: UUID) -> None:
         pass
 
     @abstractmethod
     async def toggle_connector_status(
-        self, connector_id: UUID, status: ConnectorStatus
+        self, connector_id: UUID, status: ConnectorStatus, requested_by: UUID
     ) -> ConnectorInstance:
         pass
