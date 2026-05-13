@@ -1,9 +1,19 @@
 """
-Este archivo define los routers para la API. 
+Este archivo define los routers para la API.
 Aquí se importan los routers de las diferentes versiones de la API y se exportan para su uso en la aplicación principal.
 """
 from infrastructure.primary.routers.api.v1.releases import router as releases_router
+from infrastructure.primary.routers.api.v1.auth import router as auth_router
+from infrastructure.primary.routers.api.v1.organizations import router as organizations_router
+from infrastructure.primary.routers.api.v1.connectors import router as connectors_router
+from infrastructure.primary.routers.api.v1.profiles import router as profiles_router
+from infrastructure.primary.routers.api.v1.tasks import router as tasks_router
 
 __all__ = [
-    "releases_router"
+    "auth_router",
+    "organizations_router",
+    "releases_router",
+    "connectors_router",
+    "profiles_router",
+    "tasks_router",
 ]

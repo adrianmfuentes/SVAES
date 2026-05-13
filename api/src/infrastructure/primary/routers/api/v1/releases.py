@@ -343,7 +343,7 @@ async def get_results(
         - 500 Internal Server Error para cualquier otro error inesperado
     """
     try:
-        results = await service.list_verification_results(release_id=id)
+        results = await service.get_verification_history(release_id=id)
         return results
     except HTTPException:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release no encontrada")

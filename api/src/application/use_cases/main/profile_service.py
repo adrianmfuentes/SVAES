@@ -1,5 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
+from application.ports.input.i_profile_service import IProfileService
 from application.ports.output.i_profile_repository import IProfileRepository
 from application.ports.output.i_verification_rule_repository import IVerificationRuleRepository
 from domain.entities.verification_profile import VerificationProfile
@@ -7,8 +8,39 @@ from domain.entities.verification_rule import VerificationRule
 from domain.enums import SeverityType
 from domain.exceptions import EntityNotFoundError
 
+"""
+Este servicio maneja toda la lógica relacionada con los perfiles de verificación, incluyendo:
+    - Creación, actualización, listado y eliminación de perfiles.
+    - Gestión de reglas dentro de cada perfil (agregar, actualizar, eliminar, reordenar).
+    - Validaciones necesarias para asegurar la integridad de los datos y el correcto funcionamiento del sistema.
 
-class ManageProfileUseCase:
+Un perfil de verificación es un conjunto de reglas que se aplican durante el proceso de verificación de una release.
+Cada regla define un chequeo específico que se ejecutará, su severidad, y opcionalmente un conector asociado para obtener datos externos.
+
+Ejemplo de perfil:
+    {
+        "id": "uuid-del-perfil",
+        "organization_id": "uuid-de-la-organización",
+        "name": "Perfil de Verificación para Proyectos Web",
+        "description": "Incluye reglas específicas para validar releases de proyectos web.",
+        "is_default": false,
+        "rules": [
+            {
+                "id": "uuid-de-la-regla",
+                "profile_id": "uuid-del-perfil",
+                "rule_template": "check_unit_tests",
+                "severity": "HIGH",
+                "params": {"min_coverage": 80},
+                "connector_instance_id": null,
+                "display_order": 0,
+                "is_active": true
+            },
+            ...
+        ]
+    }
+"""
+
+class ProfileService(IProfileService):
     def __init__(
         self,
         profile_repository: IProfileRepository,
@@ -16,6 +48,7 @@ class ManageProfileUseCase:
     ) -> None:
         self._profile_repo = profile_repository
         self._rule_repo = rule_repository
+
 
     async def create_profile(
         self,
@@ -39,6 +72,7 @@ class ManageProfileUseCase:
             rules=[],
         )
         return await self._profile_repo.create(profile)
+
 
     async def update_profile(
         self,
@@ -66,15 +100,20 @@ class ManageProfileUseCase:
 
         return await self._profile_repo.update(profile)
 
-    async def get_profile(self, profile_id: UUID) -> Optional[VerificationProfile]:
-        return await self._profile_repo.get_by_id(profile_id)
 
     async def list_profiles(
         self, organization_id: UUID, skip: int = 0, limit: int = 50
     ) -> List[VerificationProfile]:
         return await self._profile_repo.list_by_organization(organization_id, skip=skip, limit=limit)
 
-    async def duplicate_profile(self, profile_id: UUID, new_name: str) -> VerificationProfile:
+
+    async def get_profile(self, profile_id: UUID) -> Optional[VerificationProfile]:
+        return await self._profile_repo.get_by_id(profile_id)
+
+
+    async def duplicate_profile(
+        self, profile_id: UUID, new_name: str
+    ) -> VerificationProfile:
         original = await self._profile_repo.get_by_id(profile_id)
         if not original:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
@@ -101,10 +140,11 @@ class ManageProfileUseCase:
             )
             await self._rule_repo.create(new_rule)
 
-        duplicated = await self._profile_repo.get_by_id(created.id)
-        if not duplicated:
+        duplicated_profile = await self._profile_repo.get_by_id(created.id)
+        if not duplicated_profile:
             raise EntityNotFoundError(f"Perfil no encontrado: {created.id}")
-        return duplicated
+        return duplicated_profile
+
 
     async def delete_profile(self, profile_id: UUID) -> None:
         profile = await self._profile_repo.get_by_id(profile_id)
@@ -135,6 +175,7 @@ class ManageProfileUseCase:
         )
         return await self._rule_repo.create(rule)
 
+
     async def update_rule(
         self,
         rule_id: UUID,
@@ -161,11 +202,13 @@ class ManageProfileUseCase:
 
         return await self._rule_repo.update(rule)
 
+
     async def delete_rule(self, rule_id: UUID) -> None:
         rule = await self._rule_repo.get_by_id(rule_id)
         if not rule:
             raise EntityNotFoundError(f"Regla no encontrada: {rule_id}")
         await self._rule_repo.delete(rule_id)
+
 
     async def reorder_rules(self, profile_id: UUID, rule_ids: List[UUID]) -> List[VerificationRule]:
         profile = await self._profile_repo.get_by_id(profile_id)

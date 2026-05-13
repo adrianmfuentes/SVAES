@@ -12,7 +12,14 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.rate_limit import limiter
-from infrastructure.primary.routers.api.routers import releases_router
+from infrastructure.primary.routers.api.routers import (
+    auth_router,
+    organizations_router,
+    releases_router,
+    connectors_router,
+    profiles_router,
+    tasks_router,
+)
 from core.config import settings
 from core.logging.logger import _configure_root_logger, get_logger
 from domain.exceptions import (
@@ -106,7 +113,12 @@ async def log_requests(request: Request, call_next):
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
+app.include_router(auth_router, prefix=API_V1_PREFIX)
+app.include_router(organizations_router, prefix=API_V1_PREFIX)
 app.include_router(releases_router, prefix=API_V1_PREFIX)
+app.include_router(connectors_router, prefix=API_V1_PREFIX)
+app.include_router(profiles_router, prefix=API_V1_PREFIX)
+app.include_router(tasks_router, prefix=API_V1_PREFIX)
 
 
 # ---------------------------------------------------------------------------
