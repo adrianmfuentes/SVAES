@@ -19,6 +19,7 @@ class SqlVerificationResultRepository(IVerificationResultRepository):
                 release_id=result.release_id,
                 verdict=result.verdict.value,
                 duration_ms=result.duration_ms,
+                summary=result.summary,
                 rule_results=result.rule_results,
                 profile_snapshot=result.profile_snapshot,
                 executed_at=result.executed_at,
@@ -32,7 +33,8 @@ class SqlVerificationResultRepository(IVerificationResultRepository):
                 release_id=result_model.release_id,
                 verdict=VerdictType(result_model.verdict),
                 duration_ms=result_model.duration_ms,
-                rule_results=result_model.rule_results or {},
+                summary=result_model.summary or {},
+                rule_results=result_model.rule_results or [],
                 profile_snapshot=result_model.profile_snapshot or {},
                 executed_at=result_model.executed_at,
             )
@@ -56,7 +58,8 @@ class SqlVerificationResultRepository(IVerificationResultRepository):
                 release_id=result_row.release_id,
                 verdict=VerdictType(result_row.verdict),
                 duration_ms=result_row.duration_ms,
-                rule_results=result_row.rule_results or {},
+                summary=result_row.summary or {},
+                rule_results=result_row.rule_results or [],
                 profile_snapshot=result_row.profile_snapshot or {},
                 executed_at=result_row.executed_at,
             )
@@ -83,7 +86,8 @@ class SqlVerificationResultRepository(IVerificationResultRepository):
                     release_id=row.release_id,
                     verdict=VerdictType(row.verdict),
                     duration_ms=row.duration_ms,
-                    rule_results=row.rule_results or {},
+                    summary=row.summary or {},
+                    rule_results=row.rule_results or [],
                     profile_snapshot=row.profile_snapshot or {},
                     executed_at=row.executed_at,
                 )

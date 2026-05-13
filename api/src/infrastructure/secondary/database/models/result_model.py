@@ -14,6 +14,7 @@ class VerificationResultModel(Base):
     release_id = Column(PG_UUID(as_uuid=True), ForeignKey("release.id"), nullable=False)
     verdict = Column(String(30), nullable=False, default=VerdictType.INVALID.value)
     duration_ms = Column(Integer, nullable=False, default=0)
-    rule_results = Column(JSON, nullable=True, default=dict)
+    summary = Column(JSON, nullable=True, default=dict)
+    rule_results = Column(JSON, nullable=True, default=list)
     profile_snapshot = Column(JSON, nullable=True, default=dict)
     executed_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)

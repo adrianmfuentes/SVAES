@@ -4,9 +4,13 @@ from uuid import UUID
 from domain.entities.verification_result import VerificationResult
 
 class IVerificationService(ABC):
-    
+
     @abstractmethod
     async def launch_verification(self, release_id: UUID) -> str:
+        pass
+
+    @abstractmethod
+    async def fetch_artifacts_via_connectors(self, release_id: UUID) -> List[dict]:
         pass
 
     @abstractmethod

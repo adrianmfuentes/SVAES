@@ -10,6 +10,8 @@ from infrastructure.primary.routers.api.v1.profiles import router as profiles_ro
 from infrastructure.primary.routers.api.v1.tasks import router as tasks_router
 from infrastructure.primary.routers.api.v1.users import router as users_router
 from infrastructure.primary.routers.api.v1.custom_roles import router as custom_roles_router
+from infrastructure.primary.routers.api.v1.dashboard import router as dashboard_router
+from infrastructure.primary.routers.api.v1.api_keys import router as api_keys_router
 
 __all__ = [
     "auth_router",
@@ -20,4 +22,6 @@ __all__ = [
     "tasks_router",
     "users_router",
     "custom_roles_router",
+    "dashboard_router",
+    "api_keys_router",
 ]

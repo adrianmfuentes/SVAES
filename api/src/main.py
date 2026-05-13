@@ -21,6 +21,8 @@ from infrastructure.primary.routers.api.routers import (
     tasks_router,
     users_router,
     custom_roles_router,
+    dashboard_router,
+    api_keys_router,
 )
 from core.config import settings
 from api.src.core.logger import _configure_root_logger, get_logger
@@ -123,6 +125,8 @@ app.include_router(profiles_router, prefix=API_V1_PREFIX)
 app.include_router(tasks_router, prefix=API_V1_PREFIX)
 app.include_router(users_router, prefix=API_V1_PREFIX)
 app.include_router(custom_roles_router, prefix=API_V1_PREFIX)
+app.include_router(dashboard_router, prefix=API_V1_PREFIX)
+app.include_router(api_keys_router, prefix=API_V1_PREFIX)
 
 
 # ---------------------------------------------------------------------------
@@ -130,5 +134,4 @@ app.include_router(custom_roles_router, prefix=API_V1_PREFIX)
 # ---------------------------------------------------------------------------
 @app.get("/health", tags=["System"])
 async def health():
-    # TODO
-    return {"status": "ok"}
+    return {"status": "ok", "service": "svaes-api", "version": "1.0.0"}

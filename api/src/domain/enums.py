@@ -57,7 +57,6 @@ class ConnectorImplementation(str, Enum):
     GLPI = "GLPI"
     ZAMMAD = "ZAMMAD"
     REDMINE = "REDMINE"
-    YOUTUBE = "YOUTUBE"
 
 class SeverityType(str, Enum):
     INFO = "INFO"

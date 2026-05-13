@@ -4,6 +4,8 @@ from application.ports.input.i_verification_service import IVerificationService
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from application.ports.output.i_release_repository import IReleaseRepository
 from application.ports.output.i_task_queue import ITaskQueue
+from application.ports.output.i_connector_registry import IConnectorRegistry
+from application.ports.output.i_connector import IConnector
 from domain.entities.verification_result import VerificationResult
 from domain.enums import ReleaseStatus
 from domain.exceptions import ValidationError
@@ -15,36 +17,62 @@ class VerificationService(IVerificationService):
         release_repository: IReleaseRepository,
         verification_repository: IVerificationResultRepository,
         task_queue: ITaskQueue,
+        connector_registry: IConnectorRegistry,
     ):
         self._release_repo = release_repository
         self._verification_repo = verification_repository
         self._task_queue = task_queue
+        self._connector_registry = connector_registry
 
 
     async def launch_verification(self, release_id: UUID) -> str:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
             raise ValidationError("Release no encontrada")
-        
-        estados_validos = (
-            ReleaseStatus.PENDIENTE, 
-            ReleaseStatus.VALIDA, 
-            ReleaseStatus.NO_VALIDA, 
-            ReleaseStatus.CON_ADVERTENCIAS
+
+        valid_statuses = (
+            ReleaseStatus.PENDIENTE,
+            ReleaseStatus.VALIDA,
+            ReleaseStatus.NO_VALIDA,
+            ReleaseStatus.CON_ADVERTENCIAS,
         )
 
-        if release.status not in estados_validos:
+        if release.status not in valid_statuses:
             raise ValidationError(
                 f"No se puede iniciar verificación desde estado {release.status.value}. "
                 "Debe estar en PENDIENTE o tener un resultado previo."
             )
-            
+
         if not release.artifacts or len(release.artifacts) == 0:
             raise ValidationError("No se puede verificar una release sin artefactos asociados.")
 
         await self._release_repo.update_status(release_id, ReleaseStatus.EN_VERIFICACION)
         task_id = await self._task_queue.enqueue_verification_task(release_id)
         return task_id
+
+
+    async def fetch_artifacts_via_connectors(self, release_id: UUID) -> List[dict]:
+        release = await self._release_repo.get_by_id(release_id)
+        if not release or not release.artifacts:
+            return []
+
+        results = []
+        for artifact in release.artifacts:
+            try:
+                connector_impl = self._connector_registry.get_by_implementation(artifact.connector_implementation)
+                if connector_impl:
+                    config = {}
+                    data = await connector_impl.fetch_artifact(artifact.external_ref, config)
+                    results.append({
+                        "artifact_id": str(artifact.id),
+                        "type": artifact.artifact_type,
+                        "external_ref": artifact.external_ref,
+                        "connector_implementation": artifact.connector_implementation,
+                        "data": data,
+                    })
+            except Exception:
+                pass
+        return results
 
 
     async def get_verification_result(

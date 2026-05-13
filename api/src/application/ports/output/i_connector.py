@@ -31,32 +31,3 @@ class IConnector(Protocol):
     @abstractmethod
     def connector_implementation(self) -> str:
         pass
-
-
-class YouTubeConnector(IConnector):
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        raise NotImplementedError
-
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        raise NotImplementedError
-
-    async def list_artifacts(
-        self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        raise NotImplementedError
-
-    def get_metadata(self) -> Dict[str, Any]:
-        return {"name": "YouTube", "version": "1.0", "artifact_types": ["video", "playlist"]}
-
-    @property
-    def connector_type(self) -> str:
-        return "YOUTUBE"
-
-    @property
-    def connector_implementation(self) -> str:
-        return "YOUTUBE"
-
-
-class YouTube:
-    def __call__(self) -> YouTubeConnector:
-        return YouTubeConnector()

@@ -44,6 +44,7 @@ from application.ports.output.i_token_service import ITokenService
 from application.ports.output.i_password_hasher import IPasswordHasher
 from infrastructure.secondary.queue.celery_task_queue import CeleryTaskQueue
 from infrastructure.secondary.database.repositories.custom_role_repository import SqlCustomRoleRepository
+from infrastructure.secondary.database.repositories.api_key_repository import SqlAPIKeyRepository
 from infrastructure.secondary.connectors.connector_registry import ConnectorRegistry
 from infrastructure.secondary.connectors import create_registered_connector_registry
 from domain.enums import UserRole, Permission
@@ -223,8 +224,16 @@ def get_rule_repository() -> SqlVerificationRuleRepository:
     return SqlVerificationRuleRepository()
 
 
+def get_verification_result_repository() -> SqlVerificationResultRepository:
+    return SqlVerificationResultRepository()
+
+
 def get_custom_role_repository() -> SqlCustomRoleRepository:
     return SqlCustomRoleRepository()
+
+
+def get_api_key_repository() -> SqlAPIKeyRepository:
+    return SqlAPIKeyRepository()
 
 
 def get_project_repository() -> SqlProjectRepository:
@@ -268,10 +277,12 @@ def get_verification_service(
 ) -> IVerificationService:
     verification_repo = SqlVerificationResultRepository()
     task_queue = CeleryTaskQueue()
+    connector_registry = create_registered_connector_registry()
     return VerificationService(
         release_repository=release_repo,
         verification_repository=verification_repo,
         task_queue=task_queue,
+        connector_registry=connector_registry,
     )
 
 
