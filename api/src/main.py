@@ -23,7 +23,7 @@ from infrastructure.primary.routers.api.routers import (
     custom_roles_router,
 )
 from core.config import settings
-from core.logging.logger import _configure_root_logger, get_logger
+from api.src.core.logger import _configure_root_logger, get_logger
 from domain.exceptions import (
     EntityNotFoundError,
     DomainException,

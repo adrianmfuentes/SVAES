@@ -1,6 +1,6 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adrianmfuentes_SVAES&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adrianmfuentes_SVAES)
 
-**[English](README.md)** · **[Español](README.md)**
+**[English](README.en.md)** · **[Español](README.md)**
 
 # SVAES
 ## Système de Vérification Automatique des Livraisons de Logiciel
@@ -40,13 +40,25 @@ Concevoir et implémenter un système extensible et découplé capable de vérif
 
 ---
 
-# 3. Portée fonctionnelle
+# 3. État du projet
+
+| Composant | État | Description |
+|-----------|------|-------------|
+| Backend FastAPI | ✅ Complet | API REST complète avec tous les endpoints |
+| Frontend Angular | ⏳ En attente | SPA vide, en attente d'implémentation |
+| Moteur Rust | ⏳ En attente | Répertoire engine/ vide, non implémenté |
+| Worker Celery | ⏳ En attente | Utilise MockTaskQueue dans les tests |
+| Connecteurs | ✅ Implémentés | 20 connecteurs en 5 catégories fonctionnelles |
+
+---
+
+# 4. Portée fonctionnelle
 
 Le système couvre les capacités suivantes:
 
 - Gestion des organisations (multi-tenant)
 - Gestion des projets et des releases
-- Configuration des connecteurs externes
+- **Configuration des connecteurs externes (20 implémentations)**
 - Définition des profils de vérification
 - Exécution automatique des vérifications
 - Enregistrement des résultats et audit
@@ -60,9 +72,9 @@ Hors scope:
 
 ---
 
-# 4. Architecture du système
+# 5. Architecture du système
 
-## 4.1 Approche architecturale
+## 5.1 Approche architecturale
 
 Le système adopte une architecture hybride basée sur:
 
@@ -71,65 +83,174 @@ Le système adopte une architecture hybride basée sur:
 
 Principe clé:
 
-Les dépendances ne peuvent pointer que vers le domaine.
+> Les dépendances ne peuvent pointer que vers le domaine.
 
-## 4.2 Décomposition en conteneurs
+## 5.2 Décomposition en conteneurs
 
 Le système est divisé en les composants suivants:
 
-- Frontend (Angular SPA)
-- Backend (FastAPI)
-- Moteur de vérification (Rust)
-- File de tâches (Celery + Redis)
-- Base de données (PostgreSQL)
-- Connecteurs externes
+- Frontend (Angular SPA) — ⏳ En attente
+- Backend (FastAPI) — ✅ Complet
+- Moteur de vérification (Rust) — ⏳ En attente
+- File de tâches (Celery + Redis) — ⏳ En attente
+- Base de données (PostgreSQL) — ✅ Opérationnel
+- Connecteurs externes — ✅ 20 implémentations
 
-## 4.3 Flux d'exécution
+## 5.3 Structure du backend
 
-1. L'utilisateur lance une vérification
-2. Le backend valide l'état de la release
-3. Une tâche est mise en file d'attente
-4. Un worker traite la tâche
-5. Les données sont récupérées via les connecteurs
-6. Le moteur s'exécute
-7. Le résultat est enregistré
-8. Le frontend interroge l'état
+```
+apps/api/src/
+├── domain/                    # Entités, enums, exceptions
+│   ├── entities/              # User, Organization, Project, Release, Artifact, ConnectorInstance
+│   └── enums.py                # UserRole, ConnectorType, ConnectorImplementation, etc.
+│
+├── application/               # Cas d'utilisation (logique métier)
+│   ├── ports/
+│   │   ├── input/             # IReleaseService, IConnectorService, etc.
+│   │   └── output/            # IUserRepository, IConnectorRegistry, IConnector
+│   └── use_cases/             # Implémentations des cas d'utilisation
+│
+├── infrastructure/            # Adaptateurs
+│   ├── primary/
+│   │   ├── routers/           # Endpoints FastAPI (v1)
+│   │   └── middleware/         # JWT, rate limiting, password hasher
+│   └── secondary/
+│       ├── database/          # Modèles SQLAlchemy + dépôts
+│       ├── queue/             # Celery + Redis
+│       └── connectors/        # Implémentations des connecteurs
+│           ├── task_management/    # Jira, Linear, Trello, Asana
+│           ├── source_control/      # GitHub, GitLab, Bitbucket, Gitea
+│           ├── documentation/       # Confluence, Notion, Wiki.js, BookStack
+│           ├── planning/            # ClickUp, Taiga, Plane, Miro
+│           └── change_management/  # Jira SM, GLPI, Zammad, Redmine
+│
+└── core/                      # Config, dépendances, rate limiting
+```
 
 ---
 
-# 5. Modèle de domaine
+# 6. Système de connecteurs
+
+## 6.1 Architecture à deux niveaux
+
+Le système de connecteurs suit une conception à **deux niveaux**:
+
+| Concept | Description | Exemples |
+|---------|-------------|----------|
+| **ConnectorType** | Type fonctionnel générique | `GESTOR_TAREAS`, `REPO_CODIGO`, `SISTEMA_DOCUMENTAL` |
+| **ConnectorImplementation** | Implémentation concrète | `JIRA`, `GITHUB`, `CONFLUENCE`, `LINEAR` |
+
+Un manager configure dans son organisation quelles implémentations concrètes il souhaite utiliser pour chaque type fonctionnel.
+
+## 6.2 Types fonctionnels disponibles
+
+| Type | Description |
+|------|-------------|
+| `GESTOR_TAREAS` | Outils qui suivent le travail quotidien, les histoires utilisateur et les bugs |
+| `REPO_CODIGO` | Source de vérité pour les branches, commits et tags de version |
+| `SISTEMA_DOCUMENTAL` | Rapports de tests, manuels techniques et plans de livraison |
+| `HERRAMIENTA_PLANIFICACION` | Roadmap à long terme, épics et plans de release |
+| `GESTION_CAMBIOS` | Systèmes ITSM pour approbations formelles, CABs et incidents de production |
+
+## 6.3 Implémentations disponibles
+
+### GESTOR_TAREAS
+| Implémentation | API | Plan gratuit |
+|---------------|-----|--------------|
+| Jira | REST v2/v3 | 10 utilisateurs |
+| Linear | GraphQL | Solide |
+| Trello | REST | Très permissif |
+| Asana | REST | 15 utilisateurs |
+
+### REPO_CODIGO
+| Implémentation | API | Plan gratuit |
+|---------------|-----|--------------|
+| GitLab | REST v4 | Illimité |
+| GitHub | REST | Illimité |
+| Bitbucket | REST | 5 utilisateurs |
+| Gitea | REST | Auto-hébergé, open source |
+
+### SISTEMA_DOCUMENTAL
+| Implémentation | API | Plan gratuit |
+|---------------|-----|--------------|
+| Confluence | REST | 10 utilisateurs |
+| Notion | REST | Très complet |
+| Wiki.js | GraphQL | Auto-hébergé, open source |
+| BookStack | REST | Auto-hébergé, open source |
+
+### HERRAMIENTA_PLANIFICACION
+| Implémentation | API | Plan gratuit |
+|---------------|-----|--------------|
+| ClickUp | REST | Très complet |
+| Taiga | REST | Cloud ou auto-hébergé |
+| Plane | REST | Auto-hébergé, open source |
+| Miro | REST | 3 tableaux |
+
+### GESTION_CAMBIOS
+| Implémentation | API | Plan gratuit |
+|---------------|-----|--------------|
+| Jira Service Management | REST | 3 agents |
+| GLPI | REST | Auto-hébergé, open source |
+| Zammad | REST | Auto-hébergé, open source |
+| Redmine | REST/XML | Auto-hébergé, open source |
+
+## 6.4 Port IConnector
+
+```python
+class IConnector(Protocol):
+    @property
+    def connector_type(self) -> str: ...
+
+    @property
+    def connector_implementation(self) -> str: ...
+
+    async def test_connection(self, config: Dict[str, Any]) -> bool: ...
+
+    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]: ...
+
+    async def list_artifacts(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> List[Dict[str, Any]]: ...
+
+    def get_metadata(self) -> Dict[str, Any]: ...
+```
+
+## 6.5 Flux de configuration par UI
+
+1. L'UI appelle `GET /api/v1/connectors/types` pour voir les implémentations disponibles
+2. L'UI affiche `config_schema` de chaque implémentation pour rendre le formulaire
+3. Le manager remplit le formulaire et envoie `POST /api/v1/organizations/{org_id}/connectors`
+4. Le système stocke `connector_type`, `connector_implementation` et les credentials chiffrées
+5. Lors de la vérification, `connector_implementation` est utilisé pour instancier le bon connecteur
+
+---
+
+# 7. Modèle de domaine
 
 Entités principales:
 
-- Organization
-- Project
-- Release
-- Artifact
-- VerificationProfile
-- VerificationRule
-- VerificationResult
-- ConnectorInstance
+- **Organization** — Tenant principal avec plan et owner
+- **User** — Utilisateur avec rôle et organisation
+- **Project** — Appartient à une org, a un profil de vérification
+- **Release** — Version de logiciel avec état et artefacts
+- **Artifact** — Référence externe liée à une release
+- **ConnectorInstance** — Configuration d'un connecteur dans une org
+- **VerificationProfile** — Ensemble de règles pour un projet
+- **VerificationRule** — Modèle avec sévérité et paramètres
+- **VerificationResult** — Résultat de vérification avec verdict
 
 Chaque vérification stocke un instantané complet de l'état évalué.
 
 ---
 
-# 6. Cycle de vie d'une release
-
-Le cycle de vie d'une release définit les états par lesquels passe une livraison de sa création jusqu'au résultat final de vérification.
+# 8. Cycle de vie d'une release
 
 ```text
-BORRADOR
-   |
-   v
-PENDIENTE
-   |
-   v
-EN_VERIFICACION
-   |
-   +--> VALIDA
-   +--> NO_VALIDA
-   +--> CON_ADVERTENCIAS
+BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
+    │           │              │
+    │           └──────────────┴──→ NO_VALIDA
+    │                               │
+    └───────────────────────────────┴──→ CON_ADVERTENCIAS
+    │
+    └──────────────────────────────────→ ARCHIVADA
 ```
 
 | État | Description |
@@ -141,39 +262,6 @@ EN_VERIFICACION
 | `NO_VALIDA` | Release rejetée pour non-conformité aux règles obligatoires. |
 | `CON_ADVERTENCIAS` | Release acceptable, mais avec des problèmes non bloquants. |
 
-États finals: `VALIDA`, `NO_VALIDA` et `CON_ADVERTENCIAS`.
-
----
-
-# 7. Moteur de vérification (Rust)
-
-Traite le payload JSON du worker et renvoie le résultat de vérification.
-
-Caractéristiques:
-- Exécution parallèle (Rayon)
-- Pas d'appels réseau (tout en mémoire)
-- Déterministe et reproductible
-
-Pipeline: Validation → Évaluation des règles → Agrégation → Verdict
-
-```
-engine/src/
-├── main.rs          # Point d'entrée (Actix-web)
-├── pipeline.rs      # Pipeline de vérification
-├── models.rs        # Modèles de données
-└── rules/           # RV-01 à RV-10
-```
-
----
-
-# 8. Connecteurs
-
-Port principal:
-
-IConnector
-
-Permet d'intégrer des systèmes externes sans modifier le noyau.
-
 ---
 
 # 9. Persistance
@@ -183,7 +271,7 @@ Base de données PostgreSQL:
 - UUID comme identifiants
 - JSONB pour les données dynamiques
 - Intégrité référentielle
-- Audit
+- Piste d'audit
 
 ---
 
@@ -191,92 +279,44 @@ Base de données PostgreSQL:
 
 | Couche | Mécanisme | Détail |
 | --- | --- | --- |
-| Authentification | JWT (HS256) | Tokens signés avec `PyJWT`. Claims: `sub`, `role`, `iat`, `exp` |
+| Authentification | JWT (HS256) | Tokens signés. Claims: `sub`, `role`, `iat`, `exp` |
 | Mots de passe | bcrypt (passlib) | Facteur de coût 12. Comparaison en temps constant |
-| Credenciales conectores | Fernet (AES-128-CBC) | Chiffrement authentifié — échoue si le ciphertext est modifié |
-| Endpoints protégés | Bearer token | `Authorization: Bearer <jwt>` requis sur tous les endpoints métier |
-| Transactions | SQLAlchemy `session.begin()` | COMMIT automatique en succès, ROLLBACK automatique en exception |
-
-### Flux d'authentification
-
-```
-POST /api/v1/auth/login
-  body: { "email": "...", "password": "..." }
-  → vérifie bcrypt contre hash en DB
-  → retourne JWT
-
-Requêtes protégées:
-  header: Authorization: Bearer <JWT>
-  → get_current_user valide signature + expiration
-  → injecte l'entité User dans l'endpoint
-  → 401 si token invalide ou expiré
-```
+| Credentials connecteurs | Fernet (AES-128-CBC) | Chiffrement authentifié |
+| Endpoints protégés | Bearer token | `Authorization: Bearer <jwt>` requis |
+| Isolation multi-tenant | Filtre par `organization_id` | 403 sur accès croisé |
+| Rate limiting | slowapi | 100 req/min lectures, 20 req/min écritures |
+| Force brute | Verrouillage de compte | 5 tentatives échouées → 15 min de blocage |
 
 ---
 
 # 11. Technologies
 
-- Angular
-- FastAPI
-- Rust
-- PostgreSQL
-- Celery
-- Redis
-- Docker
+| Couche | Technologie | État |
+|--------|-------------|------|
+| API Backend | FastAPI (Python 3.11+) | ✅ Complet |
+| Base de données | PostgreSQL 16 | ✅ Opérationnel |
+| ORM | SQLAlchemy 2.x | ✅ Opérationnel |
+| Migrations | Alembic | ✅ Opérationnel |
+| Authentification | JWT (PyJWT) | ✅ Complet |
+| Client HTTP | httpx (async) | ✅ Intégré dans les connecteurs |
+| Frontend | Angular 17 | ⏳ En attente |
+| Moteur de vérification | Rust (Actix-web + Rayon) | ⏳ En attente |
+| File de tâches | Celery + Redis | ⏳ En attente |
+| Conteneurs | Docker + Docker Compose | ✅ Configuré |
 
 ---
 
-# 12. Structure du projet
+# 12. Variables d'environnement
 
-```
-svaes/
-├── apps/
-│   ├── api/               # Backend FastAPI (Python)
-│   │   ├── alembic/       # Migraciones de base de données
-│   │   ├── src/
-│   │   │   ├── main.py         # Point d'entrée + lifespan
-│   │   │   ├── domain/         # Entités et ports (sans dépendances externes)
-│   │   │   │   ├── entities/   # User, Organization, Project, Release, Artifact...
-│   │   │   │   └── ports/      # Interfaces: IUserRepository, ITaskQueue, IConnector...
-│   │   │   ├── application/    # Cas d'utilisation
-│   │   │   │   └── use_cases/  # auth, users, organizations, projects, releases...
-│   │   │   ├── infrastructure/ # Implémentations (DB, sécurité, file)
-│   │   │   │   ├── database/   # Modèles SQLAlchemy + dépôts
-│   │   │   │   ├── queue/      # Celery + Redis
-│   │   │   │   ├── workers/    # verification_worker
-│   │   │   │   ├── security/   # JWT, bcrypt, Fernet
-│   │   │   │   └── adapters/   # connector_registry
-│   │   │   └── api/       # Routeurs et schémas HTTP
-│   │   ├── tests/         # Tests de l'API
-│   │   ├── pyproject.toml
-│   │   └── Dockerfile
-│   └── web/               # Frontend Angular
-├── packages/              # Paquets internes partagés
-├── tests/                 # Suite de tests complète
-│   ├── unit/              # Tests unitaires
-│   ├── integration/       # Tests d'intégration
-│   ├── e2e/               # Tests end-to-end
-│   ├── performance/       # Tests de performance
-│   └── security/           # Tests de sécurité
-├── scripts/              # Scripts auxiliaires
-├── docs/                  # Documentation technique
-├── docker-compose.yml    # Services: api, postgres, redis
-└── README.md
-```
-
----
-
-# 13. Variables d'environnement
-
-Copiez `.env.example` comme référence. Variables consommées par l'API Python:
-
-| Variable | Description | Requise en prod |
+| Variable | Description | Requise |
 | --- | --- | --- |
-| `DATABASE_URL` | `postgresql+psycopg://user:pass@host:5432/db` | Oui |
+| `DATABASE_URL` | `postgresql+asyncpg://user:pass@host:5432/db` | Oui |
 | `JWT_SECRET_KEY` | Clé de signature des tokens JWT | Oui |
 | `JWT_ALGORITHM` | Algorithme JWT (défaut: `HS256`) | Non |
 | `JWT_EXPIRE_MINUTES` | Expiration du token en minutes (défaut: `60`) | Non |
 | `ENCRYPTION_KEY` | Clé Fernet pour le chiffrement des credentials | Oui |
+| `ENVIRONMENT` | `development` ou `production` | Non |
+| `ALLOWED_ORIGINS` | Origines CORS séparées par virgule | Non |
 
 Générer `ENCRYPTION_KEY`:
 ```bash
@@ -285,27 +325,41 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 ---
 
-# 14. API — Endpoints principaux
+# 13. API — Endpoints principaux
 
 URL de base: `http://localhost:8000/api/v1`
 Documentation interactive: `http://localhost:8000/docs`
 
+### Authentification
 | Méthode | Chemin | Auth | Description |
 | --- | --- | --- | --- |
 | `POST` | `/auth/login` | Non | Login → retourne JWT |
-| `POST` | `/organizations` | Oui | Créer organisation |
-| `GET` | `/organizations` | Oui | Lister organisations |
-| `POST` | `/projects` | Oui | Créer projet |
-| `POST` | `/profiles` | Oui | Créer profil de vérification |
-| `POST` | `/releases` | Oui | Créer release |
-| `POST` | `/releases/{id}/verify` | Oui | Lancer vérification |
-| `GET` | `/releases/{id}/results` | Oui | Obtenir résultats |
-| `POST` | `/organizations/{id}/connectors` | Oui | Enregistrer connecteur |
-| `GET` | `/health` | Non | Health check |
+| `POST` | `/auth/refresh` | Non | Rafraîchir token |
+
+### Organisations
+| Méthode | Chemin | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/organizations` | ADMIN | Lister toutes |
+| `POST` | `/organizations` | ADMIN | Créer |
+| `GET` | `/organizations/{org_id}/connectors` | MANAGER+ | Lister connecteurs |
+| `POST` | `/organizations/{org_id}/connectors` | MANAGER+ | Enregistrer connecteur |
+
+### Releases et vérifications
+| Méthode | Chemin | Auth | Description |
+| --- | --- | --- | --- |
+| `POST` | `/projects/{id}/releases` | OPERATOR+ | Créer release |
+| `POST` | `/releases/{id}/verify` | OPERATOR+ | Lancer vérification |
+| `GET` | `/releases/{id}/results` | OPERATOR+ | Historique résultats |
+
+### Connecteurs
+| Méthode | Chemin | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/connectors/types` | Tout utilisateur | Lister types et implémentations |
+| `POST` | `/connectors/{id}/test` | MANAGER+ | Tester connexion |
 
 ---
 
-# 15. Exécution du système
+# 14. Exécution du système
 
 ## Développement local (avec Docker)
 
@@ -315,7 +369,7 @@ cd svaes
 docker compose up --build
 ```
 
-Docker Compose démarre: API à `http://localhost:8000`, Swagger à `http://localhost:8000/docs`, PostgreSQL à `localhost:5432`.
+API: `http://localhost:8000` · Swagger: `http://localhost:8000/docs` · PostgreSQL: `localhost:5432`
 
 ## Développement local (sans Docker)
 
@@ -324,21 +378,32 @@ Docker Compose démarre: API à `http://localhost:8000`, Swagger à `http://loca
 docker compose up postgres -d
 
 cd apps/api
-uv sync
-uv run uvicorn src.main:app --reload --port 8000
+pip install -e .
+uvicorn src.main:app --reload --port 8000
 ```
 
 ## Production
 
 ```bash
-export DATABASE_URL="postgresql+psycopg://user:pass@host:5432/svaes"
+export DATABASE_URL="postgresql+asyncpg://user:pass@host:5432/svaes"
 export JWT_SECRET_KEY="clé-longue-aléatoire-sécurisée"
-export ENCRYPTION_KEY="$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")"
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
 ---
 
-# 16. Conclusion
+# 15. Conclusion
 
 Le système fournit une solution découplée, extensible et robuste pour la vérification automatique des livraisons de logiciels.
+
+Le backend FastAPI est pleinement opérationnel avec:
+- 20 implémentations de connecteurs à travers 5 types fonctionnels
+- Système de configuration par UI pour les managers
+- Isolation multi-tenant complète
+- RBAC avec rôles prédéfinis et personnalisés
+
+En attente: frontend Angular, moteur Rust et worker Celery.
+
+---
+
+*Dernière mise à jour: Mai 2026 — Adrián Martínez Fuentes (UO295454)*
