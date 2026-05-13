@@ -21,9 +21,9 @@ from domain.exceptions import (
     ReleaseInvalidStateError,
     ConnectorConnectionFailedError,
 )
-from infrastructure.config import settings
-from infrastructure.database.session import get_db_session
-from infrastructure.logging.logger import _configure_root_logger, get_logger
+from api.src.core.config import settings
+from api.src.infrastructure.secondary.database.session import get_db_session
+from api.src.core.logging.logger import _configure_root_logger, get_logger
 
 API_V1_PREFIX = "/api/v1"
 
@@ -135,7 +135,7 @@ async def health():
     redis_ok = False
 
     try:
-        from infrastructure.database.session import _get_engine
+        from api.src.infrastructure.secondary.database.session import _get_engine
         engine_factory = _get_engine()
         async with engine_factory() as session:
             await session.execute(text("SELECT 1"))

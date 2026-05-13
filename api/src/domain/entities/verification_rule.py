@@ -8,7 +8,7 @@ from typing import Optional
 class VerificationRule:
     profile_id: uuid.UUID
     rule_template: str             # RV-01 .. RV-10
-    severity: str = "OBLIGATORIA"  # OBLIGATORIA | RECOMENDADA | INFORMATIVA
+    severity: str = "OBLIGATORIA" 
     params: dict = field(default_factory=dict)
     connector_instance_id: Optional[uuid.UUID] = None
     display_order: int = 0
