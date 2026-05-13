@@ -8,6 +8,8 @@ class VerificationProfile:
     id: UUID
     organization_id: UUID
     name: str
-    rules: list[VerificationRule] = field(default_factory=list)
+    description: str = ""
+    is_default: bool = False
+    rules: list[VerificationRule] = field(default_factory=list) # Lista de reglas de verificación asociadas al perfil
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

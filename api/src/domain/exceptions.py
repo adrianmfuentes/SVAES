@@ -31,3 +31,6 @@ class UserNotBelongsToOrganizationError(DomainException):
 
 class VerificationProfileNotActiveError(DomainException):
     pass
+
+class ValidationError(DomainException):
+    pass

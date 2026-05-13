@@ -1,14 +1,10 @@
 from typing import Any
 
+"""
+Este módulo define la clase `ConnectorRegistry`, que es un registro para almacenar y recuperar conectores de diferentes tipos.
+La clase proporciona métodos para registrar un conector bajo un tipo específico y para obtener un conector registrado por su tipo.
+"""
 class ConnectorRegistry:
-    """Registry for managing connector implementations. This class allows for the registration and retrieval of connectors based on their type, 
-    enabling the application to interact with various external systems through a unified interface.
-
-    Methods:
-        register(connector_type: str, connector: Any) -> None: Registers a connector implementation
-        get_connector(connector_type: str) -> Any: Retrieves the connector implementation for the given type, raising a KeyError if the type is not registered.
-    """
-
     def __init__(self) -> None:
         self._registry: dict[str, Any] = {}
 
@@ -16,12 +12,7 @@ class ConnectorRegistry:
         self._registry[connector_type] = connector
 
     def get_connector(self, connector_type: str) -> Any:
-        """Returns the IConnector implementation for the given type.
-
-        Raises:
-            KeyError: If the connector type has not been registered.
-        """
         connector = self._registry.get(connector_type)
         if connector is None:
-            raise KeyError(f"Connector type '{connector_type}' not registered")
+            raise KeyError(f"Connector de tipo '{connector_type}' no registrado")
         return connector

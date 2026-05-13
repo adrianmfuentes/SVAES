@@ -4,7 +4,10 @@ class ReleaseStatus(str, Enum):
     BORRADOR = "BORRADOR"
     PENDIENTE = "PENDIENTE"
     EN_VERIFICACION = "EN_VERIFICACION"
-    COMPLETADA = "COMPLETADA"
+    VALIDA = "VALIDA"
+    CON_ADVERTENCIAS = "CON_ADVERTENCIAS"
+    NO_VALIDA = "NO_VALIDA"
+    ARCHIVADA = "ARCHIVADA"
 
 class VerdictType(str, Enum):
     VALID = "VALID"
@@ -28,3 +31,8 @@ class UserRole(str, Enum):
     OPERATOR = "OPERATOR"
     MANAGER = "MANAGER"
     ADMIN = "ADMIN"
+
+class ArtifactType(str, Enum):
+    TAREA = "TAREA"         # Historias de usuario, incidencias o tareas (ej. Jira)
+    CODIGO = "CODIGO"       # Commits, ramas o etiquetas (ej. GitLab)
+    DOCUMENTO = "DOCUMENTO" # Archivos o páginas de documentación (ej. Confluence)

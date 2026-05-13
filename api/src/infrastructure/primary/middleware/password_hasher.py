@@ -1,15 +1,12 @@
 from passlib.context import CryptContext
-from domain.ports.i_password_hasher import IPasswordHasher
+from application.ports.output.i_password_hasher import IPasswordHasher
 
+"""
+Este módulo define la clase `BcryptPasswordHasher`, que implementa la interfaz `IPasswordHasher` utilizando el algoritmo de hashing bcrypt 
+a través de la biblioteca Passlib. La clase proporciona métodos para generar un hash a partir de una contraseña en texto plano y para 
+verificar si una contraseña en texto plano coincide con un hash almacenado.
+"""
 class BcryptPasswordHasher(IPasswordHasher):
-    """Implementation of IPasswordHasher using bcrypt hashing algorithm. 
-    This class provides methods to hash plaintext passwords and verify them against hashed versions.
-    
-    Methods:
-        hash(plain: str) -> str: Hashes the given plaintext password and returns the hashed version.
-        verify(plain: str, hashed: str) -> bool: Verifies that the given plaintext password matches the provided hashed password, returning True if they match and False otherwise.
-    """
-
     def __init__(self) -> None:
         self._ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

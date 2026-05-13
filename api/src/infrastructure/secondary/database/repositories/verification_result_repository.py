@@ -1,108 +1,96 @@
+from sqlalchemy.future import select
 from typing import List, Optional
-from uuid import UUID
-
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-
+import uuid
+from datetime import datetime
+from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from domain.entities.verification_result import VerificationResult
-from api.src.domain.enums import VerdictType
-from domain.ports.i_verification_result_repository import IVerificationResultRepository
-from api.src.infrastructure.secondary.database.models.verification_result import VerificationResultModel
-
-# DB verdicts use Spanish strings; map to domain enum
-_DB_TO_DOMAIN: dict[str, VerdictType] = {
-    "VALIDO": VerdictType.VALID,
-    "CON_ADVERTENCIAS": VerdictType.VALID_WITH_WARNINGS,
-    "NO_VALIDO": VerdictType.INVALID,
-}
-_DOMAIN_TO_DB: dict[VerdictType, str] = {v: k for k, v in _DB_TO_DOMAIN.items()}
+from domain.enums import VerdictType
+from infrastructure.secondary.database.models.result_model import VerificationResultModel
+from infrastructure.secondary.database.get_async_session import get_async_session
 
 
 class SqlVerificationResultRepository(IVerificationResultRepository):
-    """Async SQLAlchemy adapter — used by FastAPI request handlers."""
-
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
     async def save(self, result: VerificationResult) -> VerificationResult:
-        model = await self.session.get(VerificationResultModel, result.id)
-        if model is None:
-            model = VerificationResultModel(
+        session = await get_async_session().__anext__()
+
+        try:
+            result_model = VerificationResultModel(
                 id=result.id,
                 release_id=result.release_id,
-                verdict=_DOMAIN_TO_DB.get(result.verdict, "VALIDO"),
+                verdict=result.verdict.value,
+                duration_ms=result.duration_ms,
                 rule_results=result.rule_results,
                 profile_snapshot=result.profile_snapshot,
                 executed_at=result.executed_at,
-                duration_ms=result.duration_ms,
             )
-            self.session.add(model)
-        await self.session.flush()
-        return result
+            session.add(result_model)
+            await session.commit()
+            await session.refresh(result_model)
 
-    async def find_by_id(self, result_id: UUID) -> Optional[VerificationResult]:
-        model = await self.session.get(VerificationResultModel, result_id)
-        return self._to_entity(model) if model else None
-
-    async def find_by_release(self, release_id: UUID) -> List[VerificationResult]:
-        result = await self.session.execute(
-            select(VerificationResultModel)
-            .where(VerificationResultModel.release_id == release_id)
-            .order_by(VerificationResultModel.executed_at.desc())
-        )
-        return [self._to_entity(m) for m in result.scalars().all()]
-
-    def _to_entity(self, model: VerificationResultModel) -> VerificationResult:
-        return VerificationResult(
-            id=model.id,
-            release_id=model.release_id,
-            verdict=_DB_TO_DOMAIN.get(model.verdict, VerdictType.INVALID),
-            rule_results=model.rule_results or {},
-            profile_snapshot=model.profile_snapshot or {},
-            executed_at=model.executed_at,
-            duration_ms=model.duration_ms or 0,
-        )
-
-
-class SyncSqlVerificationResultRepository:
-    """Sync SQLAlchemy adapter — used by Celery workers (no event loop)."""
-
-    def __init__(self, session: Session):
-        self.session = session
-
-    def save(self, result: VerificationResult) -> VerificationResult:
-        model = self.session.get(VerificationResultModel, result.id)
-        if model is None:
-            model = VerificationResultModel(
-                id=result.id,
-                release_id=result.release_id,
-                verdict=_DOMAIN_TO_DB.get(result.verdict, "VALIDO"),
-                rule_results=result.rule_results,
-                profile_snapshot=result.profile_snapshot,
-                executed_at=result.executed_at,
-                duration_ms=result.duration_ms,
+            return VerificationResult(
+                id=result_model.id,
+                release_id=result_model.release_id,
+                verdict=VerdictType(result_model.verdict),
+                duration_ms=result_model.duration_ms,
+                rule_results=result_model.rule_results or {},
+                profile_snapshot=result_model.profile_snapshot or {},
+                executed_at=result_model.executed_at,
             )
-            self.session.add(model)
-        self.session.flush()
-        return result
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()
 
-    def find_by_release(self, release_id: UUID) -> List[VerificationResult]:
-        models = (
-            self.session.query(VerificationResultModel)
-            .filter_by(release_id=release_id)
-            .order_by(VerificationResultModel.executed_at.desc())
-            .all()
-        )
-        return [self._to_entity(m) for m in models]
+    async def find_by_id(self, result_id: uuid.UUID) -> Optional[VerificationResult]:
+        session = await get_async_session().__anext__()
 
-    def _to_entity(self, model: VerificationResultModel) -> VerificationResult:
-        return VerificationResult(
-            id=model.id,
-            release_id=model.release_id,
-            verdict=_DB_TO_DOMAIN.get(model.verdict, VerdictType.INVALID),
-            rule_results=model.rule_results or {},
-            profile_snapshot=model.profile_snapshot or {},
-            executed_at=model.executed_at,
-            duration_ms=model.duration_ms or 0,
-        )
+        try:
+            result = await session.execute(select(VerificationResultModel).where(VerificationResultModel.id == result_id))
+            result_row = result.scalar_one_or_none()
+            if not result_row:
+                return None
+
+            return VerificationResult(
+                id=result_row.id,
+                release_id=result_row.release_id,
+                verdict=VerdictType(result_row.verdict),
+                duration_ms=result_row.duration_ms,
+                rule_results=result_row.rule_results or {},
+                profile_snapshot=result_row.profile_snapshot or {},
+                executed_at=result_row.executed_at,
+            )
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()
+
+    async def find_by_release(self, release_id: uuid.UUID) -> List[VerificationResult]:
+        session = await get_async_session().__anext__()
+
+        try:
+            result = await session.execute(
+                select(VerificationResultModel)
+                .where(VerificationResultModel.release_id == release_id)
+                .order_by(VerificationResultModel.executed_at.desc())
+            )
+            result_rows = result.scalars().all()
+
+            return [
+                VerificationResult(
+                    id=row.id,
+                    release_id=row.release_id,
+                    verdict=VerdictType(row.verdict),
+                    duration_ms=row.duration_ms,
+                    rule_results=row.rule_results or {},
+                    profile_snapshot=row.profile_snapshot or {},
+                    executed_at=row.executed_at,
+                )
+                for row in result_rows
+            ]
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()

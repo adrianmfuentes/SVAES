@@ -9,7 +9,9 @@ class User:
     id: UUID
     email: str
     hashed_password: str
+    display_name: str
     role: UserRole
-    organization_id: Optional[UUID]
+    organization_id: Optional[UUID] # Referencia a la organización a la que pertenece el usuario, puede ser None si el usuario no está asociado a ninguna organización
+    is_active: bool = True
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

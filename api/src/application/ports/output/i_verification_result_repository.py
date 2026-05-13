@@ -3,7 +3,6 @@ from typing import List, Optional
 from uuid import UUID
 from domain.entities.verification_result import VerificationResult
 
-
 class IVerificationResultRepository(ABC):
     @abstractmethod
     async def save(self, result: VerificationResult) -> VerificationResult:

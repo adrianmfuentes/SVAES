@@ -1,25 +1,21 @@
-from api.src.infrastructure.secondary.database.base import Base
-from api.src.infrastructure.secondary.database.models.user import UserModel
-from api.src.infrastructure.secondary.database.models.organization import OrganizationModel
-from api.src.infrastructure.secondary.database.models.user_membership import UserMembershipModel
-from api.src.infrastructure.secondary.database.models.project import ProjectModel
-from api.src.infrastructure.secondary.database.models.release import ReleaseModel
-from api.src.infrastructure.secondary.database.models.artifact import ArtifactModel
-from api.src.infrastructure.secondary.database.models.connector_instance import ConnectorInstanceModel
-from api.src.infrastructure.secondary.database.models.verification_profile import VerificationProfileModel
-from api.src.infrastructure.secondary.database.models.verification_rule import VerificationRuleModel
-from api.src.infrastructure.secondary.database.models.verification_result import VerificationResultModel
+from infrastructure.secondary.database.models.release_model import ReleaseModel
+from infrastructure.secondary.database.models.project_model import ProjectModel
+from infrastructure.secondary.database.models.user_model import UserModel
+from infrastructure.secondary.database.models.organization_model import OrganizationModel
+from infrastructure.secondary.database.models.connector_model import ConnectorInstanceModel
+from infrastructure.secondary.database.models.profile_model import VerificationProfileModel
+from infrastructure.secondary.database.models.rule_model import VerificationRuleModel
+from infrastructure.secondary.database.models.artifact_model import ArtifactModel
+from infrastructure.secondary.database.models.result_model import VerificationResultModel
 
 __all__ = [
+    "ReleaseModel",
+    "ProjectModel",
     "UserModel",
     "OrganizationModel",
-    "UserMembershipModel",
-    "ProjectModel",
-    "ReleaseModel",
-    "ArtifactModel",
     "ConnectorInstanceModel",
     "VerificationProfileModel",
     "VerificationRuleModel",
+    "ArtifactModel",
     "VerificationResultModel",
-    "Base",
 ]
