@@ -69,3 +69,7 @@ class IReleaseService(ABC):
     @abstractmethod
     async def delete_release(self, release_id: UUID) -> None:
         pass
+
+    @abstractmethod
+    async def restore_release(self, release_id: UUID) -> None:
+        pass

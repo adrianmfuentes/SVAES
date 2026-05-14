@@ -1,15 +1,17 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
-from fastapi.responses import Response
+from fastapi.responses import FileResponse
+from typing import Literal
 
 from application.ports.input.i_release_service import IReleaseService
 from application.ports.input.i_artifact_service import IArtifactService
 from application.ports.input.i_verification_service import IVerificationService
+from application.ports.input.i_export_service import IExportService
 
-from core.dependencies import get_release_service, get_artifact_service, get_verification_service, get_current_user, CurrentUser, require_permission, require_project_access, require_release_access
-from domain.enums import ArtifactType, ReleaseStatus, Permission
-from domain.exceptions import ValidationError
+from core.dependencies import get_release_service, get_artifact_service, get_verification_service, get_export_service, get_current_user, CurrentUser, require_permission, require_project_access, require_release_access, require_role
+from domain.enums import ArtifactType, ReleaseStatus, Permission, UserRole
+from domain.exceptions import ValidationError, EntityNotFoundError
 
 # Quitamos el prefix global para poder manejar tanto rutas de proyectos como de releases directas
 router = APIRouter(tags=["Releases"])
@@ -221,6 +223,37 @@ async def archive_release(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
+@router.post("/api/v1/releases/{id}/restore", status_code=status.HTTP_200_OK)
+async def restore_release(
+    id: UUID,
+    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
+    _ = Depends(require_release_access()),
+    service: IReleaseService = Depends(get_release_service),
+):
+    """Restaura una release archivada, cambiando su estado al anterior (BORRADOR).
+
+    Atributos:
+        - id: ID de la release a restaurar.
+        - current_user: Usuario autenticado con rol U3 (reservado a administrador global).
+        - service: Instancia del servicio de releases (inyección de dependencias).
+
+    Retorna:
+        - 200 OK con un mensaje de éxito si se restaura exitosamente
+        - 403 Forbidden si el usuario no tiene rol U3
+        - 404 Not Found si la release no se encuentra o no está archivada
+        - 500 Internal Server Error para cualquier otro error inesperado
+    """
+    try:
+        await service.restore_release(release_id=id)
+        return {"message": "Release restaurada con éxito"}
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
 # ========================
 # BLOQUE 3: GESTIÓN DE ARTEFACTOS
 # ========================
@@ -372,15 +405,15 @@ async def get_results(
     """Obtiene el historial paginado de verificaciones de esta release.
 
     Atributos:
-        - id: ID de la release de la que se quieren obtener los resultados.
+        - id: UUID - ID de la release de la que se quieren obtener las verificaciones.
         - current_user: Usuario autenticado con permisos del token JWT.
         - service: Instancia del servicio de verificaciones (inyección de dependencias).
 
     Retorna:
-        - 200 OK con la lista paginada de resultados de verificaciones si se encuentran
+        - 200 OK con la lista paginada de verificaciones si se encuentran
         - 403 Forbidden si el usuario no tiene acceso
         - 404 Not Found si la release no se encuentra
-        - 500 Internal Server Error para cualquier otro error inesperado
+        - 500 Internal Server Error para cualquier error inesperado
     """
     try:
         results = await service.get_verification_history(release_id=id)
@@ -389,6 +422,167 @@ async def get_results(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release no encontrada")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/api/v1/releases/{id}/results/{rid}")
+async def get_result_detail(
+    id: UUID,
+    rid: UUID,
+    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_OWN_HISTORY)),
+    _ = Depends(require_release_access()),
+    service: IVerificationService = Depends(get_verification_service),
+):
+    """Obtiene el informe detallado de una verificación individual.
+
+    Atributos:
+        - id: UUID - ID de la release a la que pertenece la verificación.
+        - rid: UUID - ID de la verificación individual de la que se quieren obtener los detalles.
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: Instancia del servicio de verificaciones (inyección de dependencias).
+
+    Retorna:
+        - 200 OK con el informe detallado de la verificación si se encuentra exitosamente
+        - 403 Forbidden si el usuario no tiene acceso
+        - 404 Not Found si la release o la verificación no se encuentran
+        - 500 Internal Server Error para cualquier error inesperado
+    """
+    try:
+        result = await service.get_verification_result(release_id=id, result_id=rid)
+        return result
+    except HTTPException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release o verificación no encontradas")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/api/v1/releases/{id}/verifications/{verification_id}")
+async def get_verification_detail(
+    id: UUID,
+    verification_id: UUID,
+    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_OWN_HISTORY)),
+    _ = Depends(require_release_access()),
+    service: IVerificationService = Depends(get_verification_service),
+):
+    """Obtiene el informe detallado de una verificación individual.
+
+    Atributos:
+        - id: ID de la release a la que pertenece la verificación.
+        - verification_id: ID de la verificación individual de la que se quieren obtener los detalles.
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: Instancia del servicio de verificaciones (inyección de dependencias).
+
+    Retorna:
+        - 200 OK con el informe detallado de la verificación si se encuentra exitosamente
+        - 403 Forbidden si el usuario no tiene acceso
+        - 404 Not Found si la release o la verificación no se encuentran
+        - 500 Internal Server Error para cualquier otro error inesperado
+    """
+    try:
+        result = await service.get_verification_result(release_id=id, result_id=rid)
+        return result
+    except HTTPException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release o verificación no encontradas")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/api/v1/releases/{id}/results/{rid}/export", status_code=status.HTTP_200_OK)
+async def export_verification_result_pdf(
+    id: UUID,
+    rid: UUID,
+    format: Literal["pdf"] = Query(default="pdf", description="Formato de exportación"),
+    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_OWN_HISTORY)),
+    _ = Depends(require_release_access()),
+    service: IVerificationService = Depends(get_verification_service),
+    export_service: IExportService = Depends(get_export_service),
+):
+    """Exporta el resultado de una verificación a formato PDF.
+
+    Atributos:
+        - id: ID de la release a la que pertenece la verificación.
+        - rid: ID de la verificación individual a exportar.
+        - format: Formato de exportación (solo PDF soportado actualmente).
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: Instancia del servicio de verificaciones (inyección de dependencias).
+        - export_service: Instancia del servicio de exportación (inyección de dependencias).
+
+    Retorna:
+        - 200 OK con el archivo PDF si se exporta exitosamente
+        - 400 Bad Request si el formato no es soportado
+        - 403 Forbidden si el usuario no tiene acceso
+        - 404 Not Found si la release o la verificación no se encuentran
+        - 500 Internal Server Error para cualquier otro error inesperado
+    """
+    try:
+        if format != "pdf":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Formato no soportado. Use format=pdf")
+        result = await service.get_verification_result(release_id=id, result_id=rid)
+        if not result:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verificación no encontrada")
+        pdf_path = await export_service.export_verification_to_pdf(release_id=id, result_id=rid)
+        return FileResponse(pdf_path, media_type="application/pdf", filename=f"verification_{rid}.pdf")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/api/v1/projects/{project_id}/results/export", status_code=status.HTTP_200_OK)
+async def export_project_results_csv(
+    project_id: UUID,
+    format: Literal["csv"] = Query(default="csv", description="Formato de exportación"),
+    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_ORG_PROJECTS)),
+    service: IVerificationService = Depends(get_verification_service),
+    export_service: IExportService = Depends(get_export_service),
+):
+    """Exporta el historial de verificaciones de un proyecto a formato CSV.
+
+    Atributos:
+        - project_id: ID del proyecto cuyas verificaciones se exportarán.
+        - format: Formato de exportación (solo CSV soportado actualmente).
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: Instancia del servicio de verificaciones (inyección de dependencias).
+        - export_service: Instancia del servicio de exportación (inyección de dependencias).
+
+    Retorna:
+        - 200 OK con el archivo CSV si se exporta exitosamente
+        - 400 Bad Request si el formato no es soportado
+        - 403 Forbidden si el usuario no tiene acceso al proyecto
+        - 500 Internal Server Error para cualquier otro error inesperado
+    """
+    try:
+        if format != "csv":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Formato no soportado. Use format=csv")
+        csv_path = await export_service.export_project_results_to_csv(project_id=project_id)
+        return FileResponse(csv_path, media_type="text/csv", filename=f"project_{project_id}_results.csv")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post("/api/v1/releases/{id}/artifacts/import", status_code=status.HTTP_202_ACCEPTED)
+async def import_artifacts(
+    id: UUID,
+    current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
+    _ = Depends(require_release_access()),
+    service: IArtifactService = Depends(get_artifact_service),
+):
+    """Importa múltiples artefactos a una release desde un fichero CSV.
+
+    Atributos:
+        - id: ID de la release a la que se importarán los artefactos.
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: Instancia del servicio de artefactos (inyección de dependencias).
+
+    Retorna:
+        - 202 Accepted si la importación se inicia exitosamente
+        - 403 Forbidden si el usuario no tiene acceso a la release
+        - 404 Not Found si la release no se encuentra
+        - 422 Unprocessable Entity si el fichero CSV no es válido
+        - 500 Internal Server Error para cualquier otro error inesperado
+    """
+    pass
 
 
 @router.get("/api/v1/releases/{id}/results/{rid}")

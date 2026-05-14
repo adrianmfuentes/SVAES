@@ -54,6 +54,14 @@ class IOrganizationService(ABC):
         pass
 
     @abstractmethod
+    async def archive_project(self, project_id: UUID) -> Project:
+        pass
+
+    @abstractmethod
+    async def restore_organization(self, organization_id: UUID) -> Organization:
+        pass
+
+    @abstractmethod
     async def transfer_ownership(
         self,
         organization_id: UUID,

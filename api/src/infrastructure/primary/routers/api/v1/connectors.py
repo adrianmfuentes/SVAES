@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_connector_service import IConnectorService
 from core.dependencies import get_connector_service, get_current_user, CurrentUser, require_permission, require_org_access, require_connector_access
 from core.rate_limit import rate_limit_default
-from domain.enums import ConnectorStatus, Permission
+from domain.enums import ConnectorStatus
 from domain.exceptions import EntityNotFoundError, ValidationError, ConnectorConnectionFailedError
 
 router = APIRouter(tags=["Connectors"])
@@ -235,11 +235,12 @@ async def register_connector(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.patch("/api/v1/connectors/{connector_id}")
+@router.patch("/api/v1/organizations/{org_id}/connectors/{connector_id}")
 async def update_connector(
+    org_id: UUID,
     connector_id: UUID,
     payload: ConnectorUpdateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_CONNECTORS)),
+    current_user: CurrentUser = Depends(require_org_access("org_id")),
     _ = Depends(require_connector_access()),
     service: IConnectorService = Depends(get_connector_service),
 ):
@@ -274,10 +275,11 @@ async def update_connector(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.delete("/api/v1/connectors/{connector_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/api/v1/organizations/{org_id}/connectors/{connector_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_connector(
+    org_id: UUID,
     connector_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_CONNECTORS)),
+    current_user: CurrentUser = Depends(require_org_access("org_id")),
     _ = Depends(require_connector_access()),
     service: IConnectorService = Depends(get_connector_service),
 ):
@@ -305,10 +307,11 @@ async def delete_connector(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.post("/api/v1/connectors/{connector_id}/test", status_code=status.HTTP_200_OK, dependencies=[Depends(rate_limit_default())])
+@router.post("/api/v1/organizations/{org_id}/connectors/{connector_id}/test", status_code=status.HTTP_200_OK, dependencies=[Depends(rate_limit_default())])
 async def test_connector(
+    org_id: UUID,
     connector_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_CONNECTORS)),
+    current_user: CurrentUser = Depends(require_org_access("org_id")),
     _ = Depends(require_connector_access()),
     service: IConnectorService = Depends(get_connector_service),
 ):

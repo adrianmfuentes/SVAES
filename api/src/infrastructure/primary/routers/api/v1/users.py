@@ -28,9 +28,22 @@ class PasswordChangeRequest(BaseModel):
 class UserInviteRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     email: str = Field(..., min_length=1, max_length=255)
-    role: UserRole = Field(default=UserRole.OPERATOR)
+    role: UserRole = Field(default=UserRole.U2)
 
 class UserRoleUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    role: UserRole
+
+
+class AdminUserCreateRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    email: str = Field(..., min_length=1, max_length=255)
+    display_name: str = Field(..., min_length=1, max_length=100)
+    password: str = Field(..., min_length=8, max_length=255)
+    role: UserRole = Field(default=UserRole.U2)
+
+
+class AdminRoleUpdateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     role: UserRole
 
@@ -291,7 +304,7 @@ async def remove_user_from_org(
         - 204 No Content si el usuario fue eliminado correctamente.
         - 403 Forbidden si el usuario no tiene permisos o es el Owner.
         - 404 Not Found si el usuario no existe.
-        - 500 Internal Server Error para cualquier otro error inesperado.
+        - 500 Internal Server Error para cualquier error inesperado.
     """
     try:
         await service.remove_user_from_organization(
@@ -303,5 +316,196 @@ async def remove_user_from_org(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post("/api/v1/admin/users", status_code=status.HTTP_201_CREATED)
+async def admin_create_user(
+    payload: AdminUserCreateRequest,
+    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
+    service: IUserService = Depends(get_user_service),
+):
+    """Crea un nuevo usuario en el sistema (solo U3).
+
+    Atributos:
+        - payload: Datos del usuario a crear.
+        - current_user: Usuario autenticado con rol U3.
+        - service: Servicio de usuarios inyectado mediante dependencias.
+
+    Retorna:
+        - 201 Created con la información del usuario creado.
+        - 403 Forbidden si el usuario no es U3.
+        - 409 Conflict si el email ya existe.
+        - 500 Internal Server Error para cualquier error inesperado.
+    """
+    try:
+        user = await service.create_user(
+            email=payload.email,
+            display_name=payload.display_name,
+            password=payload.password,
+            role=payload.role,
+        )
+        return {
+            "id": str(user.id),
+            "email": user.email,
+            "display_name": user.display_name,
+            "role": user.role.value,
+        }
+    except DuplicateEntityError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.patch("/api/v1/admin/users/{user_id}/activate")
+async def admin_activate_user(
+    user_id: UUID,
+    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
+    service: IUserService = Depends(get_user_service),
+):
+    """Activa una cuenta de usuario (solo U3).
+
+    Atributos:
+        - user_id: UUID - El ID del usuario a activar.
+        - current_user: Usuario autenticado con rol U3.
+        - service: Servicio de usuarios inyectado mediante dependencias.
+
+    Retorna:
+        - 200 OK con el usuario activado.
+        - 403 Forbidden si el usuario no es U3.
+        - 404 Not Found si el usuario no existe.
+        - 500 Internal Server Error para cualquier error inesperado.
+    """
+    try:
+        user = await service.activate_user(user_id=user_id)
+        return {
+            "id": str(user.id),
+            "email": user.email,
+            "is_active": user.is_active,
+        }
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.patch("/api/v1/admin/users/{user_id}/deactivate")
+async def admin_deactivate_user(
+    user_id: UUID,
+    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
+    service: IUserService = Depends(get_user_service),
+):
+    """Desactiva una cuenta de usuario (solo U3).
+
+    Atributos:
+        - user_id: UUID - El ID del usuario a desactivar.
+        - current_user: Usuario autenticado con rol U3.
+        - service: Servicio de usuarios inyectado mediante dependencias.
+
+    Retorna:
+        - 200 OK con el usuario desactivado.
+        - 403 Forbidden si el usuario no es U3 o intenta desactivarse a sí mismo.
+        - 404 Not Found si el usuario no existe.
+        - 500 Internal Server Error para cualquier error inesperado.
+    """
+    try:
+        user = await service.deactivate_user(user_id=user_id, requested_by=current_user.user_id)
+        return {
+            "id": str(user.id),
+            "email": user.email,
+            "is_active": user.is_active,
+        }
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.patch("/api/v1/admin/users/{user_id}/role")
+async def admin_update_global_role(
+    user_id: UUID,
+    payload: AdminRoleUpdateRequest,
+    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
+    service: IUserService = Depends(get_user_service),
+):
+    """Actualiza el rol global de un usuario (solo U3).
+
+    Atributos:
+        - user_id: UUID - El ID del usuario cuyo rol se actualizará.
+        - payload: Nuevo rol global para el usuario.
+        - current_user: Usuario autenticado con rol U3.
+        - service: Servicio de usuarios inyectado mediante dependencias.
+
+    Retorna:
+        - 200 OK con el usuario actualizado.
+        - 403 Forbidden si el usuario no es U3 o intenta cambiar su propio rol.
+        - 404 Not Found si el usuario no existe.
+        - 500 Internal Server Error para cualquier error inesperado.
+    """
+    try:
+        user = await service.update_global_role(
+            user_id=user_id,
+            new_role=payload.role,
+            requested_by=current_user.user_id,
+        )
+        return {
+            "id": str(user.id),
+            "email": user.email,
+            "role": user.role.value,
+        }
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/api/v1/admin/users")
+async def admin_list_users(
+    skip: int = 0,
+    limit: int = 50,
+    is_active: bool = None,
+    role: UserRole = None,
+    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
+    service: IUserService = Depends(get_user_service),
+):
+    """Lista todos los usuarios del sistema con filtros (solo U3).
+
+    Atributos:
+        - skip: int - Número de registros a omitir para paginación.
+        - limit: int - Número máximo de registros a retornar.
+        - is_active: bool - Filtrar por estado de activación.
+        - role: UserRole - Filtrar por rol global.
+        - current_user: Usuario autenticado con rol U3.
+        - service: Servicio de usuarios inyectado mediante dependencias.
+
+    Retorna:
+        - Lista de usuarios con su información.
+        - 403 Forbidden si el usuario no es U3.
+        - 500 Internal Server Error para cualquier error inesperado.
+    """
+    try:
+        users = await service.list_all_users(
+            skip=skip,
+            limit=limit,
+            is_active=is_active,
+            role=role,
+        )
+        return [
+            {
+                "id": str(u.id),
+                "email": u.email,
+                "display_name": u.display_name,
+                "role": u.role.value,
+                "is_active": u.is_active,
+            }
+            for u in users
+        ]
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

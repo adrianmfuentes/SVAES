@@ -17,10 +17,15 @@ class ManageApiKeysUseCase:
         self._repo = api_key_repository
 
     async def create_api_key(
-        self, organization_id: UUID, name: str, expires_in_days: Optional[int] = None
+        self, user_id: UUID, organization_id: UUID, name: str, expires_in_days: Optional[int] = None
     ) -> dict:
         if not name:
             raise ValidationError("El nombre del API key es requerido")
+
+        existing_keys = await self._repo.list_by_user(user_id)
+        active_keys = [k for k in existing_keys if k.is_active]
+        if len(active_keys) >= 5:
+            raise ValidationError("Se ha alcanzado el límite máximo de 5 claves API activas por usuario")
 
         raw_key = f"svk_{secrets.token_urlsafe(32)}"
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
@@ -31,6 +36,7 @@ class ManageApiKeysUseCase:
 
         api_key = APIKey(
             id=UUID(),
+            user_id=user_id,
             organization_id=organization_id,
             name=name,
             key_hash=key_hash,
@@ -44,16 +50,17 @@ class ManageApiKeysUseCase:
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.API_KEY_CREATED,
-            user_id=UUID(),
+            user_id=user_id,
             organization_id=organization_id,
             resource_type="api_key",
             resource_id=saved.id,
             details={"name": name, "expires_in_days": expires_in_days},
         ))
-        _log.info("API key created: org=%s name=%s id=%s", organization_id, name, saved.id)
+        _log.info("API key created: user=%s org=%s name=%s id=%s", user_id, organization_id, name, saved.id)
 
         return {
             "id": str(saved.id),
+            "user_id": str(saved.user_id),
             "organization_id": str(saved.organization_id),
             "name": saved.name,
             "key": raw_key,
@@ -63,8 +70,8 @@ class ManageApiKeysUseCase:
             "created_at": saved.created_at.isoformat(),
         }
 
-    async def list_api_keys(self, organization_id: UUID) -> List[dict]:
-        keys = await self._repo.list_by_organization(organization_id)
+    async def list_api_keys(self, user_id: UUID) -> List[dict]:
+        keys = await self._repo.list_by_user(user_id)
         return [
             {
                 "id": str(k.id),
@@ -78,12 +85,14 @@ class ManageApiKeysUseCase:
             for k in keys
         ]
 
-    async def revoke_api_key(self, key_id: UUID) -> dict:
+    async def revoke_api_key(self, key_id: UUID, user_id: UUID) -> dict:
         if not key_id:
             raise ValidationError("key_id es requerido")
 
         api_key = await self._repo.get_by_id(key_id)
         if not api_key:
+            raise EntityNotFoundError(f"API key no encontrado: {key_id}")
+        if api_key.user_id != user_id:
             raise EntityNotFoundError(f"API key no encontrado: {key_id}")
 
         api_key.is_active = False
@@ -92,13 +101,13 @@ class ManageApiKeysUseCase:
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.API_KEY_REVOKED,
-            user_id=UUID(),
+            user_id=user_id,
             organization_id=api_key.organization_id,
             resource_type="api_key",
             resource_id=key_id,
             details={"name": api_key.name},
         ))
-        _log.info("API key revoked: id=%s org=%s", key_id, api_key.organization_id)
+        _log.info("API key revoked: id=%s user=%s", key_id, user_id)
 
         return {"id": str(updated.id), "is_active": updated.is_active}
 

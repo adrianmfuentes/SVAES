@@ -66,48 +66,49 @@ class SeverityType(str, Enum):
     CRITICAL = "CRITICAL"
 
 class UserRole(str, Enum):
-    VIEWER = "VIEWER"
-    OPERATOR = "OPERATOR"
-    MANAGER = "MANAGER"
-    ADMIN = "ADMIN"
+    U1 = "U1"  # Guest/Viewer
+    U2 = "U2"  # Standard User
+    U3 = "U3"  # Global Administrator
+    U4 = "U4"  # Organization Manager
 
     def has_permission(self, permission: "Permission") -> bool:
         hierarchy = {
-            UserRole.VIEWER: [
-                Permission.VIEW_DASHBOARD, 
+            UserRole.U1: [
+                Permission.VIEW_DASHBOARD,
                 Permission.VIEW_OWN_PROJECTS
             ],
-            UserRole.OPERATOR: [
-                Permission.VIEW_DASHBOARD, 
+            UserRole.U2: [
+                Permission.VIEW_DASHBOARD,
                 Permission.VIEW_OWN_PROJECTS,
-                Permission.CREATE_RELEASE, 
-                Permission.UPDATE_OWN_RELEASES, 
+                Permission.CREATE_RELEASE,
+                Permission.UPDATE_OWN_RELEASES,
                 Permission.ARCHIVE_RELEASE,
-                Permission.EXECUTE_VERIFICATION, 
+                Permission.EXECUTE_VERIFICATION,
                 Permission.VIEW_OWN_HISTORY,
                 Permission.MANAGE_OWN_API_KEYS,
             ],
-            UserRole.MANAGER: [
-                Permission.VIEW_DASHBOARD, 
+            UserRole.U4: [
+                Permission.VIEW_DASHBOARD,
                 Permission.VIEW_OWN_PROJECTS,
-                Permission.CREATE_RELEASE, 
-                Permission.UPDATE_OWN_RELEASES, 
+                Permission.CREATE_RELEASE,
+                Permission.UPDATE_OWN_RELEASES,
                 Permission.ARCHIVE_RELEASE,
-                Permission.EXECUTE_VERIFICATION, 
+                Permission.EXECUTE_VERIFICATION,
                 Permission.VIEW_OWN_HISTORY,
                 Permission.MANAGE_OWN_API_KEYS,
-                Permission.VIEW_ORG_PROJECTS, 
-                Permission.CREATE_PROJECT, 
-                Permission.UPDATE_PROJECT, 
+                Permission.VIEW_ORG_PROJECTS,
+                Permission.CREATE_PROJECT,
+                Permission.UPDATE_PROJECT,
+                Permission.ARCHIVE_PROJECT,
                 Permission.DELETE_PROJECT,
-                Permission.MANAGE_CONNECTORS, 
-                Permission.MANAGE_PROFILES, 
+                Permission.MANAGE_CONNECTORS,
+                Permission.MANAGE_PROFILES,
                 Permission.MANAGE_RULES,
-                Permission.VIEW_ORG_DASHBOARD, 
-                Permission.INVITE_USERS, 
+                Permission.VIEW_ORG_DASHBOARD,
+                Permission.INVITE_USERS,
                 Permission.MANAGE_ROLES,
             ],
-            UserRole.ADMIN: list(
+            UserRole.U3: list(
                 Permission
             ),
         }
@@ -125,6 +126,7 @@ class Permission(str, Enum):
     VIEW_ORG_PROJECTS = "VIEW_ORG_PROJECTS"
     CREATE_PROJECT = "CREATE_PROJECT"
     UPDATE_PROJECT = "UPDATE_PROJECT"
+    ARCHIVE_PROJECT = "ARCHIVE_PROJECT"
     DELETE_PROJECT = "DELETE_PROJECT"
     MANAGE_CONNECTORS = "MANAGE_CONNECTORS"
     MANAGE_PROFILES = "MANAGE_PROFILES"

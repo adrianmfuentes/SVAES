@@ -40,6 +40,10 @@ from application.ports.input.i_connector_service import IConnectorService
 from application.ports.input.i_profile_service import IProfileService
 from application.ports.input.i_task_service import ITaskService
 from application.ports.input.i_custom_role_service import ICustomRoleService
+from application.ports.input.i_template_service import ITemplateService
+from application.ports.input.i_notification_service import INotificationService
+from application.ports.input.i_rules_service import IRulesService
+from application.ports.input.i_export_service import IExportService
 from application.ports.output.i_token_service import ITokenService
 from application.ports.output.i_password_hasher import IPasswordHasher
 from infrastructure.secondary.queue.celery_task_queue import CeleryTaskQueue
@@ -63,7 +67,8 @@ def get_current_user_id(
     handler = JwtHandler(
         secret=settings.jwt_secret_key,
         algorithm=settings.jwt_algorithm,
-        expire_minutes=settings.jwt_expire_minutes,
+        access_token_expire_minutes=settings.jwt_expire_minutes,
+        refresh_token_expire_days=30,
     )
     try:
         payload = handler.decode_token(credentials.credentials)
@@ -79,7 +84,8 @@ def get_current_user_role(
     handler = JwtHandler(
         secret=settings.jwt_secret_key,
         algorithm=settings.jwt_algorithm,
-        expire_minutes=settings.jwt_expire_minutes,
+        access_token_expire_minutes=settings.jwt_expire_minutes,
+        refresh_token_expire_days=30,
     )
     try:
         payload = handler.decode_token(credentials.credentials)
@@ -103,7 +109,8 @@ def get_current_user(
     handler = JwtHandler(
         secret=settings.jwt_secret_key,
         algorithm=settings.jwt_algorithm,
-        expire_minutes=settings.jwt_expire_minutes,
+        access_token_expire_minutes=settings.jwt_expire_minutes,
+        refresh_token_expire_days=30,
     )
     try:
         payload = handler.decode_token(credentials.credentials)
@@ -135,7 +142,7 @@ def require_org_access(org_id_param: str = "org_id"):
         org_id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
     ) -> CurrentUser:
-        if current_user.organization_id != org_id and current_user.role != UserRole.ADMIN:
+        if current_user.organization_id != org_id and current_user.role != UserRole.U3:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No tienes acceso a esta organización",
@@ -150,7 +157,7 @@ def require_project_access(project_id_param: str = "project_id"):
         current_user: CurrentUser = Depends(get_current_user),
         project_repo: SqlProjectRepository = Depends(get_project_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.ADMIN:
+        if current_user.role == UserRole.U3:
             return current_user
 
         project = await project_repo.get_by_id(project_id)
@@ -170,12 +177,12 @@ def require_role(min_role: UserRole):
     def dependency(
         current_user: CurrentUser = Depends(get_current_user),
     ) -> CurrentUser:
-        role_hierarchy = [UserRole.VIEWER, UserRole.OPERATOR, UserRole.MANAGER, UserRole.ADMIN]
-        if min_role == UserRole.ADMIN:
+        role_hierarchy = [UserRole.U1, UserRole.U2, UserRole.U4, UserRole.U3]
+        if min_role == UserRole.U3:
             required_idx = 3
-        elif min_role == UserRole.MANAGER:
+        elif min_role == UserRole.U4:
             required_idx = 2
-        elif min_role == UserRole.OPERATOR:
+        elif min_role == UserRole.U2:
             required_idx = 1
         else:
             required_idx = 0
@@ -196,7 +203,8 @@ def get_jwt_handler(
     return JwtHandler(
         secret=settings.jwt_secret_key,
         algorithm=settings.jwt_algorithm,
-        expire_minutes=settings.jwt_expire_minutes,
+        access_token_expire_minutes=settings.jwt_expire_minutes,
+        refresh_token_expire_days=30,
     )
 
 
@@ -251,7 +259,7 @@ def require_release_access(release_id_param: str = "id"):
         release_repo: SqlReleaseRepository = Depends(get_release_repository),
         project_repo: SqlProjectRepository = Depends(get_project_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.ADMIN:
+        if current_user.role == UserRole.U3:
             return current_user
 
         release = await release_repo.get_by_id(release_id)
@@ -277,7 +285,7 @@ def require_connector_access(connector_id_param: str = "connector_id"):
         current_user: CurrentUser = Depends(get_current_user),
         connector_repo: SqlConnectorRepository = Depends(get_connector_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.ADMIN:
+        if current_user.role == UserRole.U3:
             return current_user
 
         connector = await connector_repo.get_by_id(connector_id)
@@ -299,7 +307,7 @@ def require_profile_access(profile_id_param: str = "profile_id"):
         current_user: CurrentUser = Depends(get_current_user),
         profile_repo: SqlProfileRepository = Depends(get_profile_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.ADMIN:
+        if current_user.role == UserRole.U3:
             return current_user
 
         profile = await profile_repo.get_by_id(profile_id)
@@ -322,7 +330,7 @@ def require_rule_access(rule_id_param: str = "rule_id"):
         rule_repo: SqlVerificationRuleRepository = Depends(get_rule_repository),
         profile_repo: SqlProfileRepository = Depends(get_profile_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.ADMIN:
+        if current_user.role == UserRole.U3:
             return current_user
 
         rule = await rule_repo.get_by_id(rule_id)
@@ -345,7 +353,7 @@ def require_custom_role_access(role_id_param: str = "role_id"):
         current_user: CurrentUser = Depends(get_current_user),
         role_repo: SqlCustomRoleRepository = Depends(get_custom_role_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.ADMIN:
+        if current_user.role == UserRole.U3:
             return current_user
 
         role = await role_repo.get_by_id(role_id)
@@ -367,7 +375,7 @@ def require_api_key_access(key_id_param: str = "key_id"):
         current_user: CurrentUser = Depends(get_current_user),
         api_key_repo: SqlAPIKeyRepository = Depends(get_api_key_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.ADMIN:
+        if current_user.role == UserRole.U3:
             return current_user
 
         api_key = await api_key_repo.get_by_id(key_id)
@@ -500,3 +508,48 @@ def get_custom_role_service(
 ) -> ICustomRoleService:
     from application.use_cases.main.custom_role_service import CustomRoleService
     return CustomRoleService(custom_role_repository=role_repo)
+
+
+def get_template_service() -> "ITemplateService":
+    from application.use_cases.main.template_service import TemplateService
+    from infrastructure.secondary.database.repositories.template_repository import SqlTemplateRepository
+    from infrastructure.secondary.database.repositories.profile_repository import SqlProfileRepository
+    template_repo = SqlTemplateRepository()
+    profile_repo = SqlProfileRepository()
+    return TemplateService(
+        template_repository=template_repo,
+        profile_repository=profile_repo,
+    )
+
+
+def get_notification_service() -> "INotificationService":
+    from application.use_cases.main.notification_service import NotificationService
+    from infrastructure.secondary.database.repositories.notification_repository import SqlNotificationRepository
+    notification_repo = SqlNotificationRepository()
+    return NotificationService(
+        notification_repository=notification_repo,
+    )
+
+
+def get_rules_service() -> "IRulesService":
+    from application.use_cases.main.rules_service import RulesService
+    from infrastructure.secondary.database.repositories.rule_repository import SqlVerificationRuleRepository
+    rule_repo = SqlVerificationRuleRepository()
+    return RulesService(
+        rule_repository=rule_repo,
+    )
+
+
+def get_export_service() -> "IExportService":
+    from application.use_cases.main.export_service import ExportService
+    from infrastructure.secondary.database.repositories.release_repository import SqlReleaseRepository
+    from infrastructure.secondary.database.repositories.verification_result_repository import SqlVerificationResultRepository
+    from infrastructure.secondary.database.repositories.project_repository import SqlProjectRepository
+    release_repo = SqlReleaseRepository()
+    verification_repo = SqlVerificationResultRepository()
+    project_repo = SqlProjectRepository()
+    return ExportService(
+        release_repository=release_repo,
+        verification_repository=verification_repo,
+        project_repository=project_repo,
+    )

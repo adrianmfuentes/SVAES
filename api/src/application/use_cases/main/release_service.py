@@ -152,6 +152,16 @@ class CreateReleaseUseCase(IReleaseService):
             raise ValidationError("No se encontró el release para eliminar.")
         await self.release_repository.delete(release_id)
 
+    async def restore_release(self, release_id: UUID) -> None:
+        release = await self.release_repository.get_by_id(release_id)
+        if not release:
+            raise ValidationError("No se encontró el release para restaurar.")
+        if release.status != ReleaseStatus.ARCHIVADA:
+            raise ValidationError("Solo se pueden restaurar releases archivadas.")
+        release.status = ReleaseStatus.BORRADOR
+        await self.release_repository.update(release)
+        _log.info("Release restored: id=%s", release_id)
+
     ## -- Helpers ---
 
     def _is_valid_semver(self, version: str) -> bool:

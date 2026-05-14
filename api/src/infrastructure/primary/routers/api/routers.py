@@ -12,6 +12,9 @@ from infrastructure.primary.routers.api.v1.users import router as users_router
 from infrastructure.primary.routers.api.v1.custom_roles import router as custom_roles_router
 from infrastructure.primary.routers.api.v1.dashboard import router as dashboard_router
 from infrastructure.primary.routers.api.v1.api_keys import router as api_keys_router
+from infrastructure.primary.routers.api.v1.templates import router as templates_router
+from infrastructure.primary.routers.api.v1.notifications import router as notifications_router
+from infrastructure.primary.routers.api.v1.admin import router as admin_router
 
 __all__ = [
     "auth_router",
@@ -24,4 +27,7 @@ __all__ = [
     "custom_roles_router",
     "dashboard_router",
     "api_keys_router",
+    "templates_router",
+    "notifications_router",
+    "admin_router",
 ]

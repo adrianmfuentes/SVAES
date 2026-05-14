@@ -25,7 +25,7 @@ class ProjectCreateRequest(BaseModel):
 async def list_organizations(
     skip: int = 0,
     limit: int = 100,
-    current_user: CurrentUser = Depends(require_role(UserRole.ADMIN)),
+    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
     service: IOrganizationService = Depends(get_organization_service),
 ):
     """ Endpoint para listar las organizaciones. Solo los usuarios con rol ADMIN pueden acceder a esta información.
@@ -51,7 +51,7 @@ async def list_organizations(
 @router.post("/api/v1/organizations", status_code=status.HTTP_201_CREATED)
 async def create_organization(
     payload: OrganizationCreateRequest,
-    current_user: CurrentUser = Depends(require_role(UserRole.ADMIN)),
+    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
     service: IOrganizationService = Depends(get_organization_service),
 ):
     """ Endpoint para crear una nueva organización. Solo los usuarios con rol ADMIN pueden crear organizaciones.
@@ -80,30 +80,70 @@ async def create_organization(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.get("/api/v1/organizations/{org_id}/projects")
-async def list_projects(
+@router.get("/api/v1/organizations/{org_id}")
+async def get_organization(
     org_id: UUID,
-    skip: int = 0,
-    limit: int = 50,
-    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_ORG_PROJECTS)),
+    current_user: CurrentUser = Depends(get_current_user),
     service: IOrganizationService = Depends(get_organization_service),
 ):
-    """Endpoint para listar los proyectos de una organización.
+    """ Endpoint para obtener los detalles de una organización.
 
     Atributos:
         - org_id: UUID - El ID de la organización.
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.
+
+    Retorna:
+        - Un diccionario con la información de la organización (id, name, slug, owner_id, etc.).
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organización.
+        - Lanza HTTPException con status 404 si la organización no existe.
+        - Lanza HTTPException con status 500 para cualquier error inesperado.
+    """
+    try:
+        org = await service.get_organization(organization_id=org_id)
+        if not org:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organización no encontrada")
+        if current_user.role != UserRole.U3 and current_user.organization_id != org_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta organización")
+        return {
+            "id": str(org.id),
+            "name": org.name,
+            "slug": org.slug,
+            "owner_id": str(org.owner_id) if org.owner_id else None,
+            "plan": org.plan,
+            "is_active": org.is_active,
+            "created_at": org.created_at.isoformat() if org.created_at else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/api/v1/projects")
+async def list_accessible_projects(
+    skip: int = 0,
+    limit: int = 50,
+    current_user: CurrentUser = Depends(get_current_user),
+    service: IOrganizationService = Depends(get_organization_service),
+):
+    """Endpoint global para listar proyectos accesibles por el usuario.
+
+    Este endpoint retorna proyectos filtrados automáticamente según la accesibilidad
+    del usuario (basado en sus членства en organizaciones).
+
+    Atributos:
         - skip: int - Número de registros a omitir para paginación.
         - limit: int - Número máximo de registros a retornar.
         - current_user: Usuario autenticado con permisos del token JWT.
         - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias
 
     Retorna:
-        - Una lista de diccionarios con la información de cada proyecto (id, name).
-        - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organización.
-        - Lanza HTTPException con status 500 para cualquier error inesperado.
+        - Una lista de diccionarios con la información de cada proyecto (id, name, organization_id).
+        - 500 Internal Server Error para cualquier error inesperado.
     """
     try:
-        projects = await service.list_projects(organization_id=org_id, skip=skip, limit=limit)
+        projects = await service.list_accessible_projects(user_id=current_user.user_id, skip=skip, limit=limit)
         return projects
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
@@ -150,6 +190,66 @@ async def create_project(
 class TransferOwnershipRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     new_owner_id: UUID
+
+
+@router.post("/api/v1/organizations/{org_id}/projects/{project_id}/archive", status_code=status.HTTP_200_OK)
+async def archive_project(
+    org_id: UUID,
+    project_id: UUID,
+    current_user: CurrentUser = Depends(require_permission(Permission.ARCHIVE_PROJECT)),
+    service: IOrganizationService = Depends(get_organization_service),
+):
+    """Endpoint para archivar un proyecto.
+
+    Atributos:
+        - org_id: UUID - El ID de la organización.
+        - project_id: UUID - El ID del proyecto a archivar.
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.
+
+    Retorna:
+        - Un diccionario con el ID y nombre del proyecto archivado.
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organización.
+        - Lanza HTTPException con status 404 si la organización o el proyecto no existen.
+        - Lanza HTTPException con status 500 para cualquier error inesperado.
+    """
+    try:
+        project = await service.archive_project(project_id=project_id)
+        return {"id": str(project.id), "name": project.name, "is_archived": project.is_archived}
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post("/api/v1/organizations/{org_id}/restore", status_code=status.HTTP_200_OK)
+async def restore_organization(
+    org_id: UUID,
+    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
+    service: IOrganizationService = Depends(get_organization_service),
+):
+    """Endpoint para restaurar (desarchivar) una organización marcada como inactiva.
+
+    Atributos:
+        - org_id: UUID - El ID de la organización a restaurar.
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.
+
+    Retorna:
+        - Un diccionario con el ID y nombre de la organización restaurada.
+        - Lanza HTTPException con status 403 si el usuario no tiene rol U3.
+        - Lanza HTTPException con status 404 si la organización no existe.
+        - Lanza HTTPException con status 500 para cualquier error inesperado.
+    """
+    try:
+        org = await service.restore_organization(organization_id=org_id)
+        return {"id": str(org.id), "name": org.name, "is_active": org.is_active}
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post("/api/v1/organizations/{org_id}/transfer-ownership", status_code=status.HTTP_200_OK)

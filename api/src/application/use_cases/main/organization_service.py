@@ -83,6 +83,28 @@ class OrganizationService(IOrganizationService):
         return await self._project_repo.get_by_id(project_id)
 
 
+    async def archive_project(self, project_id: UUID) -> Project:
+        project = await self._project_repo.get_by_id(project_id)
+        if not project:
+            raise EntityNotFoundError(f"Proyecto no encontrado: {project_id}")
+
+        project.is_archived = True
+        updated = await self._project_repo.update(project)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.PROJECT_ARCHIVED,
+            user_id=project.organization_id,
+            organization_id=project.organization_id,
+            resource_type="project",
+            resource_id=project_id,
+            details={"name": project.name},
+        ))
+        _log.info("Project archived: id=%s org=%s", project_id, project.organization_id)
+
+        return updated
+
+
     async def transfer_ownership(
         self,
         organization_id: UUID,
@@ -107,5 +129,16 @@ class OrganizationService(IOrganizationService):
             details={"old_owner": str(old_owner), "new_owner": str(new_owner_id)},
         ))
         _log.info("Org ownership transferred: by=%s org=%s %s->%s", requested_by, organization_id, old_owner, new_owner_id)
+
+        return updated
+
+    async def restore_organization(self, organization_id: UUID) -> Organization:
+        org = await self._org_repo.get_by_id(organization_id)
+        if not org:
+            raise EntityNotFoundError(f"Organización no encontrada: {organization_id}")
+
+        org.is_active = True
+        updated = await self._org_repo.update(org)
+        _log.info("Organization restored: id=%s", organization_id)
 
         return updated

@@ -7,6 +7,7 @@ from uuid import UUID
 @dataclass
 class APIKey:
     id: UUID
+    user_id: UUID
     organization_id: UUID
     name: str
     key_hash: str

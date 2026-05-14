@@ -26,6 +26,7 @@ class SqlProjectRepository(IProjectRepository):
                 description=project.description,
                 organization_id=project.organization_id,
                 profile_id=project.profile_id,
+                is_archived=project.is_archived,
                 created_at=project.created_at,
                 updated_at=project.updated_at
             )
@@ -64,6 +65,7 @@ class SqlProjectRepository(IProjectRepository):
                 description=cast(str, project_row.description),
                 organization_id=cast(uuid.UUID, project_row.organization_id),
                 profile_id=cast(uuid.UUID, project_row.profile_id),
+                is_archived=cast(bool, project_row.is_archived),
                 created_at=cast(datetime, project_row.created_at),
                 updated_at=cast(datetime, project_row.updated_at)
             )
@@ -93,6 +95,7 @@ class SqlProjectRepository(IProjectRepository):
                     description=cast(str, row.description),
                     organization_id=cast(uuid.UUID, row.organization_id),
                     profile_id=cast(uuid.UUID, row.profile_id),
+                    is_archived=cast(bool, row.is_archived),
                     created_at=cast(datetime, row.created_at),
                     updated_at=cast(datetime, row.updated_at)
                 )
@@ -117,6 +120,7 @@ class SqlProjectRepository(IProjectRepository):
             setattr(project_model, "description", project.description)
             setattr(project_model, "organization_id", project.organization_id)
             setattr(project_model, "profile_id", project.profile_id)
+            setattr(project_model, "is_archived", project.is_archived)
             setattr(project_model, "updated_at", datetime.utcnow())
 
             await session.commit()
@@ -128,6 +132,7 @@ class SqlProjectRepository(IProjectRepository):
                 description=cast(str, project_model.description),
                 organization_id=cast(uuid.UUID, project_model.organization_id),
                 profile_id=cast(uuid.UUID, project_model.profile_id),
+                is_archived=cast(bool, project_model.is_archived),
                 created_at=cast(datetime, project_model.created_at),
                 updated_at=cast(datetime, project_model.updated_at)
             )

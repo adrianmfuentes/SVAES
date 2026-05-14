@@ -22,6 +22,10 @@ class IAPIKeyRepository(ABC):
         pass
 
     @abstractmethod
+    async def list_by_user(self, user_id: uuid.UUID) -> List[APIKey]:
+        pass
+
+    @abstractmethod
     async def update(self, api_key: APIKey) -> APIKey:
         pass
 

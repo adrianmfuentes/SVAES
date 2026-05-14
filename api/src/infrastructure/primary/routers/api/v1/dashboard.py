@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from application.ports.output.i_release_repository import IReleaseRepository
@@ -18,17 +18,21 @@ class DashboardMetricsResponse(BaseModel):
     pass_rate: float
 
 
-@router.get("/api/v1/organizations/{org_id}/dashboard/metrics")
+@router.get("/api/v1/dashboard/metrics")
 async def get_dashboard_metrics(
-    org_id: UUID,
-    current_user: CurrentUser = Depends(require_org_access()),
+    org_id: UUID = Query(default=None, description="Filter by organization ID"),
+    current_user: CurrentUser = Depends(get_current_user),
     release_repo: IReleaseRepository = Depends(get_release_repository),
     verification_repo: IVerificationResultRepository = Depends(get_verification_result_repository),
 ):
-    """Endpoint para obtener métricas del dashboard de una organización.
+    """Endpoint para obtener métricas del dashboard.
+
+    Si se proporciona org_id, retorna métricas de esa organización (requiere acceso).
+    Si no se proporciona org_id, retorna métricas basadas en las organizaciones
+    a las que el usuario tiene acceso.
 
     Atributos:
-        - org_id: UUID - El ID de la organización.
+        - org_id: UUID opcional - Filtrar por ID de organización.
         - current_user: Usuario autenticado con permisos del token JWT.
         - release_repo: Repositorio de releases inyectado.
         - verification_repo: Repositorio de resultados de verificación inyectado.
@@ -38,11 +42,19 @@ async def get_dashboard_metrics(
           verificaciones y tasa de aprobación.
     """
     try:
+        if org_id:
+            await require_org_access(org_id)(current_user)
+            target_org_id = org_id
+        else:
+            target_org_id = current_user.organization_id if current_user.organization_id else None
+            if not target_org_id:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="org_id es requerido")
+
         use_case = GetDashboardMetricsUseCase(
             release_repository=release_repo,
             verification_repository=verification_repo,
         )
-        metrics = await use_case.execute(org_id)
+        metrics = await use_case.execute(target_org_id)
         return DashboardMetricsResponse(
             total_releases=metrics.total_releases,
             valid_releases=metrics.valid_releases,
@@ -51,5 +63,7 @@ async def get_dashboard_metrics(
             total_verifications=metrics.total_verifications,
             pass_rate=metrics.pass_rate,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

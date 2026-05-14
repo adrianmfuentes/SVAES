@@ -11,6 +11,7 @@ from infrastructure.secondary.database.get_async_session import get_async_sessio
 def _model_to_entity(row: APIKeyModel) -> APIKey:
     return APIKey(
         id=row.id,
+        user_id=row.user_id,
         organization_id=row.organization_id,
         name=row.name,
         key_hash=row.key_hash,
@@ -28,6 +29,7 @@ class SqlAPIKeyRepository(IAPIKeyRepository):
         try:
             model = APIKeyModel(
                 id=api_key.id,
+                user_id=api_key.user_id,
                 organization_id=api_key.organization_id,
                 name=api_key.name,
                 key_hash=api_key.key_hash,
@@ -80,6 +82,20 @@ class SqlAPIKeyRepository(IAPIKeyRepository):
         try:
             result = await session.execute(
                 select(APIKeyModel).where(APIKeyModel.organization_id == organization_id)
+            )
+            rows = result.scalars().all()
+            return [_model_to_entity(row) for row in rows]
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()
+
+    async def list_by_user(self, user_id: uuid.UUID) -> List[APIKey]:
+        session = await get_async_session().__anext__()
+        try:
+            result = await session.execute(
+                select(APIKeyModel).where(APIKeyModel.user_id == user_id)
             )
             rows = result.scalars().all()
             return [_model_to_entity(row) for row in rows]
