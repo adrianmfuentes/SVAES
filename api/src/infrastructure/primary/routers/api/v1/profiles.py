@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Optional, List
+from typing import Annotated, Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -44,8 +44,8 @@ async def list_profiles(
     org_id: UUID,
     skip: int = 0,
     limit: int = 50,
-    current_user: CurrentUser = Depends(require_org_access()),
-    service: IProfileService = Depends(get_profile_service),
+    current_user: Annotated[CurrentUser, Depends(require_org_access())],
+    service: Annotated[IProfileService, Depends(get_profile_service)],
 ):
     """Endpoint para listar los perfiles de una organización.
 
@@ -81,8 +81,8 @@ async def list_profiles(
 async def create_profile(
     org_id: UUID,
     payload: ProfileCreateRequest,
-    current_user: CurrentUser = Depends(require_org_access()),
-    service: IProfileService = Depends(get_profile_service),
+    current_user: Annotated[CurrentUser, Depends(require_org_access())],
+    service: Annotated[IProfileService, Depends(get_profile_service)],
 ):
     """Endpoint para crear un nuevo perfil dentro de una organización.
 
@@ -116,9 +116,9 @@ async def create_profile(
 async def update_profile(
     profile_id: UUID,
     payload: ProfileUpdateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
-    _ = Depends(require_profile_access()),
-    service: IProfileService = Depends(get_profile_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES))],
+    _: Annotated[None, Depends(require_profile_access())],
+    service: Annotated[IProfileService, Depends(get_profile_service)],
 ):
     """Endpoint para actualizar un perfil existente.
 
@@ -154,9 +154,9 @@ async def update_profile(
 @router.delete("/api/v1/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile(
     profile_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
-    _ = Depends(require_profile_access()),
-    service: IProfileService = Depends(get_profile_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES))],
+    _: Annotated[None, Depends(require_profile_access())],
+    service: Annotated[IProfileService, Depends(get_profile_service)],
 ):
     """Endpoint para eliminar un perfil existente.
 
@@ -182,9 +182,9 @@ async def delete_profile(
 async def add_rule(
     profile_id: UUID,
     payload: RuleCreateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_RULES)),
-    _ = Depends(require_profile_access()),
-    service: IProfileService = Depends(get_profile_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_RULES))],
+    _: Annotated[None, Depends(require_profile_access())],
+    service: Annotated[IProfileService, Depends(get_profile_service)],
 ):
     """Endpoint para agregar una nueva regla a un perfil existente.
 
@@ -220,9 +220,9 @@ async def add_rule(
 async def update_rule(
     rule_id: UUID,
     payload: RuleUpdateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_RULES)),
-    _ = Depends(require_rule_access()),
-    service: IProfileService = Depends(get_profile_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_RULES))],
+    _: Annotated[None, Depends(require_rule_access())],
+    service: Annotated[IProfileService, Depends(get_profile_service)],
 ):
     """Endpoint para actualizar una regla existente.
 

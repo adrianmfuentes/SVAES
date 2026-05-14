@@ -715,7 +715,7 @@ REVOKED = "REVOKED"
 | GET | `/api/v1/releases/{release_id}/artifacts` | Listar artefactos de la release | VIEW_ORG_PROJECTS |
 | POST | `/api/v1/releases/{release_id}/artifacts` | Agregar artefacto a la release | UPDATE_OWN_RELEASES |
 | DELETE | `/api/v1/releases/{release_id}/artifacts/{artifact_id}` | Eliminar artefacto | UPDATE_OWN_RELEASES |
-| POST | `/api/v1/releases/{release_id}/artifacts/import` | Importar artefactos desde CSV | UPDATE_OWN_RELEASES |
+| POST | `/api/v1/releases/{release_id}/artifacts/import` | Importar artefactos (JSON array) | UPDATE_OWN_RELEASES |
 | POST | `/api/v1/releases/{release_id}/verify` | Lanzar verificación (async) | EXECUTE_VERIFICATION |
 | GET | `/api/v1/releases/{release_id}/results` | Obtener historial de verificaciones | VIEW_OWN_HISTORY |
 | GET | `/api/v1/releases/{release_id}/results/{result_id}` | Obtener detalle de una verificación | VIEW_OWN_HISTORY |
@@ -764,8 +764,15 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 **ArtifactImportRequest:**
 ```json
 {
-  "data": "string (formato CSV, columna obligatoria: external_ref)",
-  "connector_instance_id": "uuid"
+  "artifacts": [
+    {
+      "connector_id": "uuid",
+      "connector_implementation": "string (ej: JIRA, GITLAB, CONFLUENCE)",
+      "type": "TAREA|CODIGO|DOCUMENTO",
+      "external_ref": "string (max 500 chars)",
+      "description": "string|null"
+    }
+  ]
 }
 ```
 
@@ -905,7 +912,7 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 {
   "task_id": "string",
   "status": "PENDING|STARTED|SUCCESS|FAILURE|RETRY|REVOKED",
-  "result": "string|null"
+  "result": "string|null (contiene el resultado de la tarea si está completada)"
 }
 ```
 

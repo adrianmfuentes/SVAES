@@ -59,9 +59,10 @@ Jerarquía de roles: `VIEWER < OPERATOR < MANAGER < ADMIN`.
 
 ### Épica 5 — Motor de verificación (FEAT-06)
 - Ejecución asíncrona: backend responde `202 Accepted`; frontend hace polling de estado.
-- El motor Rust ejecuta las reglas en paralelo (Rayon work-stealing).
+- El motor Rust se ejecuta en `engine/` como microservicio separado, comunica via HTTP.
 - Política de agregación de veredictos (ver §4).
 - Reglas personalizadas vía fichero de configuración estructurado.
+- **Estado actual:** stub en `engine/src/main.rs` — placeholder "Hello World"; implementación completa pendiente.
 
 ### Épica 6 — Resultados y trazabilidad (FEAT-07)
 - `verification_result` es **inmutable** tras su creación.
@@ -154,16 +155,21 @@ se encuentra en la sección 4.8 del SRS.
 
 | Componente | Estado | Notas |
 |---|---|---|
-| Backend FastAPI | Implementado | `apps/api/` — dominio, aplicación, infraestructura completos |
-| Frontend Angular | Pendiente | `apps/web/` — directorio creado, vacío |
-| Motor Rust | Pendiente | Engine de verificación aún no implementado |
-| Worker Celery | Pendiente | `MockTaskQueue` usado en tests; worker real pendiente |
+| Backend FastAPI | Implementado | `api/src/` — dominio, aplicación, infraestructura completos |
+| Worker Celery | Implementado | `api/src/infrastructure/workers/verification_worker.py` — worker real |
+| Motor Rust | Stub | `engine/src/main.rs` — placeholder "Hello World"; implementación pendiente |
+| Frontend Angular | Parcial | `web/` — contenido parcial en desarrollo |
 | Paquetes compartidos | Pendiente | `packages/` — directorio creado, vacío |
 | Tests unitarios | Implementado | `tests/unit/` — cobertura domain, application, infrastructure |
 | Tests integración | Pendiente | `tests/integration/` — vacío |
 | Tests e2e | Pendiente | `tests/e2e/` — vacío |
 | Tests rendimiento | Pendiente | `tests/performance/` — vacío |
 | Tests seguridad | Pendiente | `tests/security/` — vacío |
+
+**Routers conectados (14 total):**
+- auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin
+
+**Endpoints por router:** 65+ endpoints implementados
 
 ---
 

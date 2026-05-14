@@ -1,7 +1,7 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
+from typing import Annotated, Optional
 from application.ports.input.i_template_service import ITemplateService
 from core.dependencies import get_current_user, CurrentUser, require_permission, require_role, get_template_service
 from domain.enums import UserRole, Permission
@@ -34,8 +34,8 @@ class TemplateCloneRequest(BaseModel):
 @router.post("/api/v1/templates", status_code=status.HTTP_201_CREATED)
 async def create_template(
     payload: TemplateCreateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
-    service: ITemplateService = Depends(get_template_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES)),
+    service: Annotated[ITemplateService, Depends(get_template_service),
 ):
     """Crea una nueva plantilla de release.
 
@@ -72,8 +72,8 @@ async def list_templates(
     skip: int = 0,
     limit: int = 50,
     include_archived: bool = False,
-    current_user: CurrentUser = Depends(get_current_user),
-    service: ITemplateService = Depends(get_template_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user),
+    service: Annotated[ITemplateService, Depends(get_template_service),
 ):
     """Lista las plantillas de release accesibles por el usuario.
 
@@ -105,8 +105,8 @@ async def list_templates(
 @router.get("/api/v1/templates/{template_id}")
 async def get_template(
     template_id: UUID,
-    current_user: CurrentUser = Depends(get_current_user),
-    service: ITemplateService = Depends(get_template_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user),
+    service: Annotated[ITemplateService, Depends(get_template_service),
 ):
     """Obtiene los detalles de una plantilla específica.
 
@@ -135,8 +135,8 @@ async def get_template(
 async def update_template(
     template_id: UUID,
     payload: TemplateUpdateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
-    service: ITemplateService = Depends(get_template_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES)),
+    service: Annotated[ITemplateService, Depends(get_template_service),
 ):
     """Actualiza una plantilla de release.
 
@@ -168,8 +168,8 @@ async def update_template(
 @router.post("/api/v1/templates/{template_id}/archive", status_code=status.HTTP_200_OK)
 async def archive_template(
     template_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
-    service: ITemplateService = Depends(get_template_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES)),
+    service: Annotated[ITemplateService, Depends(get_template_service),
 ):
     """Archiva una plantilla de release.
 
@@ -196,8 +196,8 @@ async def archive_template(
 async def clone_template(
     template_id: UUID,
     payload: TemplateCloneRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
-    service: ITemplateService = Depends(get_template_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES)),
+    service: Annotated[ITemplateService, Depends(get_template_service),
 ):
     """Clona una plantilla de release a otra organización.
 

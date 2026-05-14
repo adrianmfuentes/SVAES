@@ -119,9 +119,9 @@ El API aplica límites por defecto:
 
 | Endpoint | Límite |
 |----------|--------|
-| `/api/v1/auth/login` | 5/minuto |
-| `/api/v1/auth/refresh` | 5/minuto |
-| Todos los demás | 60/minuto |
+| `/api/v1/auth/login` | 30/minuto |
+| `/api/v1/auth/refresh` | 30/minuto |
+| Todos los demás | 100/minuto |
 
 ## Logs y Monitorización
 

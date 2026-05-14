@@ -56,7 +56,7 @@ class ManageApiKeysUseCase:
             resource_id=saved.id,
             details={"name": name, "expires_in_days": expires_in_days},
         ))
-        _log.info("API key created: user=%s org=%s name=%s id=%s", user_id, organization_id, name, saved.id)
+        _log.info("API key created: user=%s org=%s id=%s", user_id, organization_id, saved.id)
 
         return {
             "id": str(saved.id),

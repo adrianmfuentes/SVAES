@@ -187,7 +187,7 @@ class NotificationService(INotificationService):
             resource_id=created.id,
             details={"event_type": event_type, "enabled": enabled},
         ))
-        _log.info("Notification subscription: user=%s event=%s enabled=%s", user_id, event_type, enabled)
+        _log.info("Notification subscription created: user=%s", user_id)
 
         return {
             "id": str(created.id),
@@ -209,4 +209,4 @@ class NotificationService(INotificationService):
             resource_id=None,
             details={"event_type": event_type},
         ))
-        _log.info("Notification unsubscription: user=%s event=%s", user_id, event_type)
+        _log.info("Notification unsubscription: user=%s", user_id)

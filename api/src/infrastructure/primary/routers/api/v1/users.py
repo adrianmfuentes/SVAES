@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -48,8 +49,8 @@ class AdminRoleUpdateRequest(BaseModel):
 
 @router.get("/api/v1/users/me")
 async def get_current_user_profile(
-    current_user: CurrentUser = Depends(get_current_user),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Obtiene el perfil del usuario autenticado actualmente.
 
@@ -82,8 +83,8 @@ async def get_current_user_profile(
 @router.patch("/api/v1/users/me")
 async def update_current_user_profile(
     payload: UserUpdateRequest,
-    current_user: CurrentUser = Depends(get_current_user),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Actualiza el perfil del usuario autenticado (display_name).
 
@@ -118,8 +119,8 @@ async def update_current_user_profile(
 @router.post("/api/v1/users/me/password")
 async def change_password(
     payload: PasswordChangeRequest,
-    current_user: CurrentUser = Depends(get_current_user),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Cambia la contraseña del usuario autenticado.
 
@@ -156,8 +157,8 @@ async def list_organization_users(
     org_id: UUID,
     skip: int = 0,
     limit: int = 50,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_ROLES)),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES)),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Lista los usuarios de una organización.
 
@@ -194,8 +195,8 @@ async def list_organization_users(
 async def invite_user(
     org_id: UUID,
     payload: UserInviteRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.INVITE_USERS)),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.INVITE_USERS)),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Invita a un usuario a unirse a una organización.
 
@@ -240,8 +241,8 @@ async def update_user_role(
     org_id: UUID,
     user_id: UUID,
     payload: UserRoleUpdateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_ROLES)),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES)),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Actualiza el rol de un usuario dentro de una organización.
 
@@ -284,8 +285,8 @@ async def update_user_role(
 async def remove_user_from_org(
     org_id: UUID,
     user_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_ROLES)),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES)),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Elimina a un usuario de una organización.
 
@@ -321,8 +322,8 @@ async def remove_user_from_org(
 @router.post("/api/v1/admin/users", status_code=status.HTTP_201_CREATED)
 async def admin_create_user(
     payload: AdminUserCreateRequest,
-    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3)),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Crea un nuevo usuario en el sistema (solo U3).
 
@@ -361,8 +362,8 @@ async def admin_create_user(
 @router.patch("/api/v1/admin/users/{user_id}/activate")
 async def admin_activate_user(
     user_id: UUID,
-    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3)),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Activa una cuenta de usuario (solo U3).
 
@@ -393,8 +394,8 @@ async def admin_activate_user(
 @router.patch("/api/v1/admin/users/{user_id}/deactivate")
 async def admin_deactivate_user(
     user_id: UUID,
-    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3)),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Desactiva una cuenta de usuario (solo U3).
 
@@ -428,8 +429,8 @@ async def admin_deactivate_user(
 async def admin_update_global_role(
     user_id: UUID,
     payload: AdminRoleUpdateRequest,
-    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3)),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Actualiza el rol global de un usuario (solo U3).
 
@@ -470,8 +471,8 @@ async def admin_list_users(
     limit: int = 50,
     is_active: bool | None = None,
     role: UserRole | None = None,
-    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
-    service: IUserService = Depends(get_user_service),
+    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3)),
+    service: Annotated[IUserService, Depends(get_user_service),
 ):
     """Lista todos los usuarios del sistema con filtros (solo U3).
 

@@ -29,9 +29,9 @@ obligatorias del núcleo.
 | Lógica de dominio | Python | 3.11 |
 | Base de datos | PostgreSQL | 16 |
 | ORM / migraciones | SQLAlchemy + Alembic | 2.x / 1.x |
-| Frontend | Angular + TypeScript | Angular 17 (pendiente) |
-| Motor de verificación | Rust (Actix-web + Rayon) | 1.77 (pendiente) |
-| Cola de tareas | Celery + Redis | 5.x / 7.x (pendiente) |
+| Motor de verificación | Rust (Actix-web + Rayon) | 1.77 (stub - engine/ vacío) |
+| Cola de tareas | Celery + Redis | 5.x / 7.x (worker implementado) |
+| Frontend | Angular + TypeScript | Angular 17 (en desarrollo) |
 | Contenedores | Docker + Docker Compose | 25 / 2.x |
 
 ---
@@ -40,37 +40,38 @@ obligatorias del núcleo.
 
 ```
 svaes/
-├── apps/
-│   ├── api/               # FastAPI — código completo
-│   │   ├── src/
-│   │   │   ├── domain/    # Entidades, puertos (sin dependencias externas)
-│   │   │   ├── application/ # Casos de uso
-│   │   │   ├── infrastructure/ # Adaptadores (DB, seguridad, logging)
-│   │   │   ├── api/       # Routers FastAPI
-│   │   │   └── main.py
-│   │   ├── alembic/       # Migraciones de BD
-│   │   ├── tests/         # Tests propios de la API (ver tests/)
-│   │   ├── pyproject.toml
-│   │   └── Dockerfile
-│   └── web/               # SPA Angular (pendiente — directorio vacío)
-├── packages/              # Paquetes internos compartidos (pendiente)
-├── tests/                 # Suite de pruebas completa
-│   ├── unit/              # ✅ Implementado — domain, application, infrastructure
-│   ├── integration/       # ⏳ Pendiente
-│   ├── e2e/               # ⏳ Pendiente
-│   ├── performance/       # ⏳ Pendiente
-│   └── security/           # ⏳ Pendiente
-├── scripts/                # Scripts auxiliares
-├── docker-compose.yml     # Servicios: api, postgres, redis
-└── docs/                  # Documentación técnica (pendiente)
+├── api/                       # FastAPI — código completo
+│   ├── src/
+│   │   ├── domain/            # Entidades, puertos (sin dependencias externas)
+│   │   ├── application/       # Casos de uso
+│   │   │   ├── ports/input/   # Interfaces de servicios (IReleaseService, etc.)
+│   │   │   └── ports/output/  # Interfaces de repositorios y servicios externos
+│   │   ├── infrastructure/    # Adaptadores (DB, seguridad, workers, routers)
+│   │   └── main.py
+│   ├── alembic/              # Migraciones de BD
+│   ├── tests/                # Tests propios de la API
+│   └── pyproject.toml
+├── engine/                    # Motor de verificación (stub - implementación Rust pendiente)
+│   └── src/
+├── web/                       # SPA Angular (en desarrollo)
+│   └── src/
+├── docs/
+│   ├── api/                   # Documentación de la API
+│   └── agents/                # Especificaciones para agentes
+├── scripts/                   # Scripts auxiliares
+├── docker-compose.yml         # Servicios: api, postgres, redis
+└── tests/                     # Suite de pruebas completa
+    ├── unit/                  # ✅ Implementado — domain, application, infrastructure
+    └── ...
 ```
 
 **Estado actual:**
-- Backend FastAPI completo en `apps/api/src/`
-- Frontend Angular pendiente (`apps/web/` vacío)
-- Motor Rust pendiente
-- Worker Celery pendiente (usa `MockTaskQueue` en tests)
-- Paquetes compartidos pendientes (`packages/` vacío)
+- ✅ Backend FastAPI completo en `api/src/`
+- ✅ Worker Celery implementado (`api/src/infrastructure/workers/verification_worker.py`)
+- ✅ Motor de verificación Rust en stub (`engine/src/main.rs` — placeholder)
+- ⚠️ Frontend Angular en desarrollo (`web/` con contenido parcial)
+- ✅ Routers registrados: auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin
+- ⚠️ Paquetes compartidos pendientes (`packages/` vacío)
 
 ---
 
@@ -83,17 +84,17 @@ svaes/
 2. **Genericidad obligatoria:** el núcleo del sistema no puede acoplarse a ninguna
    herramienta externa concreta. Toda integración se realiza implementando `IConnector`.
 
-3. **Motor de verificación:** pending de implementación. Cuando se implemente, el engine
-   no realizará llamadas de red. Recibirá un payload JSON del worker (vía HTTP local
-   Actix-web) y devolverá el resultado de verificación. No debe añadirse lógica de acceso
-   a BD ni a conectores dentro del engine.
+3. **Motor de verificación:** el motor Rust reside en `engine/` y se comunica con el
+   backend vía HTTP (configurable via `ENGINE_URL`). Actualmente es un stub que necesita
+   implementación completa. No debe añadirse lógica de acceso a BD ni a conectores dentro
+   del engine.
 
 4. **Multi-tenancy:** todos los repositorios y casos de uso deben filtrar obligatoriamente
    por `organization_id`. Un agente no debe generar código que acceda a datos de otra
    organización.
 
-5. **RBAC:** los roles son `VIEWER < OPERATOR < MANAGER < ADMIN`. El agente debe
-   respetar los guards correspondientes en todo endpoint nuevo.
+5. **RBAC:** los roles son `U1 < U2 < U3 < U4`. El agente debe respetar los guards
+   correspondientes en todo endpoint nuevo.
 
 6. **No referencias a Indra, Multideployment ni Flask:** estos contextos son obsoletos.
    Si aparecen en algún fichero existente, deben eliminarse o generalizarse.
@@ -102,7 +103,7 @@ svaes/
 
 ## 5. Convenciones de código
 
-### Python (backend — apps/api/src/)
+### Python (backend — api/src/)
 - Formato: **Black** + **isort**. Longitud máxima de línea: 88.
 - Tipos: todas las funciones deben estar anotadas. Se usa **Pydantic v2** para modelos.
 - Tests: **pytest**. Cobertura mínima objetivo: 80 % en `domain/` y `application/`.
@@ -110,20 +111,18 @@ svaes/
 - Estructura interior de `src/`:
   ```
   src/
-  ├── domain/           # entities/, ports/, exceptions.py
-  ├── application/      # use_cases/
-  ├── infrastructure/   # adapters/, database/, security/, logging/
-  ├── api/              # routers/, schemas/
+  ├── domain/           # entities/, enums.py, exceptions.py, ports/
+  ├── application/      # use_cases/main/, use_cases/others/, ports/
+  ├── infrastructure/   # primary/, secondary/
+  ├── core/             # audit.py, config.py, dependencies.py, logger.py, rate_limit.py
   └── main.py
   ```
 
-### TypeScript (frontend — pendiente)
+### TypeScript (frontend — web/)
 - Formato: **Prettier** + **ESLint** (angular-eslint).
-- El cliente REST se generará desde la especificación OpenAPI; no se escriben llamadas
-  HTTP a mano.
 - Componentes standalone (Angular 17+).
 
-### Rust (engine — pendiente)
+### Rust (engine — engine/)
 - Formato: **rustfmt** (configuración por defecto).
 - Sin `unsafe` salvo justificación documentada.
 - Tests unitarios dentro del mismo módulo (`#[cfg(test)]`).
@@ -143,7 +142,7 @@ svaes/
 - Escribir o actualizar tests unitarios.
 - Generar migraciones Alembic a partir de cambios en los modelos SQLAlchemy.
 - Actualizar la especificación OpenAPI cuando se añaden endpoints.
-- Actualizar este fichero o `SPECS.md` / `DESIGN.md` para reflejar cambios aprobados.
+- Actualizar este fichero o `SPECS.md` / `API_DOCUMENTATION.md` para reflejar cambios aprobados.
 
 ## 7. Tareas que requieren confirmación explícita del desarrollador
 
@@ -171,11 +170,10 @@ svaes/
 ### Tests unitarios (`tests/unit/`)
 
 ```
-tests/unit/
+tests/
 ├── conftest.py              # PYTHONPATH, DATABASE_URL dummy
 ├── api/
-│   ├── test_dependencies.py # get_current_user
-│   └── test_routers.py      # handlers HTTP
+│   └── test_routers.py     # handlers HTTP
 ├── application/use_cases/
 │   ├── test_auth_use_cases.py
 │   ├── test_configure_connector.py
@@ -186,11 +184,11 @@ tests/unit/
 │   ├── test_organization_use_cases.py
 │   └── test_project_use_cases.py
 ├── domain/
-│   ├── test_entities.py     # entidades y enums
-│   └── test_ports.py        # puertos (si aplica)
+│   ├── test_entities.py    # entidades y enums
+│   └── test_ports.py       # puertos (si aplica)
 └── infrastructure/
     ├── test_repositories.py # repositorios SQLAlchemy (mockeados)
-    └── test_security.py     # JWT, Fernet, MockTaskQueue
+    └── test_security.py    # JWT, Fernet, MockTaskQueue
 ```
 
 - Un archivo por módulo: `test_<nombre_del_módulo>.py`
@@ -201,6 +199,28 @@ tests/unit/
 ### Niveles pendientes (`tests/integration/`, `tests/e2e/`, etc.)
 
 Pendientes de implementar según `tests/README.md`.
+
+---
+
+## 10. Routers registrados en main.py
+
+Los siguientes routers están conectados en `api/src/main.py`:
+
+| Router | Archivo | Descripción |
+|--------|---------|-------------|
+| auth_router | v1/auth | Autenticación (login, refresh) |
+| organizations_router | v1/organizations | Gestión de organizaciones |
+| releases_router | v1/releases | Gestión de releases y artefactos |
+| connectors_router | v1/connectors | Gestión de conectores |
+| profiles_router | v1/profiles | Gestión de perfiles de verificación |
+| tasks_router | v1/tasks | Consulta de estado de tareas async |
+| users_router | v1/users | Gestión de usuarios |
+| custom_roles_router | v1/custom_roles | Roles personalizados |
+| dashboard_router | v1/dashboard | Métricas del dashboard |
+| api_keys_router | v1/api_keys | Gestión de API keys |
+| templates_router | v1/templates | Plantillas de release |
+| notifications_router | v1/notifications | Configuración de notificaciones |
+| admin_router | v1/admin | Operaciones de administración |
 
 ---
 

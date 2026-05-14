@@ -1,3 +1,4 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict
 from application.ports.input.i_task_service import ITaskService
@@ -18,8 +19,8 @@ class TaskStatusResponse(BaseModel):
 @router.get("/api/v1/tasks/{task_id}")
 async def get_task_status(
     task_id: str,
-    current_user: CurrentUser = Depends(get_current_user),
-    service: ITaskService = Depends(get_task_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[ITaskService, Depends(get_task_service)],
 ):
     """ Endpoint para obtener el estado de una tarea asíncrona.
 

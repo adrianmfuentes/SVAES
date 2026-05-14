@@ -2,7 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from fastapi.responses import FileResponse
-from typing import Literal
+from typing import Annotated, Literal
 from starlette.responses import Response
 
 from application.ports.input.i_release_service import IReleaseService
@@ -44,8 +44,8 @@ class ArtifactCreateRequest(BaseModel):
 async def create_release(
     project_id: UUID,
     payload: ReleaseCreateRequest,
-    project_access: ProjectAccess = Depends(require_project_access()),
-    service: IReleaseService = Depends(get_release_service),
+    project_access: Annotated[ProjectAccess, Depends(require_project_access())],
+    service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
     """ Crea una nueva release dentro del proyecto especificado.
 
@@ -82,8 +82,8 @@ async def create_release(
 @router.get("/api/v1/projects/{project_id}/releases")
 async def list_releases(
     project_id: UUID,
-    project_access: ProjectAccess = Depends(require_project_access()),
-    service: IReleaseService = Depends(get_release_service),
+    project_access: Annotated[ProjectAccess, Depends(require_project_access())],
+    service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
     """
     Lista todas las releases asociadas al proyecto especificado.
@@ -111,9 +111,9 @@ async def list_releases(
 @router.get("/api/v1/releases/{id}")
 async def get_release(
     id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_ORG_PROJECTS)),
-    _ = Depends(require_release_access()),
-    service: IReleaseService = Depends(get_release_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_ORG_PROJECTS))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
     """Obtiene los detalles de una release específica por su ID.
 
@@ -143,9 +143,9 @@ async def get_release(
 async def update_release(
     id: UUID,
     payload: ReleaseCreateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
-    _ = Depends(require_release_access()),
-    service: IReleaseService = Depends(get_release_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.UPDATE_OWN_RELEASES))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
     """Actualiza los detalles de una release específica por su ID.
 
@@ -179,9 +179,9 @@ async def update_release(
 @router.delete("/api/v1/releases/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_release(
     id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
-    _ = Depends(require_release_access()),
-    service: IReleaseService = Depends(get_release_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.UPDATE_OWN_RELEASES))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
     """Elimina una release específica por su ID.
 
@@ -205,9 +205,9 @@ async def delete_release(
 @router.post("/api/v1/releases/{id}/archive", status_code=status.HTTP_200_OK)
 async def archive_release(
     id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.ARCHIVE_RELEASE)),
-    _ = Depends(require_release_access()),
-    service: IReleaseService = Depends(get_release_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.ARCHIVE_RELEASE))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
     """Archiva una release específica por su ID, cambiando su estado a 'ARCHIVADA'.
 
@@ -232,9 +232,9 @@ async def archive_release(
 @router.post("/api/v1/releases/{id}/restore", status_code=status.HTTP_200_OK)
 async def restore_release(
     id: UUID,
-    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
-    _ = Depends(require_release_access()),
-    service: IReleaseService = Depends(get_release_service),
+    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
     """Restaura una release archivada, cambiando su estado al anterior (BORRADOR).
 
@@ -266,9 +266,9 @@ async def restore_release(
 @router.get("/api/v1/releases/{id}/artifacts")
 async def list_artifacts(
     id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_ORG_PROJECTS)),
-    _ = Depends(require_release_access()),
-    service: IArtifactService = Depends(get_artifact_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_ORG_PROJECTS))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IArtifactService, Depends(get_artifact_service)],
 ):
     """Lista todos los artefactos asociados a una release específica por su ID.
 
@@ -295,9 +295,9 @@ async def list_artifacts(
 async def add_artifact(
     id: UUID,
     payload: ArtifactCreateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
-    _ = Depends(require_release_access()),
-    service: IArtifactService = Depends(get_artifact_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.UPDATE_OWN_RELEASES))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IArtifactService, Depends(get_artifact_service)],
 ):
     """Agrega un nuevo artefacto a una release específica por su ID.
 
@@ -337,9 +337,9 @@ async def add_artifact(
 async def remove_artifact(
     id: UUID,
     artifact_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
-    _ = Depends(require_release_access()),
-    service: IArtifactService = Depends(get_artifact_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.UPDATE_OWN_RELEASES))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IArtifactService, Depends(get_artifact_service)],
 ):
     """Elimina un artefacto específico de una release por sus IDs.
 
@@ -370,9 +370,9 @@ async def remove_artifact(
 @router.post("/api/v1/releases/{id}/verify", status_code=status.HTTP_202_ACCEPTED)
 async def verify_release(
     id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.EXECUTE_VERIFICATION)),
-    _ = Depends(require_release_access()),
-    service: IVerificationService = Depends(get_verification_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.EXECUTE_VERIFICATION))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IVerificationService, Depends(get_verification_service)],
 ):
     """ Lanza la verificación asíncrona.
 
@@ -405,9 +405,9 @@ async def verify_release(
 @router.get("/api/v1/releases/{id}/results")
 async def get_results(
     id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_OWN_HISTORY)),
-    _ = Depends(require_release_access()),
-    service: IVerificationService = Depends(get_verification_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_OWN_HISTORY))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IVerificationService, Depends(get_verification_service)],
 ):
     """Obtiene el historial paginado de verificaciones de esta release.
 
@@ -435,9 +435,9 @@ async def get_results(
 async def get_result_detail(
     id: UUID,
     rid: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_OWN_HISTORY)),
-    _ = Depends(require_release_access()),
-    service: IVerificationService = Depends(get_verification_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_OWN_HISTORY))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IVerificationService, Depends(get_verification_service)],
 ):
     """Obtiene el informe detallado de una verificación individual.
 
@@ -466,9 +466,9 @@ async def get_result_detail(
 async def get_verification_detail(
     id: UUID,
     verification_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_OWN_HISTORY)),
-    _ = Depends(require_release_access()),
-    service: IVerificationService = Depends(get_verification_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_OWN_HISTORY))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IVerificationService, Depends(get_verification_service)],
 ):
     """Obtiene el informe detallado de una verificación individual.
 
@@ -498,10 +498,10 @@ async def export_verification_result_pdf(
     id: UUID,
     rid: UUID,
     format: Literal["pdf"] = Query(default="pdf", description="Formato de exportación"),
-    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_OWN_HISTORY)),
-    _ = Depends(require_release_access()),
-    service: IVerificationService = Depends(get_verification_service),
-    export_service: IExportService = Depends(get_export_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_OWN_HISTORY))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IVerificationService, Depends(get_verification_service)],
+    export_service: Annotated[IExportService, Depends(get_export_service)],
 ):
     """Exporta el resultado de una verificación a formato PDF.
 
@@ -538,9 +538,9 @@ async def export_verification_result_pdf(
 async def export_project_results_csv(
     project_id: UUID,
     format: Literal["csv"] = Query(default="csv", description="Formato de exportación"),
-    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_ORG_PROJECTS)),
-    service: IVerificationService = Depends(get_verification_service),
-    export_service: IExportService = Depends(get_export_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_ORG_PROJECTS))],
+    service: Annotated[IVerificationService, Depends(get_verification_service)],
+    export_service: Annotated[IExportService, Depends(get_export_service)],
 ):
     """Exporta el historial de verificaciones de un proyecto a formato CSV.
 
@@ -577,9 +577,9 @@ class ImportArtifactsRequest(BaseModel):
 async def import_artifacts(
     id: UUID,
     payload: ImportArtifactsRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
-    _ = Depends(require_release_access()),
-    service: IArtifactService = Depends(get_artifact_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.UPDATE_OWN_RELEASES))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IArtifactService, Depends(get_artifact_service)],
 ):
     """Importa múltiples artefactos a una release desde un fichero CSV.
 

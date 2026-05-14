@@ -300,9 +300,9 @@ async def update_connector(
 async def delete_connector(
     org_id: UUID,
     connector_id: UUID,
-    current_user: Annotated[CurrentUser, Depends(require_org_access())] = Depends(require_org_access()),
-    _ = Depends(require_connector_access()),
-    service: Annotated[IConnectorService, Depends(get_connector_service)] = Depends(get_connector_service),
+    current_user: Annotated[CurrentUser, Depends(require_org_access())],
+    _: Annotated[None, Depends(require_connector_access())],
+    service: Annotated[IConnectorService, Depends(get_connector_service)],
 ):
     """Endpoint para eliminar un conector existente.
 
@@ -333,8 +333,8 @@ async def test_connector(
     org_id: UUID,
     connector_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_org_access())],
+    _: Annotated[None, Depends(require_connector_access())],
     service: Annotated[IConnectorService, Depends(get_connector_service)],
-    _ = Depends(require_connector_access()),
 ):
     """Endpoint para probar la conexión de un conector existente.
 
