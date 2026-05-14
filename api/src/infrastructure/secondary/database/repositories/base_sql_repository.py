@@ -1,10 +1,7 @@
 from contextlib import asynccontextmanager
-from typing import Any, Generic, List, Optional, TypeVar
+from typing import Any, List, Optional
 import uuid
 from sqlalchemy.future import select
-
-T = TypeVar("T")
-M = TypeVar("M")
 
 from infrastructure.secondary.database.get_async_session import get_async_session
 
@@ -18,7 +15,7 @@ async def _session_scope():
         await session.close()
 
 
-class BaseSqlRepository(Generic[T, M]):
+class BaseSqlRepository[T, M]:
     model_class: type[M]
     entity_class: type[T]
 

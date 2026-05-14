@@ -10,13 +10,12 @@ class BaseHttpConnector(ABC):
     CONNECTOR_TYPE: str = ""
     CONNECTOR_IMPLEMENTATION: str = ""
     TIMEOUT: float = 30.0
+    CONTENT_TYPE: str = "application/json"
 
-    @property
-    def connector_type(self) -> str:
+    def get_connector_type(self) -> str:
         return self.CONNECTOR_TYPE
 
-    @property
-    def connector_implementation(self) -> str:
+    def get_connector_implementation(self) -> str:
         return self.CONNECTOR_IMPLEMENTATION
 
     def get_metadata(self) -> Dict[str, Any]:
@@ -111,7 +110,7 @@ class BaseHttpConnector(ABC):
 class BearerAuthMixin:
     def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
         return {
-            "Accept": "application/json",
+            "Accept": BaseHttpConnector.CONTENT_TYPE,
             "Authorization": f"Bearer {config.get('token')}",
         }
 
@@ -119,7 +118,7 @@ class BearerAuthMixin:
 class AtlassianAuthMixin:
     def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
         return {
-            "Accept": "application/json",
+            "Accept": BaseHttpConnector.CONTENT_TYPE,
             "email": config.get("email", "") or "",
             "api_token": config.get("api_token", "") or "",
         }
@@ -128,6 +127,6 @@ class AtlassianAuthMixin:
 class ApiKeyAuthMixin:
     def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
         return {
-            "Accept": "application/json",
+            "Accept": BaseHttpConnector.CONTENT_TYPE,
             "Authorization": f"Bearer {config.get('token')}",
         }
