@@ -97,7 +97,7 @@ class SqlTemplateRepository(ITemplateRepository):
             model.profile_id = template.profile_id  # pyright: ignore[reportAttributeAccessIssue]
             model.project_name_template = template.project_name_template  # pyright: ignore[reportAttributeAccessIssue]
             model.is_archived = template.is_archived  # pyright: ignore[reportAttributeAccessIssue]
-            model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
+            model.updated_at = datetime.now(datetime.timezone.utc)
 
             await session.commit()
             await session.refresh(model)

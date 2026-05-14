@@ -105,7 +105,7 @@ class SqlConnectorRepository(IConnectorRepository):
             connector_model.name = connector.name  # pyright: ignore[reportAttributeAccessIssue]
             connector_model.encrypted_credentials = connector.encrypted_credentials  # pyright: ignore[reportAttributeAccessIssue]
             connector_model.status = connector.status.value  # pyright: ignore[reportAttributeAccessIssue]
-            connector_model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.updated_at = datetime.now(datetime.timezone.utc)
             connector_model.last_tested_at = connector.last_tested_at  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()

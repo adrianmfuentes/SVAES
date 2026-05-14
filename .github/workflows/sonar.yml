@@ -23,7 +23,7 @@ jobs:
         run: "pip install --only-binary :all: --require-hashes -r .github/requirements/uv.txt"
 
       # - name: Run tests with coverage
-      #   run: uv run --frozen --no-build --project apps/api --extra dev pytest --cov=apps/api/src --cov-report=xml 
+      #   run: uv run --frozen --no-build --project api --extra dev pytest --cov=api/src --cov-report=xml 
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@59db25f34e16620e48ab4bb9e4a5dce155cb5432 # v8.0.0

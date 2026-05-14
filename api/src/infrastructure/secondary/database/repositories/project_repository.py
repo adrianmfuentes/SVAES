@@ -121,7 +121,7 @@ class SqlProjectRepository(IProjectRepository):
             setattr(project_model, "organization_id", project.organization_id)
             setattr(project_model, "profile_id", project.profile_id)
             setattr(project_model, "is_archived", project.is_archived)
-            setattr(project_model, "updated_at", datetime.utcnow())
+            setattr(project_model, "updated_at", datetime.now(datetime.timezone.utc))
 
             await session.commit()
             await session.refresh(project_model)

@@ -88,7 +88,7 @@ class SqlCustomRoleRepository(ICustomRoleRepository):
             model.name = role.name  # pyright: ignore[reportAttributeAccessIssue]
             model.permissions = [p.value for p in role.permissions]  # pyright: ignore[reportAttributeAccessIssue]
             model.is_active = role.is_active  # pyright: ignore[reportAttributeAccessIssue]
-            model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
+            model.updated_at = datetime.now(datetime.timezone.utc)
 
             await session.commit()
             await session.refresh(model)

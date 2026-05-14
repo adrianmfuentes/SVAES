@@ -123,7 +123,7 @@ class SqlProfileRepository(IProfileRepository):
             profile_model.name = profile.name  # pyright: ignore[reportAttributeAccessIssue]
             profile_model.description = profile.description  # pyright: ignore[reportAttributeAccessIssue]
             profile_model.is_default = profile.is_default  # pyright: ignore[reportAttributeAccessIssue]
-            profile_model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
+            profile_model.updated_at = datetime.now(datetime.timezone.utc)
 
             await session.commit()
             await session.refresh(profile_model)

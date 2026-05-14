@@ -123,7 +123,7 @@ class SqlUserRepository(IUserRepository):
             user_model.is_active = user.is_active  # pyright: ignore[reportAttributeAccessIssue]
             user_model.failed_login_attempts = user.failed_login_attempts  # pyright: ignore[reportAttributeAccessIssue]
             user_model.locked_until = user.locked_until  # pyright: ignore[reportAttributeAccessIssue]
-            user_model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.updated_at = datetime.now(datetime.timezone.utc)
 
             await session.commit()
             await session.refresh(user_model)

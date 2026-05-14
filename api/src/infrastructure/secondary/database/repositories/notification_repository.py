@@ -105,7 +105,7 @@ class SqlNotificationRepository(INotificationRepository):
             model.channel_type = channel.channel_type  # pyright: ignore[reportAttributeAccessIssue]
             model.enabled = channel.enabled  # pyright: ignore[reportAttributeAccessIssue]
             model.config_data = channel.config_data  # pyright: ignore[reportAttributeAccessIssue]
-            model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
+            model.updated_at = datetime.now(datetime.timezone.utc)
 
             await session.commit()
             await session.refresh(model)
@@ -209,7 +209,7 @@ class SqlNotificationRepository(INotificationRepository):
 
             if existing:
                 existing.enabled = subscription.enabled  # pyright: ignore[reportAttributeAccessIssue]
-                existing.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
+                existing.updated_at = datetime.now(datetime.timezone.utc)
                 await session.commit()
                 await session.refresh(existing)
                 row = existing
