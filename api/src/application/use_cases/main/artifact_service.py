@@ -7,6 +7,9 @@ from domain.entities.artifact import Artifact
 from domain.enums import ArtifactType
 from domain.exceptions import ValidationError
 
+
+_RELEASE_NOT_FOUND = "Release no encontrada"
+
 """
 Este módulo define el servicio de artefactos, que es responsable de gestionar los artefactos dentro del sistema. Incluye la lógica de negocio para 
 listar artefactos, agregar nuevos artefactos, y eliminar artefactos.
@@ -24,7 +27,7 @@ class ArtifactService(IArtifactService):
     async def list_artifacts(self, release_id: UUID) -> List[Artifact]:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
-            raise ValidationError("Release no encontrada")
+            raise ValidationError(_RELEASE_NOT_FOUND)
         return await self._artifact_repo.find_by_release(release_id)
 
 
@@ -38,7 +41,7 @@ class ArtifactService(IArtifactService):
     ) -> Artifact:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
-            raise ValidationError("Release no encontrada")
+            raise ValidationError(_RELEASE_NOT_FOUND)
 
         artifact = Artifact(
             release_id=release_id,
@@ -53,7 +56,7 @@ class ArtifactService(IArtifactService):
     async def remove_artifact(self, release_id: UUID, artifact_id: UUID) -> None:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
-            raise ValidationError("Release no encontrada")
+            raise ValidationError(_RELEASE_NOT_FOUND)
 
         artifact = await self._artifact_repo.find_by_id(artifact_id)
         if not artifact:

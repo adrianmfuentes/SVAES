@@ -169,7 +169,6 @@ organization_id: UUID (FK → organization.id)
 name: str
 description: str = ""
 is_default: bool = False
-rules: list[VerificationRule] = field(default_factory=list)
 created_at: datetime
 updated_at: datetime
 ```
@@ -286,7 +285,6 @@ VIEW_ORG_PROJECTS = "VIEW_ORG_PROJECTS"
 CREATE_PROJECT = "CREATE_PROJECT"
 UPDATE_PROJECT = "UPDATE_PROJECT"
 ARCHIVE_PROJECT = "ARCHIVE_PROJECT"  # permiso para archivar proyectos
-DELETE_PROJECT = "DELETE_PROJECT"
 MANAGE_CONNECTORS = "MANAGE_CONNECTORS"
 MANAGE_PROFILES = "MANAGE_PROFILES"
 MANAGE_RULES = "MANAGE_RULES"
@@ -464,9 +462,10 @@ REVOKED = "REVOKED"
 | name | VARCHAR(100) | NOT NULL |
 | description | VARCHAR(500) | NULLABLE |
 | is_default | BOOLEAN | NOT NULL, default=False |
-| rules | JSON | NULLABLE, default=list |
 | created_at | TIMESTAMP | NOT NULL |
 | updated_at | TIMESTAMP | NOT NULL |
+
+**Nota:** Las reglas de verificación se relacionan con el perfil mediante la tabla `verification_rule` (relación 1:N), siguiendo el diseño relacional del TFG. No se almacenan como columna JSON en `verification_profile`.
 
 ### Tabla: verification_rule
 | Column | Type | Constraints |
@@ -475,7 +474,7 @@ REVOKED = "REVOKED"
 | profile_id | UUID | FK → verification_profile.id, NOT NULL |
 | rule_template | VARCHAR(100) | NOT NULL |
 | severity | VARCHAR(20) | NOT NULL, default=HIGH |
-| params | JSON | NULLABLE, default=dict |
+| params | JSONB | NULLABLE, default=dict |
 | connector_instance_id | UUID | FK → connector_instance.id, NULLABLE |
 | display_order | INTEGER | NOT NULL, default=0 |
 | is_active | BOOLEAN | NOT NULL, default=True |
@@ -488,10 +487,12 @@ REVOKED = "REVOKED"
 | release_id | UUID | FK → release.id, NOT NULL |
 | verdict | VARCHAR(30) | NOT NULL, default=INVALID |
 | duration_ms | INTEGER | NOT NULL, default=0 |
-| summary | JSON | NULLABLE, default=dict |
-| rule_results | JSON | NULLABLE, default=list |
-| profile_snapshot | JSON | NULLABLE, default=dict |
+| summary | JSONB | NULLABLE, default=dict |
+| rule_results | JSONB | NULLABLE, default=list |
+| profile_snapshot | JSONB | NULLABLE, default=dict |
 | executed_at | TIMESTAMP | NOT NULL |
+
+**Nota:** Se utiliza el tipo `JSONB` nativo de PostgreSQL en lugar de `JSON` para permitir índices GIN y búsquedas eficientes sobre contenido dinámico, en línea con la decisión arquitectónica del TFG.
 
 ### Tabla: artifact
 | Column | Type | Constraints |
@@ -502,7 +503,7 @@ REVOKED = "REVOKED"
 | connector_implementation | VARCHAR(50) | NOT NULL |
 | artifact_type | VARCHAR(20) | NOT NULL, default=TAREA |
 | external_ref | VARCHAR(500) | NOT NULL |
-| metadata | JSON | NULLABLE, default=dict |
+| metadata | JSONB | NULLABLE, default=dict |
 | created_at | TIMESTAMP | NOT NULL |
 
 ### Tabla: api_key
@@ -636,7 +637,7 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
                            ↓                ↓
                      NO_VALIDA       CON_ADVERTENCIAS
                            ↓                ↓
-                          ARCHIVADA ←←←←←←←←←←←←
+                          ARCHIVADA ←←←←←←←←←←←←←←←
 ```
 
 ---
@@ -880,8 +881,10 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 |------|-------------|
 | U1 (Invitado) | VIEW_DASHBOARD, VIEW_OWN_PROJECTS |
 | U2 (Estándar) | U1 + CREATE_RELEASE, UPDATE_OWN_RELEASES, ARCHIVE_RELEASE, EXECUTE_VERIFICATION, VIEW_OWN_HISTORY, MANAGE_OWN_API_KEYS |
-| U4 (Gerente de Org) | U2 + VIEW_ORG_PROJECTS, CREATE_PROJECT, UPDATE_PROJECT, ARCHIVE_PROJECT, DELETE_PROJECT, MANAGE_CONNECTORS, MANAGE_PROFILES, MANAGE_RULES, VIEW_ORG_DASHBOARD, INVITE_USERS, MANAGE_ROLES |
+| U4 (Gerente de Org) | U2 + VIEW_ORG_PROJECTS, CREATE_PROJECT, UPDATE_PROJECT, ARCHIVE_PROJECT, MANAGE_CONNECTORS, MANAGE_PROFILES, MANAGE_RULES, VIEW_ORG_DASHBOARD, INVITE_USERS, MANAGE_ROLES |
 | U3 (Admin Global) | Todos los permisos |
+
+**Nota:** El permiso `DELETE_PROJECT` ha sido eliminado de todos los roles. El SRS (requisito GR7.2) y las notas de implementación especifican que no se permite el borrado físico de proyectos, únicamente el archivado lógico mediante `ARCHIVE_PROJECT`.
 
 **Funciones de Verificación de Dependencias:**
 - `require_role(min_role)` - Valida jerarquía de roles
@@ -984,7 +987,7 @@ Referrer-Policy: strict-origin-when-cross-origin
 | Endpoints | 65+ |
 | Entidades de Dominio | 13 (+ 1 tabla intermedia) |
 | Enums | 14 |
-| Tablas de BD | 11 (10 oficiales + user_membership) |
+| Tablas de BD | 12 (11 oficiales + user_membership) |
 | Conectores implementados | 20 |
 | Tipos de eventos de audit | 25 |
 

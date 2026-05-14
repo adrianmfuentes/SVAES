@@ -1,3 +1,4 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from application.ports.input.i_rules_service import IRulesService
@@ -15,8 +16,8 @@ class RulesReloadResponse(BaseModel):
 
 @router.post("/api/v1/admin/rules/reload", response_model=RulesReloadResponse)
 async def reload_custom_rules(
-    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
-    service: IRulesService = Depends(get_rules_service),
+    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3))],
+    service: Annotated[IRulesService, Depends(get_rules_service)],
 ):
     """Recarga en caliente las reglas personalizadas (solo U3).
 

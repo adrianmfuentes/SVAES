@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Annotated, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -27,8 +27,8 @@ class CustomRoleUpdateRequest(BaseModel):
 @router.get("/api/v1/organizations/{org_id}/roles")
 async def list_custom_roles(
     org_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_ROLES)),
-    service: ICustomRoleService = Depends(get_custom_role_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
+    service: Annotated[ICustomRoleService, Depends(get_custom_role_service)],
 ):
     """Lista los roles personalizados de una organización.
 
@@ -61,8 +61,8 @@ async def list_custom_roles(
 async def create_custom_role(
     org_id: UUID,
     payload: CustomRoleCreateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_ROLES)),
-    service: ICustomRoleService = Depends(get_custom_role_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
+    service: Annotated[ICustomRoleService, Depends(get_custom_role_service)],
 ):
     """Crea un rol personalizado dentro de una organización.
 
@@ -104,9 +104,9 @@ async def create_custom_role(
 async def update_custom_role(
     role_id: UUID,
     payload: CustomRoleUpdateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_ROLES)),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
     _ = Depends(require_custom_role_access()),
-    service: ICustomRoleService = Depends(get_custom_role_service),
+    service: Annotated[ICustomRoleService, Depends(get_custom_role_service)],
 ):
     """Actualiza un rol personalizado existente.
 
@@ -148,9 +148,9 @@ async def update_custom_role(
 @router.delete("/api/v1/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_custom_role(
     role_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_ROLES)),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
     _ = Depends(require_custom_role_access()),
-    service: ICustomRoleService = Depends(get_custom_role_service),
+    service: Annotated[ICustomRoleService, Depends(get_custom_role_service)],
 ):
     """Elimina un rol personalizado.
 

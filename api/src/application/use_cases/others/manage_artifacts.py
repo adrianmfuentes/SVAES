@@ -6,6 +6,9 @@ from application.ports.output.i_artifact_repository import IArtifactRepository
 from application.ports.output.i_release_repository import IReleaseRepository
 from domain.exceptions import ValidationError
 
+
+_RELEASE_NOT_FOUND = "Release no encontrada"
+
 """
 Este módulo define el caso de uso para gestionar artefactos, que incluye la adición, listado y eliminación de artefactos asociados a una release.
 La adición de un artefacto requiere el ID de la release, el ID de la instancia del conector, el tipo de artefacto, una referencia externa y opcionalmente
@@ -31,7 +34,7 @@ class ManageArtifactsUseCase:
     ) -> Artifact:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
-            raise ValidationError("Release no encontrada")
+            raise ValidationError(_RELEASE_NOT_FOUND)
 
         artifact = Artifact(
             release_id=release_id,
@@ -45,13 +48,13 @@ class ManageArtifactsUseCase:
     async def list_artifacts(self, release_id: UUID) -> List[Artifact]:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
-            raise ValidationError("Release no encontrada")
+            raise ValidationError(_RELEASE_NOT_FOUND)
         return await self._artifact_repo.find_by_release(release_id)
 
     async def remove_artifact(self, release_id: UUID, artifact_id: UUID) -> None:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
-            raise ValidationError("Release no encontrada")
+            raise ValidationError(_RELEASE_NOT_FOUND)
 
         artifact = await self._artifact_repo.find_by_id(artifact_id)
         if not artifact:

@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Optional
+from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.output.i_api_key_repository import IAPIKeyRepository
@@ -33,8 +33,8 @@ class APIKeyResponse(BaseModel):
 async def create_api_key(
     user_id: UUID,
     payload: CreateAPIKeyRequest,
-    current_user: CurrentUser = Depends(get_current_user),
-    api_key_repo: IAPIKeyRepository = Depends(get_api_key_repository),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    api_key_repo: Annotated[IAPIKeyRepository, Depends(get_api_key_repository)],
 ):
     if current_user.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No puedes crear API keys para otros usuarios")
@@ -56,8 +56,8 @@ async def create_api_key(
 @router.get("/api/v1/users/{user_id}/api-keys")
 async def list_api_keys(
     user_id: UUID,
-    current_user: CurrentUser = Depends(get_current_user),
-    api_key_repo: IAPIKeyRepository = Depends(get_api_key_repository),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    api_key_repo: Annotated[IAPIKeyRepository, Depends(get_api_key_repository)],
 ):
     if current_user.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No puedes ver las API keys de otros usuarios")
@@ -73,8 +73,8 @@ async def list_api_keys(
 async def revoke_api_key(
     user_id: UUID,
     key_id: UUID,
-    current_user: CurrentUser = Depends(get_current_user),
-    api_key_repo: IAPIKeyRepository = Depends(get_api_key_repository),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    api_key_repo: Annotated[IAPIKeyRepository, Depends(get_api_key_repository)],
 ):
     if current_user.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No puedes revocar API keys de otros usuarios")

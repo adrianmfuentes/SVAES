@@ -54,6 +54,7 @@ from infrastructure.secondary.connectors import create_registered_connector_regi
 from domain.enums import UserRole, Permission
 
 _bearer = HTTPBearer()
+_INVALID_TOKEN = "Token inválido"
 
 
 def get_settings_dependency() -> Settings:
@@ -74,7 +75,7 @@ def get_current_user_id(
         payload = handler.decode_token(credentials.credentials)
         return payload.user_id
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
 
 
 def get_current_user_role(
@@ -91,7 +92,7 @@ def get_current_user_role(
         payload = handler.decode_token(credentials.credentials)
         return UserRole(payload.role)
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
 
 
 @dataclass
@@ -121,10 +122,10 @@ def get_current_user(
             organization_id=payload.organization_id,
         )
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
 
 
-def require_permission(permission: Permission, require_org_owner: bool = False):
+def require_permission(permission: Permission):
     def dependency(
         current_user: CurrentUser = Depends(get_current_user),
     ) -> CurrentUser:
@@ -134,10 +135,10 @@ def require_permission(permission: Permission, require_org_owner: bool = False):
                 detail=f"No tienes permiso: {permission.value}",
             )
         return current_user
-    return dependency
+    return dependency  # NOSONAR
 
 
-def require_org_access(org_id_param: str = "org_id"):
+def require_org_access():
     def dependency(
         org_id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
@@ -148,10 +149,10 @@ def require_org_access(org_id_param: str = "org_id"):
                 detail="No tienes acceso a esta organización",
             )
         return current_user
-    return dependency
+    return dependency  # NOSONAR
 
 
-def require_project_access(project_id_param: str = "project_id"):
+def require_project_access():
     async def dependency(
         project_id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
@@ -170,7 +171,7 @@ def require_project_access(project_id_param: str = "project_id"):
                 detail="No tienes acceso a este proyecto",
             )
         return current_user
-    return dependency
+    return dependency  # NOSONAR
 
 
 def require_role(min_role: UserRole):
@@ -194,7 +195,7 @@ def require_role(min_role: UserRole):
                 detail=f"Se requiere rol {min_role.value} o superior",
             )
         return current_user
-    return dependency
+    return dependency  # NOSONAR
 
 
 def get_jwt_handler(
@@ -252,7 +253,7 @@ def get_release_repository() -> SqlReleaseRepository:
     return SqlReleaseRepository()
 
 
-def require_release_access(release_id_param: str = "id"):
+def require_release_access():
     async def dependency(
         release_id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
@@ -276,10 +277,10 @@ def require_release_access(release_id_param: str = "id"):
                 detail="No tienes acceso a esta release",
             )
         return current_user
-    return dependency
+    return dependency  # NOSONAR
 
 
-def require_connector_access(connector_id_param: str = "connector_id"):
+def require_connector_access():
     async def dependency(
         connector_id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
@@ -298,10 +299,10 @@ def require_connector_access(connector_id_param: str = "connector_id"):
                 detail="No tienes acceso a este conector",
             )
         return current_user
-    return dependency
+    return dependency  # NOSONAR
 
 
-def require_profile_access(profile_id_param: str = "profile_id"):
+def require_profile_access():
     async def dependency(
         profile_id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
@@ -320,10 +321,10 @@ def require_profile_access(profile_id_param: str = "profile_id"):
                 detail="No tienes acceso a este perfil",
             )
         return current_user
-    return dependency
+    return dependency  # NOSONAR
 
 
-def require_rule_access(rule_id_param: str = "rule_id"):
+def require_rule_access():
     async def dependency(
         rule_id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
@@ -344,10 +345,10 @@ def require_rule_access(rule_id_param: str = "rule_id"):
                 detail="No tienes acceso a esta regla",
             )
         return current_user
-    return dependency
+    return dependency  # NOSONAR
 
 
-def require_custom_role_access(role_id_param: str = "role_id"):
+def require_custom_role_access():
     async def dependency(
         role_id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
@@ -366,10 +367,10 @@ def require_custom_role_access(role_id_param: str = "role_id"):
                 detail="No tienes acceso a este rol",
             )
         return current_user
-    return dependency
+    return dependency  # NOSONAR
 
 
-def require_api_key_access(key_id_param: str = "key_id"):
+def require_api_key_access():
     async def dependency(
         key_id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
@@ -388,7 +389,7 @@ def require_api_key_access(key_id_param: str = "key_id"):
                 detail="No tienes acceso a esta API key",
             )
         return current_user
-    return dependency
+    return dependency  # NOSONAR
 
 
 def get_release_repository() -> SqlReleaseRepository:

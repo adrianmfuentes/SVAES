@@ -12,14 +12,14 @@ app.current_organization_id.
 Usage in application code (set before any query in a transaction):
     SET LOCAL app.current_organization_id = '<uuid>';
 """
-from typing import Sequence, Union
+from typing import Sequence
 
 from alembic import op
 
 revision: str = "a1b2c3d4e5f6"
-down_revision: Union[str, Sequence[str], None] = "2fd6efcfd6c9"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "2fd6efcfd6c9"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 # Tables that carry an organization_id column directly or via FK chain.
 # projects, profiles, and connector_instances have a direct organization_id.

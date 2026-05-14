@@ -32,5 +32,23 @@ class UpdateReleaseUseCase:
         return await self._release_repo.update(release)
 
     def _is_valid_semver(self, version: str) -> bool:
-        semver_pattern = r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
-        return re.match(semver_pattern, version) is not None
+        parts = version.split("-", 1)
+        core = parts[0]
+        pre = parts[1] if len(parts) > 1 else ""
+        if "+" in pre and "-" not in pre.split("+", 1)[0]:
+            pre, build = pre.split("+", 1)
+        elif "+" in core:
+            core, build = core.split("+", 1)
+            pre = ""
+        else:
+            build = ""
+
+        if not re.match(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$", core):
+            return False
+
+        ident = r"[0-9A-Za-z-]+"
+        if pre and not re.match(rf"^{ident}(\.{ident})*$", pre):
+            return False
+        if build and not re.match(rf"^{ident}(\.{ident})*$", build):
+            return False
+        return True

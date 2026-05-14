@@ -164,7 +164,10 @@ class CreateReleaseUseCase(IReleaseService):
 
     ## -- Helpers ---
 
+    _SEMVER = r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)'
+    _PRE_RELEASE = r'(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?'
+    _BUILD = r'(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?'
+    _SEMVER_RE = rf'^{_SEMVER}{_PRE_RELEASE}{_BUILD}$'
+
     def _is_valid_semver(self, version: str) -> bool:
-        # Match con el patrón SemVer: MAJOR.MINOR.PATCH(-PRERELEASE)?(+BUILD)?
-        semver_pattern = r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$'
-        return re.match(semver_pattern, version) is not None
+        return re.match(self._SEMVER_RE, version) is not None

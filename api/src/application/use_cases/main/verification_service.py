@@ -12,6 +12,9 @@ from domain.exceptions import ValidationError
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from core.logger import get_logger
 
+
+_RELEASE_NOT_FOUND = "Release no encontrada"
+
 _log = get_logger(__name__)
 
 
@@ -32,7 +35,7 @@ class VerificationService(IVerificationService):
     async def launch_verification(self, release_id: UUID) -> str:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
-            raise ValidationError("Release no encontrada")
+            raise ValidationError(_RELEASE_NOT_FOUND)
 
         valid_statuses = (
             ReleaseStatus.PENDIENTE,
@@ -96,7 +99,7 @@ class VerificationService(IVerificationService):
     ) -> Optional[VerificationResult]:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
-            raise ValidationError("Release no encontrada")
+            raise ValidationError(_RELEASE_NOT_FOUND)
 
         result = await self._verification_repo.find_by_id(result_id)
         if result and result.release_id != release_id:
@@ -107,7 +110,7 @@ class VerificationService(IVerificationService):
     async def get_verification_history(self, release_id: UUID) -> List[VerificationResult]:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
-            raise ValidationError("Release no encontrada")
+            raise ValidationError(_RELEASE_NOT_FOUND)
         return await self._verification_repo.find_by_release(release_id)
 
 

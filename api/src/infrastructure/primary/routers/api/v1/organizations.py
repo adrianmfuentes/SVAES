@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_organization_service import IOrganizationService
@@ -25,8 +26,8 @@ class ProjectCreateRequest(BaseModel):
 async def list_organizations(
     skip: int = 0,
     limit: int = 100,
-    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
-    service: IOrganizationService = Depends(get_organization_service),
+    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3))],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """ Endpoint para listar las organizaciones. Solo los usuarios con rol ADMIN pueden acceder a esta información.
 
@@ -51,8 +52,8 @@ async def list_organizations(
 @router.post("/api/v1/organizations", status_code=status.HTTP_201_CREATED)
 async def create_organization(
     payload: OrganizationCreateRequest,
-    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
-    service: IOrganizationService = Depends(get_organization_service),
+    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3))],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """ Endpoint para crear una nueva organización. Solo los usuarios con rol ADMIN pueden crear organizaciones.
 
@@ -83,8 +84,8 @@ async def create_organization(
 @router.get("/api/v1/organizations/{org_id}")
 async def get_organization(
     org_id: UUID,
-    current_user: CurrentUser = Depends(get_current_user),
-    service: IOrganizationService = Depends(get_organization_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """ Endpoint para obtener los detalles de una organización.
 
@@ -124,8 +125,8 @@ async def get_organization(
 async def list_accessible_projects(
     skip: int = 0,
     limit: int = 50,
-    current_user: CurrentUser = Depends(get_current_user),
-    service: IOrganizationService = Depends(get_organization_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """Endpoint global para listar proyectos accesibles por el usuario.
 
@@ -153,8 +154,8 @@ async def list_accessible_projects(
 async def create_project(
     org_id: UUID,
     payload: ProjectCreateRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.CREATE_PROJECT)),
-    service: IOrganizationService = Depends(get_organization_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.CREATE_PROJECT))],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """Endpoint para crear un nuevo proyecto dentro de una organización.
 
@@ -196,8 +197,8 @@ class TransferOwnershipRequest(BaseModel):
 async def archive_project(
     org_id: UUID,
     project_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.ARCHIVE_PROJECT)),
-    service: IOrganizationService = Depends(get_organization_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.ARCHIVE_PROJECT))],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """Endpoint para archivar un proyecto.
 
@@ -225,8 +226,8 @@ async def archive_project(
 @router.post("/api/v1/organizations/{org_id}/restore", status_code=status.HTTP_200_OK)
 async def restore_organization(
     org_id: UUID,
-    current_user: CurrentUser = Depends(require_role(UserRole.U3)),
-    service: IOrganizationService = Depends(get_organization_service),
+    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3))],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """Endpoint para restaurar (desarchivar) una organización marcada como inactiva.
 
@@ -256,8 +257,8 @@ async def restore_organization(
 async def transfer_ownership(
     org_id: UUID,
     payload: TransferOwnershipRequest,
-    current_user: CurrentUser = Depends(require_permission(Permission.TRANSFER_OWNERSHIP)),
-    service: IOrganizationService = Depends(get_organization_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.TRANSFER_OWNERSHIP))],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """Endpoint para transferir la propiedad de una organización a otro usuario.
 

@@ -1,3 +1,4 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_auth_service import IAuthService
@@ -21,7 +22,7 @@ class RefreshRequest(BaseModel):
 @router.post("/api/v1/auth/login", dependencies=[Depends(rate_limit_auth())])
 async def login(
     payload: LoginRequest,
-    service: IAuthService = Depends(get_auth_service),
+    service: Annotated[IAuthService, Depends(get_auth_service)],
 ):
     """Endpoint para autenticar a un usuario. Recibe un email y contraseña, y devuelve tokens de acceso y refresco si las credenciales son válidas.
 
@@ -55,7 +56,7 @@ async def login(
 @router.post("/api/v1/auth/refresh", dependencies=[Depends(rate_limit_auth())])
 async def refresh(
     payload: RefreshRequest,
-    service: IAuthService = Depends(get_auth_service),
+    service: Annotated[IAuthService, Depends(get_auth_service)],
 ):
     """Endpoint para refrescar el token de acceso utilizando un refresh token válido.
 

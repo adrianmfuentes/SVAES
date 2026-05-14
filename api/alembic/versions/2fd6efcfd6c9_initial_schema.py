@@ -5,7 +5,7 @@ Revises:
 Create Date: 2026-05-10 11:25:21.682763
 
 """
-from typing import Sequence, Union
+from typing import Sequence
 
 from alembic import op
 import sqlalchemy as sa
@@ -13,9 +13,11 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = '2fd6efcfd6c9'
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
+
+_ORG_FK_TARGET = 'organization.id'
 
 
 def upgrade() -> None:
@@ -53,7 +55,7 @@ def upgrade() -> None:
     sa.Column('status', sa.Enum('ACTIVO', 'INACTIVO', name='connector_status'), nullable=False),
     sa.Column('last_tested_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['organization_id'], ['organization.id'], ),
+    sa.ForeignKeyConstraint(['organization_id'], [_ORG_FK_TARGET], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_connector_org_status', 'connector_instance', ['organization_id', 'status'], unique=False)
@@ -64,7 +66,7 @@ def upgrade() -> None:
     sa.Column('description', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['organization_id'], ['organization.id'], ),
+    sa.ForeignKeyConstraint(['organization_id'], [_ORG_FK_TARGET], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('organization_id', 'name')
     )
@@ -74,7 +76,7 @@ def upgrade() -> None:
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('role', sa.Enum('VIEWER', 'OPERATOR', 'MANAGER', 'ADMIN', name='membership_role'), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['organization_id'], ['organization.id'], ),
+    sa.ForeignKeyConstraint(['organization_id'], [_ORG_FK_TARGET], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('organization_id', 'user_id')
@@ -87,7 +89,7 @@ def upgrade() -> None:
     sa.Column('is_default', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['organization_id'], ['organization.id'], ),
+    sa.ForeignKeyConstraint(['organization_id'], [_ORG_FK_TARGET], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('organization_id', 'name')
     )

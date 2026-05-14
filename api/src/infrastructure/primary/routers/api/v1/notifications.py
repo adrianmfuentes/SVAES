@@ -1,7 +1,7 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional, List
+from typing import Annotated, List, Optional
 from application.ports.input.i_notification_service import INotificationService
 from core.dependencies import get_current_user, CurrentUser, require_permission, require_role
 from domain.enums import UserRole, Permission
@@ -33,8 +33,8 @@ class SubscriptionRequest(BaseModel):
 
 @router.get("/api/v1/notifications/channels")
 async def list_notification_channels(
-    current_user: CurrentUser = Depends(get_current_user),
-    service: INotificationService = Depends(get_notification_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[INotificationService, Depends(get_notification_service)],
 ):
     """Lista los canales de notificación disponibles y su configuración.
 
@@ -56,8 +56,8 @@ async def list_notification_channels(
 @router.post("/api/v1/notifications/channels", status_code=status.HTTP_201_CREATED)
 async def configure_notification_channel(
     payload: NotificationChannelConfig,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
-    service: INotificationService = Depends(get_notification_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES))],
+    service: Annotated[INotificationService, Depends(get_notification_service)],
 ):
     """Configura un nuevo canal de notificación para la organización.
 
@@ -89,8 +89,8 @@ async def configure_notification_channel(
 async def update_notification_channel(
     channel_id: UUID,
     payload: NotificationChannelConfig,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
-    service: INotificationService = Depends(get_notification_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES))],
+    service: Annotated[INotificationService, Depends(get_notification_service)],
 ):
     """Actualiza la configuración de un canal de notificación.
 
@@ -121,8 +121,8 @@ async def update_notification_channel(
 @router.delete("/api/v1/notifications/channels/{channel_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_notification_channel(
     channel_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_PROFILES)),
-    service: INotificationService = Depends(get_notification_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES))],
+    service: Annotated[INotificationService, Depends(get_notification_service)],
 ):
     """Elimina un canal de notificación.
 
@@ -146,8 +146,8 @@ async def delete_notification_channel(
 
 @router.get("/api/v1/notifications/preferences")
 async def get_notification_preferences(
-    current_user: CurrentUser = Depends(get_current_user),
-    service: INotificationService = Depends(get_notification_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[INotificationService, Depends(get_notification_service)],
 ):
     """Obtiene las preferencias de notificación del usuario actual.
 
@@ -169,8 +169,8 @@ async def get_notification_preferences(
 @router.patch("/api/v1/notifications/preferences")
 async def update_notification_preferences(
     payload: UserNotificationPreferences,
-    current_user: CurrentUser = Depends(get_current_user),
-    service: INotificationService = Depends(get_notification_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[INotificationService, Depends(get_notification_service)],
 ):
     """Actualiza las preferencias de notificación del usuario actual.
 
@@ -199,8 +199,8 @@ async def update_notification_preferences(
 @router.post("/api/v1/notifications/subscriptions", status_code=status.HTTP_201_CREATED)
 async def subscribe_to_event(
     payload: SubscriptionRequest,
-    current_user: CurrentUser = Depends(get_current_user),
-    service: INotificationService = Depends(get_notification_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[INotificationService, Depends(get_notification_service)],
 ):
     """Suscribe al usuario a un tipo de evento de notificación.
 
@@ -229,8 +229,8 @@ async def subscribe_to_event(
 @router.delete("/api/v1/notifications/subscriptions/{event_type}", status_code=status.HTTP_204_NO_CONTENT)
 async def unsubscribe_from_event(
     event_type: str,
-    current_user: CurrentUser = Depends(get_current_user),
-    service: INotificationService = Depends(get_notification_service),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[INotificationService, Depends(get_notification_service)],
 ):
     """Cancela la suscripción del usuario a un tipo de evento.
 

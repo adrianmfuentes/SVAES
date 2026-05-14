@@ -1,10 +1,13 @@
+from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from application.ports.output.i_release_repository import IReleaseRepository
 from application.use_cases.others.get_dashboard_metrics import GetDashboardMetricsUseCase
-from core.dependencies import get_current_user, CurrentUser, get_release_repository, get_verification_result_repository, require_org_access
+from core.dependencies import get_current_user, CurrentUser, get_release_repository, get_verification_result_repository
+
+from domain.enums import UserRole
 
 router = APIRouter(tags=["Dashboard"])
 
@@ -20,10 +23,10 @@ class DashboardMetricsResponse(BaseModel):
 
 @router.get("/api/v1/dashboard/metrics")
 async def get_dashboard_metrics(
-    org_id: UUID = Query(default=None, description="Filter by organization ID"),
-    current_user: CurrentUser = Depends(get_current_user),
-    release_repo: IReleaseRepository = Depends(get_release_repository),
-    verification_repo: IVerificationResultRepository = Depends(get_verification_result_repository),
+    org_id: Annotated[UUID | None, Query(default=None, description="Filter by organization ID")],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    release_repo: Annotated[IReleaseRepository, Depends(get_release_repository)],
+    verification_repo: Annotated[IVerificationResultRepository, Depends(get_verification_result_repository)],
 ):
     """Endpoint para obtener métricas del dashboard.
 
@@ -43,7 +46,11 @@ async def get_dashboard_metrics(
     """
     try:
         if org_id:
-            await require_org_access(org_id)(current_user)
+            if current_user.organization_id != org_id and current_user.role != UserRole.U3:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a esta organización",
+                )
             target_org_id = org_id
         else:
             target_org_id = current_user.organization_id if current_user.organization_id else None
