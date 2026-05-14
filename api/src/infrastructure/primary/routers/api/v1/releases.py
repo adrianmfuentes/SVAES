@@ -2,7 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from fastapi.responses import FileResponse
-from typing import Annotated, Literal
+from typing import Annotated, Literal, List
 from starlette.responses import Response
 
 from application.ports.input.i_release_service import IReleaseService
@@ -497,11 +497,11 @@ async def get_verification_detail(
 async def export_verification_result_pdf(
     id: UUID,
     rid: UUID,
-    format: Annotated[Literal["pdf"], Query(default="pdf", description="Formato de exportación")],
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_OWN_HISTORY))],
     _: Annotated[None, Depends(require_release_access())],
     service: Annotated[IVerificationService, Depends(get_verification_service)],
     export_service: Annotated[IExportService, Depends(get_export_service)],
+    format: Annotated[Literal["pdf"], Query(description="Formato de exportación")] = "pdf",
 ):
     """Exporta el resultado de una verificación a formato PDF.
 
@@ -537,10 +537,10 @@ async def export_verification_result_pdf(
 @router.get("/api/v1/projects/{project_id}/results/export", status_code=status.HTTP_200_OK)
 async def export_project_results_csv(
     project_id: UUID,
-    format: Annotated[Literal["csv"], Query(default="csv", description="Formato de exportación")],
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_ORG_PROJECTS))],
     service: Annotated[IVerificationService, Depends(get_verification_service)],
     export_service: Annotated[IExportService, Depends(get_export_service)],
+    format: Annotated[Literal["csv"], Query(description="Formato de exportación")] = "csv",
 ):
     """Exporta el historial de verificaciones de un proyecto a formato CSV.
 

@@ -23,11 +23,15 @@ def upgrade() -> None:
     op.add_column('organization', sa.Column('owner_id', sa.UUID(), nullable=True))
     op.create_foreign_key('fk_org_owner', 'organization', 'user', ['owner_id'], ['id'])
     op.alter_column('user', 'password_hash', new_column_name='hashed_password')
-    op.alter_column('verification_rule', 'severity',
-        existing_type=sa.Enum('OBLIGATORIA', 'RECOMENDADA', 'INFORMATIVA', name='severity_type'),
-        type_=sa.Enum('INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL', name='severity_type'),
-        postgresql_using='severity::text'
-    )
+    op.execute("CREATE TYPE severity_type AS ENUM ('INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL')")
+    op.add_column('verification_rule', sa.Column('_severity_old', sa.Enum('OBLIGATORIA', 'RECOMENDADA', 'INFORMATIVA', name='severity_type'), nullable=True))
+    op.execute("UPDATE verification_rule SET _severity_old = severity WHERE severity IS NOT NULL")
+    op.alter_column('verification_rule', 'severity', new_column_name='_severity_tmp')
+    op.add_column('verification_rule', sa.Column('severity', sa.Enum('INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL', name='severity_type_new'), nullable=False, server_default='HIGH'))
+    op.execute("UPDATE verification_rule SET severity = CASE _severity_old::text WHEN 'OBLIGATORIA' THEN 'CRITICAL' WHEN 'RECOMENDADA' THEN 'MEDIUM' WHEN 'INFORMATIVA' THEN 'INFO' ELSE 'HIGH' END")
+    op.drop_column('verification_rule', '_severity_old')
+    op.drop_column('verification_rule', '_severity_tmp')
+    op.execute("DROP TYPE severity_type")
     op.create_table('custom_role',
         sa.Column('id', sa.UUID(), nullable=False),
         sa.Column('organization_id', sa.UUID(), nullable=False),

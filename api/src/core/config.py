@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     # Encryption — None triggers ephemeral key generation (see validator below)
     encryption_key: str | None = None
 
-    # CORS — JSON array in env: '["http://localhost:4200","https://app.example.com"]'
-    allowed_origins: list[str]
+    # CORS — comma-separated list of allowed origins
+    allowed_origins: str
 
     # Environment
     environment: str
@@ -32,14 +32,18 @@ class Settings(BaseSettings):
     # Verification Engine
     engine_url: str = "http://localhost:8080"
 
-    model_config = {"env_file": ".env", "extra": "ignore"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
-    def parse_origins(cls, v: object) -> list[str]:
+    def parse_origins(cls, v: object) -> str:
         if isinstance(v, str):
-            return [o.strip() for o in v.split(",") if o.strip()]
-        return v  # type: ignore[return-value]
+            return v.strip()
+        return str(v)  # type: ignore[return-value]
+
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
 
     @model_validator(mode="after")
     def _ensure_encryption_key(self) -> "Settings":

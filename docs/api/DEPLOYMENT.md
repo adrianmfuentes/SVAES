@@ -52,7 +52,7 @@ ENVIRONMENT=production
 ```yaml
 services:
   api:
-    build: ./apps/api
+    build: ./api
     ports:
       - "8000:8000"
     environment:

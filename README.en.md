@@ -46,8 +46,8 @@ Design and implement an extensible, decoupled system capable of automatically ve
 |-----------|--------|-------------|
 | FastAPI Backend | ✅ Complete | Full REST API with all endpoints |
 | Angular Frontend | ⏳ Pending | Empty SPA, pending implementation |
-| Rust Engine | ⏳ Pending | engine/ directory empty, not implemented |
-| Celery Worker | ⏳ Pending | Uses MockTaskQueue in tests |
+| Rust Engine | ⏳ Pending | stub in engine/, only "Hello World" |
+| Celery Worker | ✅ Implemented | real worker in verification_worker.py |
 | Connectors | ✅ Implemented | 20 connectors in 5 functional categories |
 
 ---
@@ -91,15 +91,15 @@ The system is divided into the following components:
 
 - Frontend (Angular SPA) — ⏳ Pending
 - Backend (FastAPI) — ✅ Complete
-- Verification engine (Rust) — ⏳ Pending
-- Task queue (Celery + Redis) — ⏳ Pending
+- Verification engine (Rust) — ⏳ Pending (stub)
+- Task queue (Celery + Redis) — ✅ Implemented
 - Database (PostgreSQL) — ✅ Operational
 - External connectors — ✅ 20 implementations
 
 ## 5.3 Backend structure
 
 ```
-apps/api/src/
+api/src/
 ├── domain/                    # Entities, enums, exceptions
 │   ├── entities/              # User, Organization, Project, Release, Artifact, ConnectorInstance
 │   └── enums.py                # UserRole, ConnectorType, ConnectorImplementation, etc.
@@ -377,7 +377,7 @@ API: `http://localhost:8000` · Swagger: `http://localhost:8000/docs` · Postgre
 # Only the database
 docker compose up postgres -d
 
-cd apps/api
+cd api
 pip install -e .
 uvicorn src.main:app --reload --port 8000
 ```

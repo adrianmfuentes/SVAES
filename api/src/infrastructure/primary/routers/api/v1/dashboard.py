@@ -21,10 +21,10 @@ class DashboardMetricsResponse(BaseModel):
 
 @router.get("/api/v1/dashboard/metrics")
 async def get_dashboard_metrics(
-    org_id: Annotated[UUID | None, Query(default=None, description="Filter by organization ID")],
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     release_repo: Annotated[IReleaseRepository, Depends(get_release_repository)],
     verification_repo: Annotated[IVerificationResultRepository, Depends(get_verification_result_repository)],
+    org_id: Annotated[UUID | None, Query(description="Filter by organization ID")] = None,
 ):
     """Endpoint para obtener métricas del dashboard.
 

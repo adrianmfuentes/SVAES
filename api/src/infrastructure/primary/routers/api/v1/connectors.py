@@ -1,10 +1,9 @@
 from uuid import UUID
 from typing import Annotated, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_connector_service import IConnectorService
 from core.dependencies import get_connector_service, get_current_user, CurrentUser, require_permission, require_org_access, require_connector_access
-from core.rate_limit import rate_limit_default
 from domain.enums import ConnectorStatus
 from domain.exceptions import EntityNotFoundError, ValidationError, ConnectorConnectionFailedError
 
@@ -328,8 +327,9 @@ async def delete_connector(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.post("/api/v1/organizations/{org_id}/connectors/{connector_id}/test", status_code=status.HTTP_200_OK, dependencies=[Depends(rate_limit_default())])
+@router.post("/api/v1/organizations/{org_id}/connectors/{connector_id}/test", status_code=status.HTTP_200_OK)
 async def test_connector(
+    request: Request,
     org_id: UUID,
     connector_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_org_access())],

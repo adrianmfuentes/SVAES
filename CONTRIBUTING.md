@@ -27,7 +27,7 @@ git clone https://github.com/UO295454/SVAES.git
 cd SVAES
 
 # Install backend dependencies
-cd apps/api
+cd api
 uv sync
 
 # Run tests

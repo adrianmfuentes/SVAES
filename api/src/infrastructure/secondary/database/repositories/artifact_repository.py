@@ -21,7 +21,7 @@ class SqlArtifactRepository(IArtifactRepository):
                 connector_implementation=artifact.connector_implementation,
                 artifact_type=getattr(artifact.artifact_type, 'value', artifact.artifact_type),
                 external_ref=artifact.external_ref,
-                metadata=artifact.metadata,
+                artifact_metadata=artifact.artifact_metadata,
                 created_at=artifact.created_at,
             )
             session.add(artifact_model)
@@ -35,7 +35,7 @@ class SqlArtifactRepository(IArtifactRepository):
                 connector_implementation=cast(str, artifact_model.connector_implementation),
                 artifact_type=cast(str, artifact_model.artifact_type),
                 external_ref=cast(str, artifact_model.external_ref),
-                metadata=cast(dict, artifact_model.metadata) or {},
+                artifact_metadata=cast(dict, artifact_model.artifact_metadata) or {},
                 created_at=cast(datetime, artifact_model.created_at),
             )
         except Exception as e:
@@ -60,7 +60,7 @@ class SqlArtifactRepository(IArtifactRepository):
                 connector_implementation=cast(str, artifact_row.connector_implementation),
                 artifact_type=cast(str, artifact_row.artifact_type),
                 external_ref=cast(str, artifact_row.external_ref),
-                metadata=cast(dict, artifact_row.metadata) or {},
+                artifact_metadata=cast(dict, artifact_row.artifact_metadata) or {},
                 created_at=cast(datetime, artifact_row.created_at),
             )
         except Exception as e:
@@ -89,7 +89,7 @@ class SqlArtifactRepository(IArtifactRepository):
                     connector_implementation=cast(str, row.connector_implementation),
                     artifact_type=cast(str, row.artifact_type),
                     external_ref=cast(str, row.external_ref),
-                    metadata=cast(dict, row.metadata) or {},
+                    artifact_metadata=cast(dict, row.artifact_metadata) or {},
                     created_at=cast(datetime, row.created_at),
                 )
                 for row in artifact_rows

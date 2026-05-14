@@ -12,7 +12,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.src.core.rate_limit import limiter
+from core.rate_limit import limiter
 from infrastructure.primary.routers.api.routers import (
     auth_router,
     organizations_router,
@@ -29,7 +29,7 @@ from infrastructure.primary.routers.api.routers import (
     admin_router,
 )
 from core.config import settings
-from api.src.core.logger import _configure_root_logger, get_logger
+from core.logger import _configure_root_logger, get_logger
 from domain.exceptions import (
     EntityNotFoundError,
     DomainException,
@@ -68,7 +68,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler_wrappe
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
+    allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
@@ -139,19 +139,19 @@ async def log_requests(request: Request, call_next):
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
-app.include_router(auth_router, prefix=API_V1_PREFIX)
-app.include_router(organizations_router, prefix=API_V1_PREFIX)
-app.include_router(releases_router, prefix=API_V1_PREFIX)
-app.include_router(connectors_router, prefix=API_V1_PREFIX)
-app.include_router(profiles_router, prefix=API_V1_PREFIX)
-app.include_router(tasks_router, prefix=API_V1_PREFIX)
-app.include_router(users_router, prefix=API_V1_PREFIX)
-app.include_router(custom_roles_router, prefix=API_V1_PREFIX)
-app.include_router(dashboard_router, prefix=API_V1_PREFIX)
-app.include_router(api_keys_router, prefix=API_V1_PREFIX)
-app.include_router(templates_router, prefix=API_V1_PREFIX)
-app.include_router(notifications_router, prefix=API_V1_PREFIX)
-app.include_router(admin_router, prefix=API_V1_PREFIX)
+app.include_router(auth_router)
+app.include_router(organizations_router)
+app.include_router(releases_router)
+app.include_router(connectors_router)
+app.include_router(profiles_router)
+app.include_router(tasks_router)
+app.include_router(users_router)
+app.include_router(custom_roles_router)
+app.include_router(dashboard_router)
+app.include_router(api_keys_router)
+app.include_router(templates_router)
+app.include_router(notifications_router)
+app.include_router(admin_router)
 
 
 # ---------------------------------------------------------------------------

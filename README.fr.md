@@ -46,8 +46,8 @@ Concevoir et implémenter un système extensible et découplé capable de vérif
 |-----------|------|-------------|
 | Backend FastAPI | ✅ Complet | API REST complète avec tous les endpoints |
 | Frontend Angular | ⏳ En attente | SPA vide, en attente d'implémentation |
-| Moteur Rust | ⏳ En attente | Répertoire engine/ vide, non implémenté |
-| Worker Celery | ⏳ En attente | Utilise MockTaskQueue dans les tests |
+| Moteur Rust | ⏳ En attente | stub dans engine/, seulement "Hello World" |
+| Worker Celery | ✅ Implémenté | worker réel dans verification_worker.py |
 | Connecteurs | ✅ Implémentés | 20 connecteurs en 5 catégories fonctionnelles |
 
 ---
@@ -91,15 +91,15 @@ Le système est divisé en les composants suivants:
 
 - Frontend (Angular SPA) — ⏳ En attente
 - Backend (FastAPI) — ✅ Complet
-- Moteur de vérification (Rust) — ⏳ En attente
-- File de tâches (Celery + Redis) — ⏳ En attente
+- Moteur de vérification (Rust) — ⏳ En attente (stub)
+- File de tâches (Celery + Redis) — ✅ Implémentée
 - Base de données (PostgreSQL) — ✅ Opérationnel
 - Connecteurs externes — ✅ 20 implémentations
 
 ## 5.3 Structure du backend
 
 ```
-apps/api/src/
+api/src/
 ├── domain/                    # Entités, enums, exceptions
 │   ├── entities/              # User, Organization, Project, Release, Artifact, ConnectorInstance
 │   └── enums.py                # UserRole, ConnectorType, ConnectorImplementation, etc.
@@ -377,7 +377,7 @@ API: `http://localhost:8000` · Swagger: `http://localhost:8000/docs` · Postgre
 # Seulement la base de données
 docker compose up postgres -d
 
-cd apps/api
+cd api
 pip install -e .
 uvicorn src.main:app --reload --port 8000
 ```

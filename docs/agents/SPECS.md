@@ -25,7 +25,6 @@ Cualquier fuente de datos puede integrarse implementando el puerto `IConnector`.
 | U2 | Operator | Crea y gestiona releases; lanza verificaciones. |
 | U3 | Manager | Configura conectores, perfiles y plantillas de su organización. |
 | U4 | Admin (org) | Gestiona usuarios y organizaciones propias. |
-| U5 | Admin global | Administración completa de la plataforma. |
 
 Jerarquía de roles: `VIEWER < OPERATOR < MANAGER < ADMIN`.
 

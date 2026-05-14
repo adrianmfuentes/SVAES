@@ -1,3 +1,4 @@
+from infrastructure.secondary.database.models.base import Base
 from infrastructure.secondary.database.models.release_model import ReleaseModel
 from infrastructure.secondary.database.models.project_model import ProjectModel
 from infrastructure.secondary.database.models.user_model import UserModel

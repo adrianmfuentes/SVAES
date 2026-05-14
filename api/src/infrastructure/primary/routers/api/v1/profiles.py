@@ -41,11 +41,11 @@ class RuleUpdateRequest(BaseModel):
 
 @router.get("/api/v1/organizations/{org_id}/profiles")
 async def list_profiles(
+    current_user: Annotated[CurrentUser, Depends(require_org_access())],
+    service: Annotated[IProfileService, Depends(get_profile_service)],
     org_id: UUID,
     skip: int = 0,
     limit: int = 50,
-    current_user: Annotated[CurrentUser, Depends(require_org_access())],
-    service: Annotated[IProfileService, Depends(get_profile_service)],
 ):
     """Endpoint para listar los perfiles de una organización.
 

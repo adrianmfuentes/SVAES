@@ -8,7 +8,7 @@ from alembic import context
 from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-from infrastructure.database.models import Base
+from infrastructure.secondary.database.models import Base
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 config = context.config

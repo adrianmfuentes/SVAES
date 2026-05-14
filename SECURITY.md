@@ -23,7 +23,7 @@ Only the `main` branch receives security updates. Tagged releases are not yet is
 
 The following attack surfaces are relevant to this project:
 
-- **REST API** (`apps/api/`): SQL injection, IDOR, broken authentication, improper RBAC.
+- **REST API** (`api/`): SQL injection, IDOR, broken authentication, improper RBAC.
 - **JWT Authentication**: weak algorithms, missing signature validation, tokens without expiration.
 - **Multi-tenant Isolation**: cross-tenant data access, data leakage between organizations.
 - **Rust Verification Engine**: vulnerabilities in API → Engine communication channel,
@@ -65,7 +65,7 @@ To expedite analysis, include:
 
 | Field | Description |
 |-------|-------------|
-| **Affected component** | `apps/api`, Rust engine, infrastructure, etc. |
+| **Affected component** | `api`, Rust engine, infrastructure, etc. |
 | **Vulnerability type** | OWASP Top 10, CWE, or free-text description |
 | **Estimated severity** | Critical / High / Medium / Low |
 | **Steps to reproduce** | Detailed description or minimal PoC |
@@ -92,11 +92,11 @@ shift during examination periods.
 
 | Mechanism | Status | Location |
 |-----------|--------|----------|
-| JWT Authentication (HS256) | Implemented | `apps/api/src/infrastructure/security/jwt_handler.py` |
-| RBAC on API endpoints | Implemented | `apps/api/src/api/dependencies.py` |
-| Multi-tenant isolation (domain layer) | Implemented | `apps/api/src/domain/` |
-| AES-256-GCM credential encryption | Implemented | `apps/api/src/infrastructure/security/credential_encryptor.py` |
-| Input validation with Pydantic | Implemented | `apps/api/src/api/schemas/` |
+| JWT Authentication (HS256) | Implemented | `api/src/infrastructure/security/jwt_handler.py` |
+| RBAC on API endpoints | Implemented | `api/src/api/dependencies.py` |
+| Multi-tenant isolation (domain layer) | Implemented | `api/src/domain/` |
+| AES-256-GCM credential encryption | Implemented | `api/src/infrastructure/security/credential_encryptor.py` |
+| Input validation with Pydantic | Implemented | `api/src/api/schemas/` |
 | Static analysis (CodeQL) | Active | `.github/workflows/codeql.yml` |
 | Dependency updates (Dependabot) | Active | `.github/dependabot.yml` |
 | Secrets via environment variables | Active | `.env` (not versioned) |

@@ -9,6 +9,17 @@ La función `get_async_session` es un generador que crea una nueva sesión, la c
 """
 
 dotenv.load_dotenv()
+
+possible_env_paths = [
+    ".env",
+    os.path.join(os.path.dirname(__file__), ".env"),
+    os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", ".env"),
+]
+for env_path in possible_env_paths:
+    if os.path.exists(env_path):
+        dotenv.load_dotenv(env_path)
+        break
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL is None:

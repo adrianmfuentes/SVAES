@@ -7,7 +7,7 @@ Frontend application for the **Automatic Software Delivery Verification System (
 ## Project structure
 
 ```
-apps/web/                      # Project root
+web/                            # Project root
 ├── src/
 │   ├── app/
 │   │   ├── core/             # Core modules (singleton services, guards, interceptors)
@@ -47,7 +47,7 @@ apps/web/                      # Project root
 ### Installation
 
 ```bash
-cd apps/web
+cd web
 npm install
 ```
 

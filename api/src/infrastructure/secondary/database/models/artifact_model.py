@@ -2,10 +2,8 @@ from datetime import datetime
 import uuid
 from sqlalchemy import Column, String, DateTime, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import declarative_base
+from infrastructure.secondary.database.models.base import Base
 from domain.enums import ArtifactType
-
-Base = declarative_base()
 
 
 class ArtifactModel(Base):
@@ -16,5 +14,5 @@ class ArtifactModel(Base):
     connector_implementation = Column(String(50), nullable=False)
     artifact_type = Column(String(20), nullable=False, default=ArtifactType.TAREA.value)
     external_ref = Column(String(500), nullable=False)
-    metadata = Column(JSON, nullable=True, default=dict)
+    artifact_metadata = Column(JSON, nullable=True, default=dict)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)

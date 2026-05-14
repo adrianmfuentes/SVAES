@@ -40,7 +40,7 @@ services:
 
   celery_worker:
     build:
-      context: ./apps/api
+      context: ./api
       target: runtime
     command: celery -A src.infrastructure.queue.celery_app worker --loglevel=info --concurrency=2
     networks:

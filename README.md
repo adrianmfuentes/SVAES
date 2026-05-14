@@ -46,8 +46,8 @@ Diseñar e implementar un sistema extensible y desacoplado capaz de verificar au
 |------------|--------|-------------|
 | Backend FastAPI | ✅ Completo | API REST completa con todos los endpoints |
 | Frontend Angular | ⏳ Pendiente | SPA vacía, pendiente de implementación |
-| Motor Rust | ⏳ Pendiente | engine/ vacío, no implementado aún |
-| Worker Celery | ⏳ Pendiente | Usa MockTaskQueue en tests |
+| Motor Rust | ⏳ Pendiente | stub en engine/, solo "Hello World" |
+| Worker Celery | ✅ Implementado | worker real en verification_worker.py |
 | Conectores | ✅ Implementados | 20 conectores en 5 categorías funcionales |
 
 ---
@@ -91,15 +91,15 @@ El sistema se divide en los siguientes componentes:
 
 - Frontend (Angular SPA) — ⏳ Pendiente
 - Backend (FastAPI) — ✅ Completo
-- Motor de verificación (Rust) — ⏳ Pendiente
-- Cola de tareas (Celery + Redis) — ⏳ Pendiente
+- Motor de verificación (Rust) — ⏳ Pendiente (stub)
+- Cola de tareas (Celery + Redis) — ✅ Implementada
 - Base de datos (PostgreSQL) — ✅ Operativo
 - Conectores externos — ✅ 20 implementaciones
 
 ## 5.3 Estructura del backend
 
 ```
-apps/api/src/
+api/src/
 ├── domain/                    # Entidades, enums, excepciones
 │   ├── entities/              # User, Organization, Project, Release, Artifact, ConnectorInstance
 │   └── enums.py               # UserRole, ConnectorType, ConnectorImplementation, etc.
@@ -377,7 +377,7 @@ API: `http://localhost:8000` · Swagger: `http://localhost:8000/docs` · Postgre
 # Solo la base de datos
 docker compose up postgres -d
 
-cd apps/api
+cd api
 pip install -e .
 uvicorn src.main:app --reload --port 8000
 ```
