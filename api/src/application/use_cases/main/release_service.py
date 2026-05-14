@@ -60,7 +60,7 @@ class CreateReleaseUseCase(IReleaseService):
             resource_id=new_release.id,
             details={"name": name, "version": version},
         ))
-        _log.info("Release created: id=%s project=%s name=%s v=%s", new_release.id, project_id, name, version)
+        _log.info("Release created: id=%s project=%s", new_release.id, project_id)
 
         return new_release
            

@@ -57,7 +57,7 @@ class ConnectorService(IConnectorService):
             resource_id=saved.id,
             details={"name": name, "type": connector_type},
         ))
-        _log.info("Connector registered: by=%s org=%s type=%s", requested_by, organization_id, connector_type)
+        _log.info("Connector registered: org=%s type=%s", organization_id, connector_type)
 
         return saved
 
@@ -91,7 +91,7 @@ class ConnectorService(IConnectorService):
             resource_id=connector_id,
             details={"name": connector.name} if name else {},
         ))
-        _log.info("Connector updated: by=%s id=%s org=%s", requested_by, connector_id, connector.organization_id)
+        _log.info("Connector updated: id=%s org=%s", connector_id, connector.organization_id)
 
         return updated
 
@@ -127,7 +127,7 @@ class ConnectorService(IConnectorService):
                 resource_id=connector_id,
                 details={"success": result, "implementation": connector.connector_implementation},
             ))
-            _log.info("Connector tested: by=%s id=%s org=%s result=%s", requested_by, connector_id, connector.organization_id, result)
+            _log.info("Connector tested: id=%s org=%s result=%s", connector_id, connector.organization_id, result)
 
             return result
         except Exception:
@@ -172,7 +172,7 @@ class ConnectorService(IConnectorService):
             resource_id=connector_id,
             details={"name": connector.name},
         ))
-        _log.info("Connector deleted: by=%s id=%s org=%s", requested_by, connector_id, org_id)
+        _log.info("Connector deleted: id=%s org=%s", connector_id, org_id)
 
 
     async def toggle_connector_status(

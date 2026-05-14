@@ -258,9 +258,9 @@ async def update_rule(
 @router.delete("/api/v1/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_rule(
     rule_id: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.MANAGE_RULES)),
-    _ = Depends(require_rule_access()),
-    service: IProfileService = Depends(get_profile_service),
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_RULES))],
+    _: Annotated[None, Depends(require_rule_access())],
+    service: Annotated[IProfileService, Depends(get_profile_service)],
 ):
     """Endpoint para eliminar una regla existente.
 

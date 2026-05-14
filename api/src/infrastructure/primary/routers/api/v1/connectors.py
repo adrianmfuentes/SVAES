@@ -263,7 +263,7 @@ async def update_connector(
     payload: ConnectorUpdateRequest,
     current_user: Annotated[CurrentUser, Depends(require_org_access())],
     service: Annotated[IConnectorService, Depends(get_connector_service)],
-    _ = Depends(require_connector_access()),
+    _: Annotated[None, Depends(require_connector_access())],
 ):
     """Endpoint para actualizar un conector existente.
 

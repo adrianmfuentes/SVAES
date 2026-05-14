@@ -497,7 +497,7 @@ async def get_verification_detail(
 async def export_verification_result_pdf(
     id: UUID,
     rid: UUID,
-    format: Literal["pdf"] = Query(default="pdf", description="Formato de exportación"),
+    format: Annotated[Literal["pdf"], Query(default="pdf", description="Formato de exportación")],
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_OWN_HISTORY))],
     _: Annotated[None, Depends(require_release_access())],
     service: Annotated[IVerificationService, Depends(get_verification_service)],
@@ -537,7 +537,7 @@ async def export_verification_result_pdf(
 @router.get("/api/v1/projects/{project_id}/results/export", status_code=status.HTTP_200_OK)
 async def export_project_results_csv(
     project_id: UUID,
-    format: Literal["csv"] = Query(default="csv", description="Formato de exportación"),
+    format: Annotated[Literal["csv"], Query(default="csv", description="Formato de exportación")],
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_ORG_PROJECTS))],
     service: Annotated[IVerificationService, Depends(get_verification_service)],
     export_service: Annotated[IExportService, Depends(get_export_service)],
