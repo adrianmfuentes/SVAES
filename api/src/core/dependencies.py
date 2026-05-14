@@ -30,6 +30,11 @@ from application.use_cases.main.connector_service import ConnectorService
 from application.use_cases.main.profile_service import ProfileService
 from application.use_cases.main.task_service import TaskService
 from application.use_cases.main.user_service import UserService
+from application.use_cases.main.custom_role_service import CustomRoleService
+from application.use_cases.main.template_service import TemplateService
+from application.use_cases.main.notification_service import NotificationService
+from application.use_cases.main.rules_service import RulesService
+from application.use_cases.main.export_service import ExportService
 from application.ports.input.i_release_service import IReleaseService
 from application.ports.input.i_artifact_service import IArtifactService
 from application.ports.input.i_verification_service import IVerificationService
@@ -48,6 +53,8 @@ from application.ports.output.i_token_service import ITokenService
 from application.ports.output.i_password_hasher import IPasswordHasher
 from infrastructure.secondary.queue.celery_task_queue import CeleryTaskQueue
 from infrastructure.secondary.database.repositories.custom_role_repository import SqlCustomRoleRepository
+from infrastructure.secondary.database.repositories.template_repository import SqlTemplateRepository
+from infrastructure.secondary.database.repositories.notification_repository import SqlNotificationRepository
 from infrastructure.secondary.database.repositories.api_key_repository import SqlAPIKeyRepository
 from infrastructure.secondary.connectors.connector_registry import ConnectorRegistry
 from infrastructure.secondary.connectors import create_registered_connector_registry
@@ -247,10 +254,6 @@ def get_api_key_repository() -> SqlAPIKeyRepository:
 
 def get_project_repository() -> SqlProjectRepository:
     return SqlProjectRepository()
-
-
-def get_release_repository() -> SqlReleaseRepository:
-    return SqlReleaseRepository()
 
 
 def require_release_access():
@@ -504,51 +507,47 @@ def get_user_service(
     )
 
 
+def get_template_repository() -> SqlTemplateRepository:
+    return SqlTemplateRepository()
+
+
 def get_custom_role_service(
     role_repo: SqlCustomRoleRepository = Depends(get_custom_role_repository),
 ) -> ICustomRoleService:
-    from application.use_cases.main.custom_role_service import CustomRoleService
     return CustomRoleService(custom_role_repository=role_repo)
 
 
-def get_template_service() -> "ITemplateService":
-    from application.use_cases.main.template_service import TemplateService
-    from infrastructure.secondary.database.repositories.template_repository import SqlTemplateRepository
-    from infrastructure.secondary.database.repositories.profile_repository import SqlProfileRepository
-    template_repo = SqlTemplateRepository()
-    profile_repo = SqlProfileRepository()
+def get_template_service() -> ITemplateService:
+    template_repo = get_template_repository()
+    profile_repo = get_profile_repository()
     return TemplateService(
         template_repository=template_repo,
         profile_repository=profile_repo,
     )
 
 
-def get_notification_service() -> "INotificationService":
-    from application.use_cases.main.notification_service import NotificationService
-    from infrastructure.secondary.database.repositories.notification_repository import SqlNotificationRepository
-    notification_repo = SqlNotificationRepository()
+def get_notification_repository() -> SqlNotificationRepository:
+    return SqlNotificationRepository()
+
+
+def get_notification_service() -> INotificationService:
+    notification_repo = get_notification_repository()
     return NotificationService(
         notification_repository=notification_repo,
     )
 
 
-def get_rules_service() -> "IRulesService":
-    from application.use_cases.main.rules_service import RulesService
-    from infrastructure.secondary.database.repositories.rule_repository import SqlVerificationRuleRepository
-    rule_repo = SqlVerificationRuleRepository()
+def get_rules_service() -> IRulesService:
+    rule_repo = get_rule_repository()
     return RulesService(
         rule_repository=rule_repo,
     )
 
 
-def get_export_service() -> "IExportService":
-    from application.use_cases.main.export_service import ExportService
-    from infrastructure.secondary.database.repositories.release_repository import SqlReleaseRepository
-    from infrastructure.secondary.database.repositories.verification_result_repository import SqlVerificationResultRepository
-    from infrastructure.secondary.database.repositories.project_repository import SqlProjectRepository
-    release_repo = SqlReleaseRepository()
-    verification_repo = SqlVerificationResultRepository()
-    project_repo = SqlProjectRepository()
+def get_export_service() -> IExportService:
+    release_repo = get_release_repository()
+    verification_repo = get_verification_result_repository()
+    project_repo = get_project_repository()
     return ExportService(
         release_repository=release_repo,
         verification_repository=verification_repo,

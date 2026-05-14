@@ -1,0 +1,126 @@
+from sqlalchemy.future import select
+from typing import Optional, List
+import uuid
+from datetime import datetime
+from application.ports.output.i_template_repository import ITemplateRepository
+from domain.entities.template import Template
+from infrastructure.secondary.database.models.template_model import TemplateModel
+from infrastructure.secondary.database.get_async_session import get_async_session
+
+
+class SqlTemplateRepository(ITemplateRepository):
+    def _model_to_entity(self, row: TemplateModel) -> Template:
+        return Template(
+            id=row.id,
+            organization_id=row.organization_id,
+            name=row.name,
+            description=row.description or "",
+            profile_id=row.profile_id,
+            created_by=row.created_by,
+            project_name_template=row.project_name_template,
+            is_archived=row.is_archived,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+
+    async def create(self, template: Template) -> Template:
+        session = await get_async_session().__anext__()
+
+        try:
+            model = TemplateModel(
+                id=template.id,
+                organization_id=template.organization_id,
+                name=template.name,
+                description=template.description,
+                profile_id=template.profile_id,
+                created_by=template.created_by,
+                project_name_template=template.project_name_template,
+                is_archived=template.is_archived,
+                created_at=template.created_at,
+                updated_at=template.updated_at,
+            )
+            session.add(model)
+            await session.commit()
+            await session.refresh(model)
+
+            return self._model_to_entity(model)
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()
+
+    async def get_by_id(self, template_id: uuid.UUID) -> Optional[Template]:
+        session = await get_async_session().__anext__()
+
+        try:
+            result = await session.execute(select(TemplateModel).where(TemplateModel.id == template_id))
+            row = result.scalar_one_or_none()
+            if not row:
+                return None
+
+            return self._model_to_entity(row)
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()
+
+    async def list_by_organization(self, organization_id: uuid.UUID, skip: int = 0, limit: int = 50, include_archived: bool = False) -> List[Template]:
+        session = await get_async_session().__anext__()
+
+        try:
+            stmt = select(TemplateModel).where(TemplateModel.organization_id == organization_id)
+            if not include_archived:
+                stmt = stmt.where(TemplateModel.is_archived == False)
+            stmt = stmt.offset(skip).limit(limit)
+            result = await session.execute(stmt)
+            rows = result.scalars().all()
+
+            return [self._model_to_entity(row) for row in rows]
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()
+
+    async def update(self, template: Template) -> Template:
+        session = await get_async_session().__anext__()
+
+        try:
+            model = await session.get(TemplateModel, template.id)
+            if not model:
+                raise ValueError("Template not found")
+
+            model.name = template.name
+            model.description = template.description
+            model.profile_id = template.profile_id
+            model.project_name_template = template.project_name_template
+            model.is_archived = template.is_archived
+            model.updated_at = datetime.utcnow()
+
+            await session.commit()
+            await session.refresh(model)
+
+            return self._model_to_entity(model)
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()
+
+    async def delete(self, template_id: uuid.UUID) -> None:
+        session = await get_async_session().__anext__()
+
+        try:
+            model = await session.get(TemplateModel, template_id)
+            if not model:
+                raise ValueError("Template not found")
+
+            await session.delete(model)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()

@@ -580,6 +580,47 @@ REVOKED = "REVOKED"
 | PATCH | `/api/v1/admin/users/{user_id}/deactivate` | Desactivar cuenta de usuario (solo U3) | U3 |
 | PATCH | `/api/v1/admin/users/{user_id}/role` | Actualizar rol global del usuario (solo U3) | U3 |
 
+**UserUpdateRequest:**
+```json
+{
+  "display_name": "string (1-100 chars)"
+}
+```
+
+**PasswordChangeRequest:**
+```json
+{
+  "current_password": "string (1-255 chars)",
+  "new_password": "string (8-255 chars)",
+  "confirm_password": "string (8-255 chars)"
+}
+```
+
+**UserInviteRequest:**
+```json
+{
+  "email": "string (1-255 chars, formato email)",
+  "role": "U1|U2|U4"
+}
+```
+
+**RoleUpdateRequest:**
+```json
+{
+  "role": "U1|U2|U4"
+}
+```
+
+**AdminCreateUserRequest:**
+```json
+{
+  "email": "string (1-255 chars, formato email)",
+  "password": "string (8-255 chars)",
+  "display_name": "string (1-100 chars)",
+  "role": "U1|U2|U3|U4"
+}
+```
+
 ---
 
 ### 5.3 Organizations Router (`/api/v1/organizations`)
@@ -597,6 +638,38 @@ REVOKED = "REVOKED"
 
 **Nota:** Los proyectos archivados pasan a modo solo lectura (sus releases también).
 
+**OrganizationCreateRequest:**
+```json
+{
+  "name": "string (1-100 chars)",
+  "slug": "string (1-100 chars, URL-safe)",
+  "plan": "string (default: 'default')"
+}
+```
+
+**OrganizationResponse:**
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "slug": "string",
+  "owner_id": "uuid|null",
+  "is_active": "boolean",
+  "plan": "string",
+  "created_at": "datetime (ISO 8601)",
+  "updated_at": "datetime (ISO 8601)"
+}
+```
+
+**Query Parameters (GET `/api/v1/projects`):**
+| Parámetro | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `page` | integer | 1 | Número de página (GR2.2) |
+| `size` | integer | 25 | Elementos por página, máx 100 (GR2.2) |
+| `status` | string | --- | Filtrar por estado (ACTIVO, ARCHIVADO) |
+| `search` | string | --- | Búsqueda por nombre |
+| `org_id` | uuid | --- | Filtrar por organización
+
 ---
 
 ### 5.4 Projects Router (`/api/v1/projects/{project_id}`)
@@ -608,27 +681,45 @@ REVOKED = "REVOKED"
 
 **Nota:** El borrado físico de proyectos no está permitido. Se debe usar el endpoint de archivado.
 
+**ProjectCreateRequest:**
+```json
+{
+  "name": "string (1-100 chars)",
+  "description": "string|null (max 1000 chars)",
+  "profile_id": "uuid"
+}
+```
+
+**ProjectUpdateRequest:**
+```json
+{
+  "name": "string|null (1-100 chars)",
+  "description": "string|null (max 1000 chars)",
+  "profile_id": "uuid|null"
+}
+```
+
 ---
 
-### 5.5 Releases Router (`/api/v1/projects/{project_id}/releases`, `/api/v1/releases/{id}`)
+### 5.5 Releases Router (`/api/v1/projects/{project_id}/releases`, `/api/v1/releases/{release_id}`)
 
 | Método | Ruta | Descripción | Permiso |
 |--------|------|-------------|---------|
 | POST | `/api/v1/projects/{project_id}/releases` | Crear release en el proyecto | CREATE_RELEASE |
 | GET | `/api/v1/projects/{project_id}/releases` | Listar releases del proyecto | VIEW_ORG_PROJECTS |
-| GET | `/api/v1/releases/{id}` | Obtener detalles de la release | VIEW_ORG_PROJECTS |
-| PATCH | `/api/v1/releases/{id}` | Actualizar release | UPDATE_OWN_RELEASES |
-| DELETE | `/api/v1/releases/{id}` | Eliminar release (Solo en estado BORRADOR o PENDIENTE y sin verificaciones) | UPDATE_OWN_RELEASES |
-| POST | `/api/v1/releases/{id}/archive` | Archivar release | ARCHIVE_RELEASE |
-| POST | `/api/v1/releases/{id}/restore` | Restaurar release archivada | U3 (reservado) |
-| GET | `/api/v1/releases/{id}/artifacts` | Listar artefactos de la release | VIEW_ORG_PROJECTS |
-| POST | `/api/v1/releases/{id}/artifacts` | Agregar artefacto a la release | UPDATE_OWN_RELEASES |
-| DELETE | `/api/v1/releases/{id}/artifacts/{artifact_id}` | Eliminar artefacto | UPDATE_OWN_RELEASES |
-| POST | `/api/v1/releases/{id}/artifacts/import` | Importar artefactos desde CSV | UPDATE_OWN_RELEASES |
-| POST | `/api/v1/releases/{id}/verify` | Lanzar verificación (async) | EXECUTE_VERIFICATION |
-| GET | `/api/v1/releases/{id}/results` | Obtener historial de verificaciones | VIEW_OWN_HISTORY |
-| GET | `/api/v1/releases/{id}/results/{rid}` | Obtener detalle de una verificación | VIEW_OWN_HISTORY |
-| GET | `/api/v1/releases/{id}/results/{rid}/export?format=pdf` | Exportar verificación a PDF | VIEW_OWN_HISTORY |
+| GET | `/api/v1/releases/{release_id}` | Obtener detalles de la release | VIEW_ORG_PROJECTS |
+| PATCH | `/api/v1/releases/{release_id}` | Actualizar release | UPDATE_OWN_RELEASES |
+| DELETE | `/api/v1/releases/{release_id}` | Eliminar release (Solo en estado BORRADOR o PENDIENTE y sin verificaciones) | UPDATE_OWN_RELEASES |
+| POST | `/api/v1/releases/{release_id}/archive` | Archivar release | ARCHIVE_RELEASE |
+| POST | `/api/v1/releases/{release_id}/restore` | Restaurar release archivada | U3 (reservado) |
+| GET | `/api/v1/releases/{release_id}/artifacts` | Listar artefactos de la release | VIEW_ORG_PROJECTS |
+| POST | `/api/v1/releases/{release_id}/artifacts` | Agregar artefacto a la release | UPDATE_OWN_RELEASES |
+| DELETE | `/api/v1/releases/{release_id}/artifacts/{artifact_id}` | Eliminar artefacto | UPDATE_OWN_RELEASES |
+| POST | `/api/v1/releases/{release_id}/artifacts/import` | Importar artefactos desde CSV | UPDATE_OWN_RELEASES |
+| POST | `/api/v1/releases/{release_id}/verify` | Lanzar verificación (async) | EXECUTE_VERIFICATION |
+| GET | `/api/v1/releases/{release_id}/results` | Obtener historial de verificaciones | VIEW_OWN_HISTORY |
+| GET | `/api/v1/releases/{release_id}/results/{result_id}` | Obtener detalle de una verificación | VIEW_OWN_HISTORY |
+| GET | `/api/v1/releases/{release_id}/results/{result_id}/export?format=pdf` | Exportar verificación a PDF | VIEW_OWN_HISTORY |
 | GET | `/api/v1/projects/{project_id}/results/export?format=csv` | Exportar historial de proyecto a CSV | VIEW_ORG_PROJECTS |
 
 **State Machine de Release:**
@@ -639,6 +730,63 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
                            ↓                ↓
                           ARCHIVADA ←←←←←←←←←←←←←←←
 ```
+
+**ReleaseCreateRequest:**
+```json
+{
+  "name": "string (1-100 chars)",
+  "version": "string (SemVer 2.0.0)",
+  "description": "string|null (max 1000 chars)",
+  "profile_id": "uuid|null"
+}
+```
+
+**ReleaseUpdateRequest:**
+```json
+{
+  "name": "string|null (1-100 chars)",
+  "description": "string|null (max 1000 chars)",
+  "status": "BORRADOR|PENDIENTE|null"
+}
+```
+
+**ArtifactCreateRequest:**
+```json
+{
+  "connector_instance_id": "uuid",
+  "connector_implementation": "string (50 chars, ej: JIRA, GITLAB)",
+  "artifact_type": "TAREA|CODIGO|DOCUMENTO",
+  "external_ref": "string (max 500 chars)",
+  "metadata": "object|null"
+}
+```
+
+**ArtifactImportRequest:**
+```json
+{
+  "data": "string (formato CSV, columna obligatoria: external_ref)",
+  "connector_instance_id": "uuid"
+}
+```
+
+**Query Parameters (GET `/api/v1/projects/{project_id}/releases`):**
+| Parámetro | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `page` | integer | 1 | Número de página (GR2.2) |
+| `size` | integer | 25 | Elementos por página, máx 100 (GR2.2) |
+| `status` | string | --- | Filtrar por estado de release (GR2.4) |
+| `search` | string | --- | Búsqueda por nombre o versión |
+| `sort_by` | string | `created_at` | Campo de ordenación |
+| `sort_order` | string | `desc` | Dirección de ordenación (`asc`, `desc`) |
+
+**Query Parameters (GET `/api/v1/releases/{release_id}/results`):**
+| Parámetro | Tipo | Default | Descripción |
+|-----------|------|---------|-------------|
+| `page` | integer | 1 | Número de página (RH3.3) |
+| `size` | integer | 25 | Elementos por página, máx 100 (RH3.3) |
+| `verdict` | string | --- | Filtrar por veredicto (VALID, VALID_WITH_WARNINGS, INVALID) |
+| `from_date` | datetime | --- | Resultados desde fecha (ISO 8601) |
+| `to_date` | datetime | --- | Resultados hasta fecha (ISO 8601) |
 
 ---
 
@@ -663,6 +811,33 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 | HERRAMIENTA_PLANIFICACION | MIRO |
 | GESTION_CAMBIOS | JIRA_SM, GLPI, ZAMMAD, REDMINE |
 
+**ConnectorCreateRequest:**
+```json
+{
+  "connector_type": "GESTOR_TAREAS|REPO_CODIGO|SISTEMA_DOCUMENTAL|HERRAMIENTA_PLANIFICACION|GESTION_CAMBIOS",
+  "connector_implementation": "JIRA|LINEAR|TRELLO|ASANA|CLICKUP|TAIGA|PLANE|GITLAB|GITHUB|BITBUCKET|GITEA|CONFLUENCE|NOTION|WIKIJS|BOOKSTACK|MIRO|JIRA_SM|GLPI|ZAMMAD|REDMINE",
+  "name": "string (1-100 chars)",
+  "credentials": "object (depende del tipo de conector)"
+}
+```
+
+**ConnectorUpdateRequest:**
+```json
+{
+  "name": "string|null (1-100 chars)",
+  "credentials": "object|null"
+}
+```
+
+**ConnectorTestResponse:**
+```json
+{
+  "success": "boolean",
+  "latency_ms": "integer",
+  "message": "string"
+}
+```
+
 ---
 
 ### 5.7 Profiles Router (`/api/v1/profiles`, `/api/v1/organizations/{org_id}/profiles`, `/api/v1/rules`)
@@ -676,6 +851,46 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 | POST | `/api/v1/profiles/{profile_id}/rules` | Agregar regla al perfil | MANAGE_RULES |
 | PATCH | `/api/v1/rules/{rule_id}` | Actualizar regla | MANAGE_RULES |
 | DELETE | `/api/v1/rules/{rule_id}` | Eliminar regla | MANAGE_RULES |
+
+**ProfileCreateRequest:**
+```json
+{
+  "name": "string (1-100 chars)",
+  "description": "string|null (max 500 chars)",
+  "is_default": "boolean (default: false)"
+}
+```
+
+**ProfileUpdateRequest:**
+```json
+{
+  "name": "string|null (1-100 chars)",
+  "description": "string|null (max 500 chars)",
+  "is_default": "boolean|null"
+}
+```
+
+**RuleCreateRequest:**
+```json
+{
+  "rule_template": "string (RV-01 a RV-10, max 100 chars)",
+  "severity": "INFO|LOW|MEDIUM|HIGH|CRITICAL (default: HIGH)",
+  "params": "object|null (JSONB, depende de la plantilla)",
+  "connector_instance_id": "uuid|null",
+  "display_order": "integer (default: 0)"
+}
+```
+
+**RuleUpdateRequest:**
+```json
+{
+  "severity": "INFO|LOW|MEDIUM|HIGH|CRITICAL|null",
+  "params": "object|null",
+  "connector_instance_id": "uuid|null",
+  "display_order": "integer|null",
+  "is_active": "boolean|null"
+}
+```
 
 ---
 
@@ -704,6 +919,36 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 | POST | `/api/v1/organizations/{org_id}/roles` | Crear rol personalizado | MANAGE_ROLES |
 | PATCH | `/api/v1/roles/{role_id}` | Actualizar rol personalizado | MANAGE_ROLES |
 | DELETE | `/api/v1/roles/{role_id}` | Eliminar rol personalizado | MANAGE_ROLES |
+
+**CustomRoleCreateRequest:**
+```json
+{
+  "name": "string (1-100 chars)",
+  "permissions": ["array of Permission strings (min: 1)"]
+}
+```
+
+**CustomRoleUpdateRequest:**
+```json
+{
+  "name": "string|null (1-100 chars)",
+  "permissions": "array of Permission strings|null (min: 1)",
+  "is_active": "boolean|null"
+}
+```
+
+**CustomRoleResponse:**
+```json
+{
+  "id": "uuid",
+  "organization_id": "uuid",
+  "name": "string",
+  "permissions": ["array of Permission strings"],
+  "is_active": "boolean",
+  "created_at": "datetime (ISO 8601)",
+  "updated_at": "datetime (ISO 8601)"
+}
+```
 
 ---
 
@@ -1034,8 +1279,8 @@ Según el requisito GR7.2 del SRS, cuando un proyecto se archiva:
 ### Endpoint de Verificación de Releases
 
 Para consultar resultados de verificaciones, usar:
-- `GET /api/v1/releases/{id}/results` - Historial de verificaciones
-- `GET /api/v1/releases/{id}/results/{rid}` - Detalle de una verificación específica
+- `GET /api/v1/releases/{release_id}/results` - Historial de verificaciones
+- `GET /api/v1/releases/{release_id}/results/{result_id}` - Detalle de una verificación específica
 
 ### Conectores bajo Alcance de Organización
 
