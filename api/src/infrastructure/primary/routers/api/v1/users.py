@@ -225,7 +225,7 @@ async def invite_user(
             "id": str(user.id),
             "email": user.email,
             "role": user.role.value,
-            "message": f"Usuario invitado correctamente a la organización",
+            "message": "Usuario invitado correctamente a la organización",
         }
     except DuplicateEntityError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))

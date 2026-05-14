@@ -72,6 +72,33 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
         finally:
             await session.close()
 
+    async def list_all(self) -> List[VerificationRule]:
+        session = await get_async_session().__anext__()
+
+        try:
+            result = await session.execute(select(VerificationRuleModel))
+            rule_rows = result.scalars().all()
+
+            return [
+                VerificationRule(
+                    id=cast(uuid.UUID, row.id),
+                    profile_id=cast(uuid.UUID, row.profile_id),
+                    rule_template=cast(str, row.rule_template),
+                    severity=SeverityType(row.severity),
+                    params=cast(dict, row.params) or {},
+                    connector_instance_id=cast(uuid.UUID | None, row.connector_instance_id),
+                    display_order=cast(int, row.display_order),
+                    is_active=cast(bool, row.is_active),
+                    created_at=cast(datetime, row.created_at),
+                )
+                for row in rule_rows
+            ]
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()
+
     async def list_by_profile(self, profile_id: uuid.UUID) -> List[VerificationRule]:
         session = await get_async_session().__anext__()
 

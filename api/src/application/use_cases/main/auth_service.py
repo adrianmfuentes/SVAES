@@ -39,16 +39,6 @@ class AuthService(IAuthService):
         if not user.is_active:
             raise ValidationError("Usuario inactivo")
 
-        audit = get_audit_logger()
-        audit.log(AuditEntry(
-            event=AuditEvent.LOGIN_FAILED,
-            user_id=user.id,
-            organization_id=user.organization_id,
-            resource_type="user",
-            resource_id=user.id,
-            details={"reason": "user_inactive"},
-        ))
-
         now = datetime.now(timezone.utc)
         if user.locked_until and user.locked_until > now:
             remaining = (user.locked_until - now).seconds // 60
@@ -58,11 +48,29 @@ class AuthService(IAuthService):
             user.locked_until = now + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
             user.failed_login_attempts = 0
             await self._user_repo.update(user)
+            audit = get_audit_logger()
+            audit.log(AuditEntry(
+                event=AuditEvent.LOGIN_FAILED,
+                user_id=user.id,
+                organization_id=user.organization_id,
+                resource_type="user",
+                resource_id=user.id,
+                details={"reason": "max_attempts_exceeded"},
+            ))
             raise ValidationError(f"Demasiados intentos fallidos. Cuenta bloqueada por {LOCKOUT_DURATION_MINUTES} minutos.")
 
         if not self._password_hasher.verify_password(password, user.hashed_password):
             user.failed_login_attempts = user.failed_login_attempts + 1
             await self._user_repo.update(user)
+            audit = get_audit_logger()
+            audit.log(AuditEntry(
+                event=AuditEvent.LOGIN_FAILED,
+                user_id=user.id,
+                organization_id=user.organization_id,
+                resource_type="user",
+                resource_id=user.id,
+                details={"reason": "invalid_password"},
+            ))
             remaining = MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
             raise ValidationError(f"Credenciales inválidas. Intentos restantes: {remaining}")
 

@@ -2,6 +2,7 @@ from application.ports.output.i_release_repository import IReleaseRepository
 from domain.entities.release import Release
 from domain.enums import ReleaseStatus
 from sqlalchemy.future import select
+from sqlalchemy.exc import IntegrityError
 from infrastructure.secondary.database.models import ReleaseModel
 from infrastructure.secondary.database import get_async_session
 import uuid
@@ -31,7 +32,7 @@ class SqlReleaseRepository(IReleaseRepository):
             session.add(release_model)
             await session.commit()
             await session.refresh(release_model)
-        except Exception as e:
+        except IntegrityError as e:
             await session.rollback()
             raise e
         finally:
@@ -56,7 +57,8 @@ class SqlReleaseRepository(IReleaseRepository):
                 profile_id=uuid.UUID(str(release_row.profile_id)),
                 created_by=uuid.UUID(str(release_row.created_by))
             )
-        except Exception as e:
+        except IntegrityError as e:
+            await session.rollback()
             raise e
         finally:
             await session.close()
@@ -88,7 +90,7 @@ class SqlReleaseRepository(IReleaseRepository):
                 )
                 for row in release_rows
             ]
-        except Exception as e:
+        except IntegrityError as e:
             raise e
         finally:
             await session.close()
@@ -134,7 +136,7 @@ class SqlReleaseRepository(IReleaseRepository):
             result = await session.execute(select(ReleaseModel).where(ReleaseModel.id == release.id))
             release_row = result.scalar_one_or_none()
             if not release_row:
-                raise Exception("Release no encontrado")
+                raise EntityNotFoundError("Release no encontrado")
             
             setattr(release_row, "name", str(release.name))
             setattr(release_row, "version", str(release.version))
@@ -154,7 +156,7 @@ class SqlReleaseRepository(IReleaseRepository):
                 profile_id=uuid.UUID(str(release_row.profile_id)),
                 created_by=uuid.UUID(str(release_row.created_by))
             )
-        except Exception as e:
+        except IntegrityError as e:
             await session.rollback()
             raise e
         finally:
@@ -187,7 +189,7 @@ class SqlReleaseRepository(IReleaseRepository):
                 created_by=uuid.UUID(str(release_row.created_by))
             )
         
-        except Exception as e:
+        except IntegrityError as e:
             await session.rollback()
             raise e
         finally:
@@ -201,12 +203,12 @@ class SqlReleaseRepository(IReleaseRepository):
             result = await session.execute(select(ReleaseModel).where(ReleaseModel.id == release_id))
             release_row = result.scalar_one_or_none()
             if not release_row:
-                raise Exception("Release no encontrado")
+                raise EntityNotFoundError("Release no encontrado")
             
             await session.delete(release_row)
             await session.commit()
 
-        except Exception as e:
+        except IntegrityError as e:
             await session.rollback()
             raise e
         finally:
@@ -227,7 +229,7 @@ class SqlReleaseRepository(IReleaseRepository):
             artifact = next((a for a in release_row.artifacts if a.id == artifact_id), None)
             return artifact
         
-        except Exception as e:
+        except IntegrityError as e:
             raise e
         finally:
             await session.close()
@@ -242,14 +244,14 @@ class SqlReleaseRepository(IReleaseRepository):
             )
             release_row = result.scalar_one_or_none()
             if not release_row:
-                raise Exception("Artifact no encontrado")
+                raise EntityNotFoundError("Artifact no encontrado")
             
             artifact = next((a for a in release_row.artifacts if a.id == artifact_id), None)
             if artifact:
                 release_row.artifacts.remove(artifact)
                 await session.commit()
 
-        except Exception as e:
+        except IntegrityError as e:
             await session.rollback()
             raise e
         finally:

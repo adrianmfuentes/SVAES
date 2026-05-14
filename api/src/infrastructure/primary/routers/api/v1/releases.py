@@ -568,9 +568,15 @@ async def export_project_results_csv(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
+class ImportArtifactsRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    artifacts: List[ArtifactCreateRequest]
+
+
 @router.post("/api/v1/releases/{id}/artifacts/import", status_code=status.HTTP_202_ACCEPTED)
 async def import_artifacts(
     id: UUID,
+    payload: ImportArtifactsRequest,
     current_user: CurrentUser = Depends(require_permission(Permission.UPDATE_OWN_RELEASES)),
     _ = Depends(require_release_access()),
     service: IArtifactService = Depends(get_artifact_service),
@@ -592,4 +598,20 @@ async def import_artifacts(
         - 422 Unprocessable Entity si el fichero CSV no es válido.
         - 500 Internal Server Error para cualquier otro error inesperado.
     """
-    pass
+    try:
+        imported = []
+        for artifact_data in payload.artifacts:
+            artifact = await service.add_artifact(
+                release_id=id,
+                connector_instance_id=artifact_data.connector_id,
+                connector_implementation=artifact_data.connector_implementation,
+                artifact_type=artifact_data.type,
+                external_ref=artifact_data.external_ref,
+                metadata={"description": artifact_data.description} if artifact_data.description else None,
+            )
+            imported.append({"id": str(artifact.id), "external_ref": artifact.external_ref})
+        return {"imported": imported, "count": len(imported)}
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

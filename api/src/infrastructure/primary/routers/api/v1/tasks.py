@@ -3,6 +3,8 @@ from pydantic import BaseModel, ConfigDict
 from application.ports.input.i_task_service import ITaskService
 from core.dependencies import get_task_service, get_current_user, CurrentUser
 from application.ports.output.i_task_queue import TaskStatus
+from celery.result import AsyncResult
+from infrastructure.secondary.queue.celery_app import celery_app
 
 router = APIRouter(tags=["Tasks"])
 
@@ -32,10 +34,12 @@ async def get_task_status(
     """
     try:
         task_status = await service.get_task_status(task_id)
+        celery_result = celery_app.AsyncResult(task_id)
+        result_value = celery_result.result if celery_result.ready() else None
         return {
             "task_id": task_id,
             "status": task_status.value,
-            "result": None,
+            "result": str(result_value) if result_value is not None else None,
         }
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

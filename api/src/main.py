@@ -24,6 +24,9 @@ from infrastructure.primary.routers.api.routers import (
     custom_roles_router,
     dashboard_router,
     api_keys_router,
+    templates_router,
+    notifications_router,
+    admin_router,
 )
 from core.config import settings
 from api.src.core.logger import _configure_root_logger, get_logger
@@ -146,6 +149,9 @@ app.include_router(users_router, prefix=API_V1_PREFIX)
 app.include_router(custom_roles_router, prefix=API_V1_PREFIX)
 app.include_router(dashboard_router, prefix=API_V1_PREFIX)
 app.include_router(api_keys_router, prefix=API_V1_PREFIX)
+app.include_router(templates_router, prefix=API_V1_PREFIX)
+app.include_router(notifications_router, prefix=API_V1_PREFIX)
+app.include_router(admin_router, prefix=API_V1_PREFIX)
 
 
 # ---------------------------------------------------------------------------

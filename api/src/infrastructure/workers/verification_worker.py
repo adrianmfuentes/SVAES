@@ -9,19 +9,11 @@ from infrastructure.secondary.queue.celery_app import celery_app
 from core.config import settings
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from application.ports.output.i_release_repository import IReleaseRepository
-from application.ports.output.i_connector_registry import IConnectorRegistry
 from domain.entities.verification_result import VerificationResult
 from domain.enums import ReleaseStatus, VerdictType, SeverityType
 from infrastructure.secondary.database.repositories.release_repository import SqlReleaseRepository
 from infrastructure.secondary.database.repositories.verification_result_repository import SqlVerificationResultRepository
 from infrastructure.secondary.connectors import create_registered_connector_registry
-
-
-async def _fetch_artifacts_via_connectors(
-    release_id: str,
-    connector_registry: IConnectorRegistry,
-) -> List[Dict[str, Any]]:
-    return []
 
 
 async def _call_verification_engine(

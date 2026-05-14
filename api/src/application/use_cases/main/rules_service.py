@@ -12,13 +12,14 @@ class RulesService(IRulesService):
 
     async def reload_custom_rules(self) -> Dict[str, Any]:
         try:
+            rules = await self._repo.list_all()
             return {
                 "success": True,
-                "rules_loaded": 0,
+                "rules_loaded": len(rules),
                 "message": "Reglas recargadas con exito",
             }
         except Exception as e:
-            _log.error("Failed to reload custom rules: %s", e)
+            _log.exception("Failed to reload custom rules")
             return {
                 "success": False,
                 "rules_loaded": 0,

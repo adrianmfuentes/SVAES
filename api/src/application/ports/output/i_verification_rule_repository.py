@@ -13,6 +13,10 @@ class IVerificationRuleRepository(ABC):
         pass
 
     @abstractmethod
+    async def list_all(self) -> List[VerificationRule]:
+        pass
+
+    @abstractmethod
     async def list_by_profile(self, profile_id: UUID) -> List[VerificationRule]:
         pass
 
