@@ -59,6 +59,7 @@ from infrastructure.secondary.database.repositories.api_key_repository import Sq
 from infrastructure.secondary.connectors.connector_registry import ConnectorRegistry
 from infrastructure.secondary.connectors import create_registered_connector_registry
 from domain.enums import UserRole, Permission
+from domain.entities.project import Project
 
 _bearer = HTTPBearer()
 _INVALID_TOKEN = "Token inválido"
@@ -108,6 +109,12 @@ class CurrentUser:
     role: UserRole
     email: str
     organization_id: Optional[UUID] = None
+
+
+@dataclass
+class ProjectAccess:
+    user: CurrentUser
+    project: Optional[Project] = None
 
 
 def get_current_user(
@@ -165,18 +172,16 @@ def require_project_access():
         current_user: CurrentUser = Depends(get_current_user),
         project_repo: SqlProjectRepository = Depends(get_project_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.U3:
-            return current_user
+        if current_user.role != UserRole.U3:
+            project = await project_repo.get_by_id(project_id)
+            if not project:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyecto no encontrado")
 
-        project = await project_repo.get_by_id(project_id)
-        if not project:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyecto no encontrado")
-
-        if project.organization_id != current_user.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes acceso a este proyecto",
-            )
+            if project.organization_id != current_user.organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a este proyecto",
+                )
         return current_user
     return dependency  # NOSONAR
 
@@ -263,22 +268,20 @@ def require_release_access():
         release_repo: SqlReleaseRepository = Depends(get_release_repository),
         project_repo: SqlProjectRepository = Depends(get_project_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.U3:
-            return current_user
+        if current_user.role != UserRole.U3:
+            release = await release_repo.get_by_id(release_id)
+            if not release:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release no encontrada")
 
-        release = await release_repo.get_by_id(release_id)
-        if not release:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release no encontrada")
+            project = await project_repo.get_by_id(release.project_id)
+            if not project:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyecto no encontrado")
 
-        project = await project_repo.get_by_id(release.project_id)
-        if not project:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyecto no encontrado")
-
-        if project.organization_id != current_user.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes acceso a esta release",
-            )
+            if project.organization_id != current_user.organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a esta release",
+                )
         return current_user
     return dependency  # NOSONAR
 
@@ -289,18 +292,16 @@ def require_connector_access():
         current_user: CurrentUser = Depends(get_current_user),
         connector_repo: SqlConnectorRepository = Depends(get_connector_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.U3:
-            return current_user
+        if current_user.role != UserRole.U3:
+            connector = await connector_repo.get_by_id(connector_id)
+            if not connector:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conector no encontrado")
 
-        connector = await connector_repo.get_by_id(connector_id)
-        if not connector:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conector no encontrado")
-
-        if connector.organization_id != current_user.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes acceso a este conector",
-            )
+            if connector.organization_id != current_user.organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a este conector",
+                )
         return current_user
     return dependency  # NOSONAR
 
@@ -311,18 +312,16 @@ def require_profile_access():
         current_user: CurrentUser = Depends(get_current_user),
         profile_repo: SqlProfileRepository = Depends(get_profile_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.U3:
-            return current_user
+        if current_user.role != UserRole.U3:
+            profile = await profile_repo.get_by_id(profile_id)
+            if not profile:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil no encontrado")
 
-        profile = await profile_repo.get_by_id(profile_id)
-        if not profile:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil no encontrado")
-
-        if profile.organization_id != current_user.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes acceso a este perfil",
-            )
+            if profile.organization_id != current_user.organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a este perfil",
+                )
         return current_user
     return dependency  # NOSONAR
 
@@ -334,19 +333,17 @@ def require_rule_access():
         rule_repo: SqlVerificationRuleRepository = Depends(get_rule_repository),
         profile_repo: SqlProfileRepository = Depends(get_profile_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.U3:
-            return current_user
+        if current_user.role != UserRole.U3:
+            rule = await rule_repo.get_by_id(rule_id)
+            if not rule:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Regla no encontrada")
 
-        rule = await rule_repo.get_by_id(rule_id)
-        if not rule:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Regla no encontrada")
-
-        profile = await profile_repo.get_by_id(rule.profile_id)
-        if profile and profile.organization_id != current_user.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes acceso a esta regla",
-            )
+            profile = await profile_repo.get_by_id(rule.profile_id)
+            if profile and profile.organization_id != current_user.organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a esta regla",
+                )
         return current_user
     return dependency  # NOSONAR
 
@@ -357,18 +354,16 @@ def require_custom_role_access():
         current_user: CurrentUser = Depends(get_current_user),
         role_repo: SqlCustomRoleRepository = Depends(get_custom_role_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.U3:
-            return current_user
+        if current_user.role != UserRole.U3:
+            role = await role_repo.get_by_id(role_id)
+            if not role:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rol no encontrado")
 
-        role = await role_repo.get_by_id(role_id)
-        if not role:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rol no encontrado")
-
-        if role.organization_id != current_user.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes acceso a este rol",
-            )
+            if role.organization_id != current_user.organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a este rol",
+                )
         return current_user
     return dependency  # NOSONAR
 
@@ -379,18 +374,16 @@ def require_api_key_access():
         current_user: CurrentUser = Depends(get_current_user),
         api_key_repo: SqlAPIKeyRepository = Depends(get_api_key_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.U3:
-            return current_user
+        if current_user.role != UserRole.U3:
+            api_key = await api_key_repo.get_by_id(key_id)
+            if not api_key:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key no encontrada")
 
-        api_key = await api_key_repo.get_by_id(key_id)
-        if not api_key:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key no encontrada")
-
-        if api_key.organization_id != current_user.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes acceso a esta API key",
-            )
+            if api_key.organization_id != current_user.organization_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a esta API key",
+                )
         return current_user
     return dependency  # NOSONAR
 

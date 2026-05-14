@@ -9,7 +9,7 @@ from application.ports.input.i_artifact_service import IArtifactService
 from application.ports.input.i_verification_service import IVerificationService
 from application.ports.input.i_export_service import IExportService
 
-from core.dependencies import get_release_service, get_artifact_service, get_verification_service, get_export_service, get_current_user, CurrentUser, require_permission, require_project_access, require_release_access, require_role
+from core.dependencies import get_release_service, get_artifact_service, get_verification_service, get_export_service, get_current_user, CurrentUser, ProjectAccess, require_permission, require_project_access, require_release_access, require_role
 from domain.enums import ArtifactType, ReleaseStatus, Permission, UserRole
 from domain.exceptions import ValidationError, EntityNotFoundError
 
@@ -38,7 +38,7 @@ class ArtifactCreateRequest(BaseModel):
 async def create_release(
     project_id: UUID,
     payload: ReleaseCreateRequest,
-    current_user: CurrentUser = Depends(require_project_access()),
+    project_access: ProjectAccess = Depends(require_project_access()),
     service: IReleaseService = Depends(get_release_service),
 ):
     """ Crea una nueva release dentro del proyecto especificado.
@@ -46,7 +46,7 @@ async def create_release(
     Atributos:
         - project_id: ID del proyecto al que pertenece la release.
         - payload: Datos de la release a crear (nombre, versión, descripción).
-        - current_user: Usuario autenticado con permisos del token JWT.
+        - project_access: Acceso validado al proyecto con datos del usuario autenticado.
         - service: Instancia del servicio de releases (inyección de dependencias).
 
     Retorna:
@@ -60,7 +60,7 @@ async def create_release(
             name=payload.name,
             version=payload.version,
             project_id=project_id,
-            user_id=current_user.user_id,
+            user_id=project_access.user.user_id,
             description=payload.description
         )
         return {
@@ -76,7 +76,7 @@ async def create_release(
 @router.get("/api/v1/projects/{project_id}/releases")
 async def list_releases(
     project_id: UUID,
-    current_user: CurrentUser = Depends(require_project_access()),
+    project_access: ProjectAccess = Depends(require_project_access()),
     service: IReleaseService = Depends(get_release_service),
 ):
     """
@@ -84,7 +84,7 @@ async def list_releases(
 
     Atributos:
         - project_id: ID del proyecto del que se quieren listar las releases.
-        - current_user: Usuario autenticado con permisos del token JWT.
+        - project_access: Acceso validado al proyecto con datos del usuario autenticado.
         - service: Instancia del servicio de releases (inyección de dependencias).
 
     Retorna:
