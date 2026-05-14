@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import Optional, List
+from typing import Optional, List, cast
 import uuid
 from datetime import datetime
 from application.ports.output.i_organization_repository import IOrganizationRepository
@@ -11,14 +11,14 @@ from infrastructure.secondary.database.get_async_session import get_async_sessio
 class SqlOrganizationRepository(IOrganizationRepository):
     def _model_to_entity(self, row: OrganizationModel) -> Organization:
         return Organization(
-            id=row.id,
-            name=row.name,
-            slug=row.slug,
-            owner_id=row.owner_id,
-            is_active=row.is_active,
-            plan=row.plan,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
+            id=cast(uuid.UUID, row.id),
+            name=cast(str, row.name),
+            slug=cast(str, row.slug),
+            owner_id=cast(uuid.UUID | None, row.owner_id),
+            is_active=cast(bool, row.is_active),
+            plan=cast(str, row.plan),
+            created_at=cast(datetime, row.created_at),
+            updated_at=cast(datetime, row.updated_at),
         )
 
     async def create(self, organization: Organization) -> Organization:
@@ -105,12 +105,12 @@ class SqlOrganizationRepository(IOrganizationRepository):
             if not org_model:
                 raise ValueError("Organization not found")
 
-            org_model.name = organization.name
-            org_model.slug = organization.slug
-            org_model.owner_id = organization.owner_id
-            org_model.is_active = organization.is_active
-            org_model.plan = organization.plan
-            org_model.updated_at = datetime.utcnow()
+            org_model.name = organization.name  # pyright: ignore[reportAttributeAccessIssue]
+            org_model.slug = organization.slug  # pyright: ignore[reportAttributeAccessIssue]
+            org_model.owner_id = organization.owner_id  # pyright: ignore[reportAttributeAccessIssue]
+            org_model.is_active = organization.is_active  # pyright: ignore[reportAttributeAccessIssue]
+            org_model.plan = organization.plan  # pyright: ignore[reportAttributeAccessIssue]
+            org_model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(org_model)

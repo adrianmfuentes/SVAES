@@ -30,7 +30,7 @@ class WikiJsConnector(IConnector):
     async def test_connection(self, config: Dict[str, Any]) -> bool:
         async with httpx.AsyncClient(timeout=30.0) as client:
             base_url = config.get("base_url", self.BASE_URL)
-            response = await client.get(
+            response = await client.post(
                 f"{base_url}/graphql",
                 headers=self._build_headers(config),
                 json={"query": "{ users { total } }"},

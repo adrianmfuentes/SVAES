@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from application.ports.input.i_template_service import ITemplateService
-from core.dependencies import get_current_user, CurrentUser, require_permission, require_role
+from core.dependencies import get_current_user, CurrentUser, require_permission, require_role, get_template_service
 from domain.enums import UserRole, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError
 
@@ -50,6 +50,8 @@ async def create_template(
         - 500 Internal Server Error para cualquier error inesperado.
     """
     try:
+        if current_user.organization_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Se requiere organizacion")
         template = await service.create_template(
             name=payload.name,
             description=payload.description,
@@ -87,6 +89,8 @@ async def list_templates(
         - 500 Internal Server Error para cualquier error inesperado.
     """
     try:
+        if current_user.organization_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Se requiere organizacion")
         templates = await service.list_templates(
             organization_id=current_user.organization_id,
             skip=skip,

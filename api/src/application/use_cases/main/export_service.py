@@ -38,7 +38,7 @@ class ExportService(IExportService):
         self._project_repo = project_repository
 
     async def export_verification_to_pdf(self, release_id: UUID, result_id: UUID) -> str:
-        result = await self._verification_repo.get_by_id(result_id)
+        result = await self._verification_repo.find_by_id(result_id)
         if not result:
             raise ValueError(f"Verificación no encontrada: {result_id}")
 
@@ -66,7 +66,7 @@ class ExportService(IExportService):
         releases = await self._release_repo.list_by_project(project_id)
         results = []
         for release in releases:
-            verifications = await self._verification_repo.list_by_release(release.id)
+            verifications = await self._verification_repo.find_by_release(release.id)
             for ver in verifications:
                 results.append({
                     "release_id": str(release.id),

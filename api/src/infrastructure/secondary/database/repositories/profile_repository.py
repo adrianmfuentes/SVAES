@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import Optional, List
+from typing import Optional, List, cast
 import uuid
 from datetime import datetime
 from application.ports.output.i_profile_repository import IProfileRepository
@@ -31,14 +31,14 @@ class SqlProfileRepository(IProfileRepository):
             await session.refresh(profile_model)
 
             return VerificationProfile(
-                id=profile_model.id,
-                organization_id=profile_model.organization_id,
-                name=profile_model.name,
-                description=profile_model.description,
-                is_default=profile_model.is_default,
+                id=cast(uuid.UUID, profile_model.id),
+                organization_id=cast(uuid.UUID, profile_model.organization_id),
+                name=cast(str, profile_model.name),
+                description=cast(str, profile_model.description),
+                is_default=cast(bool, profile_model.is_default),
                 rules=[],
-                created_at=profile_model.created_at,
-                updated_at=profile_model.updated_at,
+                created_at=cast(datetime, profile_model.created_at),
+                updated_at=cast(datetime, profile_model.updated_at),
             )
         except Exception as e:
             await session.rollback()
@@ -63,28 +63,28 @@ class SqlProfileRepository(IProfileRepository):
             rule_rows = rules_result.scalars().all()
             rules = [
                 VerificationRule(
-                    id=row.id,
-                    profile_id=row.profile_id,
-                    rule_template=row.rule_template,
+                    id=cast(uuid.UUID, row.id),
+                    profile_id=cast(uuid.UUID, row.profile_id),
+                    rule_template=cast(str, row.rule_template),
                     severity=SeverityType(row.severity),
-                    params=row.params or {},
-                    connector_instance_id=row.connector_instance_id,
-                    display_order=row.display_order,
-                    is_active=row.is_active,
-                    created_at=row.created_at,
+                    params=cast(dict, row.params) or {},
+                    connector_instance_id=cast(uuid.UUID | None, row.connector_instance_id),
+                    display_order=cast(int, row.display_order),
+                    is_active=cast(bool, row.is_active),
+                    created_at=cast(datetime, row.created_at),
                 )
                 for row in rule_rows
             ]
 
             return VerificationProfile(
-                id=profile_row.id,
-                organization_id=profile_row.organization_id,
-                name=profile_row.name,
-                description=profile_row.description,
-                is_default=profile_row.is_default,
+                id=cast(uuid.UUID, profile_row.id),
+                organization_id=cast(uuid.UUID, profile_row.organization_id),
+                name=cast(str, profile_row.name),
+                description=cast(str, profile_row.description),
+                is_default=cast(bool, profile_row.is_default),
                 rules=rules,
-                created_at=profile_row.created_at,
-                updated_at=profile_row.updated_at,
+                created_at=cast(datetime, profile_row.created_at),
+                updated_at=cast(datetime, profile_row.updated_at),
             )
         except Exception as e:
             await session.rollback()
@@ -105,7 +105,7 @@ class SqlProfileRepository(IProfileRepository):
             if not profile_row:
                 return None
 
-            return await self.get_by_id(profile_row.id)
+            return await self.get_by_id(cast(uuid.UUID, profile_row.id))
         except Exception as e:
             await session.rollback()
             raise e
@@ -120,23 +120,23 @@ class SqlProfileRepository(IProfileRepository):
             if not profile_model:
                 raise ValueError("Profile not found")
 
-            profile_model.name = profile.name
-            profile_model.description = profile.description
-            profile_model.is_default = profile.is_default
-            profile_model.updated_at = datetime.utcnow()
+            profile_model.name = profile.name  # pyright: ignore[reportAttributeAccessIssue]
+            profile_model.description = profile.description  # pyright: ignore[reportAttributeAccessIssue]
+            profile_model.is_default = profile.is_default  # pyright: ignore[reportAttributeAccessIssue]
+            profile_model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(profile_model)
 
             return VerificationProfile(
-                id=profile_model.id,
-                organization_id=profile_model.organization_id,
-                name=profile_model.name,
-                description=profile_model.description,
-                is_default=profile_model.is_default,
+                id=cast(uuid.UUID, profile_model.id),
+                organization_id=cast(uuid.UUID, profile_model.organization_id),
+                name=cast(str, profile_model.name),
+                description=cast(str, profile_model.description),
+                is_default=cast(bool, profile_model.is_default),
                 rules=profile.rules,
-                created_at=profile_model.created_at,
-                updated_at=profile_model.updated_at,
+                created_at=cast(datetime, profile_model.created_at),
+                updated_at=cast(datetime, profile_model.updated_at),
             )
         except Exception as e:
             await session.rollback()
@@ -166,28 +166,28 @@ class SqlProfileRepository(IProfileRepository):
                 rule_rows = rules_result.scalars().all()
                 rules = [
                     VerificationRule(
-                        id=r.id,
-                        profile_id=r.profile_id,
-                        rule_template=r.rule_template,
+                        id=cast(uuid.UUID, r.id),
+                        profile_id=cast(uuid.UUID, r.profile_id),
+                        rule_template=cast(str, r.rule_template),
                         severity=SeverityType(r.severity),
-                        params=r.params or {},
-                        connector_instance_id=r.connector_instance_id,
-                        display_order=r.display_order,
-                        is_active=r.is_active,
-                        created_at=r.created_at,
+                        params=cast(dict, r.params) or {},
+                        connector_instance_id=cast(uuid.UUID | None, r.connector_instance_id),
+                        display_order=cast(int, r.display_order),
+                        is_active=cast(bool, r.is_active),
+                        created_at=cast(datetime, r.created_at),
                     )
                     for r in rule_rows
                 ]
                 profiles.append(
                     VerificationProfile(
-                        id=row.id,
-                        organization_id=row.organization_id,
-                        name=row.name,
-                        description=row.description,
-                        is_default=row.is_default,
+                        id=cast(uuid.UUID, row.id),
+                        organization_id=cast(uuid.UUID, row.organization_id),
+                        name=cast(str, row.name),
+                        description=cast(str, row.description),
+                        is_default=cast(bool, row.is_default),
                         rules=rules,
-                        created_at=row.created_at,
-                        updated_at=row.updated_at,
+                        created_at=cast(datetime, row.created_at),
+                        updated_at=cast(datetime, row.updated_at),
                     )
                 )
 

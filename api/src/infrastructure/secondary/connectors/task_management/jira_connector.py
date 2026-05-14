@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 import httpx
 from application.ports.output.i_connector import IConnector
 
+APPLICATION_JSON = "application/json"
 
 class JiraConnector(IConnector):
     BASE_URL = "https://api.atlassian.com"
@@ -22,8 +23,9 @@ class JiraConnector(IConnector):
         }
 
     def _build_auth(self, config: Dict[str, Any]) -> Dict[str, str]:
-        email = config.get("email")
-        api_token = config.get("api_token")
+        # Ensure returned values are strings to match the declared return type
+        email = config.get("email", "") or ""
+        api_token = config.get("api_token", "") or ""
         return {"email": email, "api_token": api_token}
 
     def _get_base_url(self, config: Dict[str, Any]) -> str:
@@ -38,7 +40,7 @@ class JiraConnector(IConnector):
             response = await client.get(
                 f"{base_url}/rest/api/3/myself",
                 headers={
-                    "Accept": "application/json",
+                    "Accept": APPLICATION_JSON,
                     "email": auth["email"],
                     "api_token": auth["api_token"],
                 },
@@ -54,7 +56,7 @@ class JiraConnector(IConnector):
             response = await client.get(
                 f"{base_url}/rest/api/3/issue/{ref}",
                 headers={
-                    "Accept": "application/json",
+                    "Accept": APPLICATION_JSON,
                     "email": auth["email"],
                     "api_token": auth["api_token"],
                 },
@@ -74,7 +76,7 @@ class JiraConnector(IConnector):
             response = await client.get(
                 f"{base_url}/rest/api/3/search",
                 headers={
-                    "Accept": "application/json",
+                    "Accept": APPLICATION_JSON,
                     "email": auth["email"],
                     "api_token": auth["api_token"],
                 },

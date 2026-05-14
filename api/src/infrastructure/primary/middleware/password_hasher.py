@@ -17,4 +17,4 @@ class BcryptPasswordHasher(IPasswordHasher):
         return self._ctx.verify(plain, hashed)
 
     def needs_rehash(self, hashed: str) -> bool:
-        return self._ctx.needs_rehash(hashed)
+        return self._ctx.needs_update(hashed)

@@ -98,6 +98,7 @@ class ProfileService(IProfileService):
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_default: Optional[bool] = None,
+        requested_by: Optional[UUID] = None,
     ) -> VerificationProfile:
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:
@@ -143,7 +144,7 @@ class ProfileService(IProfileService):
 
 
     async def duplicate_profile(
-        self, profile_id: UUID, new_name: str
+        self, profile_id: UUID, new_name: str, requested_by: Optional[UUID] = None
     ) -> VerificationProfile:
         original = await self._profile_repo.get_by_id(profile_id)
         if not original:
@@ -177,7 +178,7 @@ class ProfileService(IProfileService):
         return duplicated_profile
 
 
-    async def delete_profile(self, profile_id: UUID) -> None:
+    async def delete_profile(self, profile_id: UUID, requested_by: UUID) -> None:
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
@@ -204,6 +205,7 @@ class ProfileService(IProfileService):
         connector_instance_id: Optional[UUID] = None,
         params: Optional[dict] = None,
         display_order: int = 0,
+        requested_by: Optional[UUID] = None,
     ) -> VerificationRule:
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:
@@ -241,6 +243,7 @@ class ProfileService(IProfileService):
         params: Optional[dict] = None,
         display_order: Optional[int] = None,
         is_active: Optional[bool] = None,
+        requested_by: Optional[UUID] = None,
     ) -> VerificationRule:
         rule = await self._rule_repo.get_by_id(rule_id)
         if not rule:
@@ -273,7 +276,7 @@ class ProfileService(IProfileService):
         return updated
 
 
-    async def delete_rule(self, rule_id: UUID) -> None:
+    async def delete_rule(self, rule_id: UUID, requested_by: UUID) -> None:
         rule = await self._rule_repo.get_by_id(rule_id)
         if not rule:
             raise EntityNotFoundError(f"Regla no encontrada: {rule_id}")

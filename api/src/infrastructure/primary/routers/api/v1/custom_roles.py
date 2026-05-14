@@ -15,12 +15,12 @@ class PermissionItem(str):
 class CustomRoleCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     name: str = Field(..., min_length=1, max_length=100)
-    permissions: list[str] = Field(..., min_items=1)
+    permissions: list[str] = Field(..., min_length=1)
 
 class CustomRoleUpdateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     name: Optional[str] = Field(None, min_length=1, max_length=100)
-    permissions: Optional[list[str]] = Field(None, min_items=1)
+    permissions: Optional[list[str]] = Field(None)
     is_active: Optional[bool] = None
 
 
@@ -86,6 +86,7 @@ async def create_custom_role(
             organization_id=org_id,
             name=payload.name,
             permissions=[Permission(p) for p in payload.permissions],
+            requested_by=current_user.user_id,
         )
         return {
             "id": str(role.id),
@@ -105,7 +106,7 @@ async def update_custom_role(
     role_id: UUID,
     payload: CustomRoleUpdateRequest,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
-    _ = Depends(require_custom_role_access()),
+    _: Annotated[None, Depends(require_custom_role_access())],
     service: Annotated[ICustomRoleService, Depends(get_custom_role_service)],
 ):
     """Actualiza un rol personalizado existente.
@@ -149,7 +150,7 @@ async def update_custom_role(
 async def delete_custom_role(
     role_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
-    _ = Depends(require_custom_role_access()),
+    _: Annotated[None, Depends(require_custom_role_access())],
     service: Annotated[ICustomRoleService, Depends(get_custom_role_service)],
 ):
     """Elimina un rol personalizado.
@@ -169,7 +170,7 @@ async def delete_custom_role(
         - 500 Internal Server Error para cualquier error inesperado.
     """
     try:
-        await service.delete_role(role_id=role_id)
+        await service.delete_role(role_id=role_id, requested_by=current_user.user_id)
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:

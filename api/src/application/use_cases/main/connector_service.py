@@ -34,7 +34,7 @@ class ConnectorService(IConnectorService):
     ) -> ConnectorInstance:
         from cryptography.fernet import Fernet
 
-        fernet = Fernet(settings.encryption_key.encode())
+        fernet = Fernet(settings.encryption_key.encode())  # pyright: ignore[reportOptionalMemberAccess]
         encrypted_credentials = fernet.encrypt(str(config).encode())
 
         connector = ConnectorInstance(
@@ -77,7 +77,7 @@ class ConnectorService(IConnectorService):
             connector.name = name
         if config:
             from cryptography.fernet import Fernet
-            fernet = Fernet(settings.encryption_key.encode())
+            fernet = Fernet(settings.encryption_key.encode())  # pyright: ignore[reportOptionalMemberAccess]
             connector.encrypted_credentials = fernet.encrypt(str(config).encode())
 
         updated = await self._connector_repo.update(connector)
@@ -109,7 +109,7 @@ class ConnectorService(IConnectorService):
             raise ValidationError(f"Implementación '{connector.connector_implementation}' no soportada")
 
         from cryptography.fernet import Fernet
-        fernet = Fernet(settings.encryption_key.encode())
+        fernet = Fernet(settings.encryption_key.encode())  # pyright: ignore[reportOptionalMemberAccess]
         decrypted_config = eval(fernet.decrypt(connector.encrypted_credentials).decode())
 
         try:
@@ -176,7 +176,7 @@ class ConnectorService(IConnectorService):
 
 
     async def toggle_connector_status(
-        self, connector_id: UUID, status: ConnectorStatus
+        self, connector_id: UUID, status: ConnectorStatus, requested_by: UUID
     ) -> ConnectorInstance:
         connector = await self._connector_repo.get_by_id(connector_id)
         if not connector:

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from fastapi.responses import FileResponse
 from typing import Literal
+from starlette.responses import Response
 
 from application.ports.input.i_release_service import IReleaseService
 from application.ports.input.i_artifact_service import IArtifactService
@@ -12,6 +13,10 @@ from application.ports.input.i_export_service import IExportService
 from core.dependencies import get_release_service, get_artifact_service, get_verification_service, get_export_service, get_current_user, CurrentUser, ProjectAccess, require_permission, require_project_access, require_release_access, require_role
 from domain.enums import ArtifactType, ReleaseStatus, Permission, UserRole
 from domain.exceptions import ValidationError, EntityNotFoundError
+
+# Constantes de mensajes de error
+RELEASE_NOT_FOUND = "Release no encontrada"
+RELEASE_OR_VERIFICATION_NOT_FOUND = "Release o verificación no encontradas"
 
 # Quitamos el prefix global para poder manejar tanto rutas de proyectos como de releases directas
 router = APIRouter(tags=["Releases"])
@@ -27,6 +32,7 @@ class ArtifactCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     type: ArtifactType
     connector_id: UUID
+    connector_implementation: str
     external_ref: str
     description: str = ""
 
@@ -125,7 +131,7 @@ async def get_release(
     try:
         release = await service.get_release(release_id=id)
         if not release:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release no encontrada")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
         return release
     except HTTPException:
         raise
@@ -281,7 +287,7 @@ async def list_artifacts(
         artifacts = await service.list_artifacts(release_id=id)
         return artifacts
     except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release no encontrada")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -313,6 +319,7 @@ async def add_artifact(
         artifact = await service.add_artifact(
             release_id=id,
             connector_instance_id=payload.connector_id,
+            connector_implementation=payload.connector_implementation,
             artifact_type=payload.type,
             external_ref=payload.external_ref,
             metadata={"description": payload.description} if payload.description else None
@@ -321,7 +328,7 @@ async def add_artifact(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release no encontrada")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -352,7 +359,7 @@ async def remove_artifact(
         await service.remove_artifact(release_id=id, artifact_id=artifact_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release o artefacto no encontrados")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -419,7 +426,7 @@ async def get_results(
         results = await service.get_verification_history(release_id=id)
         return results
     except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release no encontrada")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -450,7 +457,7 @@ async def get_result_detail(
         result = await service.get_verification_result(release_id=id, result_id=rid)
         return result
     except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release o verificación no encontradas")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_OR_VERIFICATION_NOT_FOUND)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -478,10 +485,10 @@ async def get_verification_detail(
         - 500 Internal Server Error para cualquier otro error inesperado
     """
     try:
-        result = await service.get_verification_result(release_id=id, result_id=rid)
+        result = await service.get_verification_result(release_id=id, result_id=verification_id)
         return result
     except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release o verificación no encontradas")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_OR_VERIFICATION_NOT_FOUND)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -570,47 +577,19 @@ async def import_artifacts(
 ):
     """Importa múltiples artefactos a una release desde un fichero CSV.
 
+    Permite la importación masiva de artefactos a partir de un archivo CSV
+    proporcionado en la solicitud. La operación se ejecuta de forma asíncrona.
+
     Atributos:
         - id: ID de la release a la que se importarán los artefactos.
         - current_user: Usuario autenticado con permisos del token JWT.
         - service: Instancia del servicio de artefactos (inyección de dependencias).
 
     Retorna:
-        - 202 Accepted si la importación se inicia exitosamente
-        - 403 Forbidden si el usuario no tiene acceso a la release
-        - 404 Not Found si la release no se encuentra
-        - 422 Unprocessable Entity si el fichero CSV no es válido
-        - 500 Internal Server Error para cualquier otro error inesperado
+        - 202 Accepted si la importación se inicia exitosamente.
+        - 403 Forbidden si el usuario no tiene acceso a la release.
+        - 404 Not Found si la release no se encuentra.
+        - 422 Unprocessable Entity si el fichero CSV no es válido.
+        - 500 Internal Server Error para cualquier otro error inesperado.
     """
     pass
-
-
-@router.get("/api/v1/releases/{id}/results/{rid}")
-async def get_result_detail(
-    id: UUID,
-    rid: UUID,
-    current_user: CurrentUser = Depends(require_permission(Permission.VIEW_OWN_HISTORY)),
-    _ = Depends(require_release_access()),
-    service: IVerificationService = Depends(get_verification_service),
-):
-    """Obtiene el informe detallado de una validación individual.
-
-    Atributos:
-        - id: ID de la release a la que pertenece la verificación.
-        - rid: ID de la verificación individual de la que se quieren obtener los detalles.
-        - current_user: Usuario autenticado con permisos del token JWT.
-        - service: Instancia del servicio de verificaciones (inyección de dependencias).
-
-    Retorna:
-        - 200 OK con el informe detallado de la verificación si se encuentra exitosamente
-        - 403 Forbidden si el usuario no tiene acceso
-        - 404 Not Found si la release o la verificación no se encuentran
-        - 500 Internal Server Error para cualquier otro error inesperado
-    """
-    try:
-        result = await service.get_verification_result(release_id=id, result_id=rid)
-        return result
-    except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release o verificación no encontradas")
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

@@ -1,5 +1,6 @@
 from sqlalchemy.future import select
-from typing import List, Optional
+from typing import List, Optional, cast
+from datetime import datetime
 import uuid
 import hashlib
 from application.ports.output.i_api_key_repository import IAPIKeyRepository
@@ -10,16 +11,16 @@ from infrastructure.secondary.database.get_async_session import get_async_sessio
 
 def _model_to_entity(row: APIKeyModel) -> APIKey:
     return APIKey(
-        id=row.id,
-        user_id=row.user_id,
-        organization_id=row.organization_id,
-        name=row.name,
-        key_hash=row.key_hash,
-        prefix=row.prefix,
-        is_active=row.is_active,
-        created_at=row.created_at,
-        expires_at=row.expires_at,
-        last_used_at=row.last_used_at,
+        id=cast(uuid.UUID, row.id),
+        user_id=cast(uuid.UUID, row.user_id),
+        organization_id=cast(uuid.UUID, row.organization_id),
+        name=cast(str, row.name),
+        key_hash=cast(str, row.key_hash),
+        prefix=cast(str, row.prefix),
+        is_active=cast(bool, row.is_active),
+        created_at=cast(datetime, row.created_at),
+        expires_at=cast(datetime | None, row.expires_at),
+        last_used_at=cast(datetime | None, row.last_used_at),
     )
 
 
@@ -111,10 +112,10 @@ class SqlAPIKeyRepository(IAPIKeyRepository):
             model = await session.get(APIKeyModel, api_key.id)
             if not model:
                 raise ValueError("API key not found")
-            model.name = api_key.name
-            model.is_active = api_key.is_active
-            model.expires_at = api_key.expires_at
-            model.last_used_at = api_key.last_used_at
+            model.name = api_key.name  # pyright: ignore[reportAttributeAccessIssue]
+            model.is_active = api_key.is_active  # pyright: ignore[reportAttributeAccessIssue]
+            model.expires_at = api_key.expires_at  # pyright: ignore[reportAttributeAccessIssue]
+            model.last_used_at = api_key.last_used_at  # pyright: ignore[reportAttributeAccessIssue]
             await session.commit()
             await session.refresh(model)
             return _model_to_entity(model)

@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import Optional, List
+from typing import Optional, List, cast
 import uuid
 from datetime import datetime
 from application.ports.output.i_user_repository import IUserRepository
@@ -11,18 +11,19 @@ from infrastructure.secondary.database.get_async_session import get_async_sessio
 
 class SqlUserRepository(IUserRepository):
     def _model_to_entity(self, row: UserModel) -> User:
+        org_id = cast(uuid.UUID | None, row.organization_id)
         return User(
-            id=row.id,
-            email=row.email,
-            hashed_password=row.hashed_password,
-            display_name=row.display_name,
+            id=cast(uuid.UUID, row.id),
+            email=cast(str, row.email),
+            hashed_password=cast(str, row.hashed_password),
+            display_name=cast(str, row.display_name),
             role=UserRole(row.role),
-            organization_id=row.organization_id,
-            is_active=row.is_active,
-            failed_login_attempts=row.failed_login_attempts,
-            locked_until=row.locked_until,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
+            organization_ids=[org_id] if org_id is not None else [],
+            is_active=cast(bool, row.is_active),
+            failed_login_attempts=cast(int, row.failed_login_attempts),
+            locked_until=cast(datetime | None, row.locked_until),
+            created_at=cast(datetime, row.created_at),
+            updated_at=cast(datetime, row.updated_at),
         )
 
     async def create(self, user: User) -> User:
@@ -114,15 +115,15 @@ class SqlUserRepository(IUserRepository):
             if not user_model:
                 raise ValueError("User not found")
 
-            user_model.email = user.email
-            user_model.hashed_password = user.hashed_password
-            user_model.display_name = user.display_name
-            user_model.role = user.role.value
-            user_model.organization_id = user.organization_id
-            user_model.is_active = user.is_active
-            user_model.failed_login_attempts = user.failed_login_attempts
-            user_model.locked_until = user.locked_until
-            user_model.updated_at = datetime.utcnow()
+            user_model.email = user.email  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.hashed_password = user.hashed_password  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.display_name = user.display_name  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.role = user.role.value  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.organization_id = user.organization_id  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.is_active = user.is_active  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.failed_login_attempts = user.failed_login_attempts  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.locked_until = user.locked_until  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(user_model)

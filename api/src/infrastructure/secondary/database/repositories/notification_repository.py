@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import Optional, List
+from typing import Optional, List, cast
 import uuid
 from datetime import datetime
 from application.ports.output.i_notification_repository import INotificationRepository
@@ -29,13 +29,13 @@ class SqlNotificationRepository(INotificationRepository):
             await session.refresh(model)
 
             return NotificationChannel(
-                id=model.id,
-                organization_id=model.organization_id,
-                channel_type=model.channel_type,
-                enabled=model.enabled,
-                config_data=model.config_data or {},
-                created_at=model.created_at,
-                updated_at=model.updated_at,
+                id=cast(uuid.UUID, model.id),
+                organization_id=cast(uuid.UUID, model.organization_id),
+                channel_type=cast(str, model.channel_type),
+                enabled=cast(bool, model.enabled),
+                config_data=cast(dict, model.config_data) or {},
+                created_at=cast(datetime, model.created_at),
+                updated_at=cast(datetime, model.updated_at),
             )
         except Exception as e:
             await session.rollback()
@@ -54,13 +54,13 @@ class SqlNotificationRepository(INotificationRepository):
 
             return [
                 NotificationChannel(
-                    id=row.id,
-                    organization_id=row.organization_id,
-                    channel_type=row.channel_type,
-                    enabled=row.enabled,
-                    config_data=row.config_data or {},
-                    created_at=row.created_at,
-                    updated_at=row.updated_at,
+                    id=cast(uuid.UUID, row.id),
+                    organization_id=cast(uuid.UUID, row.organization_id),
+                    channel_type=cast(str, row.channel_type),
+                    enabled=cast(bool, row.enabled),
+                    config_data=cast(dict, row.config_data) or {},
+                    created_at=cast(datetime, row.created_at),
+                    updated_at=cast(datetime, row.updated_at),
                 )
                 for row in rows
             ]
@@ -80,13 +80,13 @@ class SqlNotificationRepository(INotificationRepository):
                 return None
 
             return NotificationChannel(
-                id=row.id,
-                organization_id=row.organization_id,
-                channel_type=row.channel_type,
-                enabled=row.enabled,
-                config_data=row.config_data or {},
-                created_at=row.created_at,
-                updated_at=row.updated_at,
+                id=cast(uuid.UUID, row.id),
+                organization_id=cast(uuid.UUID, row.organization_id),
+                channel_type=cast(str, row.channel_type),
+                enabled=cast(bool, row.enabled),
+                config_data=cast(dict, row.config_data) or {},
+                created_at=cast(datetime, row.created_at),
+                updated_at=cast(datetime, row.updated_at),
             )
         except Exception as e:
             await session.rollback()
@@ -102,22 +102,22 @@ class SqlNotificationRepository(INotificationRepository):
             if not model:
                 raise ValueError("Notification channel not found")
 
-            model.channel_type = channel.channel_type
-            model.enabled = channel.enabled
-            model.config_data = channel.config_data
-            model.updated_at = datetime.utcnow()
+            model.channel_type = channel.channel_type  # pyright: ignore[reportAttributeAccessIssue]
+            model.enabled = channel.enabled  # pyright: ignore[reportAttributeAccessIssue]
+            model.config_data = channel.config_data  # pyright: ignore[reportAttributeAccessIssue]
+            model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(model)
 
             return NotificationChannel(
-                id=model.id,
-                organization_id=model.organization_id,
-                channel_type=model.channel_type,
-                enabled=model.enabled,
-                config_data=model.config_data or {},
-                created_at=model.created_at,
-                updated_at=model.updated_at,
+                id=cast(uuid.UUID, model.id),
+                organization_id=cast(uuid.UUID, model.organization_id),
+                channel_type=cast(str, model.channel_type),
+                enabled=cast(bool, model.enabled),
+                config_data=cast(dict, model.config_data) or {},
+                created_at=cast(datetime, model.created_at),
+                updated_at=cast(datetime, model.updated_at),
             )
         except Exception as e:
             await session.rollback()
@@ -152,12 +152,12 @@ class SqlNotificationRepository(INotificationRepository):
 
             return [
                 NotificationSubscription(
-                    id=row.id,
-                    user_id=row.user_id,
-                    event_type=row.event_type,
-                    enabled=row.enabled,
-                    created_at=row.created_at,
-                    updated_at=row.updated_at,
+                    id=cast(uuid.UUID, row.id),
+                    user_id=cast(uuid.UUID, row.user_id),
+                    event_type=cast(str, row.event_type),
+                    enabled=cast(bool, row.enabled),
+                    created_at=cast(datetime, row.created_at),
+                    updated_at=cast(datetime, row.updated_at),
                 )
                 for row in rows
             ]
@@ -182,12 +182,12 @@ class SqlNotificationRepository(INotificationRepository):
                 return None
 
             return NotificationSubscription(
-                id=row.id,
-                user_id=row.user_id,
-                event_type=row.event_type,
-                enabled=row.enabled,
-                created_at=row.created_at,
-                updated_at=row.updated_at,
+                id=cast(uuid.UUID, row.id),
+                user_id=cast(uuid.UUID, row.user_id),
+                event_type=cast(str, row.event_type),
+                enabled=cast(bool, row.enabled),
+                created_at=cast(datetime, row.created_at),
+                updated_at=cast(datetime, row.updated_at),
             )
         except Exception as e:
             await session.rollback()
@@ -208,8 +208,8 @@ class SqlNotificationRepository(INotificationRepository):
             existing = result.scalar_one_or_none()
 
             if existing:
-                existing.enabled = subscription.enabled
-                existing.updated_at = datetime.utcnow()
+                existing.enabled = subscription.enabled  # pyright: ignore[reportAttributeAccessIssue]
+                existing.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
                 await session.commit()
                 await session.refresh(existing)
                 row = existing
@@ -228,12 +228,12 @@ class SqlNotificationRepository(INotificationRepository):
                 row = model
 
             return NotificationSubscription(
-                id=row.id,
-                user_id=row.user_id,
-                event_type=row.event_type,
-                enabled=row.enabled,
-                created_at=row.created_at,
-                updated_at=row.updated_at,
+                id=cast(uuid.UUID, row.id),
+                user_id=cast(uuid.UUID, row.user_id),
+                event_type=cast(str, row.event_type),
+                enabled=cast(bool, row.enabled),
+                created_at=cast(datetime, row.created_at),
+                updated_at=cast(datetime, row.updated_at),
             )
         except Exception as e:
             await session.rollback()

@@ -49,7 +49,7 @@ class CreateReleaseUseCase(IReleaseService):
             status=ReleaseStatus.BORRADOR
         )
 
-        created = await self.release_repository.create(new_release)
+        await self.release_repository.create(new_release)
 
         audit = get_audit_logger()
         audit.log(AuditEntry(
@@ -57,12 +57,12 @@ class CreateReleaseUseCase(IReleaseService):
             user_id=user_id,
             organization_id=project.organization_id,
             resource_type="release",
-            resource_id=created.id,
+            resource_id=new_release.id,
             details={"name": name, "version": version},
         ))
-        _log.info("Release created: id=%s project=%s name=%s v=%s", created.id, project_id, name, version)
+        _log.info("Release created: id=%s project=%s name=%s v=%s", new_release.id, project_id, name, version)
 
-        return created
+        return new_release
            
 
     async def get_release(self, release_id: UUID) -> Release | None:
@@ -102,6 +102,7 @@ class CreateReleaseUseCase(IReleaseService):
         self,
         release_id: UUID,
         connector_instance_id: UUID,
+        connector_implementation: str,
         artifact_type: str,
         external_ref: str,
         metadata: Optional[dict] = None,
@@ -114,6 +115,7 @@ class CreateReleaseUseCase(IReleaseService):
             id=uuid4(),
             release_id=release_id,
             connector_instance_id=connector_instance_id,
+            connector_implementation=connector_implementation,
             artifact_type=artifact_type,
             external_ref=external_ref,
             metadata=metadata or {}

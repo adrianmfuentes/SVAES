@@ -1,9 +1,9 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Annotated, List, Optional
+from typing import Annotated
 from application.ports.input.i_notification_service import INotificationService
-from core.dependencies import get_current_user, CurrentUser, require_permission, require_role
+from core.dependencies import get_current_user, CurrentUser, require_permission, require_role, get_notification_service
 from domain.enums import UserRole, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError
 
@@ -14,7 +14,7 @@ class NotificationChannelConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     channel_type: str = Field(..., description="EMAIL, SLACK, MS_TEAMS")
     enabled: bool = True
-    config_data: dict = Field(default=dict, description="Channel-specific configuration")
+    config_data: dict = Field(default_factory=dict, description="Channel-specific configuration")
 
 
 class UserNotificationPreferences(BaseModel):
@@ -47,6 +47,8 @@ async def list_notification_channels(
         - 500 Internal Server Error para cualquier error inesperado.
     """
     try:
+        if current_user.organization_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Se requiere organizacion")
         channels = await service.list_channels(organization_id=current_user.organization_id)
         return channels
     except Exception as e:
@@ -72,6 +74,8 @@ async def configure_notification_channel(
         - 500 Internal Server Error para cualquier error inesperado.
     """
     try:
+        if current_user.organization_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Se requiere organizacion")
         channel = await service.configure_channel(
             organization_id=current_user.organization_id,
             channel_type=payload.channel_type,

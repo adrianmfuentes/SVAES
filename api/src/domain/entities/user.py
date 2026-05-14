@@ -18,6 +18,17 @@ class User:
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     organization_ids: List[UUID] = field(default_factory=list)
 
+    @property
+    def organization_id(self) -> Optional[UUID]:
+        return self.organization_ids[0] if self.organization_ids else None
+
+    @organization_id.setter
+    def organization_id(self, value: Optional[UUID]) -> None:
+        if value is None:
+            self.organization_ids = []
+        elif value not in self.organization_ids:
+            self.organization_ids.append(value)
+
 
 @dataclass
 class UserMembership:

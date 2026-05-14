@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import Optional, List
+from typing import Optional, List, cast
 import uuid
 from datetime import datetime
 from application.ports.output.i_custom_role_repository import ICustomRoleRepository
@@ -12,13 +12,13 @@ from infrastructure.secondary.database.get_async_session import get_async_sessio
 class SqlCustomRoleRepository(ICustomRoleRepository):
     def _model_to_entity(self, row: CustomRoleModel) -> CustomRole:
         return CustomRole(
-            id=row.id,
-            organization_id=row.organization_id,
-            name=row.name,
+            id=cast(uuid.UUID, row.id),
+            organization_id=cast(uuid.UUID, row.organization_id),
+            name=cast(str, row.name),
             permissions=[Permission(p) for p in row.permissions],
-            is_active=row.is_active,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
+            is_active=cast(bool, row.is_active),
+            created_at=cast(datetime, row.created_at),
+            updated_at=cast(datetime, row.updated_at),
         )
 
     async def create(self, role: CustomRole) -> CustomRole:
@@ -85,10 +85,10 @@ class SqlCustomRoleRepository(ICustomRoleRepository):
             if not model:
                 raise ValueError("Custom role not found")
 
-            model.name = role.name
-            model.permissions = [p.value for p in role.permissions]
-            model.is_active = role.is_active
-            model.updated_at = datetime.utcnow()
+            model.name = role.name  # pyright: ignore[reportAttributeAccessIssue]
+            model.permissions = [p.value for p in role.permissions]  # pyright: ignore[reportAttributeAccessIssue]
+            model.is_active = role.is_active  # pyright: ignore[reportAttributeAccessIssue]
+            model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(model)

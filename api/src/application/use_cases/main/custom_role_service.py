@@ -63,6 +63,7 @@ class CustomRoleService(ICustomRoleService):
         name: Optional[str] = None,
         permissions: Optional[List[Permission]] = None,
         is_active: Optional[bool] = None,
+        requested_by: Optional[UUID] = None,
     ) -> CustomRole:
         role = await self._repo.get_by_id(role_id)
         if not role:
@@ -82,7 +83,7 @@ class CustomRoleService(ICustomRoleService):
         return await self._repo.update(role)
 
 
-    async def delete_role(self, role_id: UUID) -> None:
+    async def delete_role(self, role_id: UUID, requested_by: UUID) -> None:
         role = await self._repo.get_by_id(role_id)
         if not role:
             raise EntityNotFoundError(f"Rol no encontrado: {role_id}")

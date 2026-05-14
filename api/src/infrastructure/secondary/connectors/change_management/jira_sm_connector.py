@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 import httpx
 from application.ports.output.i_connector import IConnector
 
+APPLICATION_JSON = "application/json"
 
 class JiraServiceManagementConnector(IConnector):
     BASE_URL = "https://api.atlassian.com"
@@ -21,7 +22,7 @@ class JiraServiceManagementConnector(IConnector):
             "artifact_types": ["request", "request_type", "approval"],
         }
 
-    def _build_auth(self, config: Dict[str, Any]) -> Dict[str, str]:
+    def _build_auth(self, config: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "email": config.get("email"),
             "api_token": config.get("api_token"),
@@ -38,7 +39,7 @@ class JiraServiceManagementConnector(IConnector):
             response = await client.get(
                 f"{base_url}/rest/servicedesk/1/servicedesk",
                 headers={
-                    "Accept": "application/json",
+                    "Accept": APPLICATION_JSON,
                     "email": auth["email"],
                     "api_token": auth["api_token"],
                 },
@@ -53,7 +54,7 @@ class JiraServiceManagementConnector(IConnector):
             response = await client.get(
                 f"{base_url}/rest/servicedesk/1/request/{ref}",
                 headers={
-                    "Accept": "application/json",
+                    "Accept": APPLICATION_JSON,
                     "email": auth["email"],
                     "api_token": auth["api_token"],
                 },
@@ -72,7 +73,7 @@ class JiraServiceManagementConnector(IConnector):
                 response = await client.get(
                     f"{base_url}/rest/servicedesk/1/servicedesk/{service_desk_id}/request",
                     headers={
-                        "Accept": "application/json",
+                        "Accept": APPLICATION_JSON,
                         "email": auth["email"],
                         "api_token": auth["api_token"],
                     },
@@ -82,7 +83,7 @@ class JiraServiceManagementConnector(IConnector):
                 response = await client.get(
                     f"{base_url}/rest/servicedesk/1/request",
                     headers={
-                        "Accept": "application/json",
+                        "Accept": APPLICATION_JSON,
                         "email": auth["email"],
                         "api_token": auth["api_token"],
                     },

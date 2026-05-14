@@ -33,3 +33,23 @@ class IUserService(ABC):
     @abstractmethod
     async def remove_user_from_organization(self, user_id: UUID, organization_id: UUID, requested_by: UUID) -> None:
         pass
+
+    @abstractmethod
+    async def create_user(self, email: str, display_name: str, password: str, role: UserRole) -> User:
+        pass
+
+    @abstractmethod
+    async def activate_user(self, user_id: UUID) -> User:
+        pass
+
+    @abstractmethod
+    async def deactivate_user(self, user_id: UUID, requested_by: UUID) -> User:
+        pass
+
+    @abstractmethod
+    async def update_global_role(self, user_id: UUID, new_role: UserRole, requested_by: UUID) -> User:
+        pass
+
+    @abstractmethod
+    async def list_all_users(self, skip: int = 0, limit: int = 50, is_active: Optional[bool] = None, role: Optional[UserRole] = None) -> List[User]:
+        pass

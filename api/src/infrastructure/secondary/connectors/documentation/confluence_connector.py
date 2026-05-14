@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 import httpx
 from application.ports.output.i_connector import IConnector
 
+APPLICATION_JSON = "application/json"
 
 class ConfluenceConnector(IConnector):
     BASE_URL = "https://api.atlassian.com"
@@ -21,7 +22,8 @@ class ConfluenceConnector(IConnector):
             "artifact_types": ["page", "space", "blogpost"],
         }
 
-    def _build_auth(self, config: Dict[str, Any]) -> Dict[str, str]:
+    def _build_auth(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        # config.get may return None, so keep value type as Any to satisfy type checker
         return {
             "email": config.get("email"),
             "api_token": config.get("api_token"),
@@ -38,7 +40,7 @@ class ConfluenceConnector(IConnector):
             response = await client.get(
                 f"{base_url}/wiki/rest/api/user/current",
                 headers={
-                    "Accept": "application/json",
+                    "Accept": APPLICATION_JSON,
                     "email": auth["email"],
                     "api_token": auth["api_token"],
                 },
@@ -53,7 +55,7 @@ class ConfluenceConnector(IConnector):
             response = await client.get(
                 f"{base_url}/wiki/rest/api/content/{ref}",
                 headers={
-                    "Accept": "application/json",
+                    "Accept": APPLICATION_JSON,
                     "email": auth["email"],
                     "api_token": auth["api_token"],
                 },
@@ -75,7 +77,7 @@ class ConfluenceConnector(IConnector):
             response = await client.get(
                 f"{base_url}/wiki/rest/api/content/search",
                 headers={
-                    "Accept": "application/json",
+                    "Accept": APPLICATION_JSON,
                     "email": auth["email"],
                     "api_token": auth["api_token"],
                 },

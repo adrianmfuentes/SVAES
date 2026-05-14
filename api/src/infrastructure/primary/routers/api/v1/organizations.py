@@ -24,10 +24,10 @@ class ProjectCreateRequest(BaseModel):
 
 @router.get("/api/v1/organizations")
 async def list_organizations(
-    skip: int = 0,
-    limit: int = 100,
     current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3))],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
+    skip: int = 0,
+    limit: int = 100,
 ):
     """ Endpoint para listar las organizaciones. Solo los usuarios con rol ADMIN pueden acceder a esta información.
 
@@ -123,15 +123,12 @@ async def get_organization(
 
 @router.get("/api/v1/projects")
 async def list_accessible_projects(
-    skip: int = 0,
-    limit: int = 50,
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
+    skip: int = 0,
+    limit: int = 50,
 ):
-    """Endpoint global para listar proyectos accesibles por el usuario.
-
-    Este endpoint retorna proyectos filtrados automáticamente según la accesibilidad
-    del usuario (basado en sus членства en organizaciones).
+    """Endpoint global para listar proyectos accesibles por el usuario. Este endpoint retorna proyectos filtrados según la accesibilidad del usuario.
 
     Atributos:
         - skip: int - Número de registros a omitir para paginación.

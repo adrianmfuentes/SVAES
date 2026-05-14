@@ -78,7 +78,7 @@ class UserService(IUserService):
             hashed_password=temp_password,
             display_name=email.split("@")[0],
             role=role,
-            organization_id=organization_id,
+            organization_ids=[organization_id],
             is_active=False,
         )
         created = await self._user_repo.create(user)
@@ -151,5 +151,92 @@ class UserService(IUserService):
         _log.info("User removed from org: by=%s user=%s org=%s", requested_by, user_id, organization_id)
 
         user.organization_id = None
-        user.role = UserRole.VIEWER
+        user.role = UserRole.U1
         await self._user_repo.update(user)
+
+    async def create_user(self, email: str, display_name: str, password: str, role: UserRole) -> User:
+        existing = await self._user_repo.get_by_email(email)
+        if existing:
+            raise DuplicateEntityError(f"Ya existe un usuario con email: {email}")
+
+        hashed = self._password_hasher.hash_password(password)
+        user = User(
+            id=uuid4(),
+            email=email,
+            display_name=display_name,
+            hashed_password=hashed,
+            role=role,
+            is_active=True,
+        )
+        created = await self._user_repo.create(user)
+        _log.info("User created: email=%s role=%s", email, role.value)
+        return created
+
+    async def activate_user(self, user_id: UUID) -> User:
+        user = await self._user_repo.get_by_id(user_id)
+        if not user:
+            raise EntityNotFoundError(f"Usuario no encontrado: {user_id}")
+
+        user.is_active = True
+        updated = await self._user_repo.update(user)
+        _log.info("User activated: id=%s", user_id)
+        return updated
+
+    async def deactivate_user(self, user_id: UUID, requested_by: UUID) -> User:
+        user = await self._user_repo.get_by_id(user_id)
+        if not user:
+            raise EntityNotFoundError(f"Usuario no encontrado: {user_id}")
+
+        user.is_active = False
+        updated = await self._user_repo.update(user)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.USER_DEACTIVATED,
+            user_id=requested_by,
+            organization_id=None,
+            resource_type="user",
+            resource_id=user_id,
+            details={"email": user.email},
+        ))
+        _log.info("User deactivated: by=%s user=%s", requested_by, user_id)
+        return updated
+
+    async def update_global_role(self, user_id: UUID, new_role: UserRole, requested_by: UUID) -> User:
+        user = await self._user_repo.get_by_id(user_id)
+        if not user:
+            raise EntityNotFoundError(f"Usuario no encontrado: {user_id}")
+
+        old_role = user.role
+        user.role = new_role
+        updated = await self._user_repo.update(user)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.USER_ROLE_CHANGED,
+            user_id=requested_by,
+            organization_id=None,
+            resource_type="user",
+            resource_id=user_id,
+            details={"target_user": str(user_id), "old_role": old_role.value, "new_role": new_role.value},
+        ))
+        _log.info("Global role changed: by=%s user=%s %s->%s", requested_by, user_id, old_role.value, new_role.value)
+        return updated
+
+    async def list_all_users(
+        self,
+        skip: int = 0,
+        limit: int = 50,
+        is_active: Optional[bool] = None,
+        role: Optional[UserRole] = None,
+    ) -> List[User]:
+        active_only = True if is_active is None else is_active
+        users = await self._user_repo.list_all(
+            organization_id=None,
+            active_only=active_only,
+            skip=skip,
+            limit=limit,
+        )
+        if role is not None:
+            users = [u for u in users if u.role == role]
+        return users

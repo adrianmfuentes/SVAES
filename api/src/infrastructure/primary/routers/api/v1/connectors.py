@@ -38,6 +38,20 @@ class ConnectorTestRequest(BaseModel):
 async def list_connector_types(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
 ):
+    """Endpoint para listar los tipos de conectores disponibles y sus implementaciones.
+
+    Retorna la lista de todas las implementaciones de conectores registradas,
+    agrupadas por tipo de conector, junto con sus metadatos y esquemas de
+    configuración.
+
+    Atributos:
+        - current_user: Usuario autenticado con permisos del token JWT.
+
+    Retorna:
+        - Diccionario con la lista de implementaciones y la agrupación por tipo.
+        - 401 Unauthorized si el token es inválido.
+        - 500 Internal Server Error para cualquier error inesperado.
+    """
     from infrastructure.secondary.connectors import create_registered_connector_registry
     registry = create_registered_connector_registry()
     implementations = registry.list_all_implementations()
@@ -172,9 +186,9 @@ def _get_config_schema(implementation: str) -> dict:
 @router.get("/api/v1/organizations/{org_id}/connectors")
 async def list_connectors(
     org_id: UUID,
-    active_only: bool = True,
     current_user: Annotated[CurrentUser, Depends(require_org_access())],
     service: Annotated[IConnectorService, Depends(get_connector_service)],
+    active_only: bool = True,
 ):
     """Endpoint para listar los conectores de una organización.
 
@@ -248,8 +262,8 @@ async def update_connector(
     connector_id: UUID,
     payload: ConnectorUpdateRequest,
     current_user: Annotated[CurrentUser, Depends(require_org_access())],
-    _ = Depends(require_connector_access()),
     service: Annotated[IConnectorService, Depends(get_connector_service)],
+    _ = Depends(require_connector_access()),
 ):
     """Endpoint para actualizar un conector existente.
 
@@ -286,9 +300,9 @@ async def update_connector(
 async def delete_connector(
     org_id: UUID,
     connector_id: UUID,
-    current_user: Annotated[CurrentUser, Depends(require_org_access())],
+    current_user: Annotated[CurrentUser, Depends(require_org_access())] = Depends(require_org_access()),
     _ = Depends(require_connector_access()),
-    service: Annotated[IConnectorService, Depends(get_connector_service)],
+    service: Annotated[IConnectorService, Depends(get_connector_service)] = Depends(get_connector_service),
 ):
     """Endpoint para eliminar un conector existente.
 
@@ -319,8 +333,8 @@ async def test_connector(
     org_id: UUID,
     connector_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_org_access())],
-    _ = Depends(require_connector_access()),
     service: Annotated[IConnectorService, Depends(get_connector_service)],
+    _ = Depends(require_connector_access()),
 ):
     """Endpoint para probar la conexión de un conector existente.
 

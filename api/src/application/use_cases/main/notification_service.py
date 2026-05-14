@@ -167,7 +167,7 @@ class NotificationService(INotificationService):
         user_id: UUID,
         event_type: str,
         enabled: bool = True,
-    ):
+    ) -> Dict[str, Any]:
         if event_type not in SUPPORTED_EVENT_TYPES:
             raise ValidationError(f"Tipo de evento no soportado: {event_type}")
 
@@ -189,7 +189,13 @@ class NotificationService(INotificationService):
         ))
         _log.info("Notification subscription: user=%s event=%s enabled=%s", user_id, event_type, enabled)
 
-        return created
+        return {
+            "id": str(created.id),
+            "user_id": str(created.user_id),
+            "event_type": created.event_type,
+            "enabled": created.enabled,
+            "created_at": created.created_at.isoformat(),
+        }
 
     async def unsubscribe(self, user_id: UUID, event_type: str):
         await self._repo.delete_subscription(user_id, event_type)

@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import List, Optional
+from typing import List, Optional, cast
 import uuid
 from datetime import datetime
 from application.ports.output.i_artifact_repository import IArtifactRepository
@@ -19,7 +19,7 @@ class SqlArtifactRepository(IArtifactRepository):
                 release_id=artifact.release_id,
                 connector_instance_id=artifact.connector_instance_id,
                 connector_implementation=artifact.connector_implementation,
-                artifact_type=artifact.artifact_type.value if hasattr(artifact.artifact_type, 'value') else artifact.artifact_type,
+                artifact_type=getattr(artifact.artifact_type, 'value', artifact.artifact_type),
                 external_ref=artifact.external_ref,
                 metadata=artifact.metadata,
                 created_at=artifact.created_at,
@@ -29,14 +29,14 @@ class SqlArtifactRepository(IArtifactRepository):
             await session.refresh(artifact_model)
 
             return Artifact(
-                id=artifact_model.id,
-                release_id=artifact_model.release_id,
-                connector_instance_id=artifact_model.connector_instance_id,
-                connector_implementation=artifact_model.connector_implementation,
-                artifact_type=artifact_model.artifact_type,
-                external_ref=artifact_model.external_ref,
-                metadata=artifact_model.metadata or {},
-                created_at=artifact_model.created_at,
+                id=cast(uuid.UUID, artifact_model.id),
+                release_id=cast(uuid.UUID, artifact_model.release_id),
+                connector_instance_id=cast(uuid.UUID, artifact_model.connector_instance_id),
+                connector_implementation=cast(str, artifact_model.connector_implementation),
+                artifact_type=cast(str, artifact_model.artifact_type),
+                external_ref=cast(str, artifact_model.external_ref),
+                metadata=cast(dict, artifact_model.metadata) or {},
+                created_at=cast(datetime, artifact_model.created_at),
             )
         except Exception as e:
             await session.rollback()
@@ -54,14 +54,14 @@ class SqlArtifactRepository(IArtifactRepository):
                 return None
 
             return Artifact(
-                id=artifact_row.id,
-                release_id=artifact_row.release_id,
-                connector_instance_id=artifact_row.connector_instance_id,
-                connector_implementation=artifact_row.connector_implementation,
-                artifact_type=artifact_row.artifact_type,
-                external_ref=artifact_row.external_ref,
-                metadata=artifact_row.metadata or {},
-                created_at=artifact_row.created_at,
+                id=cast(uuid.UUID, artifact_row.id),
+                release_id=cast(uuid.UUID, artifact_row.release_id),
+                connector_instance_id=cast(uuid.UUID, artifact_row.connector_instance_id),
+                connector_implementation=cast(str, artifact_row.connector_implementation),
+                artifact_type=cast(str, artifact_row.artifact_type),
+                external_ref=cast(str, artifact_row.external_ref),
+                metadata=cast(dict, artifact_row.metadata) or {},
+                created_at=cast(datetime, artifact_row.created_at),
             )
         except Exception as e:
             await session.rollback()
@@ -83,14 +83,14 @@ class SqlArtifactRepository(IArtifactRepository):
 
             return [
                 Artifact(
-                    id=row.id,
-                    release_id=row.release_id,
-                    connector_instance_id=row.connector_instance_id,
-                    connector_implementation=row.connector_implementation,
-                    artifact_type=row.artifact_type,
-                    external_ref=row.external_ref,
-                    metadata=row.metadata or {},
-                    created_at=row.created_at,
+                    id=cast(uuid.UUID, row.id),
+                    release_id=cast(uuid.UUID, row.release_id),
+                    connector_instance_id=cast(uuid.UUID, row.connector_instance_id),
+                    connector_implementation=cast(str, row.connector_implementation),
+                    artifact_type=cast(str, row.artifact_type),
+                    external_ref=cast(str, row.external_ref),
+                    metadata=cast(dict, row.metadata) or {},
+                    created_at=cast(datetime, row.created_at),
                 )
                 for row in artifact_rows
             ]

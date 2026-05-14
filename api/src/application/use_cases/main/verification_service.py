@@ -32,7 +32,7 @@ class VerificationService(IVerificationService):
         self._connector_registry = connector_registry
 
 
-    async def launch_verification(self, release_id: UUID) -> str:
+    async def launch_verification(self, release_id: UUID, requested_by: UUID) -> str:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
             raise ValidationError(_RELEASE_NOT_FOUND)

@@ -132,6 +132,22 @@ class OrganizationService(IOrganizationService):
 
         return updated
 
+    async def list_accessible_projects(
+        self,
+        user_id: UUID,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> List[Project]:
+        orgs = await self._org_repo.list_all(active_only=True, skip=0, limit=1000)
+        owned_org_ids = [org.id for org in orgs if org.owner_id == user_id]
+
+        projects: List[Project] = []
+        for org_id in owned_org_ids:
+            org_projects = await self._project_repo.list_by_organization(org_id, skip=0, limit=1000)
+            projects.extend(org_projects)
+
+        return projects[skip : skip + limit]
+
     async def restore_organization(self, organization_id: UUID) -> Organization:
         org = await self._org_repo.get_by_id(organization_id)
         if not org:

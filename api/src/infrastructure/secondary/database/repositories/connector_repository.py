@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import Optional, List
+from typing import Optional, List, cast
 import uuid
 from datetime import datetime
 from application.ports.output.i_connector_repository import IConnectorRepository
@@ -11,16 +11,16 @@ from infrastructure.secondary.database.get_async_session import get_async_sessio
 
 def _model_to_entity(row: ConnectorInstanceModel) -> ConnectorInstance:
     return ConnectorInstance(
-        id=row.id,
-        organization_id=row.organization_id,
-        connector_type=row.connector_type,
-        connector_implementation=row.connector_implementation,
-        name=row.name,
-        encrypted_credentials=row.encrypted_credentials,
+        id=cast(uuid.UUID, row.id),
+        organization_id=cast(uuid.UUID, row.organization_id),
+        connector_type=cast(str, row.connector_type),
+        connector_implementation=cast(str, row.connector_implementation),
+        name=cast(str, row.name),
+        encrypted_credentials=cast(bytes, row.encrypted_credentials),
         status=ConnectorStatus(row.status),
-        created_at=row.created_at,
-        updated_at=row.updated_at,
-        last_tested_at=row.last_tested_at,
+        created_at=cast(datetime, row.created_at),
+        updated_at=cast(datetime, row.updated_at),
+        last_tested_at=cast(datetime | None, row.last_tested_at),
     )
 
 
@@ -100,13 +100,13 @@ class SqlConnectorRepository(IConnectorRepository):
             if not connector_model:
                 raise ValueError("Connector not found")
 
-            connector_model.connector_type = connector.connector_type
-            connector_model.connector_implementation = connector.connector_implementation
-            connector_model.name = connector.name
-            connector_model.encrypted_credentials = connector.encrypted_credentials
-            connector_model.status = connector.status.value
-            connector_model.updated_at = datetime.utcnow()
-            connector_model.last_tested_at = connector.last_tested_at
+            connector_model.connector_type = connector.connector_type  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.connector_implementation = connector.connector_implementation  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.name = connector.name  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.encrypted_credentials = connector.encrypted_credentials  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.status = connector.status.value  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.last_tested_at = connector.last_tested_at  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(connector_model)

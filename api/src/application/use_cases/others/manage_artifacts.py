@@ -28,6 +28,7 @@ class ManageArtifactsUseCase:
         self,
         release_id: UUID,
         connector_instance_id: UUID,
+        connector_implementation: str,
         artifact_type: ArtifactType,
         external_ref: str,
         metadata: Optional[dict] = None,
@@ -39,6 +40,7 @@ class ManageArtifactsUseCase:
         artifact = Artifact(
             release_id=release_id,
             connector_instance_id=connector_instance_id,
+            connector_implementation=connector_implementation,
             artifact_type=artifact_type.value if hasattr(artifact_type, "value") else artifact_type,
             external_ref=external_ref,
             metadata=metadata or {},

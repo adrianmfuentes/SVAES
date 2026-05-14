@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 import httpx
 from application.ports.output.i_connector import IConnector
 
+APPLICATION_JSON_VENDOR = "application/vnd.github+json"
 
 class GitHubConnector(IConnector):
     BASE_URL = "https://api.github.com"
@@ -25,7 +26,7 @@ class GitHubConnector(IConnector):
         async with httpx.AsyncClient(timeout=30.0) as client:
             token = config.get("token")
             headers = {
-                "Accept": "application/vnd.github+json",
+                "Accept": APPLICATION_JSON_VENDOR,
                 "Authorization": f"Bearer {token}",
                 "X-GitHub-Api-Version": "2022-11-28",
             }
@@ -37,7 +38,7 @@ class GitHubConnector(IConnector):
         async with httpx.AsyncClient(timeout=30.0) as client:
             token = config.get("token")
             headers = {
-                "Accept": "application/vnd.github+json",
+                "Accept": APPLICATION_JSON_VENDOR,
                 "Authorization": f"Bearer {token}",
                 "X-GitHub-Api-Version": "2022-11-28",
             }
@@ -58,7 +59,7 @@ class GitHubConnector(IConnector):
             owner = config.get("owner")
             repo = config.get("repo")
             headers = {
-                "Accept": "application/vnd.github+json",
+                "Accept": APPLICATION_JSON_VENDOR,
                 "Authorization": f"Bearer {token}",
                 "X-GitHub-Api-Version": "2022-11-28",
             }

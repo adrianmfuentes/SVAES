@@ -14,7 +14,7 @@ class UserModel(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     display_name = Column(String(100), nullable=False)
-    role = Column(String(20), nullable=False, default=UserRole.VIEWER.value)
+    role = Column(String(20), nullable=False, default=UserRole.U1.value)
     organization_id = Column(PG_UUID(as_uuid=True), ForeignKey("organization.id"), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     failed_login_attempts = Column(Integer, nullable=False, default=0)

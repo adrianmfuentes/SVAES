@@ -7,7 +7,6 @@ from domain.enums import UserRole
 
 router = APIRouter(tags=["Admin"])
 
-
 class RulesReloadResponse(BaseModel):
     success: bool
     rules_loaded: int

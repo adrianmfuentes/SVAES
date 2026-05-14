@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import List, Optional
+from typing import List, Optional, cast
 import uuid
 from datetime import datetime
 from application.ports.output.i_verification_rule_repository import IVerificationRuleRepository
@@ -30,15 +30,15 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
             await session.refresh(rule_model)
 
             return VerificationRule(
-                id=rule_model.id,
-                profile_id=rule_model.profile_id,
-                rule_template=rule_model.rule_template,
+                id=cast(uuid.UUID, rule_model.id),
+                profile_id=cast(uuid.UUID, rule_model.profile_id),
+                rule_template=cast(str, rule_model.rule_template),
                 severity=SeverityType(rule_model.severity),
-                params=rule_model.params or {},
-                connector_instance_id=rule_model.connector_instance_id,
-                display_order=rule_model.display_order,
-                is_active=rule_model.is_active,
-                created_at=rule_model.created_at,
+                params=cast(dict, rule_model.params) or {},
+                connector_instance_id=cast(uuid.UUID | None, rule_model.connector_instance_id),
+                display_order=cast(int, rule_model.display_order),
+                is_active=cast(bool, rule_model.is_active),
+                created_at=cast(datetime, rule_model.created_at),
             )
         except Exception as e:
             await session.rollback()
@@ -56,15 +56,15 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
                 return None
 
             return VerificationRule(
-                id=rule_row.id,
-                profile_id=rule_row.profile_id,
-                rule_template=rule_row.rule_template,
+                id=cast(uuid.UUID, rule_row.id),
+                profile_id=cast(uuid.UUID, rule_row.profile_id),
+                rule_template=cast(str, rule_row.rule_template),
                 severity=SeverityType(rule_row.severity),
-                params=rule_row.params or {},
-                connector_instance_id=rule_row.connector_instance_id,
-                display_order=rule_row.display_order,
-                is_active=rule_row.is_active,
-                created_at=rule_row.created_at,
+                params=cast(dict, rule_row.params) or {},
+                connector_instance_id=cast(uuid.UUID | None, rule_row.connector_instance_id),
+                display_order=cast(int, rule_row.display_order),
+                is_active=cast(bool, rule_row.is_active),
+                created_at=cast(datetime, rule_row.created_at),
             )
         except Exception as e:
             await session.rollback()
@@ -85,15 +85,15 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
 
             return [
                 VerificationRule(
-                    id=row.id,
-                    profile_id=row.profile_id,
-                    rule_template=row.rule_template,
+                    id=cast(uuid.UUID, row.id),
+                    profile_id=cast(uuid.UUID, row.profile_id),
+                    rule_template=cast(str, row.rule_template),
                     severity=SeverityType(row.severity),
-                    params=row.params or {},
-                    connector_instance_id=row.connector_instance_id,
-                    display_order=row.display_order,
-                    is_active=row.is_active,
-                    created_at=row.created_at,
+                    params=cast(dict, row.params) or {},
+                    connector_instance_id=cast(uuid.UUID | None, row.connector_instance_id),
+                    display_order=cast(int, row.display_order),
+                    is_active=cast(bool, row.is_active),
+                    created_at=cast(datetime, row.created_at),
                 )
                 for row in rule_rows
             ]
@@ -111,26 +111,26 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
             if not rule_model:
                 raise ValueError("Rule not found")
 
-            rule_model.rule_template = rule.rule_template
-            rule_model.severity = rule.severity.value
-            rule_model.params = rule.params
-            rule_model.connector_instance_id = rule.connector_instance_id
-            rule_model.display_order = rule.display_order
-            rule_model.is_active = rule.is_active
+            rule_model.rule_template = rule.rule_template  # pyright: ignore[reportAttributeAccessIssue]
+            rule_model.severity = rule.severity.value  # pyright: ignore[reportAttributeAccessIssue]
+            rule_model.params = rule.params  # pyright: ignore[reportAttributeAccessIssue]
+            rule_model.connector_instance_id = rule.connector_instance_id  # pyright: ignore[reportAttributeAccessIssue]
+            rule_model.display_order = rule.display_order  # pyright: ignore[reportAttributeAccessIssue]
+            rule_model.is_active = rule.is_active  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(rule_model)
 
             return VerificationRule(
-                id=rule_model.id,
-                profile_id=rule_model.profile_id,
-                rule_template=rule_model.rule_template,
+                id=cast(uuid.UUID, rule_model.id),
+                profile_id=cast(uuid.UUID, rule_model.profile_id),
+                rule_template=cast(str, rule_model.rule_template),
                 severity=SeverityType(rule_model.severity),
-                params=rule_model.params or {},
-                connector_instance_id=rule_model.connector_instance_id,
-                display_order=rule_model.display_order,
-                is_active=rule_model.is_active,
-                created_at=rule_model.created_at,
+                params=cast(dict, rule_model.params) or {},
+                connector_instance_id=cast(uuid.UUID | None, rule_model.connector_instance_id),
+                display_order=cast(int, rule_model.display_order),
+                is_active=cast(bool, rule_model.is_active),
+                created_at=cast(datetime, rule_model.created_at),
             )
         except Exception as e:
             await session.rollback()

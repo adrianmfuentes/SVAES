@@ -6,11 +6,9 @@ from application.ports.output.i_verification_result_repository import IVerificat
 from application.ports.output.i_release_repository import IReleaseRepository
 from application.use_cases.others.get_dashboard_metrics import GetDashboardMetricsUseCase
 from core.dependencies import get_current_user, CurrentUser, get_release_repository, get_verification_result_repository
-
 from domain.enums import UserRole
 
 router = APIRouter(tags=["Dashboard"])
-
 
 class DashboardMetricsResponse(BaseModel):
     total_releases: int

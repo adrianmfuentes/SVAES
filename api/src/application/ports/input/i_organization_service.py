@@ -41,6 +41,15 @@ class IOrganizationService(ABC):
         pass
 
     @abstractmethod
+    async def list_accessible_projects(
+        self,
+        user_id: UUID,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> List[Project]:
+        pass
+
+    @abstractmethod
     async def list_projects(
         self,
         organization_id: UUID,

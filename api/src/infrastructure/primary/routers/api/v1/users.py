@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_user_service import IUserService
 from core.dependencies import get_user_service, get_current_user, CurrentUser, require_permission, require_role
 from domain.enums import UserRole, Permission
-from domain.exceptions import EntityNotFoundError, ValidationError
+from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError
 
 router = APIRouter(tags=["Users"])
 
@@ -34,14 +34,12 @@ class UserRoleUpdateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     role: UserRole
 
-
 class AdminUserCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     email: str = Field(..., min_length=1, max_length=255)
     display_name: str = Field(..., min_length=1, max_length=100)
     password: str = Field(..., min_length=8, max_length=255)
     role: UserRole = Field(default=UserRole.U2)
-
 
 class AdminRoleUpdateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -73,7 +71,7 @@ async def get_current_user_profile(
             "email": user.email,
             "display_name": user.display_name,
             "role": user.role.value,
-            "organization_id": str(user.organization_id) if user.organization_id else None,
+            "organization_id": str(user.organization_ids[0]) if user.organization_ids else None,
         }
     except HTTPException:
         raise
@@ -470,8 +468,8 @@ async def admin_update_global_role(
 async def admin_list_users(
     skip: int = 0,
     limit: int = 50,
-    is_active: bool = None,
-    role: UserRole = None,
+    is_active: bool | None = None,
+    role: UserRole | None = None,
     current_user: CurrentUser = Depends(require_role(UserRole.U3)),
     service: IUserService = Depends(get_user_service),
 ):

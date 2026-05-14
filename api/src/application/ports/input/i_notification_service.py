@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 from uuid import UUID
+from domain.entities.notification_channel import NotificationChannel
 
 class INotificationService(ABC):
     @abstractmethod
@@ -14,7 +15,7 @@ class INotificationService(ABC):
         channel_type: str,
         enabled: bool,
         config_data: Dict[str, Any],
-    ):
+    ) -> NotificationChannel:
         pass
 
     @abstractmethod
@@ -23,11 +24,11 @@ class INotificationService(ABC):
         channel_id: UUID,
         enabled: Optional[bool] = None,
         config_data: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> NotificationChannel:
         pass
 
     @abstractmethod
-    async def delete_channel(self, channel_id: UUID):
+    async def delete_channel(self, channel_id: UUID) -> None:
         pass
 
     @abstractmethod
@@ -42,7 +43,7 @@ class INotificationService(ABC):
         release_invalidated: Optional[bool] = None,
         release_pending_reminder: Optional[bool] = None,
         weekly_digest: Optional[bool] = None,
-    ):
+    ) -> Dict[str, Any]:
         pass
 
     @abstractmethod
@@ -51,9 +52,9 @@ class INotificationService(ABC):
         user_id: UUID,
         event_type: str,
         enabled: bool = True,
-    ):
+    ) -> Dict[str, Any]:
         pass
 
     @abstractmethod
-    async def unsubscribe(self, user_id: UUID, event_type: str):
+    async def unsubscribe(self, user_id: UUID, event_type: str) -> None:
         pass

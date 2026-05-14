@@ -50,6 +50,7 @@ class IReleaseService(ABC):
         self,
         release_id: UUID,
         connector_instance_id: UUID,
+        connector_implementation: str,
         artifact_type: str,
         external_ref: str,
         metadata: Optional[dict] = None,

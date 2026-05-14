@@ -171,7 +171,7 @@ async def delete_profile(
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
     try:
-        await service.delete_profile(profile_id)
+        await service.delete_profile(profile_id, requested_by=current_user.user_id)
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
@@ -246,6 +246,7 @@ async def update_rule(
             params=payload.params,
             display_order=payload.display_order,
             is_active=payload.is_active,
+            requested_by=current_user.user_id,
         )
         return {"id": str(rule.id), "is_active": rule.is_active}
     except EntityNotFoundError as e:
@@ -275,7 +276,7 @@ async def delete_rule(
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
     try:
-        await service.delete_rule(rule_id)
+        await service.delete_rule(rule_id, requested_by=current_user.user_id)
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:

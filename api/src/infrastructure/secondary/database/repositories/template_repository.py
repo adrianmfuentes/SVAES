@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import Optional, List
+from typing import Optional, List, cast
 import uuid
 from datetime import datetime
 from application.ports.output.i_template_repository import ITemplateRepository
@@ -11,16 +11,16 @@ from infrastructure.secondary.database.get_async_session import get_async_sessio
 class SqlTemplateRepository(ITemplateRepository):
     def _model_to_entity(self, row: TemplateModel) -> Template:
         return Template(
-            id=row.id,
-            organization_id=row.organization_id,
-            name=row.name,
-            description=row.description or "",
-            profile_id=row.profile_id,
-            created_by=row.created_by,
-            project_name_template=row.project_name_template,
-            is_archived=row.is_archived,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
+            id=cast(uuid.UUID, row.id),
+            organization_id=cast(uuid.UUID, row.organization_id),
+            name=cast(str, row.name),
+            description=cast(str, row.description) or "",
+            profile_id=cast(uuid.UUID, row.profile_id),
+            created_by=cast(uuid.UUID, row.created_by),
+            project_name_template=cast(str | None, row.project_name_template),
+            is_archived=cast(bool, row.is_archived),
+            created_at=cast(datetime, row.created_at),
+            updated_at=cast(datetime, row.updated_at),
         )
 
     async def create(self, template: Template) -> Template:
@@ -92,12 +92,12 @@ class SqlTemplateRepository(ITemplateRepository):
             if not model:
                 raise ValueError("Template not found")
 
-            model.name = template.name
-            model.description = template.description
-            model.profile_id = template.profile_id
-            model.project_name_template = template.project_name_template
-            model.is_archived = template.is_archived
-            model.updated_at = datetime.utcnow()
+            model.name = template.name  # pyright: ignore[reportAttributeAccessIssue]
+            model.description = template.description  # pyright: ignore[reportAttributeAccessIssue]
+            model.profile_id = template.profile_id  # pyright: ignore[reportAttributeAccessIssue]
+            model.project_name_template = template.project_name_template  # pyright: ignore[reportAttributeAccessIssue]
+            model.is_archived = template.is_archived  # pyright: ignore[reportAttributeAccessIssue]
+            model.updated_at = datetime.utcnow()  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(model)

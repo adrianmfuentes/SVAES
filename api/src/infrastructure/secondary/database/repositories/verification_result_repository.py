@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import List, Optional
+from typing import List, Optional, cast
 import uuid
 from datetime import datetime
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
@@ -29,14 +29,14 @@ class SqlVerificationResultRepository(IVerificationResultRepository):
             await session.refresh(result_model)
 
             return VerificationResult(
-                id=result_model.id,
-                release_id=result_model.release_id,
+                id=cast(uuid.UUID, result_model.id),
+                release_id=cast(uuid.UUID, result_model.release_id),
                 verdict=VerdictType(result_model.verdict),
-                duration_ms=result_model.duration_ms,
-                summary=result_model.summary or {},
-                rule_results=result_model.rule_results or [],
-                profile_snapshot=result_model.profile_snapshot or {},
-                executed_at=result_model.executed_at,
+                duration_ms=cast(int, result_model.duration_ms),
+                summary=cast(dict, result_model.summary) or {},
+                rule_results=cast(list, result_model.rule_results) or [],
+                profile_snapshot=cast(dict, result_model.profile_snapshot) or {},
+                executed_at=cast(datetime, result_model.executed_at),
             )
         except Exception as e:
             await session.rollback()
@@ -54,14 +54,14 @@ class SqlVerificationResultRepository(IVerificationResultRepository):
                 return None
 
             return VerificationResult(
-                id=result_row.id,
-                release_id=result_row.release_id,
+                id=cast(uuid.UUID, result_row.id),
+                release_id=cast(uuid.UUID, result_row.release_id),
                 verdict=VerdictType(result_row.verdict),
-                duration_ms=result_row.duration_ms,
-                summary=result_row.summary or {},
-                rule_results=result_row.rule_results or [],
-                profile_snapshot=result_row.profile_snapshot or {},
-                executed_at=result_row.executed_at,
+                duration_ms=cast(int, result_row.duration_ms),
+                summary=cast(dict, result_row.summary) or {},
+                rule_results=cast(list, result_row.rule_results) or [],
+                profile_snapshot=cast(dict, result_row.profile_snapshot) or {},
+                executed_at=cast(datetime, result_row.executed_at),
             )
         except Exception as e:
             await session.rollback()
@@ -82,14 +82,14 @@ class SqlVerificationResultRepository(IVerificationResultRepository):
 
             return [
                 VerificationResult(
-                    id=row.id,
-                    release_id=row.release_id,
+                    id=cast(uuid.UUID, row.id),
+                    release_id=cast(uuid.UUID, row.release_id),
                     verdict=VerdictType(row.verdict),
-                    duration_ms=row.duration_ms,
-                    summary=row.summary or {},
-                    rule_results=row.rule_results or [],
-                    profile_snapshot=row.profile_snapshot or {},
-                    executed_at=row.executed_at,
+                    duration_ms=cast(int, row.duration_ms),
+                    summary=cast(dict, row.summary) or {},
+                    rule_results=cast(list, row.rule_results) or [],
+                    profile_snapshot=cast(dict, row.profile_snapshot) or {},
+                    executed_at=cast(datetime, row.executed_at),
                 )
                 for row in result_rows
             ]
