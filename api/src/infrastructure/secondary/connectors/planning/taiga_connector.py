@@ -1,64 +1,45 @@
 from typing import Any, Dict, List
-import httpx
-from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import BaseHttpConnector
 
 
-class TaigaConnector(IConnector):
+class TaigaConnector(BaseHttpConnector):
     BASE_URL = "https://api.taiga.io/api/v1"
+    CONNECTOR_TYPE = "HERRAMIENTA_PLANIFICACION"
+    CONNECTOR_IMPLEMENTATION = "TAIGA"
 
-    @property
-    def connector_type(self) -> str:
-        return "HERRAMIENTA_PLANIFICACION"
+    def get_artifact_types(self) -> List[str]:
+        return ["task", "userstory", "epic", "project"]
 
-    @property
-    def connector_implementation(self) -> str:
-        return "TAIGA"
+    def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
+        return {"Authorization": f"Bearer {config.get('token')}"}
 
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "Taiga",
-            "version": "1.0",
-            "artifact_types": ["task", "userstory", "epic", "project"],
-        }
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        return f"{self.BASE_URL}/projects"
 
-    def _build_auth(self, config: Dict[str, Any]) -> Dict[str, str]:
-        return {
-            "Authorization": f"Bearer {config.get('token')}",
-        }
+    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
+        return f"{self.BASE_URL}/tasks/{ref}"
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{self.BASE_URL}/projects",
-                headers=self._build_auth(config),
-            )
-            return response.status_code == 200
+    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
+        return None
 
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{self.BASE_URL}/tasks/{ref}",
-                headers=self._build_auth(config),
-            )
-            response.raise_for_status()
-            return response.json()
+    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
+        project_slug = config.get("project_slug")
+        if project_slug:
+            return f"{self.BASE_URL}/projects/by_slug/{project_slug}/tasks"
+        return f"{self.BASE_URL}/tasks"
 
-    async def list_artifacts(
+    def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            project_slug = config.get("project_slug")
-            if project_slug:
-                response = await client.get(
-                    f"{self.BASE_URL}/projects/by_slug/{project_slug}/tasks",
-                    headers=self._build_auth(config),
-                    params={"status__is_closed": filter_params.get("status", "open")},
-                )
-            else:
-                response = await client.get(
-                    f"{self.BASE_URL}/tasks",
-                    headers=self._build_auth(config),
-                    params={"project": config.get("project")},
-                )
-            response.raise_for_status()
-            return response.json()
+    ) -> Dict[str, Any] | None:
+        project_slug = config.get("project_slug")
+        if project_slug:
+            return {"status__is_closed": filter_params.get("status", "open")}
+        return {"project": config.get("project")}
+
+    def _get_list_json(
+        self, filter_params: Dict[str, Any], config: Dict[str, Any]
+    ) -> Dict[str, Any] | None:
+        return None
+
+    def _get_results_key(self) -> str:
+        return ""

@@ -1,72 +1,46 @@
 from typing import Any, Dict, List
-import httpx
-from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import (
+    BaseHttpConnector,
+    BearerAuthMixin,
+)
 
 
-class GitLabConnector(IConnector):
+class GitLabConnector(BaseHttpConnector, BearerAuthMixin):
     BASE_URL = "https://gitlab.com/api/v4"
+    CONNECTOR_TYPE = "REPO_CODIGO"
+    CONNECTOR_IMPLEMENTATION = "GITLAB"
 
-    @property
-    def connector_type(self) -> str:
-        return "REPO_CODIGO"
+    def get_artifact_types(self) -> List[str]:
+        return ["merge_request", "commit", "pipeline", "release"]
 
-    @property
-    def connector_implementation(self) -> str:
-        return "GITLAB"
+    def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
+        return {"Authorization": f"Bearer {config.get('token')}"}
 
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "GitLab",
-            "version": "1.0",
-            "artifact_types": ["merge_request", "commit", "pipeline", "release"],
-        }
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        return f"{self.BASE_URL}/user"
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            token = config.get("token")
-            headers = {"Authorization": f"Bearer {token}"}
+    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
+        project_id, mr_iid = ref.split("/")
+        return f"{self.BASE_URL}/projects/{project_id}/merge_requests/{mr_iid}"
 
-            response = await client.get(f"{self.BASE_URL}/user", headers=headers)
-            return response.status_code == 200
+    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
+        return None
 
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            token = config.get("token")
-            headers = {"Authorization": f"Bearer {token}"}
+    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
+        project_id = config.get("project_id")
+        if project_id:
+            return f"{self.BASE_URL}/projects/{project_id}/merge_requests"
+        return f"{self.BASE_URL}/merge_requests"
 
-            project_id, mr_iid = ref.split("/")
-            response = await client.get(
-                f"{self.BASE_URL}/projects/{project_id}/merge_requests/{mr_iid}",
-                headers=headers,
-            )
-            response.raise_for_status()
-            return response.json()
-
-    async def list_artifacts(
+    def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            token = config.get("token")
-            project_id = config.get("project_id")
-            headers = {"Authorization": f"Bearer {token}"}
+    ) -> Dict[str, Any] | None:
+        return {"state": filter_params.get("state", "opened"), "per_page": 50}
 
-            if project_id:
-                response = await client.get(
-                    f"{self.BASE_URL}/projects/{project_id}/merge_requests",
-                    headers=headers,
-                    params={
-                        "state": filter_params.get("state", "opened"),
-                        "per_page": 50,
-                    },
-                )
-            else:
-                response = await client.get(
-                    f"{self.BASE_URL}/merge_requests",
-                    headers=headers,
-                    params={
-                        "state": filter_params.get("state", "opened"),
-                        "per_page": 50,
-                    },
-                )
-            response.raise_for_status()
-            return response.json()
+    def _get_list_json(
+        self, filter_params: Dict[str, Any], config: Dict[str, Any]
+    ) -> Dict[str, Any] | None:
+        return None
+
+    def _get_results_key(self) -> str:
+        return ""

@@ -1,25 +1,14 @@
 from typing import Any, Dict, List
-import httpx
-from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import BaseHttpConnector
 
 
-class ClickUpConnector(IConnector):
+class ClickUpConnector(BaseHttpConnector):
     BASE_URL = "https://api.clickup.com/api/v2"
+    CONNECTOR_TYPE = "HERRAMIENTA_PLANIFICACION"
+    CONNECTOR_IMPLEMENTATION = "CLICKUP"
 
-    @property
-    def connector_type(self) -> str:
-        return "HERRAMIENTA_PLANIFICACION"
-
-    @property
-    def connector_implementation(self) -> str:
-        return "CLICKUP"
-
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "ClickUp",
-            "version": "1.0",
-            "artifact_types": ["task", "list", "folder", "space", "goal"],
-        }
+    def get_artifact_types(self) -> List[str]:
+        return ["task", "list", "folder", "space", "goal"]
 
     def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
         return {
@@ -27,42 +16,35 @@ class ClickUpConnector(IConnector):
             "Authorization": f"{config.get('token')}",
         }
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            team_id = config.get("team_id")
-            response = await client.get(
-                f"{self.BASE_URL}/team/{team_id}/goals",
-                headers=self._build_headers(config),
-            )
-            return response.status_code == 200
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        team_id = config.get("team_id")
+        return f"{self.BASE_URL}/team/{team_id}/goals"
 
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{self.BASE_URL}/task/{ref}",
-                headers=self._build_headers(config),
-            )
-            response.raise_for_status()
-            return response.json()
+    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
+        return f"{self.BASE_URL}/task/{ref}"
 
-    async def list_artifacts(
+    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
+        return None
+
+    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
+        list_id = config.get("list_id")
+        if list_id:
+            return f"{self.BASE_URL}/list/{list_id}/task"
+        team_id = config.get("team_id")
+        return f"{self.BASE_URL}/team/{team_id}/task"
+
+    def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            list_id = config.get("list_id")
-            if list_id:
-                response = await client.get(
-                    f"{self.BASE_URL}/list/{list_id}/task",
-                    headers=self._build_headers(config),
-                    params={"subtasks": "false"},
-                )
-            else:
-                team_id = config.get("team_id")
-                response = await client.get(
-                    f"{self.BASE_URL}/team/{team_id}/task",
-                    headers=self._build_headers(config),
-                    params={"include_subtasks": "false"},
-                )
-            response.raise_for_status()
-            data = response.json()
-            return data.get("tasks", [])
+    ) -> Dict[str, Any] | None:
+        list_id = config.get("list_id")
+        if list_id:
+            return {"subtasks": "false"}
+        return {"include_subtasks": "false"}
+
+    def _get_list_json(
+        self, filter_params: Dict[str, Any], config: Dict[str, Any]
+    ) -> Dict[str, Any] | None:
+        return None
+
+    def _get_results_key(self) -> str:
+        return "tasks"

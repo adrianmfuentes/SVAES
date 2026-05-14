@@ -1,94 +1,50 @@
 from typing import Any, Dict, List
-import httpx
-from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import (
+    BaseHttpConnector,
+    AtlassianAuthMixin,
+)
 
-APPLICATION_JSON = "application/json"
 
-class JiraServiceManagementConnector(IConnector):
+class JiraServiceManagementConnector(BaseHttpConnector, AtlassianAuthMixin):
     BASE_URL = "https://api.atlassian.com"
+    CONNECTOR_TYPE = "GESTION_CAMBIOS"
+    CONNECTOR_IMPLEMENTATION = "JIRA_SM"
 
-    @property
-    def connector_type(self) -> str:
-        return "GESTION_CAMBIOS"
+    def get_artifact_types(self) -> List[str]:
+        return ["request", "request_type", "approval"]
 
-    @property
-    def connector_implementation(self) -> str:
-        return "JIRA_SM"
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        base_url = self._get_base_url(config)
+        site_id = config.get("site_id")
+        if site_id:
+            return f"{base_url}/rest/servicedesk/1/servicedesk?siteId={site_id}"
+        return f"{base_url}/rest/servicedesk/1/servicedesk"
 
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "Jira Service Management",
-            "version": "1.0",
-            "artifact_types": ["request", "request_type", "approval"],
-        }
+    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
+        return f"{self._get_base_url(config)}/rest/servicedesk/1/request/{ref}"
 
-    def _build_auth(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "email": config.get("email"),
-            "api_token": config.get("api_token"),
-        }
+    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
+        return None
 
-    def _get_base_url(self, config: Dict[str, Any]) -> str:
-        return config.get("base_url", self.BASE_URL)
+    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
+        service_desk_id = config.get("service_desk_id")
+        base_url = self._get_base_url(config)
+        if service_desk_id:
+            return f"{base_url}/rest/servicedesk/1/servicedesk/{service_desk_id}/request"
+        return f"{base_url}/rest/servicedesk/1/request"
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = self._get_base_url(config)
-            site_id = config.get("site_id")
-            auth = self._build_auth(config)
-            response = await client.get(
-                f"{base_url}/rest/servicedesk/1/servicedesk",
-                headers={
-                    "Accept": APPLICATION_JSON,
-                    "email": auth["email"],
-                    "api_token": auth["api_token"],
-                },
-                params={"siteId": site_id} if site_id else None,
-            )
-            return response.status_code == 200
-
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = self._get_base_url(config)
-            auth = self._build_auth(config)
-            response = await client.get(
-                f"{base_url}/rest/servicedesk/1/request/{ref}",
-                headers={
-                    "Accept": APPLICATION_JSON,
-                    "email": auth["email"],
-                    "api_token": auth["api_token"],
-                },
-            )
-            response.raise_for_status()
-            return response.json()
-
-    async def list_artifacts(
+    def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = self._get_base_url(config)
-            auth = self._build_auth(config)
-            service_desk_id = config.get("service_desk_id")
-            if service_desk_id:
-                response = await client.get(
-                    f"{base_url}/rest/servicedesk/1/servicedesk/{service_desk_id}/request",
-                    headers={
-                        "Accept": APPLICATION_JSON,
-                        "email": auth["email"],
-                        "api_token": auth["api_token"],
-                    },
-                    params={"requestType": filter_params.get("request_type"), "limit": 50},
-                )
-            else:
-                response = await client.get(
-                    f"{base_url}/rest/servicedesk/1/request",
-                    headers={
-                        "Accept": APPLICATION_JSON,
-                        "email": auth["email"],
-                        "api_token": auth["api_token"],
-                    },
-                    params={"limit": 50},
-                )
-            response.raise_for_status()
-            data = response.json()
-            return data.get("values", [])
+    ) -> Dict[str, Any] | None:
+        service_desk_id = config.get("service_desk_id")
+        if service_desk_id:
+            return {"requestType": filter_params.get("request_type"), "limit": 50}
+        return {"limit": 50}
+
+    def _get_list_json(
+        self, filter_params: Dict[str, Any], config: Dict[str, Any]
+    ) -> Dict[str, Any] | None:
+        return None
+
+    def _get_results_key(self) -> str:
+        return "values"

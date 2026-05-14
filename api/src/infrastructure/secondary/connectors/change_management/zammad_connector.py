@@ -1,64 +1,49 @@
 from typing import Any, Dict, List
-import httpx
-from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import BaseHttpConnector
 
 
-class ZammadConnector(IConnector):
+class ZammadConnector(BaseHttpConnector):
     BASE_URL = "https://example.com/api/v1"
+    CONNECTOR_TYPE = "GESTION_CAMBIOS"
+    CONNECTOR_IMPLEMENTATION = "ZAMMAD"
 
-    @property
-    def connector_type(self) -> str:
-        return "GESTION_CAMBIOS"
+    def get_artifact_types(self) -> List[str]:
+        return ["ticket", "user", "organization"]
 
-    @property
-    def connector_implementation(self) -> str:
-        return "ZAMMAD"
-
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "Zammad",
-            "version": "1.0",
-            "artifact_types": ["ticket", "user", "organization"],
-        }
-
-    def _build_auth(self, config: Dict[str, Any]) -> Dict[str, str]:
+    def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
         token = config.get("token")
         return {
             "Accept": "application/json",
             "Authorization": f"Token {token}",
         }
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = config.get("base_url", self.BASE_URL)
-            response = await client.get(
-                f"{base_url}/users/me",
-                headers=self._build_auth(config),
-            )
-            return response.status_code == 200
+    def _get_base_url(self, config: Dict[str, Any]) -> str:
+        return config.get("base_url", self.BASE_URL)
 
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = config.get("base_url", self.BASE_URL)
-            response = await client.get(
-                f"{base_url}/tickets/{ref}",
-                headers=self._build_auth(config),
-            )
-            response.raise_for_status()
-            return response.json()
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        return f"{self._get_base_url(config)}/users/me"
 
-    async def list_artifacts(
+    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
+        return f"{self._get_base_url(config)}/tickets/{ref}"
+
+    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
+        return None
+
+    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
+        return f"{self._get_base_url(config)}/tickets"
+
+    def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = config.get("base_url", self.BASE_URL)
-            response = await client.get(
-                f"{base_url}/tickets",
-                headers=self._build_auth(config),
-                params={
-                    "state": filter_params.get("state", "open"),
-                    "limit": filter_params.get("limit", 50),
-                },
-            )
-            response.raise_for_status()
-            return response.json()
+    ) -> Dict[str, Any] | None:
+        return {
+            "state": filter_params.get("state", "open"),
+            "limit": filter_params.get("limit", 50),
+        }
+
+    def _get_list_json(
+        self, filter_params: Dict[str, Any], config: Dict[str, Any]
+    ) -> Dict[str, Any] | None:
+        return None
+
+    def _get_results_key(self) -> str:
+        return ""

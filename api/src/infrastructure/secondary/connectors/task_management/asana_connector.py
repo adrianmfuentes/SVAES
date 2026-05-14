@@ -1,67 +1,45 @@
 from typing import Any, Dict, List
-import httpx
-from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import (
+    BaseHttpConnector,
+    BearerAuthMixin,
+)
 
 
-class AsanaConnector(IConnector):
+class AsanaConnector(BaseHttpConnector, BearerAuthMixin):
     BASE_URL = "https://app.asana.com/api/1.0"
+    CONNECTOR_TYPE = "GESTOR_TAREAS"
+    CONNECTOR_IMPLEMENTATION = "ASANA"
 
-    @property
-    def connector_type(self) -> str:
-        return "GESTOR_TAREAS"
+    def get_artifact_types(self) -> List[str]:
+        return ["task", "project", "section"]
 
-    @property
-    def connector_implementation(self) -> str:
-        return "ASANA"
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        return f"{self.BASE_URL}/users/me"
 
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "Asana",
-            "version": "1.0",
-            "artifact_types": ["task", "project", "section"],
-        }
+    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
+        return f"{self.BASE_URL}/tasks/{ref}"
 
-    def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
-        return {
-            "Accept": "application/json",
-            "Authorization": f"Bearer {config.get('token')}",
-        }
+    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
+        return {"opt_fields": "name,status,assignee,created_at,modified_at"}
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{self.BASE_URL}/users/me",
-                headers=self._build_headers(config),
-            )
-            return response.status_code == 200
+    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
+        project_gid = config.get("project_gid")
+        if project_gid:
+            return f"{self.BASE_URL}/projects/{project_gid}/tasks"
+        return f"{self.BASE_URL}/tasks/search"
 
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{self.BASE_URL}/tasks/{ref}",
-                headers=self._build_headers(config),
-                params={"opt_fields": "name,status,assignee,created_at,modified_at"},
-            )
-            response.raise_for_status()
-            return response.json()
-
-    async def list_artifacts(
+    def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            project_gid = config.get("project_gid")
-            if project_gid:
-                response = await client.get(
-                    f"{self.BASE_URL}/projects/{project_gid}/tasks",
-                    headers=self._build_headers(config),
-                    params={"opt_fields": "name,status,assignee,created_at,modified_at"},
-                )
-            else:
-                response = await client.get(
-                    f"{self.BASE_URL}/tasks/search",
-                    headers=self._build_headers(config),
-                    params={"workspace": config.get("workspace"), "count": 50},
-                )
-            response.raise_for_status()
-            data = response.json()
-            return data.get("data", [])
+    ) -> Dict[str, Any] | None:
+        project_gid = config.get("project_gid")
+        if project_gid:
+            return {"opt_fields": "name,status,assignee,created_at,modified_at"}
+        return {"workspace": config.get("workspace"), "count": 50}
+
+    def _get_list_json(
+        self, filter_params: Dict[str, Any], config: Dict[str, Any]
+    ) -> Dict[str, Any] | None:
+        return None
+
+    def _get_results_key(self) -> str:
+        return "data"

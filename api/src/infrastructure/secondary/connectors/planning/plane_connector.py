@@ -1,25 +1,14 @@
 from typing import Any, Dict, List
-import httpx
-from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import BaseHttpConnector
 
 
-class PlaneConnector(IConnector):
+class PlaneConnector(BaseHttpConnector):
     BASE_URL = "https://api.plane.io/api/v1"
+    CONNECTOR_TYPE = "HERRAMIENTA_PLANIFICACION"
+    CONNECTOR_IMPLEMENTATION = "PLANE"
 
-    @property
-    def connector_type(self) -> str:
-        return "HERRAMIENTA_PLANIFICACION"
-
-    @property
-    def connector_implementation(self) -> str:
-        return "PLANE"
-
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "Plane",
-            "version": "1.0",
-            "artifact_types": ["issue", "cycle", "module", "project"],
-        }
+    def get_artifact_types(self) -> List[str]:
+        return ["issue", "cycle", "module", "project"]
 
     def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
         return {
@@ -28,42 +17,36 @@ class PlaneConnector(IConnector):
             "x-api-host": config.get("instance_url", ""),
         }
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            workspace = config.get("workspace")
-            response = await client.get(
-                f"{self.BASE_URL}/workspaces/{workspace}/projects",
-                headers=self._build_headers(config),
-            )
-            return response.status_code == 200
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        workspace = config.get("workspace")
+        return f"{self.BASE_URL}/workspaces/{workspace}/projects"
 
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            workspace = config.get("workspace")
-            response = await client.get(
-                f"{self.BASE_URL}/workspaces/{workspace}/issues/{ref}",
-                headers=self._build_headers(config),
-            )
-            response.raise_for_status()
-            return response.json()
+    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
+        workspace = config.get("workspace")
+        return f"{self.BASE_URL}/workspaces/{workspace}/issues/{ref}"
 
-    async def list_artifacts(
+    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
+        return None
+
+    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
+        workspace = config.get("workspace")
+        project = config.get("project")
+        if project:
+            return f"{self.BASE_URL}/workspaces/{workspace}/projects/{project}/issues"
+        return f"{self.BASE_URL}/workspaces/{workspace}/issues"
+
+    def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            workspace = config.get("workspace")
-            project = config.get("project")
-            if project:
-                response = await client.get(
-                    f"{self.BASE_URL}/workspaces/{workspace}/projects/{project}/issues",
-                    headers=self._build_headers(config),
-                    params={"cycle": filter_params.get("cycle")},
-                )
-            else:
-                response = await client.get(
-                    f"{self.BASE_URL}/workspaces/{workspace}/issues",
-                    headers=self._build_headers(config),
-                )
-            response.raise_for_status()
-            data = response.json()
-            return data.get("results", [])
+    ) -> Dict[str, Any] | None:
+        project = config.get("project")
+        if project:
+            return {"cycle": filter_params.get("cycle")}
+        return None
+
+    def _get_list_json(
+        self, filter_params: Dict[str, Any], config: Dict[str, Any]
+    ) -> Dict[str, Any] | None:
+        return None
+
+    def _get_results_key(self) -> str:
+        return "results"

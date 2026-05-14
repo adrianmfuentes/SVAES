@@ -1,87 +1,46 @@
 from typing import Any, Dict, List
-import httpx
-from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import (
+    BaseHttpConnector,
+    AtlassianAuthMixin,
+)
 
-APPLICATION_JSON = "application/json"
 
-class JiraConnector(IConnector):
+class JiraConnector(BaseHttpConnector, AtlassianAuthMixin):
     BASE_URL = "https://api.atlassian.com"
+    CONNECTOR_TYPE = "GESTOR_TAREAS"
+    CONNECTOR_IMPLEMENTATION = "JIRA"
 
-    @property
-    def connector_type(self) -> str:
-        return "GESTOR_TAREAS"
+    def get_artifact_types(self) -> List[str]:
+        return ["issue", "project", "board"]
 
-    @property
-    def connector_implementation(self) -> str:
-        return "JIRA"
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        base_url = self._get_base_url(config)
+        cloud_id = config.get("cloud_id")
+        if cloud_id:
+            return f"{base_url}/rest/api/3/myself?cloudId={cloud_id}"
+        return f"{base_url}/rest/api/3/myself"
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
+        return f"{self._get_base_url(config)}/rest/api/3/issue/{ref}"
+
+    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
+        return None
+
+    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
+        return f"{self._get_base_url(config)}/rest/api/3/search"
+
+    def _get_list_params(
+        self, filter_params: Dict[str, Any], config: Dict[str, Any]
+    ) -> Dict[str, Any] | None:
         return {
-            "name": "Jira",
-            "version": "1.0",
-            "artifact_types": ["issue", "project", "board"],
+            "jql": filter_params.get("jql", "updated >= -1d"),
+            "maxResults": filter_params.get("max_results", 50),
         }
 
-    def _build_auth(self, config: Dict[str, Any]) -> Dict[str, str]:
-        # Ensure returned values are strings to match the declared return type
-        email = config.get("email", "") or ""
-        api_token = config.get("api_token", "") or ""
-        return {"email": email, "api_token": api_token}
-
-    def _get_base_url(self, config: Dict[str, Any]) -> str:
-        return config.get("base_url", self.BASE_URL)
-
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = self._get_base_url(config)
-            cloud_id = config.get("cloud_id")
-            auth = self._build_auth(config)
-
-            response = await client.get(
-                f"{base_url}/rest/api/3/myself",
-                headers={
-                    "Accept": APPLICATION_JSON,
-                    "email": auth["email"],
-                    "api_token": auth["api_token"],
-                },
-                params={"cloudId": cloud_id} if cloud_id else None,
-            )
-            return response.status_code == 200
-
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = self._get_base_url(config)
-            auth = self._build_auth(config)
-
-            response = await client.get(
-                f"{base_url}/rest/api/3/issue/{ref}",
-                headers={
-                    "Accept": APPLICATION_JSON,
-                    "email": auth["email"],
-                    "api_token": auth["api_token"],
-                },
-            )
-            response.raise_for_status()
-            return response.json()
-
-    async def list_artifacts(
+    def _get_list_json(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = self._get_base_url(config)
-            auth = self._build_auth(config)
-            jql = filter_params.get("jql", "updated >= -1d")
-            max_results = filter_params.get("max_results", 50)
+    ) -> Dict[str, Any] | None:
+        return None
 
-            response = await client.get(
-                f"{base_url}/rest/api/3/search",
-                headers={
-                    "Accept": APPLICATION_JSON,
-                    "email": auth["email"],
-                    "api_token": auth["api_token"],
-                },
-                params={"jql": jql, "maxResults": max_results},
-            )
-            response.raise_for_status()
-            data = response.json()
-            return data.get("issues", [])
+    def _get_results_key(self) -> str:
+        return "issues"

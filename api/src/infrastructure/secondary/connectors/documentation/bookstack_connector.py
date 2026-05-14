@@ -1,65 +1,48 @@
 from typing import Any, Dict, List
-import httpx
-from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import BaseHttpConnector
 
 
-class BookStackConnector(IConnector):
+class BookStackConnector(BaseHttpConnector):
     BASE_URL = "https://example.com/api"
+    CONNECTOR_TYPE = "SISTEMA_DOCUMENTAL"
+    CONNECTOR_IMPLEMENTATION = "BOOKSTACK"
 
-    @property
-    def connector_type(self) -> str:
-        return "SISTEMA_DOCUMENTAL"
+    def get_artifact_types(self) -> List[str]:
+        return ["page", "book", "chapter"]
 
-    @property
-    def connector_implementation(self) -> str:
-        return "BOOKSTACK"
-
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "BookStack",
-            "version": "1.0",
-            "artifact_types": ["page", "book", "chapter"],
-        }
-
-    def _build_auth(self, config: Dict[str, Any]) -> Dict[str, str]:
+    def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
         return {
             "Authorization": f"Token {config.get('token')}",
             "Accept": "application/json",
         }
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = config.get("base_url", self.BASE_URL)
-            response = await client.get(
-                f"{base_url}/books",
-                headers=self._build_auth(config),
-                params={"count": 1},
-            )
-            return response.status_code == 200
+    def _get_base_url(self, config: Dict[str, Any]) -> str:
+        return config.get("base_url", self.BASE_URL)
 
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = config.get("base_url", self.BASE_URL)
-            response = await client.get(
-                f"{base_url}/pages/{ref}",
-                headers=self._build_auth(config),
-            )
-            response.raise_for_status()
-            return response.json()
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        return f"{self._get_base_url(config)}/books"
 
-    async def list_artifacts(
+    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
+        return f"{self._get_base_url(config)}/pages/{ref}"
+
+    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
+        return None
+
+    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
+        return f"{self._get_base_url(config)}/pages"
+
+    def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = config.get("base_url", self.BASE_URL)
-            response = await client.get(
-                f"{base_url}/pages",
-                headers=self._build_auth(config),
-                params={
-                    "count": 50,
-                    "filters[book_id]": filter_params.get("book_id", ""),
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
-            return data.get("data", [])
+    ) -> Dict[str, Any] | None:
+        return {
+            "count": 50,
+            "filters[book_id]": filter_params.get("book_id", ""),
+        }
+
+    def _get_list_json(
+        self, filter_params: Dict[str, Any], config: Dict[str, Any]
+    ) -> Dict[str, Any] | None:
+        return None
+
+    def _get_results_key(self) -> str:
+        return "data"

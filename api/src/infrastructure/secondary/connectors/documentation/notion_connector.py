@@ -1,25 +1,17 @@
 from typing import Any, Dict, List
-import httpx
-from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import (
+    BaseHttpConnector,
+    BearerAuthMixin,
+)
 
 
-class NotionConnector(IConnector):
+class NotionConnector(BaseHttpConnector, BearerAuthMixin):
     BASE_URL = "https://api.notion.com/v1"
+    CONNECTOR_TYPE = "SISTEMA_DOCUMENTAL"
+    CONNECTOR_IMPLEMENTATION = "NOTION"
 
-    @property
-    def connector_type(self) -> str:
-        return "SISTEMA_DOCUMENTAL"
-
-    @property
-    def connector_implementation(self) -> str:
-        return "NOTION"
-
-    def get_metadata(self) -> Dict[str, Any]:
-        return {
-            "name": "Notion",
-            "version": "1.0",
-            "artifact_types": ["page", "database"],
-        }
+    def get_artifact_types(self) -> List[str]:
+        return ["page", "database"]
 
     def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
         return {
@@ -28,40 +20,33 @@ class NotionConnector(IConnector):
             "Authorization": f"Bearer {config.get('token')}",
         }
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{self.BASE_URL}/users/me",
-                headers=self._build_headers(config),
-            )
-            return response.status_code == 200
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        return f"{self.BASE_URL}/users/me"
 
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{self.BASE_URL}/pages/{ref}",
-                headers=self._build_headers(config),
-            )
-            response.raise_for_status()
-            return response.json()
+    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
+        return f"{self.BASE_URL}/pages/{ref}"
 
-    async def list_artifacts(
+    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
+        return None
+
+    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
+        database_id = config.get("database_id")
+        if database_id:
+            return f"{self.BASE_URL}/databases/{database_id}/query"
+        return f"{self.BASE_URL}/search"
+
+    def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            database_id = config.get("database_id")
-            if database_id:
-                response = await client.post(
-                    f"{self.BASE_URL}/databases/{database_id}/query",
-                    headers=self._build_headers(config),
-                    json={"page_size": 50},
-                )
-            else:
-                response = await client.post(
-                    f"{self.BASE_URL}/search",
-                    headers=self._build_headers(config),
-                    json={"filter": {"value": "page", "property": "object"}, "page_size": 50},
-                )
-            response.raise_for_status()
-            data = response.json()
-            return data.get("results", [])
+    ) -> Dict[str, Any] | None:
+        return None
+
+    def _get_list_json(
+        self, filter_params: Dict[str, Any], config: Dict[str, Any]
+    ) -> Dict[str, Any] | None:
+        database_id = config.get("database_id")
+        if database_id:
+            return {"page_size": 50}
+        return {"filter": {"value": "page", "property": "object"}, "page_size": 50}
+
+    def _get_results_key(self) -> str:
+        return "results"
