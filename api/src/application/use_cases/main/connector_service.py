@@ -57,7 +57,7 @@ class ConnectorService(IConnectorService):
             resource_id=saved.id,
             details={"name": name, "type": connector_type},
         ))
-        _log.info("Connector registered: org=%s type=%s", organization_id, connector_type)
+        _log.info("Connector registered: org=%s type_len=%d", organization_id, len(connector_type))
 
         return saved
 
