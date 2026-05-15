@@ -3,6 +3,7 @@
   "language": "en,es",
   "words": [
     "acks",
+    "addinivalue",
     "alembic",
     "asyncpg",
     "autogenerados",
@@ -68,6 +69,7 @@
     "sonarqube",
     "sqlalchemy",
     "svaes",
+    "testeados",
     "toml",
     "transiciona",
     "trello",
@@ -80,6 +82,7 @@
     "verificacion",
     "VERIFICACION",
     "WIKIJS",
+    "wrongpassword",
     "Zammad"
   ],
   "ignorePaths": [

@@ -28,9 +28,13 @@ dev = [
     "pytest-asyncio>=0.24",
     "pytest-cov>=5.0",
     "httpx>=0.28.1",
+    "pytest-mock",
+    "factory-boy",
+    "faker",
+    "testcontainers",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["../../tests/api"]
+testpaths = ["../../tests"]
 pythonpath = ["src"]
