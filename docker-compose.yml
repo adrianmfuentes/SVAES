@@ -1,64 +1,116 @@
 services:
-  api:
-    build:
-      context: ./api
-      target: runtime
-    environment:
-      PYTHONPATH: /app/src
-      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
-      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
-    networks:
-      - svaes-internal
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine
+    container_name: svaes-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-svaes}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-svaes}
-      POSTGRES_DB: ${POSTGRES_DB:-svaes}
-    networks:
-      - svaes-internal
+      POSTGRES_USER: svaes
+      POSTGRES_PASSWORD: svaes
+      POSTGRES_DB: svaes
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U svaes"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - svaes-network
 
   redis:
-    image: redis:7
+    image: redis:7-alpine
+    container_name: svaes-redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
-      - svaes-internal
-    volumes:
-      - redis_ephemeral:/data
+      - svaes-network
 
-  celery_worker:
+  engine:
+    build:
+      context: ./engine
+      dockerfile: Dockerfile
+    container_name: svaes-engine
+    environment:
+      ENGINE_HOST: 0.0.0.0
+      ENGINE_PORT: 8081
+    ports:
+      - "${ENGINE_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - svaes-network
+
+  api:
     build:
       context: ./api
-      target: runtime
-    command: celery -A src.infrastructure.queue.celery_app worker --loglevel=info --concurrency=2
-    networks:
-      - svaes-internal
+      dockerfile: Dockerfile
+    container_name: svaes-api
+    environment:
+      DATABASE_URL: postgresql://svaes:svaes@postgres:5432/svaes
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      ENVIRONMENT: development
+      JWT_SECRET_KEY: twKlaiRwAtjUtNem3I99jtlL8mWH7bIIUVd_3v3XlTk
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: 60
+      ENCRYPTION_KEY: Kafb5etMI6S5HAjm5F5isQBTj-H958jffM9VSTAw3Gg=
+      ALLOWED_ORIGINS: http://localhost:4200,http://localhost:3000
+    ports:
+      - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+    networks:
+      - svaes-network
+
+  celery-worker:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: svaes-celery
+    command: celery -A src.infrastructure.secondary.queue.celery_app worker --loglevel=info
     environment:
-      PYTHONPATH: /app/src
-      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
-      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://svaes:svaes@postgres:5432/svaes}
+      DATABASE_URL: postgresql://svaes:svaes@postgres:5432/svaes
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - svaes-network
+
+  web:
+    image: nginx:alpine
+    container_name: svaes-web
+    ports:
+      - "4200:80"
+    volumes:
+      - ./web/dist/web/browser:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - svaes-network
 
 volumes:
-  redis_ephemeral:
+  postgres_data:
 
 networks:
-  svaes-internal:
+  svaes-network:
     driver: bridge

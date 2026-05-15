@@ -9,23 +9,30 @@ from infrastructure.secondary.queue.celery_app import celery_app
 from core.config import settings
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from application.ports.output.i_release_repository import IReleaseRepository
+from application.ports.output.i_profile_repository import IProfileRepository
 from domain.entities.verification_result import VerificationResult
-from domain.enums import ReleaseStatus, VerdictType, SeverityType
+from domain.enums import ReleaseStatus, VerdictType, SeverityType, severity_to_rule_severity, rule_severity_to_string
 from infrastructure.secondary.database.repositories.release_repository import SqlReleaseRepository
 from infrastructure.secondary.database.repositories.verification_result_repository import SqlVerificationResultRepository
+from infrastructure.secondary.database.repositories.profile_repository import SqlProfileRepository
 from infrastructure.secondary.connectors import create_registered_connector_registry
+
+
+def _map_severity_to_engine(severity: SeverityType) -> str:
+    return rule_severity_to_string(severity_to_rule_severity(severity))
 
 
 async def _call_verification_engine(
     release_id: str,
     artifacts_data: List[Dict[str, Any]],
+    rules_data: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
             f"{settings.engine_url}/api/v1/verify",
             json={
-                "release_id": release_id,
                 "artifacts": artifacts_data,
+                "rules": rules_data,
             },
         )
         response.raise_for_status()
@@ -48,11 +55,16 @@ def run_verification(self, release_id: str) -> Dict[str, Any]:
 async def _run_verification_async(release_id: uuid.UUID, task_id: str) -> Dict[str, Any]:
     release_repo = SqlReleaseRepository()
     verification_repo = SqlVerificationResultRepository()
+    profile_repo = SqlProfileRepository()
     connector_registry = create_registered_connector_registry()
 
     release = await release_repo.get_by_id(release_id)
     if not release:
         return {"error": f"Release {release_id} not found"}
+
+    profile = await profile_repo.get_by_id(release.profile_id)
+    if not profile:
+        return {"error": f"Profile {release.profile_id} not found"}
 
     artifacts_data = []
     if release.artifacts:
@@ -63,23 +75,30 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str) -> Dict[s
                     config = {}
                     data = await connector_impl.fetch_artifact(artifact.external_ref, config)
                     artifacts_data.append({
-                        "artifact_id": str(artifact.id),
-                        "type": artifact.artifact_type,
-                        "external_ref": artifact.external_ref,
-                        "connector_impl": artifact.connector_implementation,
-                        "data": data,
+                        "id": str(artifact.id),
+                        "artifact_type": artifact.artifact_type,
+                        "metadata": data,
                     })
             except Exception:
                 pass
 
-    result_data = await _call_verification_engine(str(release_id), artifacts_data)
+    rules_data = []
+    for rule in profile.rules:
+        if rule.is_active:
+            rules_data.append({
+                "id": str(rule.rule_template),
+                "severity": _map_severity_to_engine(rule.severity),
+                "params": rule.params,
+            })
+
+    result_data = await _call_verification_engine(str(release_id), artifacts_data, rules_data)
 
     verification_result = VerificationResult(
         id=uuid.uuid4(),
         release_id=release_id,
         verdict=result_data["verdict"],
         rule_results=result_data["rule_results"],
-        summary=result_data["summary"],
+        summary=result_data.get("summary", ""),
         executed_at=datetime.now(timezone.utc),
     )
 

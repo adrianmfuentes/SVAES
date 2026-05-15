@@ -65,6 +65,22 @@ class SeverityType(str, Enum):
     HIGH = "HIGH"
     CRITICAL = "CRITICAL"
 
+
+class RuleSeverityType(str, Enum):
+    OBLIGATORIA = "OBLIGATORIA"
+    OPCIONAL = "OPCIONAL"
+    EXCLUIDA = "EXCLUIDA"
+
+
+def severity_to_rule_severity(severity: SeverityType) -> RuleSeverityType:
+    if severity in (SeverityType.CRITICAL, SeverityType.HIGH):
+        return RuleSeverityType.OBLIGATORIA
+    return RuleSeverityType.OPCIONAL
+
+
+def rule_severity_to_string(severity: RuleSeverityType) -> str:
+    return severity.value
+
 class UserRole(str, Enum):
     U1 = "U1"  # Guest/Viewer
     U2 = "U2"  # Standard User

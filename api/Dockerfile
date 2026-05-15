@@ -4,11 +4,7 @@ FROM python:3.14-slim AS builder
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-RUN pip install --no-cache-dir uv==0.11.11 --only-binary :all: \
-    --require-hashes \
-    --hash=sha256:d5b9f31dab557b5ee4257d8c6ba2608a63c7278537cb0cd102cf6fc518e3fb5c \
-    --hash=sha256:1d227bb53b701e533f0aa074dd145a6fa31492dc7d6d57a6e72a700b9a4a1991 && \
-    uv sync --frozen --no-dev --no-install-project --no-build
+RUN pip install uv==0.11.11 && uv sync --frozen --no-dev --no-install-project --no-build
 
 # ── Stage 2: production runtime ───────────────────────────────────────────────
 FROM python:3.14-slim AS runtime

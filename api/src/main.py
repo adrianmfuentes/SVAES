@@ -1,3 +1,4 @@
+import asyncio
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -45,7 +46,7 @@ async def lifespan(app: FastAPI):
     _configure_root_logger()
     _log.info("Applying database migrations...")
     alembic_cfg = Config(str(Path(__file__).parent.parent / "alembic.ini"))
-    command.upgrade(alembic_cfg, "head")
+    await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
     _log.info("SVAES API starting up (env=%s)", settings.environment)
     yield
     _log.info("SVAES API shutting down")

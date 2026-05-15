@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     celery_result_backend: str = "redis://localhost:6379/0"
 
     # Verification Engine
-    engine_url: str = "http://localhost:8080"
+    engine_url: str = "http://localhost:8081"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
