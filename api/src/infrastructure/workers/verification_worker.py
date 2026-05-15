@@ -23,7 +23,6 @@ def _map_severity_to_engine(severity: SeverityType) -> str:
 
 
 async def _call_verification_engine(
-    release_id: str,
     artifacts_data: List[Dict[str, Any]],
     rules_data: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
@@ -91,7 +90,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str) -> Dict[s
                 "params": rule.params,
             })
 
-    result_data = await _call_verification_engine(str(release_id), artifacts_data, rules_data)
+    result_data = await _call_verification_engine(artifacts_data, rules_data)
 
     verification_result = VerificationResult(
         id=uuid.uuid4(),
