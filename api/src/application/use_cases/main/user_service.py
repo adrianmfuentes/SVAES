@@ -92,7 +92,7 @@ class UserService(IUserService):
             resource_id=created.id,
             details={"email": email, "role": role.value},
         ))
-        _log.info("User invited: by=%s email=%s org=%s role=%s", requested_by, email, organization_id, role.value)
+        _log.info("User invited: by=%s org=%s role=%s", requested_by, organization_id, role.value)
 
         return created
 
