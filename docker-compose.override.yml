@@ -11,10 +11,11 @@ services:
     build:
       target: builder
     volumes:
-      - ./api/src:/app/src  
+      - ./api/src:/app/src
     ports:
       - "8000:8000"
     environment:
+      PYTHONPATH: /app/src
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-svaes}:${POSTGRES_PASSWORD:-svaes}@postgres:5432/svaes
       JWT_SECRET_KEY: dev-secret-do-not-use-in-production
       JWT_EXPIRE_MINUTES: "1440"
