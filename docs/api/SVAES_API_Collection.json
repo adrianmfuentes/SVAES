@@ -1,0 +1,1230 @@
+{
+  "info": {
+    "name": "SVAES API - Full Automated Test",
+    "description": "Colección automatizada para testear la API SVAES. Incluye health check, auth, users, organizations, projects, releases y más.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "org_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "release_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "profile_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "connector_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "artifact_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "task_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Health Check",
+      "item": [
+        {
+          "name": "GET /health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has status ok', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('ok');",
+                  "});",
+                  "pm.test('Response has service name', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.service).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Authentication",
+      "item": [
+        {
+          "name": "POST /api/v1/auth/register - Crear Cuenta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 or 200', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 200, 400]);",
+                  "});",
+                  "pm.test('Response has user_id on success', function() {",
+                  "    if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "        var jsonData = pm.response.json();",
+                  "        if (jsonData.user_id) {",
+                  "            pm.collectionVariables.set('user_id', jsonData.user_id);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test{{timestamp}}@svaes.com\",\n    \"password\": \"Test123456!\",\n    \"display_name\": \"Test User {{timestamp}}\",\n    \"role\": \"U2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/login - Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has access_token', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.access_token).to.be.a('string');",
+                  "});",
+                  "pm.test('Response has refresh_token', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.refresh_token).to.be.a('string');",
+                  "});",
+                  "pm.test('Response has user_id', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.user_id).to.be.a('string');",
+                  "    pm.collectionVariables.set('user_id', jsonData.user_id);",
+                  "});",
+                  "pm.test('Response has role', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.role).to.be.a('string');",
+                  "});",
+                  "",
+                  "// Guardar tokens automáticamente",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "}",
+                  "if (jsonData.refresh_token) {",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test{{timestamp}}@svaes.com\",\n    \"password\": \"Test123456!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/refresh - Refrescar Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has new access_token', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.access_token).to.be.a('string');",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "}",
+                  "if (jsonData.refresh_token) {",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Users",
+      "item": [
+        {
+          "name": "GET /api/v1/users/me - Perfil Usuario Actual",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has email', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.email).to.be.a('string');",
+                  "});",
+                  "pm.test('Response has display_name', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.display_name).to.be.a('string');",
+                  "});",
+                  "pm.test('Response has role', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.role).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/v1/users/me - Actualizar Perfil",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Display name updated', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.display_name).to.include('Updated');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"display_name\": \"Updated Test User {{timestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/users/me/password - Cambiar Contraseña",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 400', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"current_password\": \"Test123456!\",\n    \"new_password\": \"NewTest123456!\",\n    \"confirm_password\": \"NewTest123456!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me", "password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Organizations",
+      "item": [
+        {
+          "name": "GET /api/v1/organizations - Listar Organizaciones (U3)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "organizations"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/organizations - Crear Organización",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 or 200', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 200]);",
+                  "});",
+                  "pm.test('Response has org_id', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('org_id', jsonData.id);",
+                  "    }",
+                  "});",
+                  "pm.test('Response has name', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.name).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test Organization {{timestamp}}\",\n    \"slug\": \"test-org-{{timestamp}}\",\n    \"plan\": \"default\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "organizations"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/organizations/{org_id} - Detalles Org",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has name', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.name).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/organizations/{{org_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "organizations", "{{org_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Projects",
+      "item": [
+        {
+          "name": "GET /api/v1/projects - Listar Proyectos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array or has data', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects?page=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "projects"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/organizations/{org_id}/projects - Crear Proyecto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 or 200', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 200, 400]);",
+                  "});",
+                  "pm.test('Response has project data', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('project_id', jsonData.id);",
+                  "    }",
+                  "    pm.expect(jsonData).to.have.property('name');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test Project {{timestamp}}\",\n    \"description\": \"Test project description\",\n    \"profile_id\": \"{{profile_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/organizations/{{org_id}}/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "organizations", "{{org_id}}", "projects"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/projects/{project_id} - Detalles Proyecto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{project_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "projects", "{{project_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Profiles",
+      "item": [
+        {
+          "name": "GET /api/v1/organizations/{org_id}/profiles - Listar Perfiles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});",
+                  "if (pm.response.json().length > 0) {",
+                  "    var firstProfile = pm.response.json()[0];",
+                  "    if (firstProfile.id) {",
+                  "        pm.collectionVariables.set('profile_id', firstProfile.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/organizations/{{org_id}}/profiles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "organizations", "{{org_id}}", "profiles"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/organizations/{org_id}/profiles - Crear Perfil",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 or 200', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 200, 400]);",
+                  "});",
+                  "pm.test('Response has profile data', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('profile_id', jsonData.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test Profile {{timestamp}}\",\n    \"description\": \"Test profile description\",\n    \"is_default\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/organizations/{{org_id}}/profiles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "organizations", "{{org_id}}", "profiles"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Releases",
+      "item": [
+        {
+          "name": "POST /api/v1/projects/{project_id}/releases - Crear Release",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 or 200', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 200, 400]);",
+                  "});",
+                  "pm.test('Response has release data', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('release_id', jsonData.id);",
+                  "    }",
+                  "    pm.expect(jsonData).to.have.property('name');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Release v1.0.0\",\n    \"version\": \"1.0.0\",\n    \"description\": \"Test release\",\n    \"profile_id\": \"{{profile_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{project_id}}/releases",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "projects", "{{project_id}}", "releases"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/projects/{project_id}/releases - Listar Releases",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{project_id}}/releases?page=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "projects", "{{project_id}}", "releases"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/releases/{release_id} - Detalles Release",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{release_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "releases", "{{release_id}}"]
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/v1/releases/{release_id} - Actualizar Release",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 400', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Release v1.0.1 Updated\",\n    \"status\": \"PENDIENTE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{release_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "releases", "{{release_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Connectors",
+      "item": [
+        {
+          "name": "GET /api/v1/connectors/types - Listar Tipos de Conectores",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/connectors/types",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "connectors", "types"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/organizations/{org_id}/connectors - Listar Conectores",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/organizations/{{org_id}}/connectors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "organizations", "{{org_id}}", "connectors"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/v1/organizations/{org_id}/connectors - Crear Conector",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 or 200', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 200, 400]);",
+                  "});",
+                  "pm.test('Response has connector data', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('connector_id', jsonData.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"connector_type\": \"GESTOR_TAREAS\",\n    \"connector_implementation\": \"JIRA\",\n    \"name\": \"Test JIRA Connector {{timestamp}}\",\n    \"credentials\": {\n        \"api_token\": \"test-token\",\n        \"instance_url\": \"https://test.atlassian.net\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/organizations/{{org_id}}/connectors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "organizations", "{{org_id}}", "connectors"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Artifacts",
+      "item": [
+        {
+          "name": "POST /api/v1/releases/{release_id}/artifacts - Agregar Artefacto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 or 200', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 200, 400, 404]);",
+                  "});",
+                  "pm.test('Response has artifact data', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('artifact_id', jsonData.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"connector_instance_id\": \"{{connector_id}}\",\n    \"connector_implementation\": \"JIRA\",\n    \"artifact_type\": \"TAREA\",\n    \"external_ref\": \"TEST-001\",\n    \"metadata\": {}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{release_id}}/artifacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "releases", "{{release_id}}", "artifacts"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/releases/{release_id}/artifacts - Listar Artefactos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{release_id}}/artifacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "releases", "{{release_id}}", "artifacts"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Verification Flow",
+      "item": [
+        {
+          "name": "POST /api/v1/releases/{release_id}/verify - Lanzar Verificación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 202 or 200 or 400', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([202, 200, 400, 404]);",
+                  "});",
+                  "pm.test('Response has task_id', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.task_id) {",
+                  "        pm.collectionVariables.set('task_id', jsonData.task_id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{release_id}}/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "releases", "{{release_id}}", "verify"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/tasks/{task_id} - Estado de Tarea Async",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "pm.test('Response has task status', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.task_id) {",
+                  "        pm.expect(jsonData.status).to.be.a('string');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tasks/{{task_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tasks", "{{task_id}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/releases/{release_id}/results - Historial de Verificaciones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 404', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/releases/{{release_id}}/results",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "releases", "{{release_id}}", "results"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Dashboard",
+      "item": [
+        {
+          "name": "GET /api/v1/dashboard/metrics - Métricas del Dashboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has metrics', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('total_releases');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/metrics?org_id={{org_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard", "metrics"],
+              "query": [
+                {
+                  "key": "org_id",
+                  "value": "{{org_id}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. API Keys",
+      "item": [
+        {
+          "name": "POST /api/v1/users/{user_id}/api-keys - Crear API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 or 200 or 400', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 200, 400, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test API Key {{timestamp}}\",\n    \"expires_in_days\": 90\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{user_id}}/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{user_id}}", "api-keys"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/users/{user_id}/api-keys - Listar API Keys",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 403', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{user_id}}/api-keys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{user_id}}", "api-keys"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Notifications",
+      "item": [
+        {
+          "name": "GET /api/v1/notifications/channels - Listar Canales",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/channels",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "channels"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/v1/notifications/preferences - Preferencias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "preferences"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

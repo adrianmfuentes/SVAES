@@ -1,0 +1,9 @@
+# Use this workspace to collaborate
+workspace:
+  id: e01ad7fa-caf2-4e49-881f-68ad8a6d7a4d
+
+localResources:
+  collections:
+    - ..\docs\api\SVAES_API_Collection.json
+  environments:
+    - ..\docs\api\SVAES_Local_Environment.postman_environment.json
