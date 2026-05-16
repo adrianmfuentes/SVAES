@@ -8,14 +8,12 @@ from domain.entities.verification_rule import VerificationRule
 from domain.enums import SeverityType
 from infrastructure.secondary.database.models.profile_model import VerificationProfileModel
 from infrastructure.secondary.database.models.rule_model import VerificationRuleModel
-from infrastructure.secondary.database.get_async_session import get_async_session
+from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 
 
 class SqlProfileRepository(IProfileRepository):
     async def create(self, profile: VerificationProfile) -> VerificationProfile:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             profile_model = VerificationProfileModel(
                 id=profile.id,
                 organization_id=profile.organization_id,
@@ -40,16 +38,9 @@ class SqlProfileRepository(IProfileRepository):
                 created_at=cast(datetime, profile_model.created_at),
                 updated_at=cast(datetime, profile_model.updated_at),
             )
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def get_by_id(self, profile_id: uuid.UUID) -> Optional[VerificationProfile]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(select(VerificationProfileModel).where(VerificationProfileModel.id == profile_id))
             profile_row = result.scalar_one_or_none()
             if not profile_row:
@@ -86,16 +77,9 @@ class SqlProfileRepository(IProfileRepository):
                 created_at=cast(datetime, profile_row.created_at),
                 updated_at=cast(datetime, profile_row.updated_at),
             )
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def get_default_for_organization(self, organization_id: uuid.UUID) -> Optional[VerificationProfile]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(VerificationProfileModel)
                 .where(VerificationProfileModel.organization_id == organization_id)
@@ -106,16 +90,9 @@ class SqlProfileRepository(IProfileRepository):
                 return None
 
             return await self.get_by_id(cast(uuid.UUID, profile_row.id))
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def update(self, profile: VerificationProfile) -> VerificationProfile:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             profile_model = await session.get(VerificationProfileModel, profile.id)
             if not profile_model:
                 raise ValueError("Profile not found")
@@ -138,16 +115,9 @@ class SqlProfileRepository(IProfileRepository):
                 created_at=cast(datetime, profile_model.created_at),
                 updated_at=cast(datetime, profile_model.updated_at),
             )
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def list_by_organization(self, organization_id: uuid.UUID, skip: int = 0, limit: int = 50) -> List[VerificationProfile]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(VerificationProfileModel)
                 .where(VerificationProfileModel.organization_id == organization_id)
@@ -192,24 +162,12 @@ class SqlProfileRepository(IProfileRepository):
                 )
 
             return profiles
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def delete(self, profile_id: uuid.UUID) -> None:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             profile_model = await session.get(VerificationProfileModel, profile_id)
             if not profile_model:
                 raise ValueError("Profile not found")
 
             await session.delete(profile_model)
             await session.commit()
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()

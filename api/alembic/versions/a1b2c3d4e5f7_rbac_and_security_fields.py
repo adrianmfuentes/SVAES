@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision: str = 'a1b2c3d4e5f7'
-down_revision: str | Sequence[str] | None = '2fd6efcfd6c9'
+down_revision: str | Sequence[str] | None = 'a1b2c3d4e5f6'
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -20,6 +20,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column('user', sa.Column('failed_login_attempts', sa.Integer(), nullable=False, server_default='0'))
     op.add_column('user', sa.Column('locked_until', sa.DateTime(timezone=True), nullable=True))
+    op.add_column('user', sa.Column('organization_id', sa.UUID(), nullable=True))
     op.add_column('organization', sa.Column('owner_id', sa.UUID(), nullable=True))
     op.create_foreign_key('fk_org_owner', 'organization', 'user', ['owner_id'], ['id'])
     op.alter_column('user', 'password_hash', new_column_name='hashed_password')
@@ -56,5 +57,6 @@ def downgrade() -> None:
     op.alter_column('user', 'hashed_password', new_column_name='password_hash')
     op.drop_constraint('fk_org_owner', 'organization', type_='foreignkey')
     op.drop_column('organization', 'owner_id')
+    op.drop_column('user', 'organization_id')
     op.drop_column('user', 'locked_until')
     op.drop_column('user', 'failed_login_attempts')

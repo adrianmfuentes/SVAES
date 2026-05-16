@@ -6,14 +6,12 @@ from application.ports.output.i_verification_result_repository import IVerificat
 from domain.entities.verification_result import VerificationResult
 from domain.enums import VerdictType
 from infrastructure.secondary.database.models.result_model import VerificationResultModel
-from infrastructure.secondary.database.get_async_session import get_async_session
+from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 
 
 class SqlVerificationResultRepository(IVerificationResultRepository):
     async def save(self, result: VerificationResult) -> VerificationResult:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result_model = VerificationResultModel(
                 id=result.id,
                 release_id=result.release_id,
@@ -38,16 +36,9 @@ class SqlVerificationResultRepository(IVerificationResultRepository):
                 profile_snapshot=cast(dict, result_model.profile_snapshot) or {},
                 executed_at=cast(datetime, result_model.executed_at),
             )
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def find_by_id(self, result_id: uuid.UUID) -> Optional[VerificationResult]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(select(VerificationResultModel).where(VerificationResultModel.id == result_id))
             result_row = result.scalar_one_or_none()
             if not result_row:
@@ -63,16 +54,9 @@ class SqlVerificationResultRepository(IVerificationResultRepository):
                 profile_snapshot=cast(dict, result_row.profile_snapshot) or {},
                 executed_at=cast(datetime, result_row.executed_at),
             )
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def find_by_release(self, release_id: uuid.UUID) -> List[VerificationResult]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(VerificationResultModel)
                 .where(VerificationResultModel.release_id == release_id)
@@ -93,8 +77,3 @@ class SqlVerificationResultRepository(IVerificationResultRepository):
                 )
                 for row in result_rows
             ]
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()

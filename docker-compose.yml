@@ -85,6 +85,11 @@ services:
       DATABASE_URL: postgresql://svaes:svaes@postgres:5432/svaes
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+      ENVIRONMENT: development
+      JWT_SECRET_KEY: twKlaiRwAtjUtNem3I99jtlL8mWH7bIIUVd_3v3XlTk
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: 60
+      ALLOWED_ORIGINS: http://localhost:4200,http://localhost:3000
     depends_on:
       postgres:
         condition: service_healthy

@@ -6,7 +6,7 @@ from application.ports.output.i_connector_repository import IConnectorRepository
 from domain.entities.connector_instance import ConnectorInstance
 from domain.enums import ConnectorStatus
 from infrastructure.secondary.database.models.connector_model import ConnectorInstanceModel
-from infrastructure.secondary.database.get_async_session import get_async_session
+from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 
 
 def _model_to_entity(row: ConnectorInstanceModel) -> ConnectorInstance:
@@ -26,9 +26,7 @@ def _model_to_entity(row: ConnectorInstanceModel) -> ConnectorInstance:
 
 class SqlConnectorRepository(IConnectorRepository):
     async def save(self, connector: ConnectorInstance) -> ConnectorInstance:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             connector_model = ConnectorInstanceModel(
                 id=connector.id,
                 organization_id=connector.organization_id,
@@ -46,34 +44,20 @@ class SqlConnectorRepository(IConnectorRepository):
             await session.refresh(connector_model)
 
             return _model_to_entity(connector_model)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def get_by_id(self, instance_id: uuid.UUID) -> Optional[ConnectorInstance]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(select(ConnectorInstanceModel).where(ConnectorInstanceModel.id == instance_id))
             connector_row = result.scalar_one_or_none()
             if not connector_row:
                 return None
 
             return _model_to_entity(connector_row)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def list_by_organization(
         self, organization_id: uuid.UUID, active_only: bool = True, skip: int = 0, limit: int = 50
     ) -> List[ConnectorInstance]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             query = select(ConnectorInstanceModel).where(ConnectorInstanceModel.organization_id == organization_id)
             if active_only:
                 query = query.where(ConnectorInstanceModel.status == ConnectorStatus.ACTIVO.value)
@@ -83,19 +67,12 @@ class SqlConnectorRepository(IConnectorRepository):
             connector_rows = result.scalars().all()
 
             return [_model_to_entity(row) for row in connector_rows]
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def list_active(self, organization_id: uuid.UUID) -> List[ConnectorInstance]:
         return await self.list_by_organization(organization_id, active_only=True, skip=0, limit=100)
 
     async def update(self, connector: ConnectorInstance) -> ConnectorInstance:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             connector_model = await session.get(ConnectorInstanceModel, connector.id)
             if not connector_model:
                 raise ValueError("Connector not found")
@@ -112,24 +89,12 @@ class SqlConnectorRepository(IConnectorRepository):
             await session.refresh(connector_model)
 
             return _model_to_entity(connector_model)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def delete(self, connector_id: uuid.UUID) -> None:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             connector_model = await session.get(ConnectorInstanceModel, connector_id)
             if not connector_model:
                 raise ValueError("Connector not found")
 
             await session.delete(connector_model)
             await session.commit()
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()

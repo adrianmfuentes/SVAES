@@ -5,7 +5,7 @@ from datetime import datetime
 from application.ports.output.i_template_repository import ITemplateRepository
 from domain.entities.template import Template
 from infrastructure.secondary.database.models.template_model import TemplateModel
-from infrastructure.secondary.database.get_async_session import get_async_session
+from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 
 
 class SqlTemplateRepository(ITemplateRepository):
@@ -24,9 +24,7 @@ class SqlTemplateRepository(ITemplateRepository):
         )
 
     async def create(self, template: Template) -> Template:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             model = TemplateModel(
                 id=template.id,
                 organization_id=template.organization_id,
@@ -44,32 +42,18 @@ class SqlTemplateRepository(ITemplateRepository):
             await session.refresh(model)
 
             return self._model_to_entity(model)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def get_by_id(self, template_id: uuid.UUID) -> Optional[Template]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(select(TemplateModel).where(TemplateModel.id == template_id))
             row = result.scalar_one_or_none()
             if not row:
                 return None
 
             return self._model_to_entity(row)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def list_by_organization(self, organization_id: uuid.UUID, skip: int = 0, limit: int = 50, include_archived: bool = False) -> List[Template]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             stmt = select(TemplateModel).where(TemplateModel.organization_id == organization_id)
             if not include_archived:
                 stmt = stmt.where(TemplateModel.is_archived == False)
@@ -78,16 +62,9 @@ class SqlTemplateRepository(ITemplateRepository):
             rows = result.scalars().all()
 
             return [self._model_to_entity(row) for row in rows]
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def update(self, template: Template) -> Template:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             model = await session.get(TemplateModel, template.id)
             if not model:
                 raise ValueError("Template not found")
@@ -103,24 +80,12 @@ class SqlTemplateRepository(ITemplateRepository):
             await session.refresh(model)
 
             return self._model_to_entity(model)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def delete(self, template_id: uuid.UUID) -> None:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             model = await session.get(TemplateModel, template_id)
             if not model:
                 raise ValueError("Template not found")
 
             await session.delete(model)
             await session.commit()
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()

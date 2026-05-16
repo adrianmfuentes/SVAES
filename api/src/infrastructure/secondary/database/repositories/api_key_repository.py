@@ -6,7 +6,7 @@ import hashlib
 from application.ports.output.i_api_key_repository import IAPIKeyRepository
 from domain.entities.api_key import APIKey
 from infrastructure.secondary.database.models.api_key_model import APIKeyModel
-from infrastructure.secondary.database.get_async_session import get_async_session
+from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 
 
 def _model_to_entity(row: APIKeyModel) -> APIKey:
@@ -26,8 +26,7 @@ def _model_to_entity(row: APIKeyModel) -> APIKey:
 
 class SqlAPIKeyRepository(IAPIKeyRepository):
     async def save(self, api_key: APIKey) -> APIKey:
-        session = await get_async_session().__anext__()
-        try:
+        async with AsyncSessionLocal() as session:
             model = APIKeyModel(
                 id=api_key.id,
                 user_id=api_key.user_id,
@@ -44,71 +43,41 @@ class SqlAPIKeyRepository(IAPIKeyRepository):
             await session.commit()
             await session.refresh(model)
             return _model_to_entity(model)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def get_by_id(self, api_key_id: uuid.UUID) -> Optional[APIKey]:
-        session = await get_async_session().__anext__()
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(APIKeyModel).where(APIKeyModel.id == api_key_id)
             )
             row = result.scalar_one_or_none()
             return _model_to_entity(row) if row else None
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def get_by_hash(self, key_hash: str) -> Optional[APIKey]:
-        session = await get_async_session().__anext__()
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(APIKeyModel).where(APIKeyModel.key_hash == key_hash)
             )
             row = result.scalar_one_or_none()
             return _model_to_entity(row) if row else None
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def list_by_organization(self, organization_id: uuid.UUID) -> List[APIKey]:
-        session = await get_async_session().__anext__()
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(APIKeyModel).where(APIKeyModel.organization_id == organization_id)
             )
             rows = result.scalars().all()
             return [_model_to_entity(row) for row in rows]
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def list_by_user(self, user_id: uuid.UUID) -> List[APIKey]:
-        session = await get_async_session().__anext__()
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(APIKeyModel).where(APIKeyModel.user_id == user_id)
             )
             rows = result.scalars().all()
             return [_model_to_entity(row) for row in rows]
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def update(self, api_key: APIKey) -> APIKey:
-        session = await get_async_session().__anext__()
-        try:
+        async with AsyncSessionLocal() as session:
             model = await session.get(APIKeyModel, api_key.id)
             if not model:
                 raise ValueError("API key not found")
@@ -119,25 +88,14 @@ class SqlAPIKeyRepository(IAPIKeyRepository):
             await session.commit()
             await session.refresh(model)
             return _model_to_entity(model)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def delete(self, api_key_id: uuid.UUID) -> None:
-        session = await get_async_session().__anext__()
-        try:
+        async with AsyncSessionLocal() as session:
             model = await session.get(APIKeyModel, api_key_id)
             if not model:
                 raise ValueError("API key not found")
             await session.delete(model)
             await session.commit()
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     @staticmethod
     def hash_key(key: str) -> str:

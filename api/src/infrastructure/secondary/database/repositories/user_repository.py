@@ -6,7 +6,7 @@ from application.ports.output.i_user_repository import IUserRepository
 from domain.entities.user import User
 from domain.enums import UserRole
 from infrastructure.secondary.database.models.user_model import UserModel
-from infrastructure.secondary.database.get_async_session import get_async_session
+from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 
 
 class SqlUserRepository(IUserRepository):
@@ -27,9 +27,7 @@ class SqlUserRepository(IUserRepository):
         )
 
     async def create(self, user: User) -> User:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             user_model = UserModel(
                 id=user.id,
                 email=user.email,
@@ -46,75 +44,41 @@ class SqlUserRepository(IUserRepository):
             session.add(user_model)
             await session.commit()
             await session.refresh(user_model)
-
             return self._model_to_entity(user_model)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def get_by_id(self, user_id: uuid.UUID) -> Optional[User]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(select(UserModel).where(UserModel.id == user_id))
             user_row = result.scalar_one_or_none()
             if not user_row:
                 return None
-
             return self._model_to_entity(user_row)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def get_by_email(self, email: str) -> Optional[User]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(select(UserModel).where(UserModel.email == email))
             user_row = result.scalar_one_or_none()
             if not user_row:
                 return None
-
             return self._model_to_entity(user_row)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def list_all(self, organization_id: Optional[uuid.UUID] = None, active_only: bool = True, skip: int = 0, limit: int = 100) -> List[User]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             query = select(UserModel)
             if organization_id is not None:
                 query = query.where(UserModel.organization_id == organization_id)
             if active_only:
                 query = query.where(UserModel.is_active == True)
             query = query.offset(skip).limit(limit)
-
             result = await session.execute(query)
             user_rows = result.scalars().all()
-
             return [self._model_to_entity(row) for row in user_rows]
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def update(self, user: User) -> User:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             user_model = await session.get(UserModel, user.id)
             if not user_model:
                 raise ValueError("User not found")
-
             user_model.email = user.email  # pyright: ignore[reportAttributeAccessIssue]
             user_model.hashed_password = user.hashed_password  # pyright: ignore[reportAttributeAccessIssue]
             user_model.display_name = user.display_name  # pyright: ignore[reportAttributeAccessIssue]
@@ -124,29 +88,14 @@ class SqlUserRepository(IUserRepository):
             user_model.failed_login_attempts = user.failed_login_attempts  # pyright: ignore[reportAttributeAccessIssue]
             user_model.locked_until = user.locked_until  # pyright: ignore[reportAttributeAccessIssue]
             user_model.updated_at = datetime.now(datetime.timezone.utc)
-
             await session.commit()
             await session.refresh(user_model)
-
             return self._model_to_entity(user_model)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def delete(self, user_id: uuid.UUID) -> None:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             user_model = await session.get(UserModel, user_id)
             if not user_model:
                 raise ValueError("User not found")
-
             await session.delete(user_model)
             await session.commit()
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()

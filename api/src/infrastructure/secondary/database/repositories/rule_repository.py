@@ -5,18 +5,8 @@ from application.ports.output.i_verification_rule_repository import IVerificatio
 from domain.entities.verification_rule import VerificationRule
 from domain.enums import SeverityType
 from infrastructure.secondary.database.models.rule_model import VerificationRuleModel
-from infrastructure.secondary.database.get_async_session import get_async_session
-from contextlib import asynccontextmanager
+from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 from sqlalchemy.future import select
-
-
-@asynccontextmanager
-async def _session_scope():
-    session = await get_async_session().__anext__()
-    try:
-        yield session
-    finally:
-        await session.close()
 
 
 class SqlVerificationRuleRepository(IVerificationRuleRepository):
@@ -46,7 +36,7 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
         }
 
     async def create(self, rule: VerificationRule) -> VerificationRule:
-        async with _session_scope() as session:
+        async with AsyncSessionLocal() as session:
             model = VerificationRuleModel(**self._entity_to_model_attrs(rule))
             session.add(model)
             await session.commit()
@@ -54,7 +44,7 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
             return self._model_to_entity(model)
 
     async def get_by_id(self, rule_id: uuid.UUID) -> Optional[VerificationRule]:
-        async with _session_scope() as session:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(select(VerificationRuleModel).where(VerificationRuleModel.id == rule_id))
             row = result.scalar_one_or_none()
             if row is None:
@@ -62,13 +52,13 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
             return self._model_to_entity(row)
 
     async def list_all(self) -> List[VerificationRule]:
-        async with _session_scope() as session:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(select(VerificationRuleModel))
             rows = result.scalars().all()
             return [self._model_to_entity(row) for row in rows]
 
     async def list_by_profile(self, profile_id: uuid.UUID) -> List[VerificationRule]:
-        async with _session_scope() as session:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(VerificationRuleModel)
                 .where(VerificationRuleModel.profile_id == profile_id)
@@ -78,7 +68,7 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
             return [self._model_to_entity(row) for row in rows]
 
     async def update(self, rule: VerificationRule) -> VerificationRule:
-        async with _session_scope() as session:
+        async with AsyncSessionLocal() as session:
             model = await session.get(VerificationRuleModel, rule.id)
             if not model:
                 raise ValueError("Rule not found")
@@ -89,7 +79,7 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
             return self._model_to_entity(model)
 
     async def delete(self, rule_id: uuid.UUID) -> None:
-        async with _session_scope() as session:
+        async with AsyncSessionLocal() as session:
             model = await session.get(VerificationRuleModel, rule_id)
             if not model:
                 raise ValueError("Rule not found")

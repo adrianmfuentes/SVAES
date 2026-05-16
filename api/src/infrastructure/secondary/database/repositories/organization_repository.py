@@ -5,7 +5,7 @@ from datetime import datetime
 from application.ports.output.i_organization_repository import IOrganizationRepository
 from domain.entities.organization import Organization
 from infrastructure.secondary.database.models.organization_model import OrganizationModel
-from infrastructure.secondary.database.get_async_session import get_async_session
+from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 
 
 class SqlOrganizationRepository(IOrganizationRepository):
@@ -22,9 +22,7 @@ class SqlOrganizationRepository(IOrganizationRepository):
         )
 
     async def create(self, organization: Organization) -> Organization:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             org_model = OrganizationModel(
                 id=organization.id,
                 name=organization.name,
@@ -40,48 +38,27 @@ class SqlOrganizationRepository(IOrganizationRepository):
             await session.refresh(org_model)
 
             return self._model_to_entity(org_model)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def get_by_id(self, organization_id: uuid.UUID) -> Optional[Organization]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(select(OrganizationModel).where(OrganizationModel.id == organization_id))
             org_row = result.scalar_one_or_none()
             if not org_row:
                 return None
 
             return self._model_to_entity(org_row)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def get_by_slug(self, slug: str) -> Optional[Organization]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(select(OrganizationModel).where(OrganizationModel.slug == slug))
             org_row = result.scalar_one_or_none()
             if not org_row:
                 return None
 
             return self._model_to_entity(org_row)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def list_all(self, active_only: bool = True, skip: int = 0, limit: int = 100) -> List[Organization]:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             query = select(OrganizationModel)
             if active_only:
                 query = query.where(OrganizationModel.is_active == True)
@@ -91,16 +68,9 @@ class SqlOrganizationRepository(IOrganizationRepository):
             org_rows = result.scalars().all()
 
             return [self._model_to_entity(row) for row in org_rows]
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()
 
     async def update(self, organization: Organization) -> Organization:
-        session = await get_async_session().__anext__()
-
-        try:
+        async with AsyncSessionLocal() as session:
             org_model = await session.get(OrganizationModel, organization.id)
             if not org_model:
                 raise ValueError("Organization not found")
@@ -116,8 +86,3 @@ class SqlOrganizationRepository(IOrganizationRepository):
             await session.refresh(org_model)
 
             return self._model_to_entity(org_model)
-        except Exception as e:
-            await session.rollback()
-            raise e
-        finally:
-            await session.close()

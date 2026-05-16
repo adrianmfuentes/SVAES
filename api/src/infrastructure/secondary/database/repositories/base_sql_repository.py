@@ -3,16 +3,13 @@ from typing import Any, List, Optional
 import uuid
 from sqlalchemy.future import select
 
-from infrastructure.secondary.database.get_async_session import get_async_session
+from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 
 
 @asynccontextmanager
 async def _session_scope():
-    session = await get_async_session().__anext__()
-    try:
+    async with AsyncSessionLocal() as session:
         yield session
-    finally:
-        await session.close()
 
 
 class BaseSqlRepository[T, M]:

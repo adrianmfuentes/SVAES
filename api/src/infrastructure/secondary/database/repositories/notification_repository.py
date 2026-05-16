@@ -6,18 +6,9 @@ from domain.entities.notification_channel import NotificationChannel
 from domain.entities.notification_subscription import NotificationSubscription
 from infrastructure.secondary.database.models.notification_channel_model import NotificationChannelModel
 from infrastructure.secondary.database.models.notification_subscription_model import NotificationSubscriptionModel
-from infrastructure.secondary.database.get_async_session import get_async_session
+from infrastructure.secondary.database.repositories.base_sql_repository import _session_scope
 from contextlib import asynccontextmanager
 from sqlalchemy.future import select
-
-
-@asynccontextmanager
-async def _session_scope():
-    session = await get_async_session().__anext__()
-    try:
-        yield session
-    finally:
-        await session.close()
 
 
 class SqlNotificationRepository(INotificationRepository):
