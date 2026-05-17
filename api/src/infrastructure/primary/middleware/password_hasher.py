@@ -9,4 +9,4 @@ class BcryptPasswordHasher(IPasswordHasher):
         return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
 
     def needs_rehash(self, hashed: str) -> bool:
-        return bcrypt.checkpw(b'dummy', hashed.encode('utf-8'))
+        return bcrypt.checkpw(None, hashed.encode('utf-8'))

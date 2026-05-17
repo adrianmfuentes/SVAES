@@ -12,14 +12,22 @@ async def test():
 
         reg = await client.post(
             'http://localhost:8000/api/v1/auth/register',
-            json={'email': email, 'password': 'Test1234!', 'display_name': 'Test', 'role': 'U2'},
+            json={
+                'email': email, 
+                'password': 'Test1234!', # NOSONAR - This is a test password, not used in production
+                'display_name': 'Test', 
+                'role': 'U2'
+            },
             timeout=30.0
         )
         print(f'Register: {reg.status_code} - {reg.text}')
 
         login = await client.post(
             'http://localhost:8000/api/v1/auth/login',
-            json={'email': email, 'password': 'Test1234!'},
+            json={
+                'email': email, 
+                'password': 'Test1234!' # NOSONAR - This is a test password, not used in production
+            },
             timeout=30.0
         )
         print(f'Login: {login.status_code} - {login.text}')

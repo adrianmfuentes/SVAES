@@ -52,12 +52,12 @@ async def login(
         - Lanza HTTPException con status 500 para cualquier otro error inesperado.
     """
     try:
-        _log.info("Login attempt for %s", payload.email)
+        _log.info("Login attempt")
         tokens, user_id, role = await service.authenticate(
             email=payload.email,
             password=payload.password,
         )
-        _log.info("Login successful for %s", payload.email)
+        _log.info("Login successful for user_id=%s", user_id)
         return {
             "access_token": tokens.access_token,
             "refresh_token": tokens.refresh_token,
@@ -66,10 +66,10 @@ async def login(
             "role": role.value,
         }
     except ValidationError as e:
-        _log.warning("Login validation error for %s: %s", payload.email, e)
+        _log.warning("Login validation error: %s", e)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except Exception as e:
-        _log.exception("Login failed for %s: %s", payload.email, e)
+        _log.exception("Login failed")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
