@@ -121,28 +121,123 @@ async def get_organization(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
+@router.get("/api/v1/projects/{project_id}")
+async def get_project_by_id(
+    project_id: UUID,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
+):
+    try:
+        project = await service.get_project(project_id=project_id)
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyecto no encontrado")
+        if current_user.role != UserRole.U3 and project.organization_id != current_user.organization_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a este proyecto")
+        return {
+            "id": str(project.id),
+            "name": project.name,
+            "description": project.description,
+            "organization_id": str(project.organization_id),
+            "profile_id": str(project.profile_id) if project.profile_id else None,
+            "is_archived": project.is_archived,
+            "created_at": project.created_at.isoformat() if project.created_at else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
 @router.get("/api/v1/projects")
 async def list_accessible_projects(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
+    page: int = 1,
+    size: int = 50,
+    skip: int = 0,
+    limit: int = 0,
+):
+    try:
+        effective_skip = (page - 1) * size if limit == 0 else skip
+        effective_limit = size if limit == 0 else limit
+
+        if current_user.role == UserRole.U3:
+            projects = await service.list_accessible_projects(
+                user_id=current_user.user_id, skip=effective_skip, limit=effective_limit
+            )
+        elif current_user.organization_id:
+            projects = await service.list_projects(
+                organization_id=current_user.organization_id, skip=effective_skip, limit=effective_limit
+            )
+        else:
+            return []
+
+        return [
+            {
+                "id": str(p.id),
+                "name": p.name,
+                "description": p.description,
+                "organization_id": str(p.organization_id),
+                "profile_id": str(p.profile_id) if p.profile_id else None,
+                "is_archived": p.is_archived,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+            }
+            for p in projects
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/api/v1/organizations/{org_id}/projects")
+async def list_org_projects(
+    org_id: UUID,
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_ORG_PROJECTS))],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
     skip: int = 0,
     limit: int = 50,
 ):
-    """Endpoint global para listar proyectos accesibles por el usuario. Este endpoint retorna proyectos filtrados según la accesibilidad del usuario.
-
-    Atributos:
-        - skip: int - Número de registros a omitir para paginación.
-        - limit: int - Número máximo de registros a retornar.
-        - current_user: Usuario autenticado con permisos del token JWT.
-        - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias
-
-    Retorna:
-        - Una lista de diccionarios con la información de cada proyecto (id, name, organization_id).
-        - 500 Internal Server Error para cualquier error inesperado.
-    """
     try:
-        projects = await service.list_accessible_projects(user_id=current_user.user_id, skip=skip, limit=limit)
-        return projects
+        projects = await service.list_projects(organization_id=org_id, skip=skip, limit=limit)
+        return [
+            {
+                "id": str(p.id),
+                "name": p.name,
+                "description": p.description,
+                "organization_id": str(p.organization_id),
+                "profile_id": str(p.profile_id) if p.profile_id else None,
+                "is_archived": p.is_archived,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+            }
+            for p in projects
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/api/v1/organizations/{org_id}/projects/{project_id}")
+async def get_project(
+    org_id: UUID,
+    project_id: UUID,
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_ORG_PROJECTS))],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
+):
+    try:
+        project = await service.get_project(project_id=project_id)
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyecto no encontrado")
+        if project.organization_id != org_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El proyecto no pertenece a esta organización")
+        return {
+            "id": str(project.id),
+            "name": project.name,
+            "description": project.description,
+            "organization_id": str(project.organization_id),
+            "profile_id": str(project.profile_id) if project.profile_id else None,
+            "is_archived": project.is_archived,
+            "created_at": project.created_at.isoformat() if project.created_at else None,
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 

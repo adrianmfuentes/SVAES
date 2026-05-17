@@ -16,7 +16,8 @@ celery_app.conf.update(
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
-    task_track_started=True,                                        # Estado STARTED antes de SUCCESS/FAILURE
-    task_acks_late=True,                                            # ACK solo después de completar (evita pérdida si el worker muere)
-    worker_prefetch_multiplier=1,                                   # El worker solo coge 1 tarea a la vez
+    task_track_started=True,
+    task_acks_late=True,
+    worker_prefetch_multiplier=1,
+    broker_connection_retry_on_startup=True,
 )

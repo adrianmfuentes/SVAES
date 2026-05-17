@@ -2,7 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from fastapi.responses import FileResponse
-from typing import Annotated, Literal, List
+from typing import Annotated, Literal, List, Optional
 from starlette.responses import Response
 
 from application.ports.input.i_release_service import IReleaseService
@@ -23,18 +23,27 @@ router = APIRouter(tags=["Releases"])
 
 # --- ESQUEMAS PYDANTIC > Sirven para validar y documentar las solicitudes y respuestas de la API. ---
 class ReleaseCreateRequest(BaseModel):
-    model_config = ConfigDict(extra='forbid') # Seguridad: rechaza campos no definidos
+    model_config = ConfigDict(extra='forbid')
     name: str = Field(..., min_length=1, max_length=100)
     version: str
     description: str = Field(default="", max_length=1000)
+    profile_id: Optional[UUID] = None
+
+class ReleaseUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    version: Optional[str] = None
+    description: Optional[str] = Field(default=None, max_length=1000)
+    status: Optional[ReleaseStatus] = None
 
 class ArtifactCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    type: ArtifactType
-    connector_id: UUID
+    artifact_type: ArtifactType
+    connector_instance_id: UUID
     connector_implementation: str
     external_ref: str
     description: str = ""
+    metadata: Optional[dict] = None
 
 
 # ==========================
@@ -66,7 +75,7 @@ async def create_release(
             name=payload.name,
             version=payload.version,
             project_id=project_id,
-            user_id=project_access.user.user_id,
+            user_id=project_access.user_id,
             description=payload.description
         )
         return {
@@ -142,33 +151,14 @@ async def get_release(
 @router.patch("/api/v1/releases/{id}")
 async def update_release(
     id: UUID,
-    payload: ReleaseCreateRequest,
+    payload: ReleaseUpdateRequest,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.UPDATE_OWN_RELEASES))],
     _: Annotated[None, Depends(require_release_access())],
     service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
-    """Actualiza los detalles de una release específica por su ID.
-
-    Atributos:
-        - id: ID de la release a actualizar.
-        - payload: Datos actualizados de la release (nombre, versión, descripción).
-        - current_user: Usuario autenticado con permisos del token JWT.
-        - service: Instancia del servicio de releases (inyección de dependencias).
-
-    Retorna:
-        - 200 OK con los detalles actualizados de la release si se actualiza exitosamente
-        - 403 Forbidden si el usuario no tiene acceso a la release
-        - 404 Not Found si la release no se encuentra
-        - 409 Conflict si los datos de actualización violan alguna regla de validación
-        - 500 Internal Server Error para cualquier otro error inesperado
-    """
     try:
-        release = await service.update_release(
-            release_id=id,
-            name=payload.name,
-            version=payload.version,
-            description=payload.description
-        )
+        kwargs = {k: v for k, v in payload.model_dump().items() if v is not None}
+        release = await service.update_release(release_id=id, **kwargs)
         return release
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
@@ -318,11 +308,11 @@ async def add_artifact(
     try:
         artifact = await service.add_artifact(
             release_id=id,
-            connector_instance_id=payload.connector_id,
+            connector_instance_id=payload.connector_instance_id,
             connector_implementation=payload.connector_implementation,
-            artifact_type=payload.type,
+            artifact_type=payload.artifact_type,
             external_ref=payload.external_ref,
-            metadata={"description": payload.description} if payload.description else None
+            metadata=payload.metadata or ({"description": payload.description} if payload.description else None)
         )
         return {"id": artifact.id}
     except ValidationError as e:
@@ -603,11 +593,11 @@ async def import_artifacts(
         for artifact_data in payload.artifacts:
             artifact = await service.add_artifact(
                 release_id=id,
-                connector_instance_id=artifact_data.connector_id,
+                connector_instance_id=artifact_data.connector_instance_id,
                 connector_implementation=artifact_data.connector_implementation,
-                artifact_type=artifact_data.type,
+                artifact_type=artifact_data.artifact_type,
                 external_ref=artifact_data.external_ref,
-                metadata={"description": artifact_data.description} if artifact_data.description else None,
+                metadata=artifact_data.metadata or ({"description": artifact_data.description} if artifact_data.description else None),
             )
             imported.append({"id": str(artifact.id), "external_ref": artifact.external_ref})
         return {"imported": imported, "count": len(imported)}

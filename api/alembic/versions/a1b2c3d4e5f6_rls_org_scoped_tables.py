@@ -28,9 +28,9 @@ depends_on: str | Sequence[str] | None = None
 # policy would make every query expensive; the application layer already enforces
 # release/project ownership before exposing data.
 _ORG_SCOPED = [
-    "projects",
-    "verification_profiles",
-    "connector_instances",
+    "project",
+    "verification_profile",
+    "connector_instance",
 ]
 
 

@@ -47,14 +47,14 @@ class AuthenticateUserUseCase:
 
         access_token = self._token_service.create_access_token(
             user_id=user.id,
-            role=user.role,
+            role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
             expires_in=3600,
         )
         refresh_token = self._token_service.create_access_token(
             user_id=user.id,
-            role=user.role,
+            role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
             expires_in=86400,
@@ -64,5 +64,5 @@ class AuthenticateUserUseCase:
             access_token=access_token,
             refresh_token=refresh_token,
             user_id=user.id,
-            role=user.role,
+            role=user.role.value,
         )

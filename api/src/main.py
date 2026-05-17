@@ -11,8 +11,6 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 from core.rate_limit import limiter
 from infrastructure.primary.routers.api.routers import (
     auth_router,
@@ -31,6 +29,7 @@ from infrastructure.primary.routers.api.routers import (
 )
 from core.config import settings
 from core.logger import _configure_root_logger, get_logger
+
 from domain.exceptions import (
     EntityNotFoundError,
     DomainException,

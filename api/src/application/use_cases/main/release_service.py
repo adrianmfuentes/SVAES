@@ -76,18 +76,24 @@ class CreateReleaseUseCase(IReleaseService):
     async def update_release(
         self,
         release_id: UUID,
-        name: str,
-        version: str,
-        description: str = "",
+        name: Optional[str] = None,
+        version: Optional[str] = None,
+        description: Optional[str] = None,
+        status: Optional[ReleaseStatus] = None,
     ) -> Release:
-        if not self._is_valid_semver(version):
-            raise ValidationError("La versión debe cumplir SemVer 2.0.0")
         release = await self.release_repository.get_by_id(release_id)
         if not release:
             raise ValidationError("No se encontró el release para actualizar.")
-        release.name = name
-        release.version = version
-        release.description = description
+        if version is not None:
+            if not self._is_valid_semver(version):
+                raise ValidationError("La versión debe cumplir SemVer 2.0.0")
+            release.version = version
+        if name is not None:
+            release.name = name
+        if description is not None:
+            release.description = description
+        if status is not None:
+            release.status = status
         await self.release_repository.update(release)
         return release
 

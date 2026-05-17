@@ -1,11 +1,9 @@
 from datetime import datetime
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean, Integer
+from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean, Integer, Enum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import declarative_base
+from infrastructure.secondary.database.models.base import Base
 from domain.enums import UserRole
-
-Base = declarative_base()
 
 
 class UserModel(Base):
@@ -14,7 +12,7 @@ class UserModel(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     display_name = Column(String(100), nullable=False)
-    role = Column(String(20), nullable=False, default=UserRole.U1.value)
+    role = Column(Enum(UserRole, name='user_role', create_type=False, values_callable=lambda x: [e.value for e in x]), nullable=False, default=UserRole.U1)
     organization_id = Column(PG_UUID(as_uuid=True), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     failed_login_attempts = Column(Integer, nullable=False, default=0)

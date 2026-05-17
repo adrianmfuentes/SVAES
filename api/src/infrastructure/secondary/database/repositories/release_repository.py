@@ -1,6 +1,7 @@
 from application.ports.output.i_release_repository import IReleaseRepository
 from domain.entities.release import Release
 from domain.enums import ReleaseStatus
+from domain.exceptions import EntityNotFoundError
 from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
 from infrastructure.secondary.database.models import ReleaseModel
@@ -86,7 +87,7 @@ class SqlReleaseRepository(IReleaseRepository):
 
             setattr(release_row, "name", str(release.name))
             setattr(release_row, "version", str(release.version))
-            setattr(release_row, "status", str(release.status))
+            setattr(release_row, "status", release.status.value if hasattr(release.status, 'value') else release.status)
             setattr(release_row, "profile_id", uuid.UUID(str(getattr(release, "profile_id"))))
             setattr(release_row, "created_by", uuid.UUID(str(getattr(release, "created_by"))))
 
@@ -104,7 +105,7 @@ class SqlReleaseRepository(IReleaseRepository):
             if not release_row:
                 return None
 
-            setattr(release_row, "status", str(status))
+            setattr(release_row, "status", status.value if hasattr(status, 'value') else status)
 
             await session.commit()
             await session.refresh(release_row)

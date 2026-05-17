@@ -82,10 +82,10 @@ def rule_severity_to_string(severity: RuleSeverityType) -> str:
     return severity.value
 
 class UserRole(str, Enum):
-    U1 = "U1"  # Guest/Viewer
-    U2 = "U2"  # Standard User
-    U3 = "U3"  # Global Administrator
-    U4 = "U4"  # Organization Manager
+    U1 = "VIEWER"    # Guest/Viewer
+    U2 = "OPERATOR"  # Standard User
+    U3 = "ADMIN"     # Global Administrator
+    U4 = "MANAGER"   # Organization Manager
 
     def has_permission(self, permission: "Permission") -> bool:
         hierarchy = {

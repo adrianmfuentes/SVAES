@@ -131,7 +131,7 @@ def get_current_user(
         payload = handler.decode_token(credentials.credentials)
         return CurrentUser(
             user_id=payload.user_id,
-            role=payload.role,
+            role=UserRole(payload.role),
             email=payload.email,
             organization_id=payload.organization_id,
         )
@@ -263,13 +263,13 @@ def get_project_repository() -> SqlProjectRepository:
 
 def require_release_access():
     async def dependency(
-        release_id: UUID,
+        id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
         release_repo: SqlReleaseRepository = Depends(get_release_repository),
         project_repo: SqlProjectRepository = Depends(get_project_repository),
     ) -> CurrentUser:
         if current_user.role != UserRole.U3:
-            release = await release_repo.get_by_id(release_id)
+            release = await release_repo.get_by_id(id)
             if not release:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Release no encontrada")
 
@@ -436,8 +436,9 @@ def get_verification_service(
 
 def get_auth_service(
     user_repo: SqlUserRepository = Depends(get_user_repository),
+    settings: Settings = Depends(get_settings_dependency),
 ) -> IAuthService:
-    jwt_handler = get_jwt_handler()
+    jwt_handler = get_jwt_handler(settings)
     password_hasher = get_password_hasher()
     return AuthService(
         user_repository=user_repo,

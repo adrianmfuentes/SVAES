@@ -1,5 +1,5 @@
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from application.ports.input.i_connector_service import IConnectorService
 from application.ports.output.i_connector_repository import IConnectorRepository
 from application.ports.output.i_connector_registry import IConnectorRegistry
@@ -8,7 +8,7 @@ from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from core.logger import get_logger
 from domain.entities.connector_instance import ConnectorInstance
 from domain.enums import ConnectorStatus
-from domain.exceptions import EntityNotFoundError, ValidationError
+from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError
 
 _log = get_logger(__name__)
 
@@ -32,19 +32,24 @@ class ConnectorService(IConnectorService):
         config: dict,
         requested_by: UUID,
     ) -> ConnectorInstance:
+        existing = await self._connector_repo.list_by_organization(organization_id, active_only=False, skip=0, limit=1000)
+        for c in existing:
+            if c.connector_implementation == connector_implementation:
+                raise DuplicateEntityError(f"Ya existe un conector {connector_implementation} en esta organización")
+
         from cryptography.fernet import Fernet
 
         fernet = Fernet(settings.encryption_key.encode())  # pyright: ignore[reportOptionalMemberAccess]
         encrypted_credentials = fernet.encrypt(str(config).encode())
 
         connector = ConnectorInstance(
-            id=UUID(),
+            id=uuid4(),
             organization_id=organization_id,
             connector_type=connector_type,
             connector_implementation=connector_implementation,
             name=name,
             encrypted_credentials=encrypted_credentials,
-            status=ConnectorStatus.INACTIVO,
+            status=ConnectorStatus.ACTIVO,
         )
         saved = await self._connector_repo.save(connector)
 
@@ -85,7 +90,7 @@ class ConnectorService(IConnectorService):
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.CONNECTOR_UPDATED,
-            user_id=requested_by or UUID(),
+            user_id=requested_by or uuid4(),
             organization_id=connector.organization_id,
             resource_type="connector",
             resource_id=connector_id,

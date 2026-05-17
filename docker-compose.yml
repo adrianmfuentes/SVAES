@@ -56,14 +56,14 @@ services:
       dockerfile: Dockerfile
     container_name: svaes-api
     environment:
-      DATABASE_URL: postgresql://svaes:svaes@postgres:5432/svaes
+      DATABASE_URL: postgresql+psycopg://svaes:svaes@postgres:5432/svaes
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       ENVIRONMENT: development
-      JWT_SECRET_KEY: twKlaiRwAtjUtNem3I99jtlL8mWH7bIIUVd_3v3XlTk
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM: HS256
       JWT_EXPIRE_MINUTES: 60
-      ENCRYPTION_KEY: Kafb5etMI6S5HAjm5F5isQBTj-H958jffM9VSTAw3Gg=
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       ALLOWED_ORIGINS: http://localhost:4200,http://localhost:3000
     ports:
       - "8000:8000"
@@ -82,13 +82,14 @@ services:
     container_name: svaes-celery
     command: celery -A src.infrastructure.secondary.queue.celery_app worker --loglevel=info
     environment:
-      DATABASE_URL: postgresql://svaes:svaes@postgres:5432/svaes
+      DATABASE_URL: postgresql+psycopg://svaes:svaes@postgres:5432/svaes
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       ENVIRONMENT: development
-      JWT_SECRET_KEY: twKlaiRwAtjUtNem3I99jtlL8mWH7bIIUVd_3v3XlTk
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM: HS256
       JWT_EXPIRE_MINUTES: 60
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       ALLOWED_ORIGINS: http://localhost:4200,http://localhost:3000
     depends_on:
       postgres:

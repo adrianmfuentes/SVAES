@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_connector_service import IConnectorService
 from core.dependencies import get_connector_service, get_current_user, CurrentUser, require_permission, require_org_access, require_connector_access
 from domain.enums import ConnectorStatus
-from domain.exceptions import EntityNotFoundError, ValidationError, ConnectorConnectionFailedError
+from domain.exceptions import EntityNotFoundError, ValidationError, ConnectorConnectionFailedError, DuplicateEntityError
 
 router = APIRouter(tags=["Connectors"])
 
@@ -22,7 +22,7 @@ class ConnectorCreateRequest(BaseModel):
     connector_type: str = Field(..., min_length=1, max_length=50)
     connector_implementation: str = Field(..., min_length=1, max_length=50)
     name: str = Field(..., min_length=1, max_length=100)
-    config: dict = Field(..., description="Configuración del conector (credenciales, endpoints, etc.)")
+    credentials: dict = Field(..., description="Credenciales y configuración del conector")
 
 class ConnectorUpdateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -187,7 +187,7 @@ async def list_connectors(
     org_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_org_access())],
     service: Annotated[IConnectorService, Depends(get_connector_service)],
-    active_only: bool = True,
+    active_only: bool = False,
 ):
     """Endpoint para listar los conectores de una organización.
 
@@ -245,10 +245,12 @@ async def register_connector(
             connector_type=payload.connector_type,
             connector_implementation=payload.connector_implementation,
             name=payload.name,
-            config=payload.config,
+            config=payload.credentials,
             requested_by=current_user.user_id,
         )
         return {"id": str(connector.id), "name": connector.name, "status": connector.status.value}
+    except DuplicateEntityError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except Exception as e:

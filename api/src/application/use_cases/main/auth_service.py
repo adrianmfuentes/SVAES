@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Tuple
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
@@ -9,6 +10,8 @@ from domain.entities.user import User
 from domain.enums import UserRole
 from domain.exceptions import ValidationError
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
+
+_log = logging.getLogger(__name__)
 
 MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_WINDOW_MINUTES = 10
@@ -25,7 +28,6 @@ class AuthService(IAuthService):
         self._user_repo = user_repository
         self._token_service = token_service
         self._password_hasher = password_hasher
-
 
     async def authenticate(
         self,
@@ -81,14 +83,14 @@ class AuthService(IAuthService):
 
         access_token = self._token_service.create_access_token(
             user_id=user.id,
-            role=user.role,
+            role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
             expires_in=3600,
         )
         refresh_token = self._token_service.create_access_token(
             user_id=user.id,
-            role=user.role,
+            role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
             expires_in=86400,
@@ -105,8 +107,7 @@ class AuthService(IAuthService):
             resource_id=user.id,
         ))
 
-        return tokens, user.id, user.role
-
+        return tokens, user.id, user.role.value
 
     async def refresh_access_token(self, refresh_token: str) -> Optional[AuthTokens]:
         try:

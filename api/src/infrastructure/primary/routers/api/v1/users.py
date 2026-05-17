@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from application.ports.input.i_user_service import IUserService
 from core.dependencies import get_user_service, get_current_user, CurrentUser, require_permission, require_role
 from domain.enums import UserRole, Permission
@@ -25,6 +25,13 @@ class PasswordChangeRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     current_password: str = Field(..., min_length=1)
     new_password: str = Field(..., min_length=8, max_length=255)
+    confirm_password: str = Field(..., min_length=1)
+
+    @model_validator(mode="after")
+    def passwords_match(self) -> "PasswordChangeRequest":
+        if self.new_password != self.confirm_password:
+            raise ValueError("Las contraseñas no coinciden")
+        return self
 
 class UserInviteRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')

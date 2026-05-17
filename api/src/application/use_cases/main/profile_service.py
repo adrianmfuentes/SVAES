@@ -1,5 +1,5 @@
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from application.ports.input.i_profile_service import IProfileService
 from application.ports.output.i_profile_repository import IProfileRepository
 from application.ports.output.i_verification_rule_repository import IVerificationRuleRepository
@@ -69,7 +69,7 @@ class ProfileService(IProfileService):
                 await self._profile_repo.update(existing_default)
 
         profile = VerificationProfile(
-            id=UUID(),
+            id=uuid4(),
             organization_id=organization_id,
             name=name,
             description=description,
@@ -81,7 +81,7 @@ class ProfileService(IProfileService):
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.PROFILE_CREATED,
-            user_id=requested_by or UUID(),
+            user_id=requested_by or uuid4(),
             organization_id=organization_id,
             resource_type="profile",
             resource_id=created.id,
@@ -122,7 +122,7 @@ class ProfileService(IProfileService):
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.PROFILE_UPDATED,
-            user_id=UUID(),
+            user_id=uuid4(),
             organization_id=profile.organization_id,
             resource_type="profile",
             resource_id=profile_id,
@@ -151,7 +151,7 @@ class ProfileService(IProfileService):
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
 
         new_profile = VerificationProfile(
-            id=UUID(),
+            id=uuid4(),
             organization_id=original.organization_id,
             name=new_name,
             description=original.description,
@@ -189,7 +189,7 @@ class ProfileService(IProfileService):
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.PROFILE_DELETED,
-            user_id=UUID(),
+            user_id=uuid4(),
             organization_id=org_id,
             resource_type="profile",
             resource_id=profile_id,
@@ -224,7 +224,7 @@ class ProfileService(IProfileService):
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.RULE_CREATED,
-            user_id=UUID(),
+            user_id=uuid4(),
             organization_id=profile.organization_id,
             resource_type="rule",
             resource_id=created.id,
@@ -265,7 +265,7 @@ class ProfileService(IProfileService):
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.RULE_UPDATED,
-            user_id=UUID(),
+            user_id=uuid4(),
             organization_id=None,
             resource_type="rule",
             resource_id=rule_id,

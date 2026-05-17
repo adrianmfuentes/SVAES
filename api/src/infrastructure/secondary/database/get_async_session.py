@@ -26,7 +26,8 @@ if DATABASE_URL is None:
     raise ValueError("DATABASE_URL is not set")
 
 # Crear el motor asíncrono
-engine = create_async_engine(DATABASE_URL, echo=True)
+_sql_echo = os.getenv("ENVIRONMENT", "production") == "development"
+engine = create_async_engine(DATABASE_URL, echo=_sql_echo)
 
 # Crear un sessionmaker asíncrono
 AsyncSessionLocal = async_sessionmaker(

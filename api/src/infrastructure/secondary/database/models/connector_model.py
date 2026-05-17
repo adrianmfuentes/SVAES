@@ -1,11 +1,9 @@
 from datetime import datetime
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey, LargeBinary
+from sqlalchemy import Column, String, DateTime, ForeignKey, LargeBinary, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import declarative_base
+from infrastructure.secondary.database.models.base import Base
 from domain.enums import ConnectorStatus
-
-Base = declarative_base()
 
 
 class ConnectorInstanceModel(Base):
@@ -15,8 +13,8 @@ class ConnectorInstanceModel(Base):
     connector_type = Column(String(50), nullable=False)
     connector_implementation = Column(String(50), nullable=False)
     name = Column(String(100), nullable=False)
-    encrypted_credentials = Column(LargeBinary, nullable=False)
-    status = Column(String(20), nullable=False, default=ConnectorStatus.INACTIVO.value)
+    config_encrypted = Column(LargeBinary, nullable=True)
+    status = Column(SAEnum(ConnectorStatus, name='connector_status', create_type=False, values_callable=lambda enums: [e.value for e in enums]), nullable=False, default=ConnectorStatus.INACTIVO)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
     last_tested_at = Column(DateTime(timezone=True), nullable=True)

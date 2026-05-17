@@ -1,7 +1,7 @@
 from sqlalchemy.future import select
 from typing import Optional, List, cast
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from application.ports.output.i_connector_repository import IConnectorRepository
 from domain.entities.connector_instance import ConnectorInstance
 from domain.enums import ConnectorStatus
@@ -16,10 +16,10 @@ def _model_to_entity(row: ConnectorInstanceModel) -> ConnectorInstance:
         connector_type=cast(str, row.connector_type),
         connector_implementation=cast(str, row.connector_implementation),
         name=cast(str, row.name),
-        encrypted_credentials=cast(bytes, row.encrypted_credentials),
+        encrypted_credentials=cast(bytes, row.config_encrypted),
         status=ConnectorStatus(row.status),
         created_at=cast(datetime, row.created_at),
-        updated_at=cast(datetime, row.updated_at),
+        updated_at=cast(datetime | None, row.updated_at),
         last_tested_at=cast(datetime | None, row.last_tested_at),
     )
 
@@ -33,8 +33,8 @@ class SqlConnectorRepository(IConnectorRepository):
                 connector_type=connector.connector_type,
                 connector_implementation=connector.connector_implementation,
                 name=connector.name,
-                encrypted_credentials=connector.encrypted_credentials,
-                status=connector.status.value,
+                config_encrypted=connector.encrypted_credentials,
+                status=connector.status.value if hasattr(connector.status, 'value') else connector.status,
                 created_at=connector.created_at,
                 updated_at=connector.updated_at,
                 last_tested_at=connector.last_tested_at,
@@ -60,7 +60,7 @@ class SqlConnectorRepository(IConnectorRepository):
         async with AsyncSessionLocal() as session:
             query = select(ConnectorInstanceModel).where(ConnectorInstanceModel.organization_id == organization_id)
             if active_only:
-                query = query.where(ConnectorInstanceModel.status == ConnectorStatus.ACTIVO.value)
+                query = query.where(ConnectorInstanceModel.status == ConnectorStatus.ACTIVO)
             query = query.offset(skip).limit(limit)
 
             result = await session.execute(query)
@@ -80,9 +80,9 @@ class SqlConnectorRepository(IConnectorRepository):
             connector_model.connector_type = connector.connector_type  # pyright: ignore[reportAttributeAccessIssue]
             connector_model.connector_implementation = connector.connector_implementation  # pyright: ignore[reportAttributeAccessIssue]
             connector_model.name = connector.name  # pyright: ignore[reportAttributeAccessIssue]
-            connector_model.encrypted_credentials = connector.encrypted_credentials  # pyright: ignore[reportAttributeAccessIssue]
-            connector_model.status = connector.status.value  # pyright: ignore[reportAttributeAccessIssue]
-            connector_model.updated_at = datetime.now(datetime.timezone.utc)
+            connector_model.config_encrypted = connector.encrypted_credentials  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.status = connector.status.value if hasattr(connector.status, 'value') else connector.status  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.updated_at = datetime.now(timezone.utc)
             connector_model.last_tested_at = connector.last_tested_at  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()

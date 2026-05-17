@@ -4,13 +4,11 @@ Modelo de SQLAlchemy para la entidad Project, representando la tabla 'projects' 
 
 from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
+from infrastructure.secondary.database.models.base import Base
 import uuid
 
-Base = declarative_base()
-
 class ProjectModel(Base):
-    __tablename__ = 'projects'
+    __tablename__ = 'project'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)

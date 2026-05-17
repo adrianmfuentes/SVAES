@@ -2,10 +2,8 @@ from datetime import datetime
 import uuid
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Table, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, ARRAY
-from sqlalchemy.orm import declarative_base
+from infrastructure.secondary.database.models.base import Base
 import enum
-
-Base = declarative_base()
 
 
 class PermissionType(str, enum.Enum):

@@ -12,6 +12,14 @@ class BaseHttpConnector(ABC):
     TIMEOUT: float = 30.0
     CONTENT_TYPE: str = "application/json"
 
+    @property
+    def connector_type(self) -> str:
+        return self.CONNECTOR_TYPE
+
+    @property
+    def connector_implementation(self) -> str:
+        return self.CONNECTOR_IMPLEMENTATION
+
     def get_connector_type(self) -> str:
         return self.CONNECTOR_TYPE
 
@@ -29,9 +37,8 @@ class BaseHttpConnector(ABC):
     def get_artifact_types(self) -> List[str]:
         pass
 
-    @abstractmethod
     def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
-        pass
+        raise NotImplementedError("Subclasses must implement _build_headers")
 
     def _get_base_url(self, config: Dict[str, Any]) -> str:
         return config.get("base_url", self.BASE_URL)
