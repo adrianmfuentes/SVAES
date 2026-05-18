@@ -24,7 +24,7 @@ jobs:
 
       - name: Run tests with coverage
         env:
-          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/testdb
+          DATABASE_URL: postgresql+psycopg://test:test@localhost:5432/testdb
           JWT_SECRET_KEY: ci-test-secret-key-not-used-in-production
           JWT_ALGORITHM: HS256
           JWT_EXPIRE_MINUTES: "30"
