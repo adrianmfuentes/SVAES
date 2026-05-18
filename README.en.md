@@ -46,7 +46,7 @@ Design and implement an extensible, decoupled system capable of automatically ve
 |-----------|--------|-------------|
 | FastAPI Backend | ✅ Complete | Full REST API with all endpoints |
 | Angular Frontend | ⏳ Pending | Empty SPA, pending implementation |
-| Rust Engine | ⏳ Pending | stub in engine/, only "Hello World" |
+| Rust Engine | ✅ Implemented | Complete engine in engine/, parallel evaluator + 10 rules |
 | Celery Worker | ✅ Implemented | real worker in verification_worker.py |
 | Connectors | ✅ Implemented | 20 connectors in 5 functional categories |
 
@@ -91,7 +91,7 @@ The system is divided into the following components:
 
 - Frontend (Angular SPA) — ⏳ Pending
 - Backend (FastAPI) — ✅ Complete
-- Verification engine (Rust) — ⏳ Pending (stub)
+- Verification engine (Rust) — ✅ Implemented (complete)
 - Task queue (Celery + Redis) — ✅ Implemented
 - Database (PostgreSQL) — ✅ Operational
 - External connectors — ✅ 20 implementations
@@ -300,8 +300,8 @@ PostgreSQL database:
 | Authentication | JWT (PyJWT) | ✅ Complete |
 | HTTP Client | httpx (async) | ✅ Integrated in connectors |
 | Frontend | Angular 17 | ⏳ Pending |
-| Verification engine | Rust (Actix-web + Rayon) | ⏳ Pending |
-| Task queue | Celery + Redis | ⏳ Pending |
+| Verification engine | Rust (Actix-web + Rayon) | ✅ Implemented |
+| Task queue | Celery + Redis | ✅ Implemented |
 | Containers | Docker + Docker Compose | ✅ Configured |
 
 ---
@@ -402,7 +402,7 @@ The FastAPI backend is fully operational with:
 - Complete multi-tenant isolation
 - RBAC with predefined and custom roles
 
-Pending: Angular frontend, Rust engine and Celery worker.
+Pending: Angular frontend.
 
 ---
 

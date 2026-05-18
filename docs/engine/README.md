@@ -637,7 +637,7 @@ Health check simple para verificar que el servicio está corriendo.
 {
   "status": "healthy",
   "service": "svaes-engine",
-  "version": "0.1.0"
+  "version": "1.0.0"
 }
 ```
 
@@ -715,9 +715,9 @@ Content-Type: application/json
 
 | Veredicto | Condición |
 |-----------|-----------|
-| `VALIDA` | Todas las reglas OBLIGATORIAS返回OK，且没有OPCIONAL警告 |
-| `CON_ADVERTENCIAS` | Todas las OBLIGATORIAS OK，但某些OPCIONAL返回Warning |
-| `NO_VALIDA` | 任何OBLIGATORIA返回Error |
+| `VALIDA` | Todas las reglas OBLIGATORIAS returned OK, sin advertencias en OPCIONAL |
+| `CON_ADVERTENCIAS` | Todas las OBLIGATORIAS OK, pero alguna OPCIONAL returned Warning |
+| `NO_VALIDA` | Alguna OBLIGATORIA returned Error |
 
 ### Esquema de RuleStatus
 
@@ -734,7 +734,7 @@ Content-Type: application/json
 
 ### Requisitos
 
-- Rust 1.88+ (para compilación)
+- Rust 1.77+ (para compilación con edition 2021 y Rayon)
 - Docker (para contenedores)
 - 512MB RAM mínimo
 - Puerto 8081 disponible (configurable)

@@ -29,7 +29,7 @@ obligatorias del núcleo.
 | Lógica de dominio | Python | 3.11 |
 | Base de datos | PostgreSQL | 16 |
 | ORM / migraciones | SQLAlchemy + Alembic | 2.x / 1.x |
-| Motor de verificación | Rust (Actix-web + Rayon) | 1.77 (stub - engine/ vacío) |
+| Motor de verificación | Rust (Actix-web + Rayon) | 1.77 (✅ Implementado — motor completo con evaluación paralela de reglas) |
 | Cola de tareas | Celery + Redis | 5.x / 7.x (worker implementado) |
 | Frontend | Angular + TypeScript | Angular 17 (en desarrollo) |
 | Contenedores | Docker + Docker Compose | 25 / 2.x |
@@ -51,7 +51,7 @@ svaes/
 │   ├── alembic/              # Migraciones de BD
 │   ├── tests/                # Tests propios de la API
 │   └── pyproject.toml
-├── engine/                    # Motor de verificación (stub - implementación Rust pendiente)
+├── engine/                    # Motor de verificación Rust (completo con evaluador paralelo y 10 reglas)
 │   └── src/
 ├── web/                       # SPA Angular (en desarrollo)
 │   └── src/
@@ -68,7 +68,7 @@ svaes/
 **Estado actual:**
 - ✅ Backend FastAPI completo en `api/src/`
 - ✅ Worker Celery implementado (`api/src/infrastructure/workers/verification_worker.py`)
-- ✅ Motor de verificación Rust en stub (`engine/src/main.rs` — placeholder)
+- ✅ Motor de verificación Rust completo (`engine/src/` — evaluador, agregador, 10 reglas RV-01 a RV-10)
 - ⚠️ Frontend Angular en desarrollo (`web/` con contenido parcial)
 - ✅ Routers registrados: auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin
 - ⚠️ Paquetes compartidos pendientes (`packages/` vacío)
@@ -85,8 +85,8 @@ svaes/
    herramienta externa concreta. Toda integración se realiza implementando `IConnector`.
 
 3. **Motor de verificación:** el motor Rust reside en `engine/` y se comunica con el
-   backend vía HTTP (configurable via `ENGINE_URL`). Actualmente es un stub que necesita
-   implementación completa. No debe añadirse lógica de acceso a BD ni a conectores dentro
+   backend vía HTTP (configurable via `ENGINE_URL`). El motor está completamente implementado
+   con evaluador paralelo (Rayon) y las 10 reglas RV-01…RV-10. No debe añadirse lógica de acceso a BD ni a conectores dentro
    del engine.
 
 4. **Multi-tenancy:** todos los repositorios y casos de uso deben filtrar obligatoriamente

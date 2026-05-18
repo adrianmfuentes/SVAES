@@ -61,7 +61,7 @@ Jerarquía de roles: `VIEWER < OPERATOR < MANAGER < ADMIN`.
 - El motor Rust se ejecuta en `engine/` como microservicio separado, comunica via HTTP.
 - Política de agregación de veredictos (ver §4).
 - Reglas personalizadas vía fichero de configuración estructurado.
-- **Estado actual:** stub en `engine/src/main.rs` — placeholder "Hello World"; implementación completa pendiente.
+- **Estado actual:** ✅ Implementado — `engine/src/` con evaluador paralelo (Rayon), agregador de veredicto y 10 reglas RV-01…RV-10
 
 ### Épica 6 — Resultados y trazabilidad (FEAT-07)
 - `verification_result` es **inmutable** tras su creación.
@@ -156,7 +156,7 @@ se encuentra en la sección 4.8 del SRS.
 |---|---|---|
 | Backend FastAPI | Implementado | `api/src/` — dominio, aplicación, infraestructura completos |
 | Worker Celery | Implementado | `api/src/infrastructure/workers/verification_worker.py` — worker real |
-| Motor Rust | Stub | `engine/src/main.rs` — placeholder "Hello World"; implementación pendiente |
+| Motor Rust | Implementado | `engine/src/` — evaluador, agregador, 10 reglas (RV-01…RV-10), evaluación paralela con Rayon |
 | Frontend Angular | Parcial | `web/` — contenido parcial en desarrollo |
 | Paquetes compartidos | Pendiente | `packages/` — directorio creado, vacío |
 | Tests unitarios | Implementado | `tests/unit/` — cobertura domain, application, infrastructure |

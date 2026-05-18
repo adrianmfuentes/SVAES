@@ -201,7 +201,7 @@ pytest -v --cov=api/src --cov-report=term-missing
 
 ## Notas para quienes contributean
 
-1. **Ningún test puede hacer commit si deja pasar un bug已知 sin justificacion**. Los tests existen para atrapar regresiones.
+1. **Ningún test puede hacer commit si deja pasar un bug conocido sin justificación**. Los tests existen para atrapar regresiones.
 2. **Los tests de integración tocan base de datos real**. Si necesitas datos de seed, agrégalos en `conftest.py` via factories — no a mano en la DB.
 3. **Los mocks viven en `conftest.py` o en el archivo que los usa**. No hardcodear lógica de mock dentro del test.
 4. **El coverage es una herramienta, no un objetivo en sí mismo**. Un test que no testa nada y solo sube el porcentaje no vale nada.

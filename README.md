@@ -46,7 +46,7 @@ Diseñar e implementar un sistema extensible y desacoplado capaz de verificar au
 |------------|--------|-------------|
 | Backend FastAPI | ✅ Completo | API REST completa con todos los endpoints |
 | Frontend Angular | ⏳ Pendiente | SPA vacía, pendiente de implementación |
-| Motor Rust | ⏳ Pendiente | stub en engine/, solo "Hello World" |
+| Motor Rust | ✅ Implementado | Motor completo en engine/, evaluador paralelo + 10 reglas |
 | Worker Celery | ✅ Implementado | worker real en verification_worker.py |
 | Conectores | ✅ Implementados | 20 conectores en 5 categorías funcionales |
 
@@ -91,7 +91,7 @@ El sistema se divide en los siguientes componentes:
 
 - Frontend (Angular SPA) — ⏳ Pendiente
 - Backend (FastAPI) — ✅ Completo
-- Motor de verificación (Rust) — ⏳ Pendiente (stub)
+- Motor de verificación (Rust) — ✅ Implementado (completo)
 - Cola de tareas (Celery + Redis) — ✅ Implementada
 - Base de datos (PostgreSQL) — ✅ Operativo
 - Conectores externos — ✅ 20 implementaciones
@@ -300,8 +300,8 @@ Base de datos PostgreSQL:
 | Autenticación | JWT (PyJWT) | ✅ Completo |
 | HTTP Client | httpx (async) | ✅ Integrado en conectores |
 | Frontend | Angular 17 | ⏳ Pendiente |
-| Motor verificación | Rust (Actix-web + Rayon) | ⏳ Pendiente |
-| Cola de tareas | Celery + Redis | ⏳ Pendiente |
+| Motor verificación | Rust (Actix-web + Rayon) | ✅ Implementado |
+| Cola de tareas | Celery + Redis | ✅ Implementado |
 | Contenedores | Docker + Docker Compose | ✅ Configurado |
 
 ---

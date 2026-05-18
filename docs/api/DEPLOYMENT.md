@@ -47,7 +47,7 @@ ENVIRONMENT=production
 
 ## Despliegue con Docker Compose
 
-### docker-compose.yml (producción mínimo)
+### servicios mínimos
 
 ```yaml
 services:
@@ -61,9 +61,33 @@ services:
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - ENGINE_URL=http://engine:8081
     depends_on:
       - postgres
       - redis
+      - engine
+    restart: unless-stopped
+
+  engine:
+    build: ./engine
+    ports:
+      - "8081:8081"
+    environment:
+      - ENGINE_HOST=0.0.0.0
+      - ENGINE_PORT=8081
+    restart: unless-stopped
+
+  worker:
+    build: ./api
+    command: celery -A src.infrastructure.workers.verification_worker worker --loglevel=info
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - ENGINE_URL=http://engine:8081
+    depends_on:
+      - postgres
+      - redis
+      - engine
     restart: unless-stopped
 
   postgres:
@@ -84,7 +108,18 @@ volumes:
   pgdata:
 ```
 
-## Configuración de TLS/HTTPS
+### Requisitos
+
+| Componente | Versión mínima |
+|------------|----------------|
+| Python | 3.11+ |
+| PostgreSQL | 16 |
+| Redis | 7.x |
+| Rust | 1.77+ |
+| Docker | 25.x |
+| Docker Compose | 2.x |
+
+### Variables de Entorno Obligatorias
 
 ### Opción 1: Reverse Proxy (Nginx/Traefik)
 
@@ -143,18 +178,26 @@ El API aplica límites por defecto:
 - [ ] `ENCRYPTION_KEY` generado con `Fernet.generate_key()`
 - [ ] `ENVIRONMENT=production` configurado
 - [ ] `ALLOWED_ORIGINS` configurado con dominios reales
+- [ ] `ENGINE_URL` configurado apuntando al servicio engine
 - [ ] TLS terminado (Nginx/reverse proxy o CDN)
 - [ ] Rate limiting verificado
 - [ ] Backup de PostgreSQL configurado
 - [ ] Redis persistence habilitado
-- [ ] Health check `/health` accesible
+- [ ] Health check `/health` de API accesible
+- [ ] Health check `/health` de Engine accesible
+- [ ] Worker Celery iniciado y conectado a Redis
 - [ ] Firewall configurado (solo puertos 80/443)
 
 ## Health Check
 
 ```bash
+# API
 curl https://api.tu-dominio.com/health
 # Respuesta: {"status": "ok", "service": "svaes-api", "version": "1.0.0"}
+
+# Engine
+curl http://engine:8081/health
+# Respuesta: {"status": "healthy", "service": "svaes-engine", "version": "1.0.0"}
 ```
 
 ## Rollback

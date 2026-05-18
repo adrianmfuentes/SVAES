@@ -46,7 +46,7 @@ Concevoir et implémenter un système extensible et découplé capable de vérif
 |-----------|------|-------------|
 | Backend FastAPI | ✅ Complet | API REST complète avec tous les endpoints |
 | Frontend Angular | ⏳ En attente | SPA vide, en attente d'implémentation |
-| Moteur Rust | ⏳ En attente | stub dans engine/, seulement "Hello World" |
+| Moteur Rust | ✅ Implémenté | Moteur complet dans engine/, évaluateur parallèle + 10 règles |
 | Worker Celery | ✅ Implémenté | worker réel dans verification_worker.py |
 | Connecteurs | ✅ Implémentés | 20 connecteurs en 5 catégories fonctionnelles |
 
@@ -91,7 +91,7 @@ Le système est divisé en les composants suivants:
 
 - Frontend (Angular SPA) — ⏳ En attente
 - Backend (FastAPI) — ✅ Complet
-- Moteur de vérification (Rust) — ⏳ En attente (stub)
+- Moteur de vérification (Rust) — ✅ Implémenté (complet)
 - File de tâches (Celery + Redis) — ✅ Implémentée
 - Base de données (PostgreSQL) — ✅ Opérationnel
 - Connecteurs externes — ✅ 20 implémentations
@@ -300,8 +300,8 @@ Base de données PostgreSQL:
 | Authentification | JWT (PyJWT) | ✅ Complet |
 | Client HTTP | httpx (async) | ✅ Intégré dans les connecteurs |
 | Frontend | Angular 17 | ⏳ En attente |
-| Moteur de vérification | Rust (Actix-web + Rayon) | ⏳ En attente |
-| File de tâches | Celery + Redis | ⏳ En attente |
+| Moteur de vérification | Rust (Actix-web + Rayon) | ✅ Implémenté |
+| File de tâches | Celery + Redis | ✅ Implémenté |
 | Conteneurs | Docker + Docker Compose | ✅ Configuré |
 
 ---
@@ -402,7 +402,7 @@ Le backend FastAPI est pleinement opérationnel avec:
 - Isolation multi-tenant complète
 - RBAC avec rôles prédéfinis et personnalisés
 
-En attente: frontend Angular, moteur Rust et worker Celery.
+En attente: frontend Angular.
 
 ---
 
