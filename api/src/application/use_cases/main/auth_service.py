@@ -115,19 +115,35 @@ class AuthService(IAuthService):
         except ValueError:
             return None
 
+        user = await self._user_repo.get_by_id(payload.user_id)
+        if not user:
+            return None
+
         access_token = self._token_service.create_access_token(
             user_id=payload.user_id,
             role=payload.role,
             email=payload.email,
-            organization_id=payload.organization_id,
+            organization_id=user.organization_id,
             expires_in=3600,
         )
         new_refresh_token = self._token_service.create_access_token(
             user_id=payload.user_id,
             role=payload.role,
             email=payload.email,
-            organization_id=payload.organization_id,
+            organization_id=user.organization_id,
             expires_in=86400,
         )
 
         return AuthTokens(access_token=access_token, refresh_token=new_refresh_token)
+
+    async def logout(self, user_id: UUID, token: str) -> None:
+        self._token_service.blacklist_token(token, 0)
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.USER_LOGGED_OUT,
+            user_id=user_id,
+            organization_id=None,
+            resource_type="user",
+            resource_id=user_id,
+        ))
+        _log.info("User logged out: user=%s", user_id)

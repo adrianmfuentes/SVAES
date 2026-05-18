@@ -34,3 +34,6 @@ class VerificationProfileNotActiveError(DomainException):
 
 class ValidationError(DomainException):
     pass
+
+class AuthenticationError(DomainException):
+    pass

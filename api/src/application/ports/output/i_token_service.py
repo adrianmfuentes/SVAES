@@ -39,3 +39,11 @@ class ITokenService(ABC):
     @abstractmethod
     def refresh_token(self, token: str) -> Optional[str]:
         pass
+
+    @abstractmethod
+    def blacklist_token(self, token: str, expires_in_seconds: int) -> None:
+        pass
+
+    @abstractmethod
+    def is_token_blacklisted(self, token: str) -> bool:
+        pass

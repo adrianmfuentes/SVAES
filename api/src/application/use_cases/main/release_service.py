@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from application.ports.input.i_release_service import IReleaseService
 from application.ports.output.i_release_repository import IReleaseRepository
 from application.ports.output.i_project_repository import IProjectRepository
+from application.ports.output.i_profile_repository import IProfileRepository
 from domain.entities.release import Release
 from domain.entities.artifact import Artifact
 from domain.enums import ReleaseStatus
@@ -21,30 +22,39 @@ Recibe datos desde el controlador (API) y utiliza los repositorios para acceder 
 Implementa el puerto de entrada IReleaseService, que define las operaciones disponibles para gestionar releases.
 """
 class CreateReleaseUseCase(IReleaseService):
-    def __init__(self, release_repository: IReleaseRepository, project_repository: IProjectRepository):
+    def __init__(self, release_repository: IReleaseRepository, project_repository: IProjectRepository, profile_repository: IProfileRepository):
         self.release_repository = release_repository
         self.project_repository = project_repository
+        self.profile_repository = profile_repository
         
     async def create_release(
         self,
         name: str,
         version: str,
-        project_id: UUID,      
-        user_id: UUID,         
+        project_id: UUID,
+        user_id: UUID,
         description: str = "",
+        profile_id: Optional[UUID] = None,
     ) -> Release:
         if not self._is_valid_semver(version):
             raise ValidationError("La versión debe cumplir SemVer 2.0.0") # Semver es un estándar de versionado
-        
+
         project = await self.project_repository.get_by_id(project_id)
         if not project:
             raise ValidationError("El proyecto indicado no existe.")
-            
+
+        resolved_profile_id = profile_id if profile_id is not None else project.profile_id
+
+        if resolved_profile_id is not None:
+            profile = await self.profile_repository.get_by_id(resolved_profile_id)
+            if not profile:
+                raise ValidationError("El perfil de verificación asociado al proyecto no existe.")
+
         new_release = Release(
             name=name,
             version=version,
             project_id=project_id,
-            profile_id=project.profile_id,
+            profile_id=resolved_profile_id,
             created_by=user_id,
             status=ReleaseStatus.BORRADOR
         )

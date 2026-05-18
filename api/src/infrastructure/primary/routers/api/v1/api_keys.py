@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.output.i_api_key_repository import IAPIKeyRepository
 from application.use_cases.others.manage_api_keys import ManageApiKeysUseCase
-from core.dependencies import get_current_user, CurrentUser, get_api_key_repository
+from core.dependencies import get_current_user, CurrentUser, get_api_key_repository, get_user_repository
+from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
 from domain.exceptions import ValidationError, EntityNotFoundError
 
 router = APIRouter(tags=["API Keys"])
@@ -35,6 +36,7 @@ async def create_api_key(
     payload: CreateAPIKeyRequest,
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     api_key_repo: Annotated[IAPIKeyRepository, Depends(get_api_key_repository)],
+    user_repo: Annotated[SqlUserRepository, Depends(get_user_repository)],
 ):
     """Crea una nueva API key para el usuario autenticado.
 
@@ -56,13 +58,20 @@ async def create_api_key(
     """
     if current_user.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No puedes crear API keys para otros usuarios")
+
+    organization_id = current_user.organization_id
+    if organization_id is None:
+        db_user = await user_repo.get_by_id(user_id)
+        organization_id = db_user.organization_id if db_user else None
+
+    if organization_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario no pertenece a una organización")
+
     try:
-        if current_user.organization_id is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario no pertenece a una organización")
         use_case = ManageApiKeysUseCase(api_key_repository=api_key_repo)
         result = await use_case.create_api_key(
             user_id=user_id,
-            organization_id=current_user.organization_id,
+            organization_id=organization_id,
             name=payload.name,
             expires_in_days=payload.expires_in_days,
         )

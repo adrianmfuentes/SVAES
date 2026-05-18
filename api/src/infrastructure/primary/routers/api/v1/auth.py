@@ -1,10 +1,11 @@
 from typing import Annotated
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_auth_service import IAuthService
 from application.ports.input.i_user_service import IUserService
-from core.dependencies import get_auth_service, get_user_service
+from core.dependencies import get_auth_service, get_user_service, get_current_user, CurrentUser
 from core.rate_limit import rate_limit_auth
 from slowapi import Limiter
 from domain.exceptions import ValidationError, DuplicateEntityError
@@ -99,5 +100,18 @@ async def refresh(
         }
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post("/api/v1/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IAuthService, Depends(get_auth_service)],
+):
+    try:
+        await service.logout(current_user.user_id, credentials.credentials)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

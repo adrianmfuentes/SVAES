@@ -38,6 +38,7 @@ class VerificationService(IVerificationService):
             raise ValidationError(_RELEASE_NOT_FOUND)
 
         valid_statuses = (
+            ReleaseStatus.BORRADOR,
             ReleaseStatus.PENDIENTE,
             ReleaseStatus.VALIDA,
             ReleaseStatus.NO_VALIDA,
@@ -47,7 +48,7 @@ class VerificationService(IVerificationService):
         if release.status not in valid_statuses:
             raise ValidationError(
                 f"No se puede iniciar verificación desde estado {release.status.value}. "
-                "Debe estar en PENDIENTE o tener un resultado previo."
+                "La release debe estar en BORRADOR, PENDIENTE o tener un resultado previo."
             )
 
         if not release.artifacts or len(release.artifacts) == 0:
@@ -59,7 +60,7 @@ class VerificationService(IVerificationService):
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.RELEASE_VERIFIED,
-            user_id=UUID(),
+            user_id=requested_by,
             organization_id=None,
             resource_type="release",
             resource_id=release_id,

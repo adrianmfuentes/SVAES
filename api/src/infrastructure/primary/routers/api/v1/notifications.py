@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Annotated
 from application.ports.input.i_notification_service import INotificationService
-from core.dependencies import get_current_user, CurrentUser, require_permission, require_role, get_notification_service
+from core.dependencies import get_current_user, CurrentUser, require_permission, require_role, get_notification_service, get_user_repository
+from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
 from domain.enums import UserRole, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError
 
@@ -35,6 +36,7 @@ class SubscriptionRequest(BaseModel):
 async def list_notification_channels(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     service: Annotated[INotificationService, Depends(get_notification_service)],
+    user_repo: Annotated[SqlUserRepository, Depends(get_user_repository)],
 ):
     """Lista los canales de notificación disponibles y su configuración.
 
@@ -46,11 +48,17 @@ async def list_notification_channels(
         - Lista de canales de notificación configurados para la organización.
         - 500 Internal Server Error para cualquier error inesperado.
     """
+    organization_id = current_user.organization_id
+    if organization_id is None:
+        db_user = await user_repo.get_by_id(current_user.user_id)
+        organization_id = db_user.organization_id if db_user else None
+    if organization_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Se requiere organizacion")
     try:
-        if current_user.organization_id is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Se requiere organizacion")
-        channels = await service.list_channels(organization_id=current_user.organization_id)
+        channels = await service.list_channels(organization_id=organization_id)
         return channels
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -60,6 +68,7 @@ async def configure_notification_channel(
     payload: NotificationChannelConfig,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES))],
     service: Annotated[INotificationService, Depends(get_notification_service)],
+    user_repo: Annotated[SqlUserRepository, Depends(get_user_repository)],
 ):
     """Configura un nuevo canal de notificación para la organización.
 
@@ -73,16 +82,22 @@ async def configure_notification_channel(
         - 403 Forbidden si el usuario no tiene permisos.
         - 500 Internal Server Error para cualquier error inesperado.
     """
+    organization_id = current_user.organization_id
+    if organization_id is None:
+        db_user = await user_repo.get_by_id(current_user.user_id)
+        organization_id = db_user.organization_id if db_user else None
+    if organization_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Se requiere organizacion")
     try:
-        if current_user.organization_id is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Se requiere organizacion")
         channel = await service.configure_channel(
-            organization_id=current_user.organization_id,
+            organization_id=organization_id,
             channel_type=payload.channel_type,
             enabled=payload.enabled,
             config_data=payload.config_data,
         )
         return {"id": str(channel.id), "type": channel.channel_type, "enabled": channel.enabled}
+    except HTTPException:
+        raise
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:

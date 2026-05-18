@@ -1,11 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from application.ports.input.i_user_service import IUserService
-from core.dependencies import get_user_service, get_current_user, CurrentUser, require_permission, require_role
+from application.ports.output.i_token_service import ITokenService
+from core.dependencies import get_user_service, get_current_user, CurrentUser, require_permission, require_role, get_jwt_handler
 from domain.enums import UserRole, Permission
-from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError
+from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError, AuthenticationError
 
 router = APIRouter(tags=["Users"])
 
@@ -52,6 +54,10 @@ class AdminUserCreateRequest(BaseModel):
 class AdminRoleUpdateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     role: UserRole
+
+class DeleteAccountRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    password: str = Field(..., min_length=1, description="Contraseña actual para confirmar la eliminación")
 
 
 @router.get("/api/v1/users/me")
@@ -155,6 +161,31 @@ async def change_password(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.delete("/api/v1/users/me/account", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user_account(
+    body: DeleteAccountRequest,
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IUserService, Depends(get_user_service)],
+    token_service: Annotated[ITokenService, Depends(get_jwt_handler)],
+):
+    try:
+        await service.delete_user_account(
+            user_id=current_user.user_id,
+            requested_by=current_user.user_id,
+            password=body.password,
+        )
+        token_service.blacklist_token(credentials.credentials, 0)
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except AuthenticationError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 

@@ -73,6 +73,7 @@ async def create_organization(
             name=payload.name,
             slug=payload.slug,
             plan=payload.plan,
+            owner_id=current_user.user_id,
         )
         return {"id": str(org.id), "name": org.name, "slug": org.slug}
     except ValidationError as e:

@@ -53,3 +53,7 @@ class IUserService(ABC):
     @abstractmethod
     async def list_all_users(self, skip: int = 0, limit: int = 50, is_active: Optional[bool] = None, role: Optional[UserRole] = None) -> List[User]:
         pass
+
+    @abstractmethod
+    async def delete_user_account(self, user_id: UUID, requested_by: UUID, password: str) -> None:
+        pass

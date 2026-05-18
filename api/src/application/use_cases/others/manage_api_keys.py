@@ -3,6 +3,7 @@ from uuid import UUID
 import secrets
 import hashlib
 from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 from domain.entities.api_key import APIKey
 from domain.exceptions import EntityNotFoundError, ValidationError
 from application.ports.output.i_api_key_repository import IAPIKeyRepository
@@ -35,7 +36,7 @@ class ManageApiKeysUseCase:
             expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
 
         api_key = APIKey(
-            id=UUID(),
+            id=uuid4(),
             user_id=user_id,
             organization_id=organization_id,
             name=name,

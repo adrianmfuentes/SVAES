@@ -6,7 +6,7 @@ from application.ports.output.i_organization_repository import IOrganizationRepo
 from application.ports.output.i_password_hasher import IPasswordHasher
 from domain.entities.user import User
 from domain.enums import UserRole
-from domain.exceptions import EntityNotFoundError, DuplicateEntityError, ValidationError
+from domain.exceptions import EntityNotFoundError, DuplicateEntityError, ValidationError, AuthenticationError
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from core.logger import get_logger
 
@@ -68,20 +68,23 @@ class UserService(IUserService):
 
         existing = await self._user_repo.get_by_email(email)
         if existing:
-            raise DuplicateEntityError(f"Ya existe un usuario con email: {email}")
-
-        temp_password = self._password_hasher.hash_password(str(uuid4())[:8])
-
-        user = User(
-            id=uuid4(),
-            email=email,
-            hashed_password=temp_password,
-            display_name=email.split("@")[0],
-            role=role,
-            organization_ids=[organization_id],
-            is_active=False,
-        )
-        created = await self._user_repo.create(user)
+            if existing.organization_id is not None:
+                raise DuplicateEntityError(f"El usuario {email} ya pertenece a una organización")
+            existing.organization_id = organization_id
+            existing.role = role
+            created = await self._user_repo.update(existing)
+        else:
+            temp_password = self._password_hasher.hash_password(str(uuid4())[:8])
+            user = User(
+                id=uuid4(),
+                email=email,
+                hashed_password=temp_password,
+                display_name=email.split("@")[0],
+                role=role,
+                organization_ids=[organization_id],
+                is_active=False,
+            )
+            created = await self._user_repo.create(user)
 
         audit = get_audit_logger()
         audit.log(AuditEntry(
@@ -240,3 +243,30 @@ class UserService(IUserService):
         if role is not None:
             users = [u for u in users if u.role == role]
         return users
+
+    async def delete_user_account(self, user_id: UUID, requested_by: UUID, password: str) -> None:
+        user = await self._user_repo.get_by_id(user_id)
+        if not user:
+            raise EntityNotFoundError(f"Usuario no encontrado: {user_id}")
+
+        if not self._password_hasher.verify_password(password, user.hashed_password):
+            raise AuthenticationError("Contraseña incorrecta")
+
+        if user.organization_ids:
+            for org_id in user.organization_ids:
+                org = await self._org_repo.get_by_id(org_id)
+                if org and org.owner_id == user_id:
+                    raise ValidationError("No puedes eliminar tu cuenta siendo propietario de una organización. Transfiere la propiedad primero.")
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.USER_ACCOUNT_DELETED,
+            user_id=requested_by,
+            organization_id=None,
+            resource_type="user",
+            resource_id=user_id,
+            details={"deleted_email": user.email},
+        ))
+        _log.info("User account deleted: by=%s user=%s", requested_by, user_id)
+
+        await self._user_repo.delete(user_id)

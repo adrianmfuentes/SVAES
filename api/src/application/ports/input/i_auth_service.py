@@ -24,3 +24,7 @@ class IAuthService(ABC):
     @abstractmethod
     async def refresh_access_token(self, refresh_token: str) -> Optional[AuthTokens]:
         pass
+
+    @abstractmethod
+    async def logout(self, user_id: UUID, token: str) -> None:
+        pass

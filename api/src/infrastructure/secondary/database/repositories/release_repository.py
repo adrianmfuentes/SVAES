@@ -1,13 +1,15 @@
 from application.ports.output.i_release_repository import IReleaseRepository
+from domain.entities.artifact import Artifact
 from domain.entities.release import Release
 from domain.enums import ReleaseStatus
 from domain.exceptions import EntityNotFoundError
 from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
-from infrastructure.secondary.database.models import ReleaseModel
+from infrastructure.secondary.database.models import ArtifactModel, ReleaseModel
 from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 import uuid
-from typing import Optional
+from datetime import datetime
+from typing import Optional, cast
 from infrastructure.secondary.database.models.project_model import ProjectModel
 
 
@@ -46,7 +48,24 @@ class SqlReleaseRepository(IReleaseRepository):
             release_row = result.scalar_one_or_none()
             if not release_row:
                 return None
-            return self._release_from_row(release_row)
+            release = self._release_from_row(release_row)
+            artifact_result = await session.execute(
+                select(ArtifactModel).where(ArtifactModel.release_id == release_id)
+            )
+            release.artifacts = [
+                Artifact(
+                    id=cast(uuid.UUID, row.id),
+                    release_id=cast(uuid.UUID, row.release_id),
+                    connector_instance_id=cast(uuid.UUID, row.connector_instance_id),
+                    connector_implementation=cast(str, row.connector_implementation),
+                    artifact_type=cast(str, row.artifact_type),
+                    external_ref=cast(str, row.external_ref),
+                    metadata=cast(dict, row.artifact_metadata) or {},
+                    created_at=cast(datetime, row.created_at),
+                )
+                for row in artifact_result.scalars().all()
+            ]
+            return release
 
 
     async def list_by_project(

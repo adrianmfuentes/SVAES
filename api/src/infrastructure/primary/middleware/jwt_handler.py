@@ -1,11 +1,13 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional, cast
+from typing import Optional, cast, Set
 from uuid import UUID
 import jwt
 from jwt.exceptions import InvalidTokenError
 from application.ports.output.i_token_service import ITokenService, TokenPayload
 
 class JwtHandler(ITokenService):
+    _blacklisted_tokens: Set[str] = set()
+
     def __init__(self, secret: str, algorithm: str = "HS256", access_token_expire_minutes: int = 15, refresh_token_expire_days: int = 30) -> None:
         self._secret = secret
         self._algorithm = algorithm
@@ -66,9 +68,11 @@ class JwtHandler(ITokenService):
 
 
     def decode_token(self, token: str) -> TokenPayload:
+        if self.is_token_blacklisted(token):
+            raise ValueError("Token ha sido revocado")
         try:
             decoded = jwt.decode(token, self._secret, algorithms=[self._algorithm])
-            
+
             return TokenPayload(
                 user_id=UUID(decoded["sub"]),
                 role=decoded["role"],
@@ -80,6 +84,8 @@ class JwtHandler(ITokenService):
             raise ValueError("Token inválido") from e
 
     def verify_token(self, token: str) -> bool:
+        if self.is_token_blacklisted(token):
+            return False
         try:
             jwt.decode(token, self._secret, algorithms=[self._algorithm])
             return True
@@ -99,3 +105,9 @@ class JwtHandler(ITokenService):
             )
         except InvalidTokenError:
             return None
+
+    def blacklist_token(self, token: str, expires_in_seconds: int) -> None:
+        self._blacklisted_tokens.add(token)
+
+    def is_token_blacklisted(self, token: str) -> bool:
+        return token in self._blacklisted_tokens

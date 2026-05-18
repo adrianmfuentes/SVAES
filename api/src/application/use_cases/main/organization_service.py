@@ -3,6 +3,7 @@ from uuid import UUID
 from application.ports.input.i_organization_service import IOrganizationService
 from application.ports.output.i_organization_repository import IOrganizationRepository
 from application.ports.output.i_project_repository import IProjectRepository
+from application.ports.output.i_user_repository import IUserRepository
 from domain.entities.organization import Organization
 from domain.entities.project import Project
 from domain.exceptions import DuplicateEntityError, EntityNotFoundError, ValidationError
@@ -17,9 +18,11 @@ class OrganizationService(IOrganizationService):
         self,
         organization_repository: IOrganizationRepository,
         project_repository: IProjectRepository,
+        user_repository: Optional[IUserRepository] = None,
     ) -> None:
         self._org_repo = organization_repository
         self._project_repo = project_repository
+        self._user_repo = user_repository
 
 
     async def create_organization(
@@ -34,7 +37,15 @@ class OrganizationService(IOrganizationService):
             raise DuplicateEntityError(f"Ya existe una organización con slug: {slug}")
 
         org = Organization(name=name, slug=slug, owner_id=owner_id, plan=plan)
-        return await self._org_repo.create(org)
+        created_org = await self._org_repo.create(org)
+
+        if owner_id and self._user_repo:
+            owner = await self._user_repo.get_by_id(owner_id)
+            if owner:
+                owner.organization_id = created_org.id
+                await self._user_repo.update(owner)
+
+        return created_org
 
 
     async def get_organization(self, organization_id: UUID) -> Optional[Organization]:

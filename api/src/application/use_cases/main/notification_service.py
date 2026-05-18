@@ -27,18 +27,34 @@ class NotificationService(INotificationService):
 
     async def list_channels(self, organization_id: UUID) -> List[Dict[str, Any]]:
         channels = await self._repo.list_channels(organization_id)
-        return [
-            {
-                "id": str(c.id),
-                "organization_id": str(c.organization_id),
-                "channel_type": c.channel_type,
-                "enabled": c.enabled,
-                "config_data": c.config_data,
-                "created_at": c.created_at.isoformat(),
-                "updated_at": c.updated_at.isoformat(),
-            }
-            for c in channels
-        ]
+        configured = {c.channel_type: c for c in channels}
+
+        result = []
+        for channel_type in SUPPORTED_CHANNEL_TYPES:
+            if channel_type in configured:
+                c = configured[channel_type]
+                result.append({
+                    "id": str(c.id),
+                    "organization_id": str(c.organization_id),
+                    "channel_type": c.channel_type,
+                    "enabled": c.enabled,
+                    "config_data": c.config_data,
+                    "configured": True,
+                    "created_at": c.created_at.isoformat(),
+                    "updated_at": c.updated_at.isoformat(),
+                })
+            else:
+                result.append({
+                    "id": None,
+                    "organization_id": str(organization_id),
+                    "channel_type": channel_type,
+                    "enabled": False,
+                    "config_data": {},
+                    "configured": False,
+                    "created_at": None,
+                    "updated_at": None,
+                })
+        return result
 
     async def configure_channel(
         self,

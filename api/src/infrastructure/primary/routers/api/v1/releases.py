@@ -76,7 +76,8 @@ async def create_release(
             version=payload.version,
             project_id=project_id,
             user_id=project_access.user_id,
-            description=payload.description
+            description=payload.description,
+            profile_id=payload.profile_id,
         )
         return {
             "id": release.id,

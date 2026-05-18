@@ -403,10 +403,12 @@ def get_task_queue() -> CeleryTaskQueue:
 def get_release_service(
     release_repo: SqlReleaseRepository = Depends(get_release_repository),
     project_repo: SqlProjectRepository = Depends(get_project_repository),
+    profile_repo: SqlProfileRepository = Depends(get_profile_repository),
 ) -> IReleaseService:
     return CreateReleaseUseCase(
         release_repository=release_repo,
         project_repository=project_repo,
+        profile_repository=profile_repo,
     )
 
 
@@ -450,10 +452,12 @@ def get_auth_service(
 def get_organization_service(
     org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
     project_repo: SqlProjectRepository = Depends(get_project_repository),
+    user_repo: SqlUserRepository = Depends(get_user_repository),
 ) -> IOrganizationService:
     return OrganizationService(
         organization_repository=org_repo,
         project_repository=project_repo,
+        user_repository=user_repo,
     )
 
 
