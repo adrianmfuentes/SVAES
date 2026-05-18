@@ -2,14 +2,14 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 from datetime import datetime, timezone
-from api.src.application.use_cases.main.auth_service import AuthService
-from api.src.application.ports.input.i_auth_service import AuthTokens
-from api.src.application.ports.output.i_user_repository import IUserRepository
-from api.src.application.ports.output.i_token_service import ITokenService, TokenPayload
-from api.src.application.ports.output.i_password_hasher import IPasswordHasher
-from api.src.domain.entities.user import User
-from api.src.domain.enums import UserRole
-from api.src.domain.exceptions import ValidationError
+from src.application.use_cases.main.auth_service import AuthService
+from src.application.ports.input.i_auth_service import AuthTokens
+from src.application.ports.output.i_user_repository import IUserRepository
+from src.application.ports.output.i_token_service import ITokenService, TokenPayload
+from src.application.ports.output.i_password_hasher import IPasswordHasher
+from src.domain.entities.user import User
+from src.domain.enums import UserRole
+from src.domain.exceptions import ValidationError
 
 """
 Clase de pruebas unitarias para AuthService, enfocándose en la autenticación y renovación de tokens. Se utilizan fixtures para configurar el entorno 

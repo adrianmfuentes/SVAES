@@ -6,13 +6,13 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from api.src.main import app
-from api.src.domain.entities.user import User
-from api.src.domain.enums import UserRole
-from api.src.application.ports.output.i_user_repository import IUserRepository
-from api.src.application.ports.output.i_token_service import ITokenService, TokenPayload
-from api.src.application.ports.output.i_password_hasher import IPasswordHasher
-from api.src.core.config import settings
+from src.main import app
+from src.domain.entities.user import User
+from src.domain.enums import UserRole
+from src.application.ports.output.i_user_repository import IUserRepository
+from src.application.ports.output.i_token_service import ITokenService, TokenPayload
+from src.application.ports.output.i_password_hasher import IPasswordHasher
+from src.core.config import settings
 
 """
 Fichero de configuración de pytest para pruebas unitarias, de integración, rendimiento y aceptación. Define fixtures (una fixture es un objeto 
