@@ -9,7 +9,7 @@ class ConnectorRegistry(IConnectorRegistry):
 
     def register(self, connector_type: str, connector: Any) -> None:
         ct = connector_type.upper()
-        impl = connector.connector_implementation.upper()
+        impl = connector.get_connector_implementation().upper()
         self._by_type[ct] = connector
         self._by_implementation[impl] = connector
 

@@ -58,10 +58,10 @@ async def list_connector_types(
     for impl_name in implementations:
         conn = registry.get_by_implementation(impl_name)
         result.append({
-            "implementation": conn.connector_implementation,
-            "type": conn.connector_type,
+            "implementation": conn.get_connector_implementation(),
+            "type": conn.get_connector_type(),
             "metadata": conn.get_metadata(),
-            "config_schema": _get_config_schema(conn.connector_implementation),
+            "config_schema": _get_config_schema(conn.get_connector_implementation()),
         })
     by_type = {}
     for r in result:

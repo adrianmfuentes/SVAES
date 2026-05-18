@@ -14,6 +14,12 @@ class TrelloConnector(IConnector):
     def connector_implementation(self) -> str:
         return "TRELLO"
 
+    def get_connector_type(self) -> str:
+        return "GESTOR_TAREAS"
+
+    def get_connector_implementation(self) -> str:
+        return "TRELLO"
+
     def get_metadata(self) -> Dict[str, Any]:
         return {
             "name": "Trello",

@@ -30,5 +30,5 @@ def create_registered_connector_registry() -> ConnectorRegistry:
         ZammadConnector(),
         RedmineConnector(),
     ]:
-        registry.register(connector_impl.connector_implementation, connector_impl)
+        registry.register(connector_impl.get_connector_implementation(), connector_impl)
     return registry

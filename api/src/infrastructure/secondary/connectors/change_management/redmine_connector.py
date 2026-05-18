@@ -14,6 +14,12 @@ class RedmineConnector(IConnector):
     def connector_implementation(self) -> str:
         return "REDMINE"
 
+    def get_connector_type(self) -> str:
+        return "GESTION_CAMBIOS"
+
+    def get_connector_implementation(self) -> str:
+        return "REDMINE"
+
     def get_metadata(self) -> Dict[str, Any]:
         return {
             "name": "Redmine",
