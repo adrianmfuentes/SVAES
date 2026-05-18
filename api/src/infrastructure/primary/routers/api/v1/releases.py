@@ -86,7 +86,7 @@ async def create_release(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/projects/{project_id}/releases")
@@ -112,7 +112,7 @@ async def list_releases(
         releases = await service.list_releases(project_id=project_id)
         return releases
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 # ===================================
@@ -146,7 +146,7 @@ async def get_release(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.patch("/api/v1/releases/{id}")
@@ -164,7 +164,7 @@ async def update_release(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.delete("/api/v1/releases/{id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -190,7 +190,7 @@ async def delete_release(
     try:
         await service.delete_release(release_id=id)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.post("/api/v1/releases/{id}/archive", status_code=status.HTTP_200_OK)
@@ -217,7 +217,7 @@ async def archive_release(
         await service.update_status(release_id=id, status=ReleaseStatus.ARCHIVADA)
         return {"message": "Release archivada con éxito"}
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.post("/api/v1/releases/{id}/restore", status_code=status.HTTP_200_OK)
@@ -248,7 +248,7 @@ async def restore_release(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 # ========================
@@ -280,7 +280,7 @@ async def list_artifacts(
     except HTTPException:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.post("/api/v1/releases/{id}/artifacts", status_code=status.HTTP_201_CREATED)
 async def add_artifact(
@@ -321,7 +321,7 @@ async def add_artifact(
     except HTTPException:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.delete("/api/v1/releases/{id}/artifacts/{artifact_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -352,7 +352,7 @@ async def remove_artifact(
     except HTTPException:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 # ============================
@@ -419,7 +419,7 @@ async def get_results(
     except HTTPException:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/releases/{id}/results/{rid}")
@@ -450,7 +450,7 @@ async def get_result_detail(
     except HTTPException:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_OR_VERIFICATION_NOT_FOUND)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/releases/{id}/verifications/{verification_id}")
@@ -481,7 +481,7 @@ async def get_verification_detail(
     except HTTPException:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_OR_VERIFICATION_NOT_FOUND)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/releases/{id}/results/{rid}/export", status_code=status.HTTP_200_OK)
@@ -522,7 +522,7 @@ async def export_verification_result_pdf(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/projects/{project_id}/results/export", status_code=status.HTTP_200_OK)
@@ -556,7 +556,7 @@ async def export_project_results_csv(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 class ImportArtifactsRequest(BaseModel):
@@ -605,4 +605,4 @@ async def import_artifacts(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

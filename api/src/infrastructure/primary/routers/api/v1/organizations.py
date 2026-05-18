@@ -46,7 +46,7 @@ async def list_organizations(
         organizations = await service.list_organizations(skip=skip, limit=limit, active_only=True)
         return organizations
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.post("/api/v1/organizations", status_code=status.HTTP_201_CREATED)
@@ -79,7 +79,7 @@ async def create_organization(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/organizations/{org_id}")
@@ -119,7 +119,7 @@ async def get_organization(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/projects/{project_id}")
@@ -146,7 +146,7 @@ async def get_project_by_id(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/projects")
@@ -186,7 +186,7 @@ async def list_accessible_projects(
             for p in projects
         ]
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/organizations/{org_id}/projects")
@@ -212,7 +212,7 @@ async def list_org_projects(
             for p in projects
         ]
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/organizations/{org_id}/projects/{project_id}")
@@ -240,7 +240,7 @@ async def get_project(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.post("/api/v1/organizations/{org_id}/projects", status_code=status.HTTP_201_CREATED)
@@ -278,7 +278,7 @@ async def create_project(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 class TransferOwnershipRequest(BaseModel):
@@ -313,7 +313,7 @@ async def archive_project(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.post("/api/v1/organizations/{org_id}/restore", status_code=status.HTTP_200_OK)
@@ -343,7 +343,7 @@ async def restore_organization(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.post("/api/v1/organizations/{org_id}/transfer-ownership", status_code=status.HTTP_200_OK)
@@ -379,4 +379,4 @@ async def transfer_ownership(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

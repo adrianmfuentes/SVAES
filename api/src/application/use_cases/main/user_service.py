@@ -157,7 +157,15 @@ class UserService(IUserService):
         user.role = UserRole.U1
         await self._user_repo.update(user)
 
-    async def create_user(self, email: str, display_name: str, password: str, role: UserRole) -> User:
+    async def create_user(
+        self,
+        email: str,
+        display_name: str,
+        password: str,
+        role: UserRole,
+        terms_accepted_at=None,
+        privacy_accepted_at=None,
+    ) -> User:
         existing = await self._user_repo.get_by_email(email)
         if existing:
             raise DuplicateEntityError(f"Ya existe un usuario con email: {email}")
@@ -170,6 +178,8 @@ class UserService(IUserService):
             hashed_password=hashed,
             role=role,
             is_active=True,
+            terms_accepted_at=terms_accepted_at,
+            privacy_accepted_at=privacy_accepted_at,
         )
         created = await self._user_repo.create(user)
         _log.info("User created: email=%s role=%s", email, role.value)

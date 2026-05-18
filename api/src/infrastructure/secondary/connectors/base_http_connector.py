@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, TypeVar
+import logging
 import httpx
+
+_log = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -46,16 +49,24 @@ class BaseHttpConnector(ABC):
     async def _get(
         self, url: str, config: Dict[str, Any], params: Dict[str, Any] | None = None
     ) -> httpx.Response:
-        async with httpx.AsyncClient(timeout=self.TIMEOUT) as client:
-            response = await client.get(url, headers=self._build_headers(config), params=params)
-            return response
+        try:
+            async with httpx.AsyncClient(timeout=self.TIMEOUT, verify=True) as client:
+                response = await client.get(url, headers=self._build_headers(config), params=params)
+                return response
+        except httpx.ConnectError as exc:
+            _log.error("SSL/connection error for %s: %s", url, exc)
+            raise
 
     async def _post(
         self, url: str, config: Dict[str, Any], json: Dict[str, Any] | None = None
     ) -> httpx.Response:
-        async with httpx.AsyncClient(timeout=self.TIMEOUT) as client:
-            response = await client.post(url, headers=self._build_headers(config), json=json)
-            return response
+        try:
+            async with httpx.AsyncClient(timeout=self.TIMEOUT, verify=True) as client:
+                response = await client.post(url, headers=self._build_headers(config), json=json)
+                return response
+        except httpx.ConnectError as exc:
+            _log.error("SSL/connection error for %s: %s", url, exc)
+            raise
 
     async def test_connection(self, config: Dict[str, Any]) -> bool:
         url = self._get_health_url(config)

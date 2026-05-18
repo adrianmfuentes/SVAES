@@ -8,11 +8,15 @@ from application.ports.output.i_token_service import ITokenService, TokenPayload
 class JwtHandler(ITokenService):
     _blacklisted_tokens: Set[str] = set()
 
-    def __init__(self, secret: str, algorithm: str = "HS256", access_token_expire_minutes: int = 15, refresh_token_expire_days: int = 30) -> None:
+    def __init__(self, secret: str, algorithm: str = "HS256", access_token_expire_minutes: int = 15, refresh_token_expire_days: int = 30, redis_url: Optional[str] = None) -> None:
         self._secret = secret
         self._algorithm = algorithm
         self._access_token_expire_minutes = access_token_expire_minutes
         self._refresh_token_expire_days = refresh_token_expire_days
+        self._redis = None
+        if redis_url:
+            import redis as redis_lib
+            self._redis = redis_lib.from_url(redis_url, decode_responses=True)
 
 
     def create_access_token(
@@ -106,8 +110,32 @@ class JwtHandler(ITokenService):
         except InvalidTokenError:
             return None
 
+    def is_refresh_token(self, token: str) -> bool:
+        try:
+            decoded = jwt.decode(token, self._secret, algorithms=[self._algorithm])
+            return decoded.get("type") == "refresh"
+        except InvalidTokenError:
+            return False
+
     def blacklist_token(self, token: str, expires_in_seconds: int) -> None:
-        self._blacklisted_tokens.add(token)
+        if expires_in_seconds <= 0:
+            try:
+                decoded = jwt.decode(token, self._secret, algorithms=[self._algorithm], options={"verify_exp": False})
+                exp = decoded.get("exp")
+                if exp:
+                    remaining = int(exp - datetime.now(timezone.utc).timestamp())
+                    expires_in_seconds = max(1, remaining)
+                else:
+                    expires_in_seconds = 3600
+            except Exception:
+                expires_in_seconds = 3600
+
+        if self._redis is not None:
+            self._redis.setex(f"bl:{token}", expires_in_seconds, "1")
+        else:
+            self._blacklisted_tokens.add(token)
 
     def is_token_blacklisted(self, token: str) -> bool:
+        if self._redis is not None:
+            return bool(self._redis.exists(f"bl:{token}"))
         return token in self._blacklisted_tokens

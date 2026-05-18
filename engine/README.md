@@ -1,37 +1,37 @@
 # SVAES Engine
 
-Motor de verificación de artefactos de software written en Rust.
+Software artifact verification engine written in Rust.
 
-## Descripción
+## Description
 
-El motor recibe un payload con artefactos y reglas de verificación, y retorna un veredicto global (Válida / Con Advertencias / No Válida) junto con el resultado detallado de cada regla evaluada.
+The engine receives a payload of artifacts and verification rules, and returns a global verdict (Valid / With Warnings / Invalid) along with detailed results for each evaluated rule.
 
-## Características
+## Features
 
-- **Stateless**: No consulta bases de datos ni red
-- **Paralelo**: Evaluación concurrente de reglas con Rayon
-- **Tipado**: Totalmente tipado con Rust
+- **Stateless**: Does not query databases or the network
+- **Parallel**: Concurrent rule evaluation with Rayon
+- **Strongly typed**: Fully typed with Rust
 
-## Documentación
+## Documentation
 
-Documentación técnica completa: [docs/engine/README.md](../docs/engine/README.md)
+Full technical documentation: [docs/engine/README.md](../docs/engine/README.md)
 
-## Reglas de Verificación
+## Verification Rules
 
-| Regla | Descripción |
-|-------|-------------|
-| RV-01 | Existencia de artefactos |
-| RV-02 | Trazabilidad entre artefactos |
-| RV-03 | Validación de estados |
-| RV-04 | Integridad de campos numéricos |
-| RV-05 | Disponibilidad de tipos |
-| RV-06 | Coherencia de atributos |
-| RV-07 | Registro externo |
-| RV-08 | Alineación de listas |
-| RV-09 | Validación de referencias |
-| RV-10 | Aprobación final |
+| Rule | Description |
+|------|-------------|
+| RV-01 | Artifact existence |
+| RV-02 | Cross-artifact traceability |
+| RV-03 | State validation |
+| RV-04 | Numeric field integrity |
+| RV-05 | Type availability |
+| RV-06 | Attribute coherence |
+| RV-07 | External registration |
+| RV-08 | List alignment |
+| RV-09 | Reference validation |
+| RV-10 | Final approval |
 
-## Uso
+## Usage
 
 ```bash
 cd engine
@@ -40,4 +40,4 @@ cargo run
 
 Endpoints:
 - `GET /health` - Health check
-- `POST /verify` - Evaluación de reglas
+- `POST /verify` - Rule evaluation

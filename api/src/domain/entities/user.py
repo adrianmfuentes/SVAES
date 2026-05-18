@@ -17,6 +17,8 @@ class User:
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     organization_ids: List[UUID] = field(default_factory=list)
+    terms_accepted_at: Optional[datetime] = None
+    privacy_accepted_at: Optional[datetime] = None
 
     @property
     def organization_id(self) -> Optional[UUID]:

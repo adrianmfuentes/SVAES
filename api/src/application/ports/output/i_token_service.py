@@ -21,10 +21,20 @@ class ITokenService(ABC):
     def create_access_token(
         self,
         user_id: UUID,
-        role: UserRole,
-        email: str,
+        role: str,
+        email: Optional[str] = None,
         organization_id: Optional[UUID] = None,
-        expires_in: int = 3600,
+        expires_in: Optional[int] = None,
+    ) -> str:
+        pass
+
+    @abstractmethod
+    def create_refresh_token(
+        self,
+        user_id: UUID,
+        role: str,
+        email: Optional[str] = None,
+        organization_id: Optional[UUID] = None,
     ) -> str:
         pass
 
@@ -38,6 +48,10 @@ class ITokenService(ABC):
 
     @abstractmethod
     def refresh_token(self, token: str) -> Optional[str]:
+        pass
+
+    @abstractmethod
+    def is_refresh_token(self, token: str) -> bool:
         pass
 
     @abstractmethod

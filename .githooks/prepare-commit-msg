@@ -18,19 +18,26 @@ fi
 DIFF=$(git diff --cached 2>/dev/null)
 [ -z "$DIFF" ] && exit 0
 
-# 4. Verificamos que la clave API esté configurada
+# 4. Verificamos que la funcionalidad esté habilitada explícitamente (opt-in)
+#    El diff se envía a la API externa de Groq — riesgo de fuga de código fuente.
+#    Solo activar en entornos controlados donde este riesgo esté aceptado.
+if [ "${GROQ_AUTO_COMMIT_ENABLED:-}" != "true" ]; then
+    exit 0
+fi
+
+# 5. Verificamos que la clave API esté configurada
 if [ -z "$GROQ_API_KEY" ]; then
     echo "⚠️ GROQ_API_KEY no está configurada en el .env. Abortando auto-generación."
     exit 0
 fi
 
-# 5. Verificamos que 'jq' esté instalado (necesario para escapar comillas en el JSON)
+# 6. Verificamos que 'jq' esté instalado (necesario para escapar comillas en el JSON)
 if ! command -v jq &> /dev/null; then
     echo "⚠️ Error: El comando 'jq' no está instalado."
     exit 0
 fi
 
-# 6. Definimos el prompt
+# 7. Definimos el prompt
 PROMPT="Eres un experto en control de versiones. Genera un mensaje de commit en español \
 siguiendo el estándar Conventional Commits (feat, fix, refactor, docs, chore, test, ci, build, perf, style). \
 Reglas estrictas:
@@ -42,7 +49,7 @@ Reglas estrictas:
 Diff a analizar:
 ${DIFF}"
 
-# 7. Construimos el payload JSON de forma segura usando jq
+# 8. Construimos el payload JSON de forma segura usando jq
 JSON_PAYLOAD=$(jq -n --arg content "$PROMPT" '{
   "model": "llama-3.3-70b-versatile",
   "messages": [
@@ -54,16 +61,16 @@ JSON_PAYLOAD=$(jq -n --arg content "$PROMPT" '{
 
 echo "🤖 Generando mensaje de commit con Groq..."
 
-# 8. Llamada a la API REST de Groq
+# 9. Llamada a la API REST de Groq
 RESPONSE=$(curl -s -X POST "https://api.groq.com/openai/v1/chat/completions" \
   -H "Authorization: Bearer $GROQ_API_KEY" \
   -H "Content-Type: application/json" \
   -d "$JSON_PAYLOAD")
 
-# 9. Extraemos el mensaje limpiando las posibles comillas invertidas de markdown (```)
+# 10. Extraemos el mensaje limpiando las posibles comillas invertidas de markdown (```)
 MESSAGE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty' | sed '/^```/d')
 
-# 10. Escribimos en el archivo de commit si la respuesta es válida
+# 11. Escribimos en el archivo de commit si la respuesta es válida
 if [ -n "$MESSAGE" ] && [ "$MESSAGE" != "null" ]; then
     printf '%s\n' "$MESSAGE" > "$COMMIT_MSG_FILE"
 else

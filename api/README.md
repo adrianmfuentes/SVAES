@@ -1,45 +1,45 @@
 # SVAES API
 
-Backend FastAPI del sistema SVAES (Static Verification and Approval Engine System).
+FastAPI backend for the SVAES system (Static Verification and Approval Engine System).
 
-## Descripción
+## Description
 
-API RESTful para la gestión de organizaciones, proyectos, releases y verificación de artefactos. Implementa arquitectura hexagonal (Ports & Adapters) con autenticación JWT y control de acceso basado en roles (RBAC).
+RESTful API for managing organizations, projects, releases, and artifact verification. Implements hexagonal architecture (Ports & Adapters) with JWT authentication and role-based access control (RBAC).
 
-## Características
+## Features
 
-- Arquitectura hexagonal con puertos de entrada/salida
-- Autenticación JWT con refresh tokens
-- RBAC con 4 niveles de rol (U1-U4)
-- Multi-tenancy con aislamiento por organización
-- Rate limiting por endpoint
-- Audit logging de operaciones
+- Hexagonal architecture with input/output ports
+- JWT authentication with refresh tokens
+- RBAC with 4 role levels (U1-U4)
+- Multi-tenancy with organization-level isolation
+- Rate limiting per endpoint
+- Audit logging of operations
 
-## Documentación
+## Documentation
 
-Documentación completa de la API: [docs/api/API_DOCUMENTATION.md](../docs/api/API_DOCUMENTATION.md)
+Full API documentation: [docs/api/API_DOCUMENTATION.md](../docs/api/API_DOCUMENTATION.md)
 
-Guías adicionales:
+Additional guides:
 - [Testing](../docs/api/TESTING.md)
 - [Deployment](../docs/api/DEPLOYMENT.md)
 - [Postman](../docs/api/POSTMAN_GUIDE.md)
 
-## Uso
+## Usage
 
 ```bash
 cd api
 uvicorn src.main:app --reload
 ```
 
-## Endpoints Principales
+## Main Endpoints
 
-| Router | Prefijo | Descripción |
-|--------|---------|-------------|
+| Router | Prefix | Description |
+|--------|--------|-------------|
 | Auth | `/api/v1/auth` | Login, refresh tokens |
-| Users | `/api/v1/users` | Perfil, gestión de usuarios |
-| Organizations | `/api/v1/organizations` | Organizaciones y proyectos |
-| Releases | `/api/v1/releases` | Gestión de releases |
-| Connectors | `/api/v1/connectors` | Conectores externos |
-| Profiles | `/api/v1/profiles` | Perfiles de verificación |
-| Rules | `/api/v1/rules` | Reglas de verificación |
-| Dashboard | `/api/v1/dashboard` | Métricas |
+| Users | `/api/v1/users` | Profile, user management |
+| Organizations | `/api/v1/organizations` | Organizations and projects |
+| Releases | `/api/v1/releases` | Release management |
+| Connectors | `/api/v1/connectors` | External connectors |
+| Profiles | `/api/v1/profiles` | Verification profiles |
+| Rules | `/api/v1/rules` | Verification rules |
+| Dashboard | `/api/v1/dashboard` | Metrics |

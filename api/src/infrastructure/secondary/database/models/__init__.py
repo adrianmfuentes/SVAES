@@ -8,6 +8,7 @@ from infrastructure.secondary.database.models.profile_model import VerificationP
 from infrastructure.secondary.database.models.rule_model import VerificationRuleModel
 from infrastructure.secondary.database.models.artifact_model import ArtifactModel
 from infrastructure.secondary.database.models.result_model import VerificationResultModel
+from infrastructure.secondary.database.models.audit_log_model import AuditLogModel
 
 __all__ = [
     "ReleaseModel",
@@ -19,4 +20,5 @@ __all__ = [
     "VerificationRuleModel",
     "ArtifactModel",
     "VerificationResultModel",
+    "AuditLogModel",
 ]

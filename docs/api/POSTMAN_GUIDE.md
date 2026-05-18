@@ -1,28 +1,28 @@
-# Guía para Testear la API con Postman
+# Guide to Testing the API with Postman
 
-Esta guía describe cómo usar Postman (o cualquier cliente HTTP similar) para probar los endpoints de la API SVAES.
+This guide describes how to use Postman (or any similar HTTP client) to test the SVAES API endpoints.
 
 ---
 
-## 1. Configuración del Entorno
+## 1. Environment Setup
 
-### URL Base
+### Base URL
 
 ```
 Development: http://localhost:8000
 Production:  https://api.svaes.example.com
 ```
 
-### Headers Comunes
+### Common Headers
 
-| Header | Valor |
+| Header | Value |
 |--------|-------|
 | `Content-Type` | `application/json` |
 | `Accept` | `application/json` |
 
 ---
 
-## 2. Autenticación
+## 2. Authentication
 
 ### Login
 
@@ -31,8 +31,8 @@ Production:  https://api.svaes.example.com
 **Request:**
 ```json
 {
-  "email": "usuario@ejemplo.com",
-  "password": "contraseña123"
+  "email": "user@example.com",
+  "password": "password123"
 }
 ```
 
@@ -42,22 +42,22 @@ Production:  https://api.svaes.example.com
   "access_token": "eyJhbGciOiJIUzI1NiIs...",
   "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
   "token_type": "Bearer",
-  "user_id": "uuid-del-usuario",
+  "user_id": "user-uuid",
   "role": "U2"
 }
 ```
 
-> Guarda el `access_token` para usar en subsequent requests.
+> Save the `access_token` to use in subsequent requests.
 
-### Usar el Token
+### Using the Token
 
-En cada request protegida, añade el header:
+For each protected request, add the header:
 
 ```
 Authorization: Bearer <access_token>
 ```
 
-### Refrescar Token
+### Refreshing the Token
 
 **Endpoint:** `POST /api/v1/auth/refresh`
 
@@ -70,22 +70,22 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 3. Colección de Requests por Router
+## 3. Request Collection by Router
 
 ### 3.1 Auth (`/api/v1/auth`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| POST | `/api/v1/auth/login` | Login con email/password |
-| POST | `/api/v1/auth/refresh` | Refrescar access token |
+| POST | `/api/v1/auth/login` | Login with email/password |
+| POST | `/api/v1/auth/refresh` | Refresh access token |
 
 ### 3.2 Users (`/api/v1/users`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| GET | `/api/v1/users/me` | Perfil del usuario actual |
-| PATCH | `/api/v1/users/me` | Actualizar perfil |
-| POST | `/api/v1/users/me/password` | Cambiar contraseña |
+| GET | `/api/v1/users/me` | Current user profile |
+| PATCH | `/api/v1/users/me` | Update profile |
+| POST | `/api/v1/users/me/password` | Change password |
 
 **GET /api/v1/users/me**
 
@@ -93,8 +93,8 @@ Response:
 ```json
 {
   "id": "uuid",
-  "email": "usuario@ejemplo.com",
-  "display_name": "Nombre Usuario",
+  "email": "user@example.com",
+  "display_name": "User Name",
   "role": "U2",
   "is_active": true,
   "created_at": "2024-01-15T10:30:00Z"
@@ -104,69 +104,69 @@ Response:
 **PATCH /api/v1/users/me**
 ```json
 {
-  "display_name": "Nuevo Nombre"
+  "display_name": "New Name"
 }
 ```
 
 **POST /api/v1/users/me/password**
 ```json
 {
-  "current_password": "contraseña123",
-  "new_password": "nuevaContraseña456",
-  "confirm_password": "nuevaContraseña456"
+  "current_password": "password123",
+  "new_password": "newPassword456",
+  "confirm_password": "newPassword456"
 }
 ```
 
 ### 3.3 Organizations (`/api/v1/organizations`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| GET | `/api/v1/organizations` | Listar organizaciones (U3) |
-| POST | `/api/v1/organizations` | Crear organización (U3) |
-| GET | `/api/v1/organizations/{org_id}` | Detalles de org |
-| GET | `/api/v1/projects` | Listar proyectos |
-| POST | `/api/v1/organizations/{org_id}/projects` | Crear proyecto |
+| GET | `/api/v1/organizations` | List organizations (U3) |
+| POST | `/api/v1/organizations` | Create organization (U3) |
+| GET | `/api/v1/organizations/{org_id}` | Organization details |
+| GET | `/api/v1/projects` | List projects |
+| POST | `/api/v1/organizations/{org_id}/projects` | Create project |
 
 **POST /api/v1/organizations**
 ```json
 {
-  "name": "Mi Organización",
-  "slug": "mi-organizacion",
+  "name": "My Organization",
+  "slug": "my-organization",
   "plan": "default"
 }
 ```
 
 **GET /api/v1/projects**
-Query params: `?page=1&size=25&status=ACTIVO&search=nombre&org_id=uuid`
+Query params: `?page=1&size=25&status=ACTIVE&search=name&org_id=uuid`
 
 ### 3.4 Projects (`/api/v1/projects/{project_id}`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| GET | `/api/v1/projects/{project_id}` | Detalles del proyecto |
-| PATCH | `/api/v1/projects/{project_id}` | Actualizar proyecto |
-| POST | `/api/v1/organizations/{org_id}/projects/{project_id}/archive` | Archivar proyecto |
+| GET | `/api/v1/projects/{project_id}` | Project details |
+| PATCH | `/api/v1/projects/{project_id}` | Update project |
+| POST | `/api/v1/organizations/{org_id}/projects/{project_id}/archive` | Archive project |
 
 ### 3.5 Releases (`/api/v1/releases`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| POST | `/api/v1/projects/{project_id}/releases` | Crear release |
-| GET | `/api/v1/projects/{project_id}/releases` | Listar releases |
-| GET | `/api/v1/releases/{release_id}` | Detalles de release |
-| PATCH | `/api/v1/releases/{release_id}` | Actualizar release |
-| DELETE | `/api/v1/releases/{release_id}` | Eliminar release |
-| POST | `/api/v1/releases/{release_id}/archive` | Archivar release |
-| POST | `/api/v1/releases/{release_id}/verify` | Lanzar verificación |
-| GET | `/api/v1/releases/{release_id}/results` | Historial de verificaciones |
+| POST | `/api/v1/projects/{project_id}/releases` | Create release |
+| GET | `/api/v1/projects/{project_id}/releases` | List releases |
+| GET | `/api/v1/releases/{release_id}` | Release details |
+| PATCH | `/api/v1/releases/{release_id}` | Update release |
+| DELETE | `/api/v1/releases/{release_id}` | Delete release |
+| POST | `/api/v1/releases/{release_id}/archive` | Archive release |
+| POST | `/api/v1/releases/{release_id}/verify` | Launch verification |
+| GET | `/api/v1/releases/{release_id}/results` | Verification history |
 
 **POST /api/v1/projects/{project_id}/releases**
 ```json
 {
   "name": "Release v1.0.0",
   "version": "1.0.0",
-  "description": "Primera release",
-  "profile_id": "uuid-del-perfil"
+  "description": "First release",
+  "profile_id": "profile-uuid"
 }
 ```
 
@@ -174,7 +174,7 @@ Query params: `?page=1&size=25&status=ACTIVO&search=nombre&org_id=uuid`
 ```json
 {
   "name": "Release v1.0.1",
-  "status": "PENDIENTE"
+  "status": "PENDING"
 }
 ```
 
@@ -182,25 +182,25 @@ Query params: `?page=1&size=25&status=ACTIVO&search=nombre&org_id=uuid`
 Response (202 Accepted):
 ```json
 {
-  "task_id": "uuid-de-la-tarea"
+  "task_id": "task-uuid"
 }
 ```
 
 ### 3.6 Artifacts
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| GET | `/api/v1/releases/{release_id}/artifacts` | Listar artefactos |
-| POST | `/api/v1/releases/{release_id}/artifacts` | Agregar artefacto |
-| DELETE | `/api/v1/releases/{release_id}/artifacts/{artifact_id}` | Eliminar artefacto |
-| POST | `/api/v1/releases/{release_id}/artifacts/import` | Importar artefactos (JSON array) |
+| GET | `/api/v1/releases/{release_id}/artifacts` | List artifacts |
+| POST | `/api/v1/releases/{release_id}/artifacts` | Add artifact |
+| DELETE | `/api/v1/releases/{release_id}/artifacts/{artifact_id}` | Remove artifact |
+| POST | `/api/v1/releases/{release_id}/artifacts/import` | Import artifacts (JSON array) |
 
 **POST /api/v1/releases/{release_id}/artifacts**
 ```json
 {
   "connector_instance_id": "uuid",
   "connector_implementation": "JIRA",
-  "artifact_type": "TAREA",
+  "artifact_type": "TASK",
   "external_ref": "PROJ-123",
   "metadata": {}
 }
@@ -208,53 +208,53 @@ Response (202 Accepted):
 
 ### 3.7 Connectors (`/api/v1/organizations/{org_id}/connectors`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| GET | `/api/v1/connectors/types` | Listar tipos de conectores |
-| GET | `/api/v1/organizations/{org_id}/connectors` | Listar conectores |
-| POST | `/api/v1/organizations/{org_id}/connectors` | Crear conector |
-| PATCH | `/api/v1/organizations/{org_id}/connectors/{connector_id}` | Actualizar conector |
-| DELETE | `/api/v1/organizations/{org_id}/connectors/{connector_id}` | Eliminar conector |
-| POST | `/api/v1/organizations/{org_id}/connectors/{connector_id}/test` | Probar conexión |
+| GET | `/api/v1/connectors/types` | List connector types |
+| GET | `/api/v1/organizations/{org_id}/connectors` | List connectors |
+| POST | `/api/v1/organizations/{org_id}/connectors` | Create connector |
+| PATCH | `/api/v1/organizations/{org_id}/connectors/{connector_id}` | Update connector |
+| DELETE | `/api/v1/organizations/{org_id}/connectors/{connector_id}` | Delete connector |
+| POST | `/api/v1/organizations/{org_id}/connectors/{connector_id}/test` | Test connection |
 
 **POST /api/v1/organizations/{org_id}/connectors**
 ```json
 {
-  "connector_type": "GESTOR_TAREAS",
+  "connector_type": "TASK_MANAGER",
   "connector_implementation": "JIRA",
-  "name": "Mi Conector JIRA",
+  "name": "My JIRA Connector",
   "credentials": {
-    "api_token": "token-jira",
-    "instance_url": "https://mi-empresa.atlassian.net"
+    "api_token": "jira-token",
+    "instance_url": "https://my-company.atlassian.net"
   }
 }
 ```
 
 ### 3.8 Profiles (`/api/v1/organizations/{org_id}/profiles`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| GET | `/api/v1/organizations/{org_id}/profiles` | Listar perfiles |
-| POST | `/api/v1/organizations/{org_id}/profiles` | Crear perfil |
-| PATCH | `/api/v1/profiles/{profile_id}` | Actualizar perfil |
-| DELETE | `/api/v1/profiles/{profile_id}` | Eliminar perfil |
+| GET | `/api/v1/organizations/{org_id}/profiles` | List profiles |
+| POST | `/api/v1/organizations/{org_id}/profiles` | Create profile |
+| PATCH | `/api/v1/profiles/{profile_id}` | Update profile |
+| DELETE | `/api/v1/profiles/{profile_id}` | Delete profile |
 
 **POST /api/v1/organizations/{org_id}/profiles**
 ```json
 {
-  "name": "Perfil de Verificación Estándar",
-  "description": "Perfil para releases de producción",
+  "name": "Standard Verification Profile",
+  "description": "Profile for production releases",
   "is_default": false
 }
 ```
 
 ### 3.9 Rules
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| POST | `/api/v1/profiles/{profile_id}/rules` | Agregar regla |
-| PATCH | `/api/v1/rules/{rule_id}` | Actualizar regla |
-| DELETE | `/api/v1/rules/{rule_id}` | Eliminar regla |
+| POST | `/api/v1/profiles/{profile_id}/rules` | Add rule |
+| PATCH | `/api/v1/rules/{rule_id}` | Update rule |
+| DELETE | `/api/v1/rules/{rule_id}` | Delete rule |
 
 **POST /api/v1/profiles/{profile_id}/rules**
 ```json
@@ -268,41 +268,41 @@ Response (202 Accepted):
 
 ### 3.10 Tasks (`/api/v1/tasks/{task_id}`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| GET | `/api/v1/tasks/{task_id}` | Estado de tarea async |
+| GET | `/api/v1/tasks/{task_id}` | Async task status |
 
 Response:
 ```json
 {
   "task_id": "uuid",
   "status": "SUCCESS",
-  "result": "Resultado de la tarea"
+  "result": "Task result"
 }
 ```
 
 ### 3.11 Custom Roles (`/api/v1/organizations/{org_id}/roles`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| GET | `/api/v1/organizations/{org_id}/roles` | Listar roles |
-| POST | `/api/v1/organizations/{org_id}/roles` | Crear rol |
-| PATCH | `/api/v1/roles/{role_id}` | Actualizar rol |
-| DELETE | `/api/v1/roles/{role_id}` | Eliminar rol |
+| GET | `/api/v1/organizations/{org_id}/roles` | List roles |
+| POST | `/api/v1/organizations/{org_id}/roles` | Create role |
+| PATCH | `/api/v1/roles/{role_id}` | Update role |
+| DELETE | `/api/v1/roles/{role_id}` | Delete role |
 
 **POST /api/v1/organizations/{org_id}/roles**
 ```json
 {
-  "name": "Supervisor de Releases",
+  "name": "Release Supervisor",
   "permissions": ["VIEW_ORG_PROJECTS", "CREATE_RELEASE", "EXECUTE_VERIFICATION"]
 }
 ```
 
 ### 3.12 Dashboard (`/api/v1/dashboard/metrics`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| GET | `/api/v1/dashboard/metrics?org_id={org_id}` | Métricas del dashboard |
+| GET | `/api/v1/dashboard/metrics?org_id={org_id}` | Dashboard metrics |
 
 Response:
 ```json
@@ -318,161 +318,161 @@ Response:
 
 ### 3.13 API Keys (`/api/v1/users/{user_id}/api-keys`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| POST | `/api/v1/users/{user_id}/api-keys` | Crear API key |
-| GET | `/api/v1/users/{user_id}/api-keys` | Listar API keys |
-| DELETE | `/api/v1/users/{user_id}/api-keys/{key_id}` | Revocar API key |
+| POST | `/api/v1/users/{user_id}/api-keys` | Create API key |
+| GET | `/api/v1/users/{user_id}/api-keys` | List API keys |
+| DELETE | `/api/v1/users/{user_id}/api-keys/{key_id}` | Revoke API key |
 
 **POST /api/v1/users/{user_id}/api-keys**
 ```json
 {
-  "name": "Mi API Key para CI/CD",
+  "name": "My CI/CD API Key",
   "expires_in_days": 90
 }
 ```
 
-> La clave completa solo se retorna al crear. Guárdala porque no se puede recuperar después.
+> The full key is only returned at creation. Save it because it cannot be retrieved later.
 
 ### 3.14 Templates (`/api/v1/templates`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| POST | `/api/v1/templates` | Crear template |
-| GET | `/api/v1/templates` | Listar templates |
-| GET | `/api/v1/templates/{template_id}` | Detalles del template |
-| PATCH | `/api/v1/templates/{template_id}` | Actualizar template |
-| POST | `/api/v1/templates/{template_id}/archive` | Archivar template |
-| POST | `/api/v1/templates/{template_id}/clone` | Clonar template |
+| POST | `/api/v1/templates` | Create template |
+| GET | `/api/v1/templates` | List templates |
+| GET | `/api/v1/templates/{template_id}` | Template details |
+| PATCH | `/api/v1/templates/{template_id}` | Update template |
+| POST | `/api/v1/templates/{template_id}/archive` | Archive template |
+| POST | `/api/v1/templates/{template_id}/clone` | Clone template |
 
 ### 3.15 Notifications (`/api/v1/notifications`)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| GET | `/api/v1/notifications/channels` | Listar canales |
-| POST | `/api/v1/notifications/channels` | Configurar canal |
-| PATCH | `/api/v1/notifications/channels/{channel_id}` | Actualizar canal |
-| DELETE | `/api/v1/notifications/channels/{channel_id}` | Eliminar canal |
-| GET | `/api/v1/notifications/preferences` | Preferencias del usuario |
-| PATCH | `/api/v1/notifications/preferences` | Actualizar preferencias |
-| POST | `/api/v1/notifications/subscriptions` | Suscribirse a evento |
-| DELETE | `/api/v1/notifications/subscriptions/{event_type}` | Desuscribirse |
+| GET | `/api/v1/notifications/channels` | List channels |
+| POST | `/api/v1/notifications/channels` | Configure channel |
+| PATCH | `/api/v1/notifications/channels/{channel_id}` | Update channel |
+| DELETE | `/api/v1/notifications/channels/{channel_id}` | Delete channel |
+| GET | `/api/v1/notifications/preferences` | User preferences |
+| PATCH | `/api/v1/notifications/preferences` | Update preferences |
+| POST | `/api/v1/notifications/subscriptions` | Subscribe to event |
+| DELETE | `/api/v1/notifications/subscriptions/{event_type}` | Unsubscribe |
 
-### 3.16 Admin (`/api/v1/admin`) - Solo U3
+### 3.16 Admin (`/api/v1/admin`) - U3 Only
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |--------|------|-------------|
-| POST | `/api/v1/admin/rules/reload` | Recargar reglas en caliente |
-| GET | `/api/v1/admin/users` | Listar todos los usuarios |
-| POST | `/api/v1/admin/users` | Crear usuario global |
-| PATCH | `/api/v1/admin/users/{user_id}/activate` | Activar usuario |
-| PATCH | `/api/v1/admin/users/{user_id}/deactivate` | Desactivar usuario |
-| PATCH | `/api/v1/admin/users/{user_id}/role` | Cambiar rol global |
+| POST | `/api/v1/admin/rules/reload` | Hot-reload custom rules |
+| GET | `/api/v1/admin/users` | List all users |
+| POST | `/api/v1/admin/users` | Create global user |
+| PATCH | `/api/v1/admin/users/{user_id}/activate` | Activate user |
+| PATCH | `/api/v1/admin/users/{user_id}/deactivate` | Deactivate user |
+| PATCH | `/api/v1/admin/users/{user_id}/role` | Change global role |
 
 ---
 
-## 4. Códigos de Estado HTTP
+## 4. HTTP Status Codes
 
-| Código | Significado |
+| Code | Meaning |
 |-------|-------------|
-| 200 | OK - Request exitosa |
-| 201 | Created - Recurso creado |
-| 202 | Accepted - Request aceptada (async) |
-| 400 | Bad Request - Datos inválidos |
-| 401 | Unauthorized - No autenticado |
-| 403 | Forbidden - Sin permisos |
-| 404 | Not Found - Recurso no existe |
-| 409 | Conflict - Estado inválido (ej: transición de release) |
-| 422 | Unprocessable Entity - Validación fallida |
+| 200 | OK - Successful request |
+| 201 | Created - Resource created |
+| 202 | Accepted - Request accepted (async) |
+| 400 | Bad Request - Invalid data |
+| 401 | Unauthorized - Not authenticated |
+| 403 | Forbidden - No permissions |
+| 404 | Not Found - Resource does not exist |
+| 409 | Conflict - Invalid state (e.g., release transition) |
+| 422 | Unprocessable Entity - Validation failed |
 | 429 | Too Many Requests - Rate limit exceeded |
-| 500 | Internal Server Error - Error del servidor |
+| 500 | Internal Server Error - Server error |
 
 ---
 
 ## 5. Rate Limiting
 
-| Tipo de Endpoint | Límite |
+| Endpoint Type | Limit |
 |------------------|--------|
 | Auth (`/auth/*`) | 30 requests/min |
-| Búsqueda | 30 requests/min |
-| Prueba de conector | 100 requests/min |
-| Por defecto | 100 requests/min |
+| Search | 30 requests/min |
+| Connector test | 100 requests/min |
+| Default | 100 requests/min |
 
-Si excedes el límite, recibirás `429 Too Many Requests` con header `Retry-After`.
+If you exceed the limit, you will receive `429 Too Many Requests` with a `Retry-After` header.
 
 ---
 
-## 6. Importar Colección en Postman
+## 6. Import Collection into Postman
 
-### Pasos:
+### Steps:
 
-1. Abrir Postman
-2. Click en **Import** (esquina superior izquierda)
-3. Seleccionar **Link** y pegar: `https://api.svaes.example.com/openapi.json` (o la URL de tu entorno)
-4. O manualmente: Exportar el JSON de OpenAPI desde `/openapi.json` y arrastrarlo a Postman
+1. Open Postman
+2. Click **Import** (top left corner)
+3. Select **Link** and paste: `https://api.svaes.example.com/openapi.json` (or your environment URL)
+4. Or manually: Export the OpenAPI JSON from `/openapi.json` and drag it into Postman
 
-### Configurar Environment:
+### Configure Environment:
 
-1. Crear environment `SVAES Local` o similar
-2. Añadir variables:
+1. Create environment `SVAES Local` or similar
+2. Add variables:
 
 | Variable | Initial Value | Current Value |
 |----------|---------------|---------------|
 | `base_url` | `http://localhost:8000` | `http://localhost:8000` |
-| `access_token` | (vacío) | (se llena tras login) |
-| `refresh_token` | (vacío) | (se llena tras login) |
-| `user_id` | (vacío) | (se llena tras login) |
-| `org_id` | (uuid de org) | (uuid de org) |
+| `access_token` | (empty) | (filled after login) |
+| `refresh_token` | (empty) | (filled after login) |
+| `user_id` | (empty) | (filled after login) |
+| `org_id` | (org uuid) | (org uuid) |
 
-3. En el tab **Authorization** de la colección, usar:
+3. In the collection's **Authorization** tab, use:
    - Type: `Bearer Token`
    - Token: `{{access_token}}`
 
 ---
 
-## 7. Ejemplo de Flow Completo
+## 7. Full Flow Example
 
-### Crear una Release con Verificación:
+### Create a Release with Verification:
 
 ```
 1. POST /api/v1/auth/login
-   → Guardar access_token
+   → Save access_token
 
 2. GET /api/v1/users/me
-   → Obtener organization_ids
+   → Get organization_ids
 
 3. GET /api/v1/organizations/{org_id}/projects
-   → Obtener project_id
+   → Get project_id
 
 4. POST /api/v1/projects/{project_id}/releases
    Body: {"name": "v1.0.0", "version": "1.0.0"}
-   → Obtener release_id
+   → Get release_id
 
 5. POST /api/v1/releases/{release_id}/artifacts
-   Body: {"connector_instance_id": "...", "connector_implementation": "JIRA", "artifact_type": "TAREA", "external_ref": "PROJ-1"}
-   → Artifact creado
+   Body: {"connector_instance_id": "...", "connector_implementation": "JIRA", "artifact_type": "TASK", "external_ref": "PROJ-1"}
+   → Artifact created
 
 6. PATCH /api/v1/releases/{release_id}
-   Body: {"status": "PENDIENTE"}
+   Body: {"status": "PENDING"}
 
 7. POST /api/v1/releases/{release_id}/verify
-   → Obtener task_id
+   → Get task_id
 
 8. GET /api/v1/tasks/{task_id}
-   → Verificar estado (SUCCESS/FAILURE)
+   → Check status (SUCCESS/FAILURE)
 
 9. GET /api/v1/releases/{release_id}/results
-   → Obtener resultado de verificación
+   → Get verification result
 ```
 
 ---
 
-## 8. Scripts de Pre-request (Postman)
+## 8. Pre-request Scripts (Postman)
 
-Para automatizar el token en cada request:
+To automate the token on every request:
 
 ```javascript
-// En la colección o folder, usar auth/token
+// In the collection or folder, use auth/token
 if (pm.collectionVariables.get("access_token")) {
     pm.request.headers.add({
         key: "Authorization",
@@ -481,17 +481,17 @@ if (pm.collectionVariables.get("access_token")) {
 }
 ```
 
-O usar el tab Authorization de cada request con **Inherit from parent**.
+Or use each request's Authorization tab with **Inherit from parent**.
 
 ---
 
-## 9. Verificar Health del Servicio
+## 9. Checking Service Health
 
 ```
 GET /health
 ```
 
-Response esperada:
+Expected response:
 ```json
 {
   "status": "ok",

@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 from celery import shared_task
 from infrastructure.secondary.queue.celery_app import celery_app
 from core.config import settings
+from core.pseudonymizer import pseudonymize
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from application.ports.output.i_release_repository import IReleaseRepository
 from application.ports.output.i_profile_repository import IProfileRepository
@@ -26,9 +27,13 @@ async def _call_verification_engine(
     artifacts_data: List[Dict[str, Any]],
     rules_data: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
+    headers = {}
+    if settings.engine_api_key:
+        headers["X-Engine-Api-Key"] = settings.engine_api_key
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
             f"{settings.engine_url}/api/v1/verify",
+            headers=headers,
             json={
                 "artifacts": artifacts_data,
                 "rules": rules_data,
@@ -73,6 +78,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str) -> Dict[s
                 if connector_impl:
                     config = {}
                     data = await connector_impl.fetch_artifact(artifact.external_ref, config)
+                    data = pseudonymize(data)
                     artifacts_data.append({
                         "id": str(artifact.id),
                         "artifact_type": artifact.artifact_type,

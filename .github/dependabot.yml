@@ -1,8 +1,8 @@
 version: 2
 updates:
-  # Python — pyproject.toml está en apps/api/
+  # Python — pyproject.toml está en api/
   - package-ecosystem: "pip"
-    directory: "/apps/api"
+    directory: "/api"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
@@ -13,9 +13,9 @@ updates:
     schedule:
       interval: "weekly"
 
-  # Dockerfile de la API (python:3.11-slim)
+  # Dockerfile de la API (python:3.12-slim)
   - package-ecosystem: "docker"
-    directory: "/apps/api"
+    directory: "/api"
     schedule:
       interval: "weekly"
 

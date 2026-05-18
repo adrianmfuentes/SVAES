@@ -3,28 +3,27 @@ services:
     image: postgres:16-alpine
     container_name: svaes-postgres
     environment:
-      POSTGRES_USER: svaes
-      POSTGRES_PASSWORD: svaes
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: svaes
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U svaes"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-svaes}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - svaes-network
 
   redis:
     image: redis:7-alpine
     container_name: svaes-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     ports:
       - "127.0.0.1:6700:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -39,8 +38,7 @@ services:
     environment:
       ENGINE_HOST: 0.0.0.0
       ENGINE_PORT: 8081
-    ports:
-      - "${ENGINE_PORT:-8081}:8081"
+      ENGINE_API_KEY: ${ENGINE_API_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
       interval: 30s
@@ -56,15 +54,18 @@ services:
       dockerfile: Dockerfile
     container_name: svaes-api
     environment:
-      DATABASE_URL: postgresql+psycopg://svaes:svaes@postgres:5432/svaes
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/svaes
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
       ENVIRONMENT: development
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM: HS256
       JWT_EXPIRE_MINUTES: 60
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       ALLOWED_ORIGINS: http://localhost:4200,http://localhost:3000
+      ENGINE_URL: http://engine:8081
+      ENGINE_API_KEY: ${ENGINE_API_KEY}
     ports:
       - "8000:8000"
     depends_on:
@@ -82,15 +83,17 @@ services:
     container_name: svaes-celery
     command: celery -A src.infrastructure.secondary.queue.celery_app worker --loglevel=info
     environment:
-      DATABASE_URL: postgresql+psycopg://svaes:svaes@postgres:5432/svaes
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/svaes
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
       ENVIRONMENT: development
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM: HS256
       JWT_EXPIRE_MINUTES: 60
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      ALLOWED_ORIGINS: http://localhost:4200,http://localhost:3000
+      ENGINE_URL: http://engine:8081
+      ENGINE_API_KEY: ${ENGINE_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy

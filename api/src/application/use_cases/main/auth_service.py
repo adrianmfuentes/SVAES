@@ -59,6 +59,19 @@ class AuthService(IAuthService):
                 resource_id=user.id,
                 details={"reason": "max_attempts_exceeded"},
             ))
+            audit.log(AuditEntry(
+                event=AuditEvent.SECURITY_BREACH_DETECTED,
+                user_id=user.id,
+                organization_id=user.organization_id,
+                resource_type="user",
+                resource_id=user.id,
+                details={
+                    "reason": "account_lockout",
+                    "lockout_duration_minutes": LOCKOUT_DURATION_MINUTES,
+                    "alert": "GDPR Art.33 — review if personal data breach occurred",
+                },
+            ))
+            _log.warning("SECURITY ALERT: account locked out after max failed attempts — user_id=%s", user.id)
             raise ValidationError(f"Demasiados intentos fallidos. Cuenta bloqueada por {LOCKOUT_DURATION_MINUTES} minutos.")
 
         if not self._password_hasher.verify_password(password, user.hashed_password):
@@ -88,12 +101,11 @@ class AuthService(IAuthService):
             organization_id=user.organization_id,
             expires_in=3600,
         )
-        refresh_token = self._token_service.create_access_token(
+        refresh_token = self._token_service.create_refresh_token(
             user_id=user.id,
             role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
-            expires_in=86400,
         )
 
         tokens = AuthTokens(access_token=access_token, refresh_token=refresh_token)
@@ -110,6 +122,8 @@ class AuthService(IAuthService):
         return tokens, user.id, user.role.value
 
     async def refresh_access_token(self, refresh_token: str) -> Optional[AuthTokens]:
+        if not self._token_service.is_refresh_token(refresh_token):
+            return None
         try:
             payload = self._token_service.decode_token(refresh_token)
         except ValueError:
@@ -126,12 +140,11 @@ class AuthService(IAuthService):
             organization_id=user.organization_id,
             expires_in=3600,
         )
-        new_refresh_token = self._token_service.create_access_token(
+        new_refresh_token = self._token_service.create_refresh_token(
             user_id=payload.user_id,
             role=payload.role,
             email=payload.email,
             organization_id=user.organization_id,
-            expires_in=86400,
         )
 
         return AuthTokens(access_token=access_token, refresh_token=new_refresh_token)

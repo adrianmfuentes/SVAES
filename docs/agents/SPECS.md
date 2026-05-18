@@ -1,175 +1,175 @@
-# SPECS.md — Especificación funcional de SVAES
+# SPECS.md — SVAES Functional Specification
 
-> Resumen de referencia rápida de los requisitos del sistema. La especificación completa
-> se encuentra en el **Capítulo 4 (SRS)** de la memoria del TFG y en el documento
+> Quick reference summary of system requirements. The full specification
+> can be found in **Chapter 4 (SRS)** of the TFG thesis and in the document
 > `docs/SRS_SVAES.pdf`.
 
 ---
 
-## 1. Propósito del sistema
+## 1. System Purpose
 
-SVAES automatiza la validación de *releases* de software contra un conjunto configurable
-de reglas de verificación. Elimina la revisión manual, centraliza la trazabilidad y produce
-un veredicto estructurado por cada ejecución.
+SVAES automates software *release* validation against a configurable set
+of verification rules. It eliminates manual review, centralizes traceability, and produces
+a structured verdict per execution.
 
-El sistema es **genérico**: no está acoplado a ninguna herramienta externa concreta.
-Cualquier fuente de datos puede integrarse implementando el puerto `IConnector`.
+The system is **generic**: it is not coupled to any specific external tool.
+Any data source can be integrated by implementing the `IConnector` port.
 
 ---
 
-## 2. Actores
+## 2. Actors
 
-| ID | Rol | Descripción |
+| ID | Role | Description |
 |---|---|---|
-| U1 | Viewer | Consulta releases y resultados de verificación. Sin permisos de escritura. |
-| U2 | Operator | Crea y gestiona releases; lanza verificaciones. |
-| U3 | Manager | Configura conectores, perfiles y plantillas de su organización. |
-| U4 | Admin (org) | Gestiona usuarios y organizaciones propias. |
+| U1 | Viewer | Queries releases and verification results. No write permissions. |
+| U2 | Operator | Creates and manages releases; launches verifications. |
+| U3 | Manager | Configures connectors, profiles, and templates for their organization. |
+| U4 | Admin (org) | Manages their own users and organizations. |
 
-Jerarquía de roles: `VIEWER < OPERATOR < MANAGER < ADMIN`.
-
----
-
-## 3. Épicas funcionales
-
-### Épica 1 — Multi-tenancy y seguridad (FEAT-01, FEAT-02)
-- Organizaciones completamente aisladas (`organization_id` obligatorio en toda consulta).
-- Autenticación JWT stateless con refresh token en BD.
-- RBAC aplicado en el adaptador HTTP.
-- Cifrado AES-256-GCM de credenciales de conector.
-- Cumplimiento RGPD y OWASP Top 10 (2021).
-
-### Épica 2 — Gestión de releases (FEAT-03)
-- Ciclo de vida: `BORRADOR → PENDIENTE → EN_VERIFICACION → COMPLETADA | RECHAZADA`.
-- Artefactos tipados: `TAREA`, `CODIGO`, `DOCUMENTO`.
-- Plantillas de release reutilizables por organización.
-
-### Épica 3 — Conectores (FEAT-04)
-- Puerto `IConnector` con operaciones: `get_artifact`, `check_connectivity`, `list_artifacts`.
-- Conectores de referencia: gestor de tareas genérico, repositorio de código genérico,
-  sistema documental genérico.
-- Timeout configurable por conector. Reglas sobre conector `INACTIVO` → `NO_EVALUADA`.
-
-### Épica 4 — Perfiles de verificación (FEAT-05)
-- Perfil = conjunto de instancias de reglas (RV-01…RV-10) con nivel `OBLIGATORIA | OPCIONAL`.
-- Perfil por defecto no eliminable; disponible en todas las organizaciones.
-- El perfil se asigna al proyecto; la release hereda el del proyecto (modificable en `BORRADOR`).
-- Snapshot inmutable del perfil por cada ejecución (trazabilidad histórica).
-
-### Épica 5 — Motor de verificación (FEAT-06)
-- Ejecución asíncrona: backend responde `202 Accepted`; frontend hace polling de estado.
-- El motor Rust se ejecuta en `engine/` como microservicio separado, comunica via HTTP.
-- Política de agregación de veredictos (ver §4).
-- Reglas personalizadas vía fichero de configuración estructurado.
-- **Estado actual:** ✅ Implementado — `engine/src/` con evaluador paralelo (Rayon), agregador de veredicto y 10 reglas RV-01…RV-10
-
-### Épica 6 — Resultados y trazabilidad (FEAT-07)
-- `verification_result` es **inmutable** tras su creación.
-- Por cada regla: resultado individual, evidencias, conector consultado, timestamp.
-- Dashboard con tasa de éxito, tiempo medio y evolución temporal.
-
-### Épica 7 — Notificaciones y API pública (FEAT-08, FEAT-09)
-- API REST documentada con OpenAPI 3.x; cliente Angular generado automáticamente.
-- Rate limiting (ventana deslizante, Redis).
-- Notificaciones por canal configurable (extensible sin modificar el núcleo).
+Role hierarchy: `VIEWER < OPERATOR < MANAGER < ADMIN`.
 
 ---
 
-## 4. Política de agregación de veredictos
+## 3. Functional Epics
 
-| Condición | Veredicto global |
+### Epic 1 — Multi-tenancy and Security (FEAT-01, FEAT-02)
+- Fully isolated organizations (`organization_id` mandatory on all queries).
+- Stateless JWT authentication with refresh token in DB.
+- RBAC enforced at the HTTP adapter.
+- AES-256-GCM encryption of connector credentials.
+- GDPR and OWASP Top 10 (2021) compliance.
+
+### Epic 2 — Release Management (FEAT-03)
+- Lifecycle: `DRAFT → PENDING → IN_VERIFICATION → COMPLETED | REJECTED`.
+- Typed artifacts: `TASK`, `CODE`, `DOCUMENT`.
+- Reusable release templates per organization.
+
+### Epic 3 — Connectors (FEAT-04)
+- `IConnector` port with operations: `get_artifact`, `check_connectivity`, `list_artifacts`.
+- Reference connectors: generic task manager, generic code repository,
+  generic documentation system.
+- Configurable timeout per connector. Rules on `INACTIVE` connector → `NOT_EVALUATED`.
+
+### Epic 4 — Verification Profiles (FEAT-05)
+- Profile = set of rule instances (RV-01…RV-10) with level `MANDATORY | OPTIONAL`.
+- Default profile non-deletable; available in all organizations.
+- Profile assigned to project; release inherits from project (modifiable in `DRAFT`).
+- Immutable profile snapshot per execution (historical traceability).
+
+### Epic 5 — Verification Engine (FEAT-06)
+- Async execution: backend responds `202 Accepted`; frontend polls for status.
+- Rust engine runs in `engine/` as a separate microservice, communicates via HTTP.
+- Verdict aggregation policy (see section 4).
+- Custom rules via structured configuration file.
+- **Current status:** Implemented — `engine/src/` with parallel evaluator (Rayon), verdict aggregator, and 10 rules RV-01…RV-10
+
+### Epic 6 — Results and Traceability (FEAT-07)
+- `verification_result` is **immutable** after creation.
+- Per rule: individual result, evidence, queried connector, timestamp.
+- Dashboard with success rate, average time, and temporal evolution.
+
+### Epic 7 — Notifications and Public API (FEAT-08, FEAT-09)
+- REST API documented with OpenAPI 3.x; Angular client auto-generated.
+- Rate limiting (sliding window, Redis).
+- Notifications via configurable channel (extensible without modifying the core).
+
+---
+
+## 4. Verdict Aggregation Policy
+
+| Condition | Global Verdict |
 |---|---|
-| Alguna regla `OBLIGATORIA` → `ERROR` | `NO_VÁLIDA` |
-| Todas las `OBLIGATORIA` → `OK` y alguna `OPCIONAL` → `WARNING` | `CON_ADVERTENCIAS` |
-| Todas las reglas activas → `OK` | `VÁLIDA` |
+| Any `MANDATORY` rule → `ERROR` | `INVALID` |
+| All `MANDATORY` → `OK` and any `OPTIONAL` → `WARNING` | `WITH_WARNINGS` |
+| All active rules → `OK` | `VALID` |
 
-Si existe al menos una regla `NO_EVALUADA`, se añade el sufijo `_CON_INCIDENCIAS`
-como indicador secundario.
+If at least one `NOT_EVALUATED` rule exists, the `_WITH_INCIDENTS` suffix is appended
+as a secondary indicator.
 
 ---
 
-## 5. Catálogo de reglas de verificación (RV-01 a RV-10)
+## 5. Verification Rule Catalog (RV-01 to RV-10)
 
-| ID | Nombre | Severidad por defecto | Conector requerido |
+| ID | Name | Default Severity | Required Connector |
 |---|---|---|---|
-| RV-01 | Existencia de artefactos | ERROR | Cualquier conector activo |
-| RV-02 | Estado de tareas | ERROR | Gestor de tareas |
-| RV-03 | Cobertura documental | ERROR | Conector documental |
-| RV-04 | Coherencia de versión | ERROR | Todos los conectores activos |
-| RV-05 | Ausencia de elementos bloqueantes | ERROR | Gestor de tareas |
-| RV-06 | Completitud de metadatos | WARNING | Cualquier conector activo |
-| RV-07 | Trazabilidad bidireccional | WARNING | Gestor de tareas |
-| RV-08 | Antigüedad de artefactos | WARNING | Cualquier conector activo |
-| RV-09 | Unicidad de referencia externa | ERROR | Cualquier conector activo |
-| RV-10 | Regla personalizable (JSONPath/JMESPath) | Configurable | Configurable |
+| RV-01 | Artifact existence | ERROR | Any active connector |
+| RV-02 | Task states | ERROR | Task manager |
+| RV-03 | Documentation coverage | ERROR | Documentation connector |
+| RV-04 | Version coherence | ERROR | All active connectors |
+| RV-05 | Absence of blocking items | ERROR | Task manager |
+| RV-06 | Metadata completeness | WARNING | Any active connector |
+| RV-07 | Bidirectional traceability | WARNING | Task manager |
+| RV-08 | Artifact age | WARNING | Any active connector |
+| RV-09 | External reference uniqueness | ERROR | Any active connector |
+| RV-10 | Customizable rule (JSONPath/JMESPath) | Configurable | Configurable |
 
-Nuevas reglas pueden añadirse sin modificar el motor (RNF-33).
+New rules can be added without modifying the engine (NFR-33).
 
 ---
 
-## 6. Requisitos no funcionales clave
+## 6. Key Non-Functional Requirements
 
-| ID | Requisito |
+| ID | Requirement |
 |---|---|
-| RNF-01 | Interfaz de usuario usable sin formación específica. |
-| RNF-03 | API documentada con OpenAPI; cliente generado automáticamente. |
-| RNF-04 | Autenticación JWT + RBAC + rate limiting. |
-| RNF-05 | Cumplimiento RGPD; cifrado AES-256-GCM de credenciales. |
-| RNF-06 | Tiempo de verificación < 5 s para perfiles estándar (10 reglas, 3 conectores). |
-| RNF-07 | Fiabilidad: el motor no debe producir falsos negativos en reglas deterministas. |
-| RNF-08 | Despliegue reproducible con Docker Compose. |
-| RNF-33 | Extensibilidad de reglas sin modificar el motor. |
-| RNF-35 | Trazabilidad completa por verificación (fuente, recurso, resultado, timestamp). |
-| RNF-36 | Snapshot inmutable del perfil y artefactos por verificación. |
-| RNF-38 | Cumplimiento RGPD en almacenamiento y acceso a datos personales. |
-| RNF-39 | Mitigación de riesgos OWASP Top 10 (2021). |
-| RNF-40 | API REST legible por máquina (OpenAPI 3.x). |
+| NFR-01 | Usable user interface without specific training. |
+| NFR-03 | API documented with OpenAPI; auto-generated client. |
+| NFR-04 | JWT authentication + RBAC + rate limiting. |
+| NFR-05 | GDPR compliance; AES-256-GCM credential encryption. |
+| NFR-06 | Verification time < 5 s for standard profiles (10 rules, 3 connectors). |
+| NFR-07 | Reliability: engine must not produce false negatives in deterministic rules. |
+| NFR-08 | Reproducible deployment with Docker Compose. |
+| NFR-33 | Rule extensibility without modifying the engine. |
+| NFR-35 | Complete traceability per verification (source, resource, result, timestamp). |
+| NFR-36 | Immutable snapshot of profile and artifacts per verification. |
+| NFR-38 | GDPR compliance in storage and access to personal data. |
+| NFR-39 | OWASP Top 10 (2021) risk mitigation. |
+| NFR-40 | Machine-readable REST API (OpenAPI 3.x). |
 
 ---
 
-## 7. Casos de uso principales
+## 7. Main Use Cases
 
-| ID | Nombre | Actor principal |
+| ID | Name | Primary Actor |
 |---|---|---|
-| CU-01 | Autenticación en el sistema | U1–U5 |
-| CU-02 | Ciclo de vida completo de una release | U2–U3 |
+| UC-01 | System authentication | U1–U5 |
+| UC-02 | Full release lifecycle | U2–U3 |
 
-El detalle expandido (precondiciones, flujo principal, alternativas, postcondiciones)
-se encuentra en la sección 4.8 del SRS.
-
----
-
-## 8. Estándares y normativa aplicable
-
-- **IEEE 830:1998** — Especificación de Requisitos del Software.
-- **UNE 157801:2007** — Proyectos de Sistemas de Información.
-- **ISO/IEC 25010:2011** — Modelo de calidad del software (base de los RNF).
-- **OpenAPI Specification 3.x** — Contrato de la API REST.
-- **RGPD (UE) 2016/679** — Tratamiento de datos personales.
-- **OWASP Top 10 (2021)** — Seguridad en aplicaciones web.
+The expanded detail (preconditions, main flow, alternatives, postconditions)
+can be found in section 4.8 of the SRS.
 
 ---
 
-## 9. Estado de implementación
+## 8. Applicable Standards and Regulations
 
-| Componente | Estado | Notas |
+- **IEEE 830:1998** — Software Requirements Specification.
+- **UNE 157801:2007** — Information Systems Projects.
+- **ISO/IEC 25010:2011** — Software quality model (basis for NFRs).
+- **OpenAPI Specification 3.x** — REST API contract.
+- **GDPR (EU) 2016/679** — Personal data processing.
+- **OWASP Top 10 (2021)** — Web application security.
+
+---
+
+## 9. Implementation Status
+
+| Component | Status | Notes |
 |---|---|---|
-| Backend FastAPI | Implementado | `api/src/` — dominio, aplicación, infraestructura completos |
-| Worker Celery | Implementado | `api/src/infrastructure/workers/verification_worker.py` — worker real |
-| Motor Rust | Implementado | `engine/src/` — evaluador, agregador, 10 reglas (RV-01…RV-10), evaluación paralela con Rayon |
-| Frontend Angular | Parcial | `web/` — contenido parcial en desarrollo |
-| Paquetes compartidos | Pendiente | `packages/` — directorio creado, vacío |
-| Tests unitarios | Implementado | `tests/unit/` — cobertura domain, application, infrastructure |
-| Tests integración | Pendiente | `tests/integration/` — vacío |
-| Tests e2e | Pendiente | `tests/e2e/` — vacío |
-| Tests rendimiento | Pendiente | `tests/performance/` — vacío |
-| Tests seguridad | Pendiente | `tests/security/` — vacío |
+| FastAPI Backend | Implemented | `api/src/` — domain, application, infrastructure complete |
+| Celery Worker | Implemented | `api/src/infrastructure/workers/verification_worker.py` — real worker |
+| Rust Engine | Implemented | `engine/src/` — evaluator, aggregator, 10 rules (RV-01…RV-10), parallel evaluation with Rayon |
+| Angular Frontend | Partial | `web/` — partial content in development |
+| Shared Packages | Pending | `packages/` — directory created, empty |
+| Unit Tests | Implemented | `tests/unit/` — domain, application, infrastructure coverage |
+| Integration Tests | Pending | `tests/integration/` — empty |
+| E2E Tests | Pending | `tests/e2e/` — empty |
+| Performance Tests | Pending | `tests/performance/` — empty |
+| Security Tests | Pending | `tests/security/` — empty |
 
-**Routers conectados (14 total):**
+**Connected Routers (14 total):**
 - auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin
 
-**Endpoints por router:** 65+ endpoints implementados
+**Endpoints per router:** 65+ endpoints implemented
 
 ---
 
-*Última actualización: mayo 2026 — Adrián Martínez Fuentes (UO295454)*
+*Last updated: May 2026 — Adrian Martinez Fuentes (UO295454)*

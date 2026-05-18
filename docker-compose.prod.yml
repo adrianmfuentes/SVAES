@@ -1,11 +1,14 @@
 # ── PROD overrides ────────────────────────────────────────────────────────────
 # Run with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #
-# Requires these env vars set on the host (or in a secrets manager):
-#   DATABASE_URL, JWT_SECRET_KEY, ENCRYPTION_KEY
+# Required host env vars (never store in .env for production):
+#   POSTGRES_USER, POSTGRES_PASSWORD (strong, randomly generated)
+#   REDIS_PASSWORD (randomly generated, e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"`)
+#   JWT_SECRET_KEY, ENCRYPTION_KEY, ENGINE_API_KEY
+#   DATABASE_URL (full connection URL)
+#   ALLOWED_ORIGINS (production domain, e.g. https://app.yourdomain.com)
 #
-# Generate ENCRYPTION_KEY with:
-#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# For Docker Secrets, mount secrets into containers and read from /run/secrets/<name>
 
 services:
   api:
@@ -17,11 +20,39 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_EXPIRE_MINUTES: "60"
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ENVIRONMENT: production
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
+      ENGINE_API_KEY: ${ENGINE_API_KEY}
+
+  celery-worker:
+    restart: always
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ENVIRONMENT: production
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
+      ENGINE_API_KEY: ${ENGINE_API_KEY}
 
   postgres:
     restart: always
+    # No port exposure in production — accessible only via svaes-network
+    ports: []
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
+
+  redis:
+    restart: always
+
+  engine:
+    restart: always
+    # No port exposure in production — accessible only via svaes-network
+    ports: []
 
 volumes:
   postgres_prod_data:

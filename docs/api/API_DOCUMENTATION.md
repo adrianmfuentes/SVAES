@@ -1,21 +1,21 @@
-# Documentación de la API Backend de SVAES
+# SVAES Backend API Documentation
 
-## Tabla de Contenidos
-1. [Arquitectura](#arquitectura)
-2. [Entidades de Dominio](#entidades-de-dominio)
+## Table of Contents
+1. [Architecture](#architecture)
+2. [Domain Entities](#domain-entities)
 3. [Enums](#enums)
-4. [Modelos de Base de Datos](#modelos-de-base-de-datos)
-5. [Endpoints de la API por Router](#endpoints-de-la-api-por-router)
-6. [Autenticación y Autorización](#autenticación-y-autorización)
+4. [Database Models](#database-models)
+5. [API Endpoints by Router](#api-endpoints-by-router)
+6. [Authentication and Authorization](#authentication-and-authorization)
 7. [Multi-Tenancy](#multi-tenancy)
 8. [Rate Limiting](#rate-limiting)
 9. [Audit Logging](#audit-logging)
 
 ---
 
-## 1. Arquitectura
+## 1. Architecture
 
-### Arquitectura Hexagonal (Ports & Adapters)
+### Hexagonal Architecture (Ports & Adapters)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -46,7 +46,7 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Estructura de Directorios
+### Directory Structure
 
 ```
 api/src/
@@ -82,7 +82,7 @@ api/src/
 
 ---
 
-## 2. Entidades de Dominio
+## 2. Domain Entities
 
 ### User
 ```python
@@ -99,7 +99,7 @@ updated_at: datetime
 organization_ids: List[UUID] = []  # User can belong to multiple organizations
 ```
 
-### UserMembership (Tabla Intermedia N:M)
+### UserMembership (N:M Intermediate Table)
 ```python
 id: UUID
 user_id: UUID (FK → user.id)
@@ -235,7 +235,7 @@ created_at: datetime
 updated_at: datetime
 ```
 
-### Relaciones entre Entidades
+### Entity Relationships
 
 ```
 Organization (1) ─────< UserMembership >───── User
@@ -254,7 +254,7 @@ Organization (1) ─────< UserMembership >───── User
      │         │
      │         └────< VerificationRule
      │
-     ├────< APIKey (pertenece a User, scoped a Organization)
+     ├────< APIKey (belongs to User, scoped to Organization)
      │
      └────< CustomRole
 ```
@@ -374,9 +374,9 @@ REVOKED = "REVOKED"
 
 ---
 
-## 4. Modelos de Base de Datos
+## 4. Database Models
 
-### Tabla: user
+### Table: user
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -390,7 +390,7 @@ REVOKED = "REVOKED"
 | created_at | TIMESTAMP | NOT NULL |
 | updated_at | TIMESTAMP | NOT NULL |
 
-### Tabla: user_membership (Tabla Intermedia N:M)
+### Table: user_membership (N:M Intermediate Table)
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -401,7 +401,7 @@ REVOKED = "REVOKED"
 
 **Unique constraint:** (user_id, organization_id)
 
-### Tabla: organization
+### Table: organization
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -413,7 +413,7 @@ REVOKED = "REVOKED"
 | created_at | TIMESTAMP | NOT NULL |
 | updated_at | TIMESTAMP | NOT NULL |
 
-### Tabla: project
+### Table: project
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -425,7 +425,7 @@ REVOKED = "REVOKED"
 | created_at | TIMESTAMP | NOT NULL |
 | updated_at | TIMESTAMP | NOT NULL |
 
-### Tabla: release
+### Table: release
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -440,7 +440,7 @@ REVOKED = "REVOKED"
 | updated_at | TIMESTAMP | NOT NULL |
 | **UNIQUE** | (project_id, version) | uq_release_project_version |
 
-### Tabla: connector_instance
+### Table: connector_instance
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -454,7 +454,7 @@ REVOKED = "REVOKED"
 | updated_at | TIMESTAMP | NOT NULL |
 | last_tested_at | TIMESTAMP | NULLABLE |
 
-### Tabla: verification_profile
+### Table: verification_profile
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -465,9 +465,9 @@ REVOKED = "REVOKED"
 | created_at | TIMESTAMP | NOT NULL |
 | updated_at | TIMESTAMP | NOT NULL |
 
-**Nota:** Las reglas de verificación se relacionan con el perfil mediante la tabla `verification_rule` (relación 1:N), siguiendo el diseño relacional del TFG. No se almacenan como columna JSON en `verification_profile`.
+**Note:** Verification rules relate to the profile through the `verification_rule` table (1:N relationship), following the TFG's relational design. They are not stored as a JSON column in `verification_profile`.
 
-### Tabla: verification_rule
+### Table: verification_rule
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -480,7 +480,7 @@ REVOKED = "REVOKED"
 | is_active | BOOLEAN | NOT NULL, default=True |
 | created_at | TIMESTAMP | NOT NULL |
 
-### Tabla: verification_result
+### Table: verification_result
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -492,9 +492,9 @@ REVOKED = "REVOKED"
 | profile_snapshot | JSONB | NULLABLE, default=dict |
 | executed_at | TIMESTAMP | NOT NULL |
 
-**Nota:** Se utiliza el tipo `JSONB` nativo de PostgreSQL en lugar de `JSON` para permitir índices GIN y búsquedas eficientes sobre contenido dinámico, en línea con la decisión arquitectónica del TFG.
+**Note:** PostgreSQL's native `JSONB` type is used instead of `JSON` to enable GIN indexes and efficient searches over dynamic content, in line with the TFG's architectural decision.
 
-### Tabla: artifact
+### Table: artifact
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -506,7 +506,7 @@ REVOKED = "REVOKED"
 | metadata | JSONB | NULLABLE, default=dict |
 | created_at | TIMESTAMP | NOT NULL |
 
-### Tabla: api_key
+### Table: api_key
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -520,7 +520,7 @@ REVOKED = "REVOKED"
 | created_at | TIMESTAMP | NOT NULL |
 | last_used_at | TIMESTAMP | NULLABLE |
 
-### Tabla: custom_role
+### Table: custom_role
 | Column | Type | Constraints |
 |--------|------|-------------|
 | id | UUID | PK, default=uuid4 |
@@ -533,14 +533,14 @@ REVOKED = "REVOKED"
 
 ---
 
-## 5. Endpoints de la API por Router
+## 5. API Endpoints by Router
 
 ### 5.1 Auth Router (`/api/v1/auth`)
 
-| Método | Ruta | Descripción | Auth |
+| Method | Route | Description | Auth |
 |--------|------|-------------|------|
-| POST | `/api/v1/auth/login` | Autenticar usuario con email/password | No (Rate: 30/min) |
-| POST | `/api/v1/auth/refresh` | Refrescar access token | No (Rate: 30/min) |
+| POST | `/api/v1/auth/login` | Authenticate user with email/password | No (Rate: 30/min) |
+| POST | `/api/v1/auth/refresh` | Refresh access token | No (Rate: 30/min) |
 
 **Login Request:**
 ```json
@@ -565,20 +565,20 @@ REVOKED = "REVOKED"
 
 ### 5.2 Users Router (`/api/v1/users`, `/api/v1/organizations/{org_id}/users`)
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| GET | `/api/v1/users/me` | Obtener perfil del usuario actual | Sí |
-| PATCH | `/api/v1/users/me` | Actualizar nombre del usuario actual | Sí |
-| POST | `/api/v1/users/me/password` | Cambiar contraseña del usuario actual | Sí |
-| GET | `/api/v1/organizations/{org_id}/users` | Listar usuarios de la organización | MANAGE_ROLES |
-| POST | `/api/v1/organizations/{org_id}/users/invite` | Invitar usuario a la organización | INVITE_USERS |
-| PATCH | `/api/v1/organizations/{org_id}/users/{user_id}/role` | Actualizar rol del usuario en la org | MANAGE_ROLES |
-| DELETE | `/api/v1/organizations/{org_id}/users/{user_id}` | Remover usuario de la organización | MANAGE_ROLES |
-| POST | `/api/v1/admin/users` | Crear usuario globalmente (solo U3) | U3 |
-| GET | `/api/v1/admin/users` | Listar todos los usuarios con filtros (solo U3) | U3 |
-| PATCH | `/api/v1/admin/users/{user_id}/activate` | Activar cuenta de usuario (solo U3) | U3 |
-| PATCH | `/api/v1/admin/users/{user_id}/deactivate` | Desactivar cuenta de usuario (solo U3) | U3 |
-| PATCH | `/api/v1/admin/users/{user_id}/role` | Actualizar rol global del usuario (solo U3) | U3 |
+| GET | `/api/v1/users/me` | Get current user profile | Yes |
+| PATCH | `/api/v1/users/me` | Update current user display name | Yes |
+| POST | `/api/v1/users/me/password` | Change current user password | Yes |
+| GET | `/api/v1/organizations/{org_id}/users` | List organization users | MANAGE_ROLES |
+| POST | `/api/v1/organizations/{org_id}/users/invite` | Invite user to organization | INVITE_USERS |
+| PATCH | `/api/v1/organizations/{org_id}/users/{user_id}/role` | Update user role in org | MANAGE_ROLES |
+| DELETE | `/api/v1/organizations/{org_id}/users/{user_id}` | Remove user from organization | MANAGE_ROLES |
+| POST | `/api/v1/admin/users` | Create user globally (U3 only) | U3 |
+| GET | `/api/v1/admin/users` | List all users with filters (U3 only) | U3 |
+| PATCH | `/api/v1/admin/users/{user_id}/activate` | Activate user account (U3 only) | U3 |
+| PATCH | `/api/v1/admin/users/{user_id}/deactivate` | Deactivate user account (U3 only) | U3 |
+| PATCH | `/api/v1/admin/users/{user_id}/role` | Update user global role (U3 only) | U3 |
 
 **UserUpdateRequest:**
 ```json
@@ -599,7 +599,7 @@ REVOKED = "REVOKED"
 **UserInviteRequest:**
 ```json
 {
-  "email": "string (1-255 chars, formato email)",
+  "email": "string (1-255 chars, email format)",
   "role": "U1|U2|U4"
 }
 ```
@@ -614,7 +614,7 @@ REVOKED = "REVOKED"
 **AdminCreateUserRequest:**
 ```json
 {
-  "email": "string (1-255 chars, formato email)",
+  "email": "string (1-255 chars, email format)",
   "password": "string (8-255 chars)",
   "display_name": "string (1-100 chars)",
   "role": "U1|U2|U3|U4"
@@ -625,18 +625,18 @@ REVOKED = "REVOKED"
 
 ### 5.3 Organizations Router (`/api/v1/organizations`)
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| GET | `/api/v1/organizations` | Listar todas las organizaciones | U3 |
-| POST | `/api/v1/organizations` | Crear nueva organización | U3 |
-| GET | `/api/v1/organizations/{org_id}` | Obtener detalles de una organización | Acceso a la org |
-| GET | `/api/v1/projects` | Listar proyectos accesibles (global, filtrado por acceso del usuario) | Sí |
-| POST | `/api/v1/organizations/{org_id}/projects` | Crear proyecto en la organización | CREATE_PROJECT |
-| POST | `/api/v1/organizations/{org_id}/projects/{project_id}/archive` | Archivar proyecto | ARCHIVE_PROJECT |
-| POST | `/api/v1/organizations/{org_id}/transfer-ownership` | Transferir propiedad de la org | TRANSFER_OWNERSHIP |
-| POST | `/api/v1/organizations/{org_id}/restore` | Restaurar (desarchivar) organización | U3 |
+| GET | `/api/v1/organizations` | List all organizations | U3 |
+| POST | `/api/v1/organizations` | Create new organization | U3 |
+| GET | `/api/v1/organizations/{org_id}` | Get organization details | Org access |
+| GET | `/api/v1/projects` | List accessible projects (global, filtered by user access) | Yes |
+| POST | `/api/v1/organizations/{org_id}/projects` | Create project in organization | CREATE_PROJECT |
+| POST | `/api/v1/organizations/{org_id}/projects/{project_id}/archive` | Archive project | ARCHIVE_PROJECT |
+| POST | `/api/v1/organizations/{org_id}/transfer-ownership` | Transfer org ownership | TRANSFER_OWNERSHIP |
+| POST | `/api/v1/organizations/{org_id}/restore` | Restore (unarchive) organization | U3 |
 
-**Nota:** Los proyectos archivados pasan a modo solo lectura (sus releases también).
+**Note:** Archived projects become read-only (their releases too).
 
 **OrganizationCreateRequest:**
 ```json
@@ -662,24 +662,24 @@ REVOKED = "REVOKED"
 ```
 
 **Query Parameters (GET `/api/v1/projects`):**
-| Parámetro | Tipo | Default | Descripción |
+| Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `page` | integer | 1 | Número de página (GR2.2) |
-| `size` | integer | 25 | Elementos por página, máx 100 (GR2.2) |
-| `status` | string | --- | Filtrar por estado (ACTIVO, ARCHIVADO) |
-| `search` | string | --- | Búsqueda por nombre |
-| `org_id` | uuid | --- | Filtrar por organización
+| `page` | integer | 1 | Page number (GR2.2) |
+| `size` | integer | 25 | Items per page, max 100 (GR2.2) |
+| `status` | string | --- | Filter by status (ACTIVO, ARCHIVADO) |
+| `search` | string | --- | Search by name |
+| `org_id` | uuid | --- | Filter by organization |
 
 ---
 
 ### 5.4 Projects Router (`/api/v1/projects/{project_id}`)
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| GET | `/api/v1/projects/{project_id}` | Obtener detalles del proyecto | VIEW_ORG_PROJECTS |
-| PATCH | `/api/v1/projects/{project_id}` | Actualizar proyecto | UPDATE_PROJECT |
+| GET | `/api/v1/projects/{project_id}` | Get project details | VIEW_ORG_PROJECTS |
+| PATCH | `/api/v1/projects/{project_id}` | Update project | UPDATE_PROJECT |
 
-**Nota:** El borrado físico de proyectos no está permitido. Se debe usar el endpoint de archivado.
+**Note:** Physical deletion of projects is not allowed. Use the archive endpoint instead.
 
 **ProjectCreateRequest:**
 ```json
@@ -703,26 +703,26 @@ REVOKED = "REVOKED"
 
 ### 5.5 Releases Router (`/api/v1/projects/{project_id}/releases`, `/api/v1/releases/{release_id}`)
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| POST | `/api/v1/projects/{project_id}/releases` | Crear release en el proyecto | CREATE_RELEASE |
-| GET | `/api/v1/projects/{project_id}/releases` | Listar releases del proyecto | VIEW_ORG_PROJECTS |
-| GET | `/api/v1/releases/{release_id}` | Obtener detalles de la release | VIEW_ORG_PROJECTS |
-| PATCH | `/api/v1/releases/{release_id}` | Actualizar release | UPDATE_OWN_RELEASES |
-| DELETE | `/api/v1/releases/{release_id}` | Eliminar release (Solo en estado BORRADOR o PENDIENTE y sin verificaciones) | UPDATE_OWN_RELEASES |
-| POST | `/api/v1/releases/{release_id}/archive` | Archivar release | ARCHIVE_RELEASE |
-| POST | `/api/v1/releases/{release_id}/restore` | Restaurar release archivada | U3 (reservado) |
-| GET | `/api/v1/releases/{release_id}/artifacts` | Listar artefactos de la release | VIEW_ORG_PROJECTS |
-| POST | `/api/v1/releases/{release_id}/artifacts` | Agregar artefacto a la release | UPDATE_OWN_RELEASES |
-| DELETE | `/api/v1/releases/{release_id}/artifacts/{artifact_id}` | Eliminar artefacto | UPDATE_OWN_RELEASES |
-| POST | `/api/v1/releases/{release_id}/artifacts/import` | Importar artefactos (JSON array) | UPDATE_OWN_RELEASES |
-| POST | `/api/v1/releases/{release_id}/verify` | Lanzar verificación (async) | EXECUTE_VERIFICATION |
-| GET | `/api/v1/releases/{release_id}/results` | Obtener historial de verificaciones | VIEW_OWN_HISTORY |
-| GET | `/api/v1/releases/{release_id}/results/{result_id}` | Obtener detalle de una verificación | VIEW_OWN_HISTORY |
-| GET | `/api/v1/releases/{release_id}/results/{result_id}/export?format=pdf` | Exportar verificación a PDF | VIEW_OWN_HISTORY |
-| GET | `/api/v1/projects/{project_id}/results/export?format=csv` | Exportar historial de proyecto a CSV | VIEW_ORG_PROJECTS |
+| POST | `/api/v1/projects/{project_id}/releases` | Create release in project | CREATE_RELEASE |
+| GET | `/api/v1/projects/{project_id}/releases` | List project releases | VIEW_ORG_PROJECTS |
+| GET | `/api/v1/releases/{release_id}` | Get release details | VIEW_ORG_PROJECTS |
+| PATCH | `/api/v1/releases/{release_id}` | Update release | UPDATE_OWN_RELEASES |
+| DELETE | `/api/v1/releases/{release_id}` | Delete release (Only in BORRADOR or PENDIENTE status and without verifications) | UPDATE_OWN_RELEASES |
+| POST | `/api/v1/releases/{release_id}/archive` | Archive release | ARCHIVE_RELEASE |
+| POST | `/api/v1/releases/{release_id}/restore` | Restore archived release | U3 (reserved) |
+| GET | `/api/v1/releases/{release_id}/artifacts` | List release artifacts | VIEW_ORG_PROJECTS |
+| POST | `/api/v1/releases/{release_id}/artifacts` | Add artifact to release | UPDATE_OWN_RELEASES |
+| DELETE | `/api/v1/releases/{release_id}/artifacts/{artifact_id}` | Delete artifact | UPDATE_OWN_RELEASES |
+| POST | `/api/v1/releases/{release_id}/artifacts/import` | Import artifacts (JSON array) | UPDATE_OWN_RELEASES |
+| POST | `/api/v1/releases/{release_id}/verify` | Launch verification (async) | EXECUTE_VERIFICATION |
+| GET | `/api/v1/releases/{release_id}/results` | Get verification history | VIEW_OWN_HISTORY |
+| GET | `/api/v1/releases/{release_id}/results/{result_id}` | Get verification detail | VIEW_OWN_HISTORY |
+| GET | `/api/v1/releases/{release_id}/results/{result_id}/export?format=pdf` | Export verification to PDF | VIEW_OWN_HISTORY |
+| GET | `/api/v1/projects/{project_id}/results/export?format=csv` | Export project history to CSV | VIEW_ORG_PROJECTS |
 
-**State Machine de Release:**
+**Release State Machine:**
 ```
 BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
                            ↓                ↓
@@ -754,7 +754,7 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 ```json
 {
   "connector_instance_id": "uuid",
-  "connector_implementation": "string (50 chars, ej: JIRA, GITLAB)",
+  "connector_implementation": "string (50 chars, e.g.: JIRA, GITLAB)",
   "artifact_type": "TAREA|CODIGO|DOCUMENTO",
   "external_ref": "string (max 500 chars)",
   "metadata": "object|null"
@@ -767,7 +767,7 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
   "artifacts": [
     {
       "connector_id": "uuid",
-      "connector_implementation": "string (ej: JIRA, GITLAB, CONFLUENCE)",
+      "connector_implementation": "string (e.g.: JIRA, GITLAB, CONFLUENCE)",
       "type": "TAREA|CODIGO|DOCUMENTO",
       "external_ref": "string (max 500 chars)",
       "description": "string|null"
@@ -777,40 +777,40 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 ```
 
 **Query Parameters (GET `/api/v1/projects/{project_id}/releases`):**
-| Parámetro | Tipo | Default | Descripción |
+| Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `page` | integer | 1 | Número de página (GR2.2) |
-| `size` | integer | 25 | Elementos por página, máx 100 (GR2.2) |
-| `status` | string | --- | Filtrar por estado de release (GR2.4) |
-| `search` | string | --- | Búsqueda por nombre o versión |
-| `sort_by` | string | `created_at` | Campo de ordenación |
-| `sort_order` | string | `desc` | Dirección de ordenación (`asc`, `desc`) |
+| `page` | integer | 1 | Page number (GR2.2) |
+| `size` | integer | 25 | Items per page, max 100 (GR2.2) |
+| `status` | string | --- | Filter by release status (GR2.4) |
+| `search` | string | --- | Search by name or version |
+| `sort_by` | string | `created_at` | Sort field |
+| `sort_order` | string | `desc` | Sort direction (`asc`, `desc`) |
 
 **Query Parameters (GET `/api/v1/releases/{release_id}/results`):**
-| Parámetro | Tipo | Default | Descripción |
+| Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `page` | integer | 1 | Número de página (RH3.3) |
-| `size` | integer | 25 | Elementos por página, máx 100 (RH3.3) |
-| `verdict` | string | --- | Filtrar por veredicto (VALID, VALID_WITH_WARNINGS, INVALID) |
-| `from_date` | datetime | --- | Resultados desde fecha (ISO 8601) |
-| `to_date` | datetime | --- | Resultados hasta fecha (ISO 8601) |
+| `page` | integer | 1 | Page number (RH3.3) |
+| `size` | integer | 25 | Items per page, max 100 (RH3.3) |
+| `verdict` | string | --- | Filter by verdict (VALID, VALID_WITH_WARNINGS, INVALID) |
+| `from_date` | datetime | --- | Results from date (ISO 8601) |
+| `to_date` | datetime | --- | Results to date (ISO 8601) |
 
 ---
 
 ### 5.6 Connectors Router (`/api/v1/organizations/{org_id}/connectors`)
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| GET | `/api/v1/connectors/types` | Listar todos los tipos e implementaciones de conectores | Sí |
-| GET | `/api/v1/organizations/{org_id}/connectors` | Listar conectores de la organización | Acceso a la org |
-| POST | `/api/v1/organizations/{org_id}/connectors` | Registrar nuevo conector | MANAGE_CONNECTORS |
-| PATCH | `/api/v1/organizations/{org_id}/connectors/{connector_id}` | Actualizar configuración del conector | MANAGE_CONNECTORS |
-| DELETE | `/api/v1/organizations/{org_id}/connectors/{connector_id}` | Eliminar conector | MANAGE_CONNECTORS |
-| POST | `/api/v1/organizations/{org_id}/connectors/{connector_id}/test` | Probar conexión del conector | MANAGE_CONNECTORS |
+| GET | `/api/v1/connectors/types` | List all connector types and implementations | Yes |
+| GET | `/api/v1/organizations/{org_id}/connectors` | List organization connectors | Org access |
+| POST | `/api/v1/organizations/{org_id}/connectors` | Register new connector | MANAGE_CONNECTORS |
+| PATCH | `/api/v1/organizations/{org_id}/connectors/{connector_id}` | Update connector configuration | MANAGE_CONNECTORS |
+| DELETE | `/api/v1/organizations/{org_id}/connectors/{connector_id}` | Delete connector | MANAGE_CONNECTORS |
+| POST | `/api/v1/organizations/{org_id}/connectors/{connector_id}/test` | Test connector connection | MANAGE_CONNECTORS |
 
-**Tipos e Implementaciones de Conectores (20 total):**
+**Connector Types and Implementations (20 total):**
 
-| Tipo | Implementaciones |
+| Type | Implementations |
 |------|-----------------|
 | GESTOR_TAREAS | JIRA, LINEAR, TRELLO, ASANA, CLICKUP, TAIGA, PLANE |
 | REPO_CODIGO | GITLAB, GITHUB, BITBUCKET, GITEA |
@@ -824,7 +824,7 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
   "connector_type": "GESTOR_TAREAS|REPO_CODIGO|SISTEMA_DOCUMENTAL|HERRAMIENTA_PLANIFICACION|GESTION_CAMBIOS",
   "connector_implementation": "JIRA|LINEAR|TRELLO|ASANA|CLICKUP|TAIGA|PLANE|GITLAB|GITHUB|BITBUCKET|GITEA|CONFLUENCE|NOTION|WIKIJS|BOOKSTACK|MIRO|JIRA_SM|GLPI|ZAMMAD|REDMINE",
   "name": "string (1-100 chars)",
-  "credentials": "object (depende del tipo de conector)"
+  "credentials": "object (depends on connector type)"
 }
 ```
 
@@ -849,15 +849,15 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 ### 5.7 Profiles Router (`/api/v1/profiles`, `/api/v1/organizations/{org_id}/profiles`, `/api/v1/rules`)
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| GET | `/api/v1/organizations/{org_id}/profiles` | Listar perfiles de la organización | Acceso a la org |
-| POST | `/api/v1/organizations/{org_id}/profiles` | Crear perfil de verificación | Acceso a la org |
-| PATCH | `/api/v1/profiles/{profile_id}` | Actualizar perfil | MANAGE_PROFILES |
-| DELETE | `/api/v1/profiles/{profile_id}` | Eliminar perfil | MANAGE_PROFILES |
-| POST | `/api/v1/profiles/{profile_id}/rules` | Agregar regla al perfil | MANAGE_RULES |
-| PATCH | `/api/v1/rules/{rule_id}` | Actualizar regla | MANAGE_RULES |
-| DELETE | `/api/v1/rules/{rule_id}` | Eliminar regla | MANAGE_RULES |
+| GET | `/api/v1/organizations/{org_id}/profiles` | List organization profiles | Org access |
+| POST | `/api/v1/organizations/{org_id}/profiles` | Create verification profile | Org access |
+| PATCH | `/api/v1/profiles/{profile_id}` | Update profile | MANAGE_PROFILES |
+| DELETE | `/api/v1/profiles/{profile_id}` | Delete profile | MANAGE_PROFILES |
+| POST | `/api/v1/profiles/{profile_id}/rules` | Add rule to profile | MANAGE_RULES |
+| PATCH | `/api/v1/rules/{rule_id}` | Update rule | MANAGE_RULES |
+| DELETE | `/api/v1/rules/{rule_id}` | Delete rule | MANAGE_RULES |
 
 **ProfileCreateRequest:**
 ```json
@@ -880,9 +880,9 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 **RuleCreateRequest:**
 ```json
 {
-  "rule_template": "string (RV-01 a RV-10, max 100 chars)",
+  "rule_template": "string (RV-01 to RV-10, max 100 chars)",
   "severity": "INFO|LOW|MEDIUM|HIGH|CRITICAL (default: HIGH)",
-  "params": "object|null (JSONB, depende de la plantilla)",
+  "params": "object|null (JSONB, depends on template)",
   "connector_instance_id": "uuid|null",
   "display_order": "integer (default: 0)"
 }
@@ -903,16 +903,16 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 ### 5.8 Tasks Router (`/api/v1/tasks/{task_id}`)
 
-| Método | Ruta | Descripción | Auth |
+| Method | Route | Description | Auth |
 |--------|------|-------------|------|
-| GET | `/api/v1/tasks/{task_id}` | Obtener estado de tarea async | Sí |
+| GET | `/api/v1/tasks/{task_id}` | Get async task status | Yes |
 
 **TaskStatusResponse:**
 ```json
 {
   "task_id": "string",
   "status": "PENDING|STARTED|SUCCESS|FAILURE|RETRY|REVOKED",
-  "result": "string|null (contiene el resultado de la tarea si está completada)"
+  "result": "string|null (contains the task result if completed)"
 }
 ```
 
@@ -920,12 +920,12 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 ### 5.9 Custom Roles Router (`/api/v1/organizations/{org_id}/roles`, `/api/v1/roles/{role_id}`)
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| GET | `/api/v1/organizations/{org_id}/roles` | Listar roles personalizados de la org | MANAGE_ROLES |
-| POST | `/api/v1/organizations/{org_id}/roles` | Crear rol personalizado | MANAGE_ROLES |
-| PATCH | `/api/v1/roles/{role_id}` | Actualizar rol personalizado | MANAGE_ROLES |
-| DELETE | `/api/v1/roles/{role_id}` | Eliminar rol personalizado | MANAGE_ROLES |
+| GET | `/api/v1/organizations/{org_id}/roles` | List org custom roles | MANAGE_ROLES |
+| POST | `/api/v1/organizations/{org_id}/roles` | Create custom role | MANAGE_ROLES |
+| PATCH | `/api/v1/roles/{role_id}` | Update custom role | MANAGE_ROLES |
+| DELETE | `/api/v1/roles/{role_id}` | Delete custom role | MANAGE_ROLES |
 
 **CustomRoleCreateRequest:**
 ```json
@@ -961,12 +961,12 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 ### 5.10 Dashboard Router (`/api/v1/dashboard/metrics`)
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| GET | `/api/v1/dashboard/metrics?org_id={org_id}` | Obtener métricas del dashboard | Sí |
+| GET | `/api/v1/dashboard/metrics?org_id={org_id}` | Get dashboard metrics | Yes |
 
 **Query Parameters:**
-- `org_id` (opcional): Filtrar por ID de organización. Si no se proporciona, usa la organización del usuario.
+- `org_id` (optional): Filter by organization ID. If not provided, uses the user's organization.
 
 **DashboardMetricsResponse:**
 ```json
@@ -984,16 +984,16 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 ### 5.11 API Keys Router (`/api/v1/users/{user_id}/api-keys`)
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| POST | `/api/v1/users/{user_id}/api-keys` | Crear API key para el usuario | El propio usuario |
-| GET | `/api/v1/users/{user_id}/api-keys` | Listar API keys del usuario | El propio usuario |
-| DELETE | `/api/v1/users/{user_id}/api-keys/{key_id}` | Revocar API key | El propio usuario |
+| POST | `/api/v1/users/{user_id}/api-keys` | Create API key for user | Own user |
+| GET | `/api/v1/users/{user_id}/api-keys` | List user API keys | Own user |
+| DELETE | `/api/v1/users/{user_id}/api-keys/{key_id}` | Revoke API key | Own user |
 
-**Restricciones:**
-- Máximo 5 claves API activas por usuario (según requisito AC5 del SRS)
-- Las claves expiran opcionalmente (configurable en días)
-- Solo se muestra la clave completa en el momento de creación
+**Restrictions:**
+- Maximum 5 active API keys per user (per SRS requirement AC5)
+- Keys optionally expire (configurable in days)
+- Full key is only shown at creation time
 
 **CreateAPIKeyRequest:**
 ```json
@@ -1010,7 +1010,7 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
   "user_id": "string",
   "organization_id": "string",
   "name": "string",
-  "key": "string|null (solo se retorna al crear)",
+  "key": "string|null (only returned on creation)",
   "prefix": "string",
   "is_active": "boolean",
   "expires_at": "string|null (datetime ISO)",
@@ -1023,14 +1023,14 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 ### 5.12 Templates Router (`/api/v1/templates`) - PV4
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| POST | `/api/v1/templates` | Crear template de release | MANAGE_PROFILES |
-| GET | `/api/v1/templates` | Listar templates accesibles | Sí |
-| GET | `/api/v1/templates/{template_id}` | Obtener detalles del template | Sí |
-| PATCH | `/api/v1/templates/{template_id}` | Actualizar template | MANAGE_PROFILES |
-| POST | `/api/v1/templates/{template_id}/archive` | Archivar template | MANAGE_PROFILES |
-| POST | `/api/v1/templates/{template_id}/clone` | Clonar template a la org | MANAGE_PROFILES |
+| POST | `/api/v1/templates` | Create release template | MANAGE_PROFILES |
+| GET | `/api/v1/templates` | List accessible templates | Yes |
+| GET | `/api/v1/templates/{template_id}` | Get template details | Yes |
+| PATCH | `/api/v1/templates/{template_id}` | Update template | MANAGE_PROFILES |
+| POST | `/api/v1/templates/{template_id}/archive` | Archive template | MANAGE_PROFILES |
+| POST | `/api/v1/templates/{template_id}/clone` | Clone template to org | MANAGE_PROFILES |
 
 **TemplateCreateRequest:**
 ```json
@@ -1046,16 +1046,16 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 ### 5.13 Notifications Router (`/api/v1/notifications`) - NF1, NF3
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| GET | `/api/v1/notifications/channels` | Listar canales de notificación | Sí |
-| POST | `/api/v1/notifications/channels` | Configurar nuevo canal | MANAGE_PROFILES |
-| PATCH | `/api/v1/notifications/channels/{channel_id}` | Actualizar canal | MANAGE_PROFILES |
-| DELETE | `/api/v1/notifications/channels/{channel_id}` | Eliminar canal | MANAGE_PROFILES |
-| GET | `/api/v1/notifications/preferences` | Obtener preferencias de notificación del usuario | Sí |
-| PATCH | `/api/v1/notifications/preferences` | Actualizar preferencias del usuario | Sí |
-| POST | `/api/v1/notifications/subscriptions` | Suscribirse a tipo de evento | Sí |
-| DELETE | `/api/v1/notifications/subscriptions/{event_type}` | Desuscribirse de evento | Sí |
+| GET | `/api/v1/notifications/channels` | List notification channels | Yes |
+| POST | `/api/v1/notifications/channels` | Configure new channel | MANAGE_PROFILES |
+| PATCH | `/api/v1/notifications/channels/{channel_id}` | Update channel | MANAGE_PROFILES |
+| DELETE | `/api/v1/notifications/channels/{channel_id}` | Delete channel | MANAGE_PROFILES |
+| GET | `/api/v1/notifications/preferences` | Get user notification preferences | Yes |
+| PATCH | `/api/v1/notifications/preferences` | Update user preferences | Yes |
+| POST | `/api/v1/notifications/subscriptions` | Subscribe to event type | Yes |
+| DELETE | `/api/v1/notifications/subscriptions/{event_type}` | Unsubscribe from event | Yes |
 
 **NotificationChannelConfig:**
 ```json
@@ -1078,11 +1078,11 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 ---
 
-### 5.14 Admin Router (`/api/v1/admin`) - Solo U3
+### 5.14 Admin Router (`/api/v1/admin`) - U3 Only
 
-| Método | Ruta | Descripción | Permiso |
+| Method | Route | Description | Permission |
 |--------|------|-------------|---------|
-| POST | `/api/v1/admin/rules/reload` | Recargar reglas personalizadas en caliente (MV6.2.1) | U3 |
+| POST | `/api/v1/admin/rules/reload` | Hot-reload custom rules (MV6.2.1) | U3 |
 
 **RulesReloadResponse:**
 ```json
@@ -1095,19 +1095,19 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 ---
 
-## 6. Autenticación y Autorización
+## 6. Authentication and Authorization
 
-### Mecanismo de Autenticación
+### Authentication Mechanism
 
-**Autenticación Basada en JWT**
+**JWT-Based Authentication**
 
-1. **Flujo de Login:**
-   - El usuario envía email/password a `/api/v1/auth/login`
-   - El servidor valida las credenciales usando `BcryptPasswordHasher`
-   - En éxito, el servidor retorna access_token (15 minutos) y refresh_token (30 días)
-   - El payload del JWT contiene: `sub` (user_id), `role`, `email`, `organization_id`, `iat`, `exp`
+1. **Login Flow:**
+   - User sends email/password to `/api/v1/auth/login`
+   - Server validates credentials using `BcryptPasswordHasher`
+   - On success, server returns access_token (15 minutes) and refresh_token (30 days)
+   - JWT payload contains: `sub` (user_id), `role`, `email`, `organization_id`, `iat`, `exp`
 
-2. **Estructura del Token:**
+2. **Token Structure:**
    ```python
    TokenPayload:
        user_id: UUID
@@ -1116,41 +1116,41 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
        organization_id: Optional[UUID]
    ```
 
-3. **Uso del Bearer Token:**
-   - Todos los endpoints protegidos requieren header `Authorization: Bearer <token>`
-   - El token se valida vía `JwtHandler.decode_token()`
+3. **Bearer Token Usage:**
+   - All protected endpoints require header `Authorization: Bearer <token>`
+   - Token is validated via `JwtHandler.decode_token()`
 
-4. **Bloqueo de Cuenta:**
-   - Después de 5 intentos fallidos de login, la cuenta se bloquea por 15 minutos
-   - El bloqueo se rastrea vía campos `locked_until` y `failed_login_attempts`
-   - Luego de bloqueada la cuenta, el usuario recibe HTTP 429 antes de que el sistema autentique
+4. **Account Lockout:**
+   - After 5 failed login attempts, the account locks for 15 minutes
+   - Lockout is tracked via `locked_until` and `failed_login_attempts` fields
+   - Once locked, the user receives HTTP 429 before the system authenticates
 
-### Mecanismo de Autorización
+### Authorization Mechanism
 
-**Control de Acceso Basado en Roles (RBAC)**
+**Role-Based Access Control (RBAC)**
 
-| Rol | Permisos |
+| Role | Permissions |
 |------|-------------|
-| U1 (Invitado) | VIEW_DASHBOARD, VIEW_OWN_PROJECTS |
-| U2 (Estándar) | U1 + CREATE_RELEASE, UPDATE_OWN_RELEASES, ARCHIVE_RELEASE, EXECUTE_VERIFICATION, VIEW_OWN_HISTORY, MANAGE_OWN_API_KEYS |
-| U4 (Gerente de Org) | U2 + VIEW_ORG_PROJECTS, CREATE_PROJECT, UPDATE_PROJECT, ARCHIVE_PROJECT, MANAGE_CONNECTORS, MANAGE_PROFILES, MANAGE_RULES, VIEW_ORG_DASHBOARD, INVITE_USERS, MANAGE_ROLES |
-| U3 (Admin Global) | Todos los permisos |
+| U1 (Guest) | VIEW_DASHBOARD, VIEW_OWN_PROJECTS |
+| U2 (Standard) | U1 + CREATE_RELEASE, UPDATE_OWN_RELEASES, ARCHIVE_RELEASE, EXECUTE_VERIFICATION, VIEW_OWN_HISTORY, MANAGE_OWN_API_KEYS |
+| U4 (Org Manager) | U2 + VIEW_ORG_PROJECTS, CREATE_PROJECT, UPDATE_PROJECT, ARCHIVE_PROJECT, MANAGE_CONNECTORS, MANAGE_PROFILES, MANAGE_RULES, VIEW_ORG_DASHBOARD, INVITE_USERS, MANAGE_ROLES |
+| U3 (Global Admin) | All permissions |
 
-**Nota:** El permiso `DELETE_PROJECT` ha sido eliminado de todos los roles. El SRS (requisito GR7.2) y las notas de implementación especifican que no se permite el borrado físico de proyectos, únicamente el archivado lógico mediante `ARCHIVE_PROJECT`.
+**Note:** The `DELETE_PROJECT` permission has been removed from all roles. The SRS (requirement GR7.2) and implementation notes specify that physical deletion of projects is not allowed, only logical archiving via `ARCHIVE_PROJECT`.
 
-**Funciones de Verificación de Dependencias:**
-- `require_role(min_role)` - Valida jerarquía de roles
-- `require_permission(permission)` - Verificación directa de permiso
-- `require_org_access()` - Valida que el usuario tiene membresía en la organización
-- `require_project_access()` - Valida que el proyecto pertenece a la organización del usuario
-- `require_release_access()` - Valida que la release pertenece a la organización del usuario
-- `require_connector_access()` - Valida que el conector pertenece a la organización del usuario
-- `require_profile_access()` - Valida que el perfil pertenece a la organización del usuario
-- `require_rule_access()` - Valida que la regla pertenece a la organización del usuario
-- `require_custom_role_access()` - Valida que el rol personalizado pertenece a la organización del usuario
-- `require_api_key_access()` - Valida que la API key pertenece a la organización del usuario
+**Dependency Verification Functions:**
+- `require_role(min_role)` - Validates role hierarchy
+- `require_permission(permission)` - Direct permission check
+- `require_org_access()` - Validates user has organization membership
+- `require_project_access()` - Validates project belongs to user's organization
+- `require_release_access()` - Validates release belongs to user's organization
+- `require_connector_access()` - Validates connector belongs to user's organization
+- `require_profile_access()` - Validates profile belongs to user's organization
+- `require_rule_access()` - Validates rule belongs to user's organization
+- `require_custom_role_access()` - Validates custom role belongs to user's organization
+- `require_api_key_access()` - Validates API key belongs to user's organization
 
-### Headers de Seguridad (solo producción)
+### Security Headers (production only)
 ```
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
@@ -1163,135 +1163,135 @@ Referrer-Policy: strict-origin-when-cross-origin
 
 ## 7. Multi-Tenancy
 
-**Aislamiento Basado en Organizaciones con Membresía N:M de Usuarios**
+**Organization-Based Isolation with N:M User Membership**
 
-1. **Identificación del Tenant:**
-   - Los usuarios pueden pertenecer a múltiples organizaciones vía tabla `user_membership`
-   - El contexto de organización activa del usuario se determina desde el token JWT (claim `organization_id`)
-   - Los usuarios U3 pueden acceder a todas las organizaciones globalmente
+1. **Tenant Identification:**
+   - Users can belong to multiple organizations via the `user_membership` table
+   - The user's active organization context is determined from the JWT token (`organization_id` claim)
+   - U3 users can access all organizations globally
 
-2. **Aislamiento de Datos:**
-   - Todas las consultas de entidades están limitadas por las membresías de organización del usuario
-   - Las funciones de verificación de acceso validan la membresía antes de retornar datos
-   - El acceso entre tenants está explícitamente bloqueado
+2. **Data Isolation:**
+   - All entity queries are scoped by the user's organization memberships
+   - Access verification functions validate membership before returning data
+   - Cross-tenant access is explicitly blocked
 
-3. **Alcance de API Keys:**
-   - Las API keys son del usuario (no de la organización directamente)
-   - Se usan para acceso programático dentro del contexto del tenant
-   - Un usuario solo puede ver/administrar sus propias claves
+3. **API Key Scope:**
+   - API keys belong to the user (not the organization directly)
+   - Used for programmatic access within the tenant context
+   - A user can only view/manage their own keys
 
 ---
 
 ## 8. Rate Limiting
 
-**Implementación:** SlowAPI
+**Implementation:** SlowAPI
 
-| Tipo de Endpoint | Límite |
+| Endpoint Type | Limit |
 |------------------|--------|
-| Endpoints de auth (`/auth/*`) | 30 requests/minuto |
-| Endpoints por defecto | 100 requests/minuto |
-| Endpoints de búsqueda | 30 requests/minuto |
-| Endpoint de prueba de conector | 100 requests/minuto |
+| Auth endpoints (`/auth/*`) | 30 requests/minute |
+| Default endpoints | 100 requests/minute |
+| Search endpoints | 30 requests/minute |
+| Connector test endpoint | 100 requests/minute |
 
-**Nota:** El límite de 30/min para auth evita conflictos con la política de bloqueo por intentos fallidos (AC1.7: bloqueo tras 5 intentos fallidos en 10 minutos).
+**Note:** The 30/min auth limit prevents conflicts with the failed login lockout policy (AC1.7: lockout after 5 failed attempts in 10 minutes).
 
 ---
 
 ## 9. Audit Logging
 
-**Eventos de Audit (25 tipos):**
+**Audit Events (25 types):**
 
-| Evento | Descripción |
+| Event | Description |
 |--------|-------------|
-| LOGIN_SUCCESS | Usuario autenticado exitosamente |
-| LOGIN_FAILED | Autenticación fallida |
-| USER_INVITED | Usuario invitado a la organización |
-| USER_ROLE_CHANGED | Rol del usuario actualizado |
-| USER_REMOVED | Usuario removido de la organización |
-| ORG_OWNERSHIP_TRANSFERRED | Propiedad de organización transferida |
-| API_KEY_CREATED | Nueva API key generada |
-| API_KEY_REVOKED | API key revocada |
-| CONNECTOR_CREATED | Conector registrado |
-| CONNECTOR_UPDATED | Configuración del conector actualizada |
-| CONNECTOR_DELETED | Conector eliminado |
-| CONNECTOR_TESTED | Conexión del conector probada |
-| RELEASE_CREATED | Release creada |
-| RELEASE_VERIFIED | Verificación lanzada |
-| RELEASE_ARCHIVED | Release archivada |
-| PROJECT_ARCHIVED | Proyecto archivado |
-| PROFILE_CREATED | Perfil de verificación creado |
-| PROFILE_UPDATED | Perfil de verificación modificado |
-| PROFILE_DELETED | Perfil de verificación eliminado |
-| RULE_CREATED | Regla de verificación agregada |
-| RULE_UPDATED | Regla de verificación modificada |
-| RULE_DELETED | Regla de verificación eliminada |
-| CUSTOM_ROLE_CREATED | Rol personalizado creado |
-| CUSTOM_ROLE_UPDATED | Rol personalizado modificado |
-| CUSTOM_ROLE_DELETED | Rol personalizado eliminado |
+| LOGIN_SUCCESS | User authenticated successfully |
+| LOGIN_FAILED | Authentication failed |
+| USER_INVITED | User invited to organization |
+| USER_ROLE_CHANGED | User role updated |
+| USER_REMOVED | User removed from organization |
+| ORG_OWNERSHIP_TRANSFERRED | Organization ownership transferred |
+| API_KEY_CREATED | New API key generated |
+| API_KEY_REVOKED | API key revoked |
+| CONNECTOR_CREATED | Connector registered |
+| CONNECTOR_UPDATED | Connector configuration updated |
+| CONNECTOR_DELETED | Connector deleted |
+| CONNECTOR_TESTED | Connector connection tested |
+| RELEASE_CREATED | Release created |
+| RELEASE_VERIFIED | Verification launched |
+| RELEASE_ARCHIVED | Release archived |
+| PROJECT_ARCHIVED | Project archived |
+| PROFILE_CREATED | Verification profile created |
+| PROFILE_UPDATED | Verification profile updated |
+| PROFILE_DELETED | Verification profile deleted |
+| RULE_CREATED | Verification rule added |
+| RULE_UPDATED | Verification rule updated |
+| RULE_DELETED | Verification rule deleted |
+| CUSTOM_ROLE_CREATED | Custom role created |
+| CUSTOM_ROLE_UPDATED | Custom role updated |
+| CUSTOM_ROLE_DELETED | Custom role deleted |
 
 ---
 
-## Resumen
+## Summary
 
-| Componente | Cantidad |
+| Component | Count |
 |------------|----------|
 | Routers | 14 |
 | Endpoints | 65+ |
-| Entidades de Dominio | 13 (+ 1 tabla intermedia) |
+| Domain Entities | 13 (+ 1 intermediate table) |
 | Enums | 14 |
-| Tablas de BD | 12 (11 oficiales + user_membership) |
-| Conectores implementados | 20 |
-| Tipos de eventos de audit | 25 |
+| DB Tables | 12 (11 official + user_membership) |
+| Implemented Connectors | 20 |
+| Audit Event Types | 25 |
 
 ---
 
-## Uso de la Entidad API Key
+## API Key Entity Usage
 
-La entidad **APIKey** permite acceso programático a la API sin necesidad de username/password.
+The **APIKey** entity enables programmatic API access without username/password.
 
-**Casos de uso:**
-1. Integraciones con sistemas externos (CI/CD, automatización)
-2. Scripts que interactúan con la API
-3. Acceso programático para usuarios que no quieren usar credenciales
+**Use Cases:**
+1. CI/CD and automation integrations with external systems
+2. Scripts interacting with the API
+3. Programmatic access for users who prefer not to use credentials
 
-**Características:**
-- Generadas con formato `svk_` + 32 caracteres aleatorios (URL-safe)
-- Hash SHA-256 almacenado en BD (nunca se almacena la clave en texto plano)
-- Prefix de 12 caracteres para identificación (ej: `svk_abc123defg`)
-- Opcionalmente expiran (configurable en días)
-- Pueden ser revocadas instantáneamente
-- Solo se muestra la clave completa en el momento de creación
-- `last_used_at` permite auditar último uso
+**Features:**
+- Generated with `svk_` + 32 random characters format (URL-safe)
+- SHA-256 hash stored in DB (raw key never stored in plain text)
+- 12-character prefix for identification (e.g.: `svk_abc123defg`)
+- Optionally expire (configurable in days)
+- Can be revoked instantly
+- Full key only shown at creation time
+- `last_used_at` enables auditing of last use
 
-**Restricciones por usuario:**
-- Máximo 5 claves API activas por usuario
-- Cada usuario solo puede ver y administrar sus propias claves
-- Las claves están asociadas a una organización para scoping multi-tenant
+**Per-User Restrictions:**
+- Maximum 5 active API keys per user
+- Each user can only view and manage their own keys
+- Keys are associated with an organization for multi-tenant scoping
 
-**Permisos:**
-- Las API keys heredan los permisos del rol del usuario que las crea
-- El rol predeterminado es U2 (puede ser modificado por el U4 de la org)
+**Permissions:**
+- API keys inherit the permissions of the creating user's role
+- Default role is U2 (can be modified by the org's U4)
 
 ---
 
-## Notas de Implementación
+## Implementation Notes
 
-### Gestión de Proyectos Archivados
+### Archived Project Management
 
-Según el requisito GR7.2 del SRS, cuando un proyecto se archiva:
-- El proyecto pasa a modo solo lectura
-- Todas las releases del proyecto también pasan a modo solo lectura
-- No se permite el borrado físico de proyectos
+Per SRS requirement GR7.2, when a project is archived:
+- The project becomes read-only
+- All project releases also become read-only
+- Physical deletion of projects is not allowed
 
-### Endpoint de Verificación de Releases
+### Release Verification Endpoint
 
-Para consultar resultados de verificaciones, usar:
-- `GET /api/v1/releases/{release_id}/results` - Historial de verificaciones
-- `GET /api/v1/releases/{release_id}/results/{result_id}` - Detalle de una verificación específica
+To query verification results, use:
+- `GET /api/v1/releases/{release_id}/results` - Verification history
+- `GET /api/v1/releases/{release_id}/results/{result_id}` - Specific verification detail
 
-### Conectores bajo Alcance de Organización
+### Organization-Scoped Connectors
 
-Todas las operaciones de conectores están anidadas bajo el alcance de su organización:
+All connector operations are nested under their organization scope:
 - `PATCH /api/v1/organizations/{org_id}/connectors/{connector_id}`
 - `DELETE /api/v1/organizations/{org_id}/connectors/{connector_id}`
 - `POST /api/v1/organizations/{org_id}/connectors/{connector_id}/test`

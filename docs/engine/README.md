@@ -1,77 +1,77 @@
-# Motor de Verificación SVAES - Documentación Técnica
+# SVAES Verification Engine - Technical Documentation
 
-## Tabla de Contenidos
+## Table of Contents
 
-1. [Introducción](#introducción)
-2. [Por qué Rust](#por-qué-rust)
-3. [Fundamentos de Rust](#fundamentos-de-rust)
-4. [Arquitectura del Motor](#arquitectura-del-motor)
-5. [Reglas de Verificación (RV-01 a RV-10)](#reglas-de-verificación)
+1. [Introduction](#introduction)
+2. [Why Rust](#why-rust)
+3. [Rust Fundamentals](#rust-fundamentals)
+4. [Engine Architecture](#engine-architecture)
+5. [Verification Rules (RV-01 to RV-10)](#verification-rules-rv-01-to-rv-10)
 6. [API Reference](#api-reference)
-7. [Guía de Despliegue](#guía-de-despliegue)
+7. [Deployment Guide](#deployment-guide)
 
 ---
 
-## Introducción
+## Introduction
 
-El **Motor de Verificación SVAES** (Static Verification and Approval Engine System) es un componente crítico del ecosistema SVAES encargado de validar que los artefactos de software cumplan con las reglas de verificación configuradas antes de ser aprobados para release.
+The **SVAES Verification Engine** (Static Verification and Approval Engine System) is a critical component of the SVAES ecosystem responsible for validating that software artifacts comply with the configured verification rules before being approved for release.
 
-### Propósito
+### Purpose
 
-El motor recibe un `VerificationPayload` conteniendo:
-- Una lista de **artefactos** (tareas, código, documentos)
-- Un conjunto de **reglas de verificación** a aplicar
+The engine receives a `VerificationPayload` containing:
+- A list of **artifacts** (tasks, code, documents)
+- A set of **verification rules** to apply
 
-Y produce un `EngineResult` con:
-- Un **veredicto global** (Válida / Con Advertencias / No Válida)
-- El resultado detallado de cada regla evaluada
+And produces an `EngineResult` with:
+- A **global verdict** (Valid / With Warnings / Not Valid)
+- The detailed result of each evaluated rule
 
-### Características Principales
+### Key Features
 
-| Característica | Descripción |
-|----------------|-------------|
-| **Stateless** | No consulta bases de datos ni red, solo procesa los datos recibidos |
-| **Paralelo** | Utiliza Rayon para evaluación concurrente de reglas |
-| **Tipado** | Totalmente tipado con Rust para máximo安全保障 |
-| **Flexible** | Cada regla acepta parámetros configurables via JSON |
-| **Seguro** | Manejo de errores sin panic, usando `Option` y `Result` |
+| Feature | Description |
+|---------|-------------|
+| **Stateless** | Does not query databases or network, only processes received data |
+| **Parallel** | Uses Rayon for concurrent rule evaluation |
+| **Typed** | Fully typed with Rust for maximum safety |
+| **Flexible** | Each rule accepts configurable parameters via JSON |
+| **Safe** | Error handling without panic, using `Option` and `Result` |
 
 ---
 
-## 为什么选择 Rust
+## Why Rust
 
-### 1. Seguridad de Memoria
+### 1. Memory Safety
 
-Rust elimina errores de memoria comunes como:
-- **Use-after-free**: El sistema de ownership previene completamente
-- **Buffer overflows**: El sistema de tipos y bounds checking lo impiden
-- **Data races**: El borrow checker garantiza thread-safety
-- **Null pointers**: El sistema `Option<T>` hace ausencia de valor explícita
+Rust eliminates common memory errors such as:
+- **Use-after-free**: The ownership system prevents it completely
+- **Buffer overflows**: The type system and bounds checking prevent them
+- **Data races**: The borrow checker guarantees thread-safety
+- **Null pointers**: The `Option<T>` system makes value absence explicit
 
 ```rust
-// Rust: El compilador rechaza código inseguro
-let s: &str = some_option.unwrap(); // Si es None, panic... pero puedes usar unwrap_or
+// Rust: The compiler rejects unsafe code
+let s: &str = some_option.unwrap(); // If None, panic... but you can use unwrap_or
 
-// Mejor práctica: patrón match explícito
+// Best practice: explicit match pattern
 match some_option {
     Some(value) => process(value),
     None => handle_absent(),
 }
 ```
 
-### 2. Rendimiento
+### 2. Performance
 
-Rust ofrece rendimiento comparable a C/C++:
+Rust offers performance comparable to C/C++:
 
-| Métrica | Rust | Python | Java |
-|---------|------|--------|------|
+| Metric | Rust | Python | Java |
+|--------|------|--------|------|
 | throughput | ~1M ops/s | ~50K ops/s | ~200K ops/s |
 | memory footprint | ~2MB | ~50MB | ~100MB |
 | cold start | <10ms | ~100ms | ~500ms |
 
-### 3. Concurrencia Sin Miedo
+### 3. Fearless Concurrency
 
-El modelo de ownership de Rust permite escribir código paralelo sin mutexes manuales:
+Rust's ownership model allows writing parallel code without manual mutexes:
 
 ```rust
 use rayon::prelude::*;
@@ -82,69 +82,69 @@ let results: Vec<RuleEvaluation> = rules
     .collect();
 ```
 
-### 4. Tipado Estático
+### 4. Static Typing
 
-El sistema de tipos de Rust captura errores en tiempo de compilación:
+Rust's type system catches errors at compile time:
 
 ```rust
-// El compilador sabe exactamente qué campos tiene cada estructura
+// The compiler knows exactly which fields each structure has
 pub struct VerificationPayload {
     pub release_id: String,
-    pub artifacts: Vec<Artifact>,      // Vec es seguro, no null
-    pub rules: Vec<VerificationRule>,   // Vec es seguro, no null
+    pub artifacts: Vec<Artifact>,      // Vec is safe, not null
+    pub rules: Vec<VerificationRule>,   // Vec is safe, not null
 }
 ```
 
-### 5. Ecosistema
+### 5. Ecosystem
 
-| Crate | Propósito |
-|-------|-----------|
-| `rayon` | Procesamiento paralelo данных |
-| `serde` | Serialización/deserialización JSON |
-| `actix-web` | Servidor HTTP de alto rendimiento |
-| `thiserror` | Manejo de errores tipado |
+| Crate | Purpose |
+|-------|---------|
+| `rayon` | Parallel data processing |
+| `serde` | JSON serialization/deserialization |
+| `actix-web` | High-performance HTTP server |
+| `thiserror` | Typed error handling |
 
 ---
 
-## Fundamentos de Rust
+## Rust Fundamentals
 
-Esta sección proporciona una introducción rápida a los conceptos de Rust necesarios para entender el motor.
+This section provides a quick introduction to the Rust concepts needed to understand the engine.
 
-### Ownership y Borrowing
+### Ownership and Borrowing
 
-Rust usa un sistema único de **ownership** (propiedad) para gestionar memoria:
+Rust uses a unique **ownership** system for memory management:
 
 ```rust
 fn main() {
-    // ownership: s1 deja de ser válido después de esta línea
+    // ownership: s1 is no longer valid after this line
     let s1 = String::from("hello");
-    let s2 = s1; // s1 se "mueve" a s2
+    let s2 = s1; // s1 is "moved" to s2
 
-    // println!("{}", s1); // ERROR: s1 ya no es propietario
+    // println!("{}", s1); // ERROR: s1 is no longer the owner
     println!("{}", s2); // OK
 }
 ```
 
-**Reglas de ownership:**
-1. Cada valor tiene un único propietario
-2. Cuando el propietario sale del scope, el valor se libera
-3. Solo puede haber una referencia mutable a un valor (o múltiples referencias inmutables)
+**Ownership rules:**
+1. Each value has a single owner
+2. When the owner goes out of scope, the value is freed
+3. There can only be one mutable reference to a value (or multiple immutable references)
 
-### lifetimes
+### Lifetimes
 
-Los lifetimes evitan referencias colgantes:
+Lifetimes prevent dangling references:
 
 ```rust
-// 'a es una anotación de lifetime que dice:
-// "el retorno vivirá al menos mientras ambas referencias vivan"
+// 'a is a lifetime annotation that says:
+// "the return will live at least as long as both references live"
 fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
     if x.len() > y.len() { x } else { y }
 }
 ```
 
-### Option y Result
+### Option and Result
 
-Rust no tiene `null`. La ausencia de valor se representa con `Option`:
+Rust has no `null`. Value absence is represented with `Option`:
 
 ```rust
 fn find_artifact(id: &str, artifacts: &[Artifact]) -> Option<&Artifact> {
@@ -152,34 +152,34 @@ fn find_artifact(id: &str, artifacts: &[Artifact]) -> Option<&Artifact> {
 }
 
 match find_artifact("T-001", &artifacts) {
-    Some(artifact) => println!("Encontrado: {}", artifact.id),
-    None => println!("No encontrado"),
+    Some(artifact) => println!("Found: {}", artifact.id),
+    None => println!("Not found"),
 }
 ```
 
-`Result<T, E>` para operaciones que pueden fallar:
+`Result<T, E>` for operations that can fail:
 
 ```rust
 fn read_file(path: &str) -> Result<String, std::io::Error> {
     std::fs::read_to_string(path)
 }
 
-// Uso con ?
+// Usage with ?
 let content = read_file("config.json")?;
 ```
 
-### Structs y Enums
+### Structs and Enums
 
 ```rust
-// Struct con campos
+// Struct with fields
 #[derive(Debug, Clone)]
 pub struct Artifact {
     pub id: String,
     pub artifact_type: String,
-    pub metadata: Value,  // serde_json::Value - JSON flexible
+    pub metadata: Value,  // serde_json::Value - flexible JSON
 }
 
-// Enum con variantes
+// Enum with variants
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum RuleStatus {
     Ok,
@@ -191,15 +191,15 @@ pub enum RuleStatus {
 
 ### Traits
 
-Los traits definen comportamiento compartido:
+Traits define shared behavior:
 
 ```rust
-// Un trait define métodos que los tipos deben implementar
+// A trait defines methods that types must implement
 trait Verifiable {
     fn verify(&self) -> bool;
 }
 
-// Implementación
+// Implementation
 impl Verifiable for Artifact {
     fn verify(&self) -> bool {
         !self.id.is_empty() && !self.artifact_type.is_empty()
@@ -209,7 +209,7 @@ impl Verifiable for Artifact {
 
 ### Pattern Matching
 
-El match es exhaustivo y seguro:
+Match is exhaustive and safe:
 
 ```rust
 match artifact.metadata.get("status") {
@@ -225,41 +225,41 @@ match artifact.metadata.get("status") {
 }
 ```
 
-### Iterators y Closures
+### Iterators and Closures
 
 ```rust
-// Iteradores lazy - muy eficientes
+// Lazy iterators - very efficient
 let ids: Vec<&str> = artifacts
     .iter()
     .filter(|a| a.artifact_type == "TAREA")
     .map(|a| a.id.as_str())
     .collect();
 
-// Uso con Rayon para paralelismo
+// Usage with Rayon for parallelism
 use rayon::prelude::*;
 let results: Vec<_> = artifacts.par_iter().map(|a| process(a)).collect();
 ```
 
-### Cargo y Módulos
+### Cargo and Modules
 
 ```
 engine/
-├── Cargo.toml          # Dependencias y metadatos del paquete
+├── Cargo.toml          # Package dependencies and metadata
 └── src/
-    ├── main.rs         # Entry point y servidor HTTP
-    ├── models.rs       # Estructuras de datos compartidas
-    ├── evaluator.rs    # Orchestrator de reglas
-    ├── aggregator.rs   # Cálculo de veredicto global
-    └── rules/          # Implementaciones de reglas
-        ├── mod.rs      # Declaración de submódulos
-        ├── rv01.rs     # Regla RV-01: Existencia
-        ├── rv02.rs     # Regla RV-02: Trazabilidad
+    ├── main.rs         # Entry point and HTTP server
+    ├── models.rs       # Shared data structures
+    ├── evaluator.rs    # Rule orchestrator
+    ├── aggregator.rs   # Global verdict calculation
+    └── rules/          # Rule implementations
+        ├── mod.rs      # Submodule declarations
+        ├── rv01.rs     # Rule RV-01: Existence
+        ├── rv02.rs     # Rule RV-02: Traceability
         └── ...
 ```
 
 ---
 
-## Arquitectura del Motor
+## Engine Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -286,7 +286,7 @@ engine/
 │              ┌──────────────────┐                                 │
 │              │    Aggregator    │                                 │
 │              │                  │                                 │
-│              │  Verdict global  │                                 │
+│              │  Global verdict  │                                 │
 │              └──────────────────┘                                 │
 └───────────────────────────────────────────────────────────────────┘
                             │
@@ -300,58 +300,58 @@ engine/
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Flujo de Datos
+### Data Flow
 
-1. **Recepción**: El servidor Actix recibe `POST /verify` con `VerificationPayload` JSON
-2. **Deserialización**: Serde convierte el JSON en estructuras tipadas de Rust
-3. **Evaluación Paralela**: Rayon distribuye las reglas entre threads disponibles
-4. **Agregación**: Se calcula el veredicto basándose en resultados de reglas
-5. **Respuesta**: El `EngineResult` se serializa a JSON y retorna al cliente
+1. **Reception**: The Actix server receives `POST /verify` with a JSON `VerificationPayload`
+2. **Deserialization**: Serde converts the JSON into typed Rust structures
+3. **Parallel Evaluation**: Rayon distributes rules across available threads
+4. **Aggregation**: The verdict is calculated based on rule results
+5. **Response**: The `EngineResult` is serialized to JSON and returned to the client
 
-### Componentes Principales
+### Core Components
 
-#### `models.rs` - Modelo de Datos
+#### `models.rs` - Data Model
 
 ```rust
-// Artefacto: representa una unidad de trabajo verificada
+// Artifact: represents a verified work unit
 pub struct Artifact {
-    pub id: String,                    // Identificador único
+    pub id: String,                    // Unique identifier
     pub artifact_type: String,         // "TAREA", "CÓDIGO", "DOCUMENTO", "PLAN"
-    pub metadata: Value,               // JSON flexible para datos específicos
+    pub metadata: Value,               // Flexible JSON for specific data
 }
 
-// Regla de verificación configurada
+// Configured verification rule
 pub struct VerificationRule {
-    pub id: String,                    // "RV-01" a "RV-10"
-    pub severity: String,               // "OBLIGATORIA" o "OPCIONAL"
-    pub params: Value,                  // Parámetros específicos de la regla
+    pub id: String,                    // "RV-01" to "RV-10"
+    pub severity: String,               // "OBLIGATORIA" or "OPCIONAL"
+    pub params: Value,                  // Rule-specific parameters
 }
 
-// Estados posibles de una regla
+// Possible rule states
 pub enum RuleStatus {
-    Ok,            // Regla cumplida
-    Error,         // Regla violada
-    Warning,       // Condición de advertencia
-    NoEvaluada,    // Regla no aplicable
+    Ok,            // Rule satisfied
+    Error,         // Rule violated
+    Warning,       // Warning condition
+    NoEvaluada,    // Rule not applicable
 }
 
-// Veredicto global del motor
+// Global engine verdict
 pub enum Verdict {
-    Valida,              // Todas las obligatorias OK
-    ConAdvertencias,     // Alguna opcional con warning
-    NoValida,            // Alguna obligatoria con error
+    Valida,              // All mandatory rules OK
+    ConAdvertencias,     // Some optional rule with warning
+    NoValida,            // Some mandatory rule with error
 }
 ```
 
-#### `evaluator.rs` - Orquestador
+#### `evaluator.rs` - Orchestrator
 
 ```rust
 pub fn evaluate(payload: VerificationPayload) -> EngineResult {
-    // Evaluación paralela de todas las reglas
+    // Parallel evaluation of all rules
     let rule_results: Vec<RuleEvaluation> = payload.rules
         .par_iter()
         .map(|rule_config| {
-            // Despacho por ID de regla
+            // Dispatch by rule ID
             match rule_config.id.as_str() {
                 "RV-01" => rv01::evaluate(&payload.artifacts, rule_config),
                 "RV-02" => rv02::evaluate(&payload.artifacts, rule_config),
@@ -360,268 +360,268 @@ pub fn evaluate(payload: VerificationPayload) -> EngineResult {
         })
         .collect();
 
-    // Agregación para veredicto global
+    // Aggregation for global verdict
     let verdict = aggregate(&rule_results, &payload.rules);
 
     EngineResult { verdict, rule_results }
 }
 ```
 
-#### `aggregator.rs` - Agregador de Veredicto
+#### `aggregator.rs` - Verdict Aggregator
 
 ```rust
 pub fn aggregate(evaluations: &[RuleEvaluation], rules: &[VerificationRule]) -> Verdict {
-    // 1. Si alguna OBLIGATORIA tiene Error → NoValida
-    // 2. Si todas las obligatorias OK pero alguna OPCIONAL Warning → ConAdvertencias
-    // 3. Si todas OK → Valida
+    // 1. If any MANDATORY has Error → NoValida
+    // 2. If all mandatory OK but some OPTIONAL Warning → ConAdvertencias
+    // 3. If all OK → Valida
 }
 ```
 
 ---
 
-## Reglas de Verificación
+## Verification Rules
 
-Cada regla es una función pura: `evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleEvaluation`
+Each rule is a pure function: `evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleEvaluation`
 
-### RV-01: Existencia
+### RV-01: Existence
 
-**Propósito**: Validar que la lista de artefactos no esté vacía.
+**Purpose**: Validate that the artifact list is not empty.
 
-**Parámetros**: Ninguno (acepta parámetros por defecto).
+**Parameters**: None (accepts default parameters).
 
-**Lógica**:
-1. Verifica si `artifacts.is_empty()`
-2. Si vacío → `Error` con mensaje descriptivo
-3. Si no vacío → `Ok`
+**Logic**:
+1. Checks if `artifacts.is_empty()`
+2. If empty → `Error` with descriptive message
+3. If not empty → `Ok`
 
-**Mensaje de error**:
+**Error message**:
 ```
-"La lista de artefactos está vacía. Se requiere al menos un artefacto para proceder."
-```
-
----
-
-### RV-02: Trazabilidad
-
-**Propósito**: Búsqueda cruzada para verificar que las referencias entre artefactos sean válidas.
-
-**Parámetros configurables**:
-| Parámetro | Default | Descripción |
-|-----------|---------|-------------|
-| `source_type` | `"CÓDIGO"` | Tipo de artefacto que contiene referencias |
-| `target_type` | `"TAREA"` | Tipo de artefacto referenciado |
-| `reference_field` | `"task_id"` | Campo de metadata con el ID referenciado |
-
-**Lógica**:
-1. Recopila todos los IDs de artefactos del tipo destino (`target_type`)
-2. Para cada artefacto fuente, extrae el valor del campo de referencia
-3. Verifica que el ID referenciado exista en el conjunto de IDs destino
-4. Si algún ID no existe → `Error` con lista de IDs huérfanos
-
-**Mensaje de error**:
-```
-"Referencias huérfanas detectadas: '2'. Los siguientes IDs referenciados en artefactos 'CÓDIGO'
-no existen como 'TAREA': ["T-999", "T-888"]"
+"The artifact list is empty. At least one artifact is required to proceed."
 ```
 
 ---
 
-### RV-03: Estados
+### RV-02: Traceability
 
-**Propósito**: Verificar que todos los artefactos de un tipo específico tengan estados permitidos.
+**Purpose**: Cross-search to verify that references between artifacts are valid.
 
-**Parámetros configurables**:
-| Parámetro | Default | Descripción |
+**Configurable parameters**:
+| Parameter | Default | Description |
 |-----------|---------|-------------|
-| `artifact_type` | `"TAREA"` | Tipo de artefacto a verificar |
-| `allowed_states` | `["DONE", "CLOSED"]` | Estados válidos |
-| `status_field` | `"status"` | Campo en metadata con el estado |
+| `source_type` | `"CÓDIGO"` | Artifact type containing references |
+| `target_type` | `"TAREA"` | Referenced artifact type |
+| `reference_field` | `"task_id"` | Metadata field with the referenced ID |
 
-**Lógica**:
-1. Filtra artefactos por tipo
-2. Por cada uno, obtiene el valor del campo de estado
-3. Verifica que el estado esté en la lista de estados permitidos
-4. Si algún artefacto tiene estado inválido o campo ausente → `Error`
+**Logic**:
+1. Collects all IDs of target type artifacts (`target_type`)
+2. For each source artifact, extracts the reference field value
+3. Verifies that the referenced ID exists in the target ID set
+4. If any ID does not exist → `Error` with list of orphan IDs
 
-**Mensaje de error**:
+**Error message**:
 ```
-"Artefactos con estado inválido (permitidos: ["DONE", "CLOSED"]): ["T-002"]"
+"Orphan references detected: '2'. The following IDs referenced in 'CÓDIGO' artifacts
+do not exist as 'TAREA': ["T-999", "T-888"]"
 ```
 
 ---
 
-### RV-04: Integridad de Campos
+### RV-03: States
 
-**Propósito**: Asegurar que campos numéricos en metadata no sean nulos ni menores a cero.
+**Purpose**: Verify that all artifacts of a specific type have allowed states.
 
-**Parámetros configurables**:
-| Parámetro | Default | Descripción |
+**Configurable parameters**:
+| Parameter | Default | Description |
 |-----------|---------|-------------|
-| `artifact_type` | `"TAREA"` | Tipo de artefacto a verificar |
-| `numeric_fields` | `["effort", "estimation"]` | Campos a validar |
+| `artifact_type` | `"TAREA"` | Artifact type to verify |
+| `allowed_states` | `["DONE", "CLOSED"]` | Valid states |
+| `status_field` | `"status"` | Metadata field with the state |
 
-**Lógica**:
-1. Filtra artefactos por tipo
-2. Por cada campo especificado, verifica:
-   - El campo existe en metadata
-   - El valor no es `null`
-   - El valor es numérico (i64)
-   - El valor es >= 0
-3. Si alguna condición falla → `Error` con IDs afectados
+**Logic**:
+1. Filters artifacts by type
+2. For each one, gets the status field value
+3. Verifies that the state is in the allowed states list
+4. If any artifact has an invalid state or missing field → `Error`
 
-**Mensaje de error**:
+**Error message**:
 ```
-"Artefactos con campos numéricos inválidos o negativos (campos: ["effort", "estimation"]): ["T-002"]"
+"Artifacts with invalid state (allowed: ["DONE", "CLOSED"]): ["T-002"]"
 ```
 
 ---
 
-### RV-05: Disponibilidad de Tipos
+### RV-04: Field Integrity
 
-**Propósito**: Verificar que existan artefactos de un tipo específico y que tengan flag de accesibilidad.
+**Purpose**: Ensure that numeric fields in metadata are not null nor less than zero.
 
-**Parámetros configurables**:
-| Parámetro | Default | Descripción |
+**Configurable parameters**:
+| Parameter | Default | Description |
 |-----------|---------|-------------|
-| `artifact_type` | `"DOCUMENTO"` | Tipo a verificar |
-| `accessible_field` | `"accessible"` | Campo boolean de accesibilidad |
+| `artifact_type` | `"TAREA"` | Artifact type to verify |
+| `numeric_fields` | `["effort", "estimation"]` | Fields to validate |
 
-**Lógica**:
-1. Filtra artefactos por tipo
-2. Si no hay ninguno → `Error`
-3. Para cada uno, verifica que el campo `accessible` sea `true`
-4. Si alguno es `false` o el campo no existe → `Error`
+**Logic**:
+1. Filters artifacts by type
+2. For each specified field, verifies:
+   - The field exists in metadata
+   - The value is not `null`
+   - The value is numeric (i64)
+   - The value is >= 0
+3. If any condition fails → `Error` with affected IDs
 
-**Mensaje de error**:
+**Error message**:
 ```
-"Documentos inaccesibles (flag 'accessible' no es true): ["D-002"]"
+"Artifacts with invalid or negative numeric fields (fields: ["effort", "estimation"]): ["T-002"]"
 ```
 
 ---
 
-### RV-06: Coherencia de Atributos
+### RV-05: Type Availability
 
-**Propósito**: Comparar un atributo específico en la metadata con un valor esperado.
+**Purpose**: Verify that artifacts of a specific type exist and have the accessibility flag set.
 
-**Parámetros configurables**:
-| Parámetro | Default | Descripción |
+**Configurable parameters**:
+| Parameter | Default | Description |
 |-----------|---------|-------------|
-| `artifact_type` | `"DOCUMENTO"` | Tipo a verificar |
-| `attribute` | `"version"` | Campo a comparar |
-| `expected_value` | `""` | Valor esperado |
+| `artifact_type` | `"DOCUMENTO"` | Type to verify |
+| `accessible_field` | `"accessible"` | Boolean accessibility field |
 
-**Lógica**:
-1. Filtra artefactos por tipo
-2. Por cada uno, obtiene el valor del atributo
-3. Si el valor no coincide con `expected_value` → `Error`
-4. Si el campo no existe → `Error`
+**Logic**:
+1. Filters artifacts by type
+2. If none exist → `Error`
+3. For each one, verifies that the `accessible` field is `true`
+4. If any is `false` or the field does not exist → `Error`
 
-**Mensaje de error**:
+**Error message**:
 ```
-"Artefactos con valor de 'version' diferente a '2.0' (atributo 'version'): ["D-002"]"
+"Inaccessible documents ('accessible' flag is not true): ["D-002"]"
 ```
 
 ---
 
-### RV-07: Registro Externo
+### RV-06: Attribute Coherence
 
-**Propósito**: Confirmar la presencia de un marcador que indique registro en herramientas externas.
+**Purpose**: Compare a specific attribute in metadata with an expected value.
 
-**Parámetros configurables**:
-| Parámetro | Default | Descripción |
+**Configurable parameters**:
+| Parameter | Default | Description |
 |-----------|---------|-------------|
-| `artifact_type` | `"PLAN"` | Tipo de artefacto marcador |
-| `marker_field` | `"external_registered"` | Campo boolean que indica registro |
+| `artifact_type` | `"DOCUMENTO"` | Type to verify |
+| `attribute` | `"version"` | Field to compare |
+| `expected_value` | `""` | Expected value |
 
-**Lógica**:
-1. Busca un artefacto del tipo especificado
-2. Si no existe → `Error`
-3. Verifica que el campo marker sea `true`
-4. Si no existe o es `false` → `Error`
+**Logic**:
+1. Filters artifacts by type
+2. For each one, gets the attribute value
+3. If the value does not match `expected_value` → `Error`
+4. If the field does not exist → `Error`
 
-**Mensaje de error**:
+**Error message**:
 ```
-"No se encontró artefacto marcador de tipo 'PLAN' que indique registro externo"
+"Artifacts with 'version' value different from '2.0' (attribute 'version'): ["D-002"]"
 ```
 
 ---
 
-### RV-08: Alineación de Listas
+### RV-07: External Registration
 
-**Propósito**: Comparar dos conjuntos de identificadores (declarados vs. actuales).
+**Purpose**: Confirm the presence of a marker indicating registration in external tools.
 
-**Parámetros configurables**:
-| Parámetro | Default | Descripción |
+**Configurable parameters**:
+| Parameter | Default | Description |
 |-----------|---------|-------------|
-| `master_artifact_id` | (requerido) | ID del artefacto maestro |
-| `master_field` | `"planned_tasks"` | Campo con lista de IDs declarados |
-| `target_type` | `"TAREA"` | Tipo de artefactos a comparar |
+| `artifact_type` | `"PLAN"` | Marker artifact type |
+| `marker_field` | `"external_registered"` | Boolean field indicating registration |
 
-**Lógica**:
-1. Busca el artefacto maestro por ID
-2. Extrae la lista de IDs desde el campo del maestro
-3. Recopila IDs reales de artefactos del tipo destino
-4. Compara ambos conjuntos usando `HashSet`
-5. Si hay diferencias → `Error` con IDs faltantes
+**Logic**:
+1. Searches for an artifact of the specified type
+2. If it does not exist → `Error`
+3. Verifies that the marker field is `true`
+4. If it does not exist or is `false` → `Error`
 
-**Mensaje de error**:
+**Error message**:
 ```
-"Discrepancia entre lista declarada y payload. IDs declarados en 'planned_tasks' del maestro
-'PLAN-001' que no están en artefactos 'TAREA': ["T-003"]"
+"No marker artifact of type 'PLAN' found indicating external registration"
 ```
 
 ---
 
-### RV-09: Validación de Referencias
+### RV-08: List Alignment
 
-**Propósito**: Verificar que referencias (links/ramas) tengan formato válido y sean accesibles.
+**Purpose**: Compare two sets of identifiers (declared vs. actual).
 
-**Parámetros configurables**:
-| Parámetro | Default | Descripción |
+**Configurable parameters**:
+| Parameter | Default | Description |
 |-----------|---------|-------------|
-| `artifact_type` | `"CÓDIGO"` | Tipo a verificar |
-| `reference_fields` | `["link", "branch"]` | Campos que contienen referencias |
-| `accessible_field` | `"accessible"` | Campo boolean de accesibilidad |
+| `master_artifact_id` | (required) | Master artifact ID |
+| `master_field` | `"planned_tasks"` | Field with declared ID list |
+| `target_type` | `"TAREA"` | Artifact type to compare |
 
-**Validación de formato**:
-- **Links**: Deben empezar con `http://` o `https://`
-- **Ramas**: Deben ser alfanuméricos con guiones, guiones bajos o slash (ej: `feature/new-feature`)
+**Logic**:
+1. Searches for the master artifact by ID
+2. Extracts the ID list from the master's field
+3. Collects actual IDs of target type artifacts
+4. Compares both sets using `HashSet`
+5. If there are differences → `Error` with missing IDs
 
-**Lógica**:
-1. Filtra artefactos por tipo
-2. Por cada campo de referencia:
-   - Verifica que exista y sea string
-   - Valida el formato según si parece URL o branch
-3. Verifica que el campo `accessible` sea `true`
-4. Si alguna validación falla → `Error`
-
-**Mensaje de error**:
+**Error message**:
 ```
-"Referencias inválidas o inaccesibles encontradas: ["C-001/link: 'ftp://invalid'"]"
+"Discrepancy between declared list and payload. IDs declared in 'planned_tasks' of master
+'PLAN-001' not present in 'TAREA' artifacts: ["T-003"]"
 ```
 
 ---
 
-### RV-10: Aprobación Final
+### RV-09: Reference Validation
 
-**Propósito**: Buscar un artefacto con estado aprobatorio (APROBADO o VALIDADO).
+**Purpose**: Verify that references (links/branches) have valid format and are accessible.
 
-**Parámetros configurables**:
-| Parámetro | Default | Descripción |
+**Configurable parameters**:
+| Parameter | Default | Description |
 |-----------|---------|-------------|
-| `artifact_type` | `"DOCUMENTO"` | Tipo a buscar |
-| `status_field` | `"status"` | Campo de estado |
-| `approved_states` | `["APROBADO", "VALIDADO"]` | Estados considerados aprobados |
+| `artifact_type` | `"CÓDIGO"` | Type to verify |
+| `reference_fields` | `["link", "branch"]` | Fields containing references |
+| `accessible_field` | `"accessible"` | Boolean accessibility field |
 
-**Lógica**:
-1. Filtra artefactos por tipo
-2. Busca el primero cuyo estado esté en la lista de estados aprobados
-3. Si lo encuentra → `Ok` con información del artefacto
-4. Si no encuentra ninguno → `Error`
+**Format validation**:
+- **Links**: Must start with `http://` or `https://`
+- **Branches**: Must be alphanumeric with dashes, underscores, or slashes (e.g. `feature/new-feature`)
 
-**Mensaje de error**:
+**Logic**:
+1. Filters artifacts by type
+2. For each reference field:
+   - Verifies it exists and is a string
+   - Validates the format depending on whether it looks like a URL or branch
+3. Verifies that the `accessible` field is `true`
+4. If any validation fails → `Error`
+
+**Error message**:
 ```
-"No se encontró artefacto de tipo 'DOCUMENTO' con estado aprobatorio (estados aceptados: ["APROBADO", "VALIDADO"])"
+"Invalid or inaccessible references found: ["C-001/link: 'ftp://invalid'"]"
+```
+
+---
+
+### RV-10: Final Approval
+
+**Purpose**: Search for an artifact with an approved state (APROBADO or VALIDADO).
+
+**Configurable parameters**:
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `artifact_type` | `"DOCUMENTO"` | Type to search |
+| `status_field` | `"status"` | Status field |
+| `approved_states` | `["APROBADO", "VALIDADO"]` | States considered approved |
+
+**Logic**:
+1. Filters artifacts by type
+2. Finds the first one whose state is in the approved states list
+3. If found → `Ok` with artifact information
+4. If none found → `Error`
+
+**Error message**:
+```
+"No artifact of type 'DOCUMENTO' found with approved state (accepted states: ["APROBADO", "VALIDADO"])"
 ```
 
 ---
@@ -630,7 +630,7 @@ no existen como 'TAREA': ["T-999", "T-888"]"
 
 ### Endpoint: `GET /health`
 
-Health check simple para verificar que el servicio está corriendo.
+Simple health check to verify the service is running.
 
 **Response**:
 ```json
@@ -711,112 +711,112 @@ Content-Type: application/json
 }
 ```
 
-### Esquema de Veredicto
+### Verdict Schema
 
-| Veredicto | Condición |
-|-----------|-----------|
-| `VALIDA` | Todas las reglas OBLIGATORIAS returned OK, sin advertencias en OPCIONAL |
-| `CON_ADVERTENCIAS` | Todas las OBLIGATORIAS OK, pero alguna OPCIONAL returned Warning |
-| `NO_VALIDA` | Alguna OBLIGATORIA returned Error |
+| Verdict | Condition |
+|---------|-----------|
+| `VALIDA` | All MANDATORY rules returned OK, no warnings in OPTIONAL |
+| `CON_ADVERTENCIAS` | All MANDATORY OK, but some OPTIONAL returned Warning |
+| `NO_VALIDA` | Some MANDATORY returned Error |
 
-### Esquema de RuleStatus
+### RuleStatus Schema
 
-| Status | Descripción |
+| Status | Description |
 |--------|-------------|
-| `OK` | Regla cumplida correctamente |
-| `ERROR` | Regla violada o datos inválidos |
-| `WARNING` | Condición de advertencia (regla opcional) |
-| `NO_EVALUADA` | Regla excluida o no reconocida |
+| `OK` | Rule correctly satisfied |
+| `ERROR` | Rule violated or invalid data |
+| `WARNING` | Warning condition (optional rule) |
+| `NO_EVALUADA` | Rule excluded or not recognized |
 
 ---
 
-## Guía de Despliegue
+## Deployment Guide
 
-### Requisitos
+### Requirements
 
-- Rust 1.77+ (para compilación con edition 2021 y Rayon)
-- Docker (para contenedores)
-- 512MB RAM mínimo
-- Puerto 8081 disponible (configurable)
+- Rust 1.77+ (for compilation with edition 2021 and Rayon)
+- Docker (for containers)
+- 512MB minimum RAM
+- Port 8081 available (configurable)
 
-### Variables de Entorno
+### Environment Variables
 
-| Variable | Default | Descripción |
+| Variable | Default | Description |
 |----------|---------|-------------|
-| `ENGINE_HOST` | `0.0.0.0` | Host de binds del servidor |
-| `ENGINE_PORT` | `8081` | Puerto del servidor |
+| `ENGINE_HOST` | `0.0.0.0` | Server bind host |
+| `ENGINE_PORT` | `8081` | Server port |
 
-### Construcción Manual
+### Manual Build
 
 ```bash
 cd engine
 cargo build --release
-./target/release/core  # o core.exe en Windows
+./target/release/core  # or core.exe on Windows
 ```
 
 ### Docker
 
-#### Construcción de la imagen
+#### Image build
 
 ```bash
 cd engine
 docker build -t svaes-engine:latest .
 ```
 
-#### Ejecución con Docker
+#### Running with Docker
 
 ```bash
-# Básica
+# Basic
 docker run -p 8081:8081 svaes-engine:latest
 
-# Con variables de entorno
+# With environment variables
 docker run -p 8081:8081 \
   -e ENGINE_HOST=0.0.0.0 \
   -e ENGINE_PORT=8081 \
   svaes-engine:latest
 
-# Ver logs
+# View logs
 docker logs -f <container_id>
 ```
 
-#### Docker Compose (desarrollo)
+#### Docker Compose (development)
 
 ```bash
-# Iniciar
+# Start
 docker compose --profile development up svaes-engine-dev
 
-# Detener
+# Stop
 docker compose --profile development down
 ```
 
-#### Docker Compose (producción)
+#### Docker Compose (production)
 
 ```bash
-# Iniciar
+# Start
 docker compose --profile production up svaes-engine
 
-# Detener
+# Stop
 docker compose --profile production down
 ```
 
 ### Endpoints
 
-| Endpoint | Método | Descripción |
+| Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/health` | GET | Health check del servicio |
-| `/verify` | POST | Evaluación de reglas de verificación |
+| `/health` | GET | Service health check |
+| `/verify` | POST | Verification rule evaluation |
 
 ---
 
-## Glosario
+## Glossary
 
-| Término | Definición |
-|---------|------------|
-| **Artifact** | Unidad de trabajo verificada (tarea, código, documento) |
-| **Payload** | Carga útil de datos recibidos por el motor |
-| **Rule** | Regla de verificación configurada |
-| **Verdict** | Veredicto global del motor |
-| **Stateless** | Sin estado interno, no persiste datos |
-| **Ownership** | Sistema de Rust para gestión de memoria |
-| **Borrow** | Références temporal a datos en Rust |
-| **Lifetime** | Duración de validité d'une référence |
+| Term | Definition |
+|------|------------|
+| **Artifact** | Verified work unit (task, code, document) |
+| **Payload** | Data payload received by the engine |
+| **Rule** | Configured verification rule |
+| **Verdict** | Global engine verdict |
+| **Stateless** | Without internal state, does not persist data |
+| **Ownership** | Rust system for memory management |
+| **Borrow** | Temporary reference to data in Rust |
+| **Lifetime** | Duration of validity of a reference |

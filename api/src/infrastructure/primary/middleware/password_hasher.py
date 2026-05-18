@@ -8,5 +8,6 @@ class BcryptPasswordHasher(IPasswordHasher):
     def verify_password(self, plain: str, hashed: str) -> bool:
         return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
 
-    def needs_rehash(self, hashed: str) -> bool:
-        return bcrypt.checkpw(None, hashed.encode('utf-8'))
+    def needs_rehash(self, hashed: str, current_rounds: int = 12) -> bool:
+        prefix = f"$2b${current_rounds:02d}$".encode()
+        return not hashed.encode('utf-8').startswith(prefix)

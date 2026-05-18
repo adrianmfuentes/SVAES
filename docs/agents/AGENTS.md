@@ -1,114 +1,114 @@
-# AGENTS.md — Guía para agentes de IA
+# AGENTS.md — Guide for AI Agents
 
-> Este fichero describe el contexto del proyecto, las convenciones del repositorio y las
-> instrucciones operativas que deben respetar los agentes de IA (Copilot, Claude, Cursor,
-> etc.) cuando trabajen sobre este código.
-
----
-
-## 1. Descripción del proyecto
-
-**SVAES** (Sistema de Verificación Automática de Entregas de Software) es una plataforma
-académica genérica que automatiza la validación de *releases* de software contra un conjunto
-configurable de reglas de verificación (RV-01 a RV-10).
-
-El proyecto es el Trabajo Fin de Grado de **Adrián Martínez Fuentes (UO295454)** en el
-Grado en Ingeniería Informática del Software — Universidad de Oviedo (EII).
-
-**No existe entorno de producción real.** Todos los conectores externos (GitLab, Jira, etc.)
-son conectores de referencia que implementan el puerto `IConnector`; no son dependencias
-obligatorias del núcleo.
+> This file describes the project context, repository conventions, and
+> operational instructions that AI agents (Copilot, Claude, Cursor,
+> etc.) must follow when working on this code.
 
 ---
 
-## 2. Stack tecnológico
+## 1. Project Description
 
-| Capa | Tecnología | Versión mínima |
+**SVAES** (Automatic Software Delivery Verification System) is a generic
+academic platform that automates the validation of software *releases* against a
+configurable set of verification rules (RV-01 to RV-10).
+
+The project is the Final Degree Project (TFG) of **Adrian Martinez Fuentes (UO295454)**
+in the Software Engineering degree at the University of Oviedo (EII).
+
+**There is no real production environment.** All external connectors (GitLab, Jira, etc.)
+are reference connectors implementing the `IConnector` port; they are not mandatory
+dependencies of the core.
+
+---
+
+## 2. Technology Stack
+
+| Layer | Technology | Minimum Version |
 |---|---|---|
 | API backend | FastAPI (Python) | 0.136 |
-| Lógica de dominio | Python | 3.11 |
-| Base de datos | PostgreSQL | 16 |
-| ORM / migraciones | SQLAlchemy + Alembic | 2.x / 1.x |
-| Motor de verificación | Rust (Actix-web + Rayon) | 1.77 (✅ Implementado — motor completo con evaluación paralela de reglas) |
-| Cola de tareas | Celery + Redis | 5.x / 7.x (worker implementado) |
-| Frontend | Angular + TypeScript | Angular 17 (en desarrollo) |
-| Contenedores | Docker + Docker Compose | 25 / 2.x |
+| Domain logic | Python | 3.11 |
+| Database | PostgreSQL | 16 |
+| ORM / migrations | SQLAlchemy + Alembic | 2.x / 1.x |
+| Verification engine | Rust (Actix-web + Rayon) | 1.77 (Implemented — full engine with parallel rule evaluation) |
+| Task queue | Celery + Redis | 5.x / 7.x (worker implemented) |
+| Frontend | Angular + TypeScript | Angular 21 (in development) |
+| Containers | Docker + Docker Compose | 25 / 2.x |
 
 ---
 
-## 3. Estructura del repositorio
+## 3. Repository Structure
 
 ```
 svaes/
-├── api/                       # FastAPI — código completo
+├── api/                       # FastAPI — full code
 │   ├── src/
-│   │   ├── domain/            # Entidades, puertos (sin dependencias externas)
-│   │   ├── application/       # Casos de uso
-│   │   │   ├── ports/input/   # Interfaces de servicios (IReleaseService, etc.)
-│   │   │   └── ports/output/  # Interfaces de repositorios y servicios externos
-│   │   ├── infrastructure/    # Adaptadores (DB, seguridad, workers, routers)
+│   │   ├── domain/            # Entities, ports (no external dependencies)
+│   │   ├── application/       # Use cases
+│   │   │   ├── ports/input/   # Service interfaces (IReleaseService, etc.)
+│   │   │   └── ports/output/  # Repository and external service interfaces
+│   │   ├── infrastructure/    # Adapters (DB, security, workers, routers)
 │   │   └── main.py
-│   ├── alembic/              # Migraciones de BD
-│   ├── tests/                # Tests propios de la API
+│   ├── alembic/              # DB migrations
+│   ├── tests/                # API-specific tests
 │   └── pyproject.toml
-├── engine/                    # Motor de verificación Rust (completo con evaluador paralelo y 10 reglas)
+├── engine/                    # Rust verification engine (full with parallel evaluator and 10 rules)
 │   └── src/
-├── web/                       # SPA Angular (en desarrollo)
+├── web/                       # Angular SPA (in development)
 │   └── src/
 ├── docs/
-│   ├── api/                   # Documentación de la API
-│   └── agents/                # Especificaciones para agentes
-├── scripts/                   # Scripts auxiliares
-├── docker-compose.yml         # Servicios: api, postgres, redis
-└── tests/                     # Suite de pruebas completa
-    ├── unit/                  # ✅ Implementado — domain, application, infrastructure
+│   ├── api/                   # API documentation
+│   └── agents/                # Agent specifications
+├── scripts/                   # Auxiliary scripts
+├── docker-compose.yml         # Services: api, postgres, redis
+└── tests/                     # Full test suite
+    ├── unit/                  # Implemented — domain, application, infrastructure
     └── ...
 ```
 
-**Estado actual:**
-- ✅ Backend FastAPI completo en `api/src/`
-- ✅ Worker Celery implementado (`api/src/infrastructure/workers/verification_worker.py`)
-- ✅ Motor de verificación Rust completo (`engine/src/` — evaluador, agregador, 10 reglas RV-01 a RV-10)
-- ⚠️ Frontend Angular en desarrollo (`web/` con contenido parcial)
-- ✅ Routers registrados: auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin
-- ⚠️ Paquetes compartidos pendientes (`packages/` vacío)
+**Current status:**
+- FastAPI backend complete in `api/src/`
+- Celery worker implemented (`api/src/infrastructure/workers/verification_worker.py`)
+- Rust verification engine complete (`engine/src/` — evaluator, aggregator, 10 rules RV-01 to RV-10)
+- Angular frontend in development (`web/` with partial content)
+- Routers registered: auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin
+- Shared packages pending (`packages/` empty)
 
 ---
 
-## 4. Principios de diseño — reglas que el agente DEBE respetar
+## 4. Design Principles — rules the agent MUST follow
 
-1. **Regla de dependencia (Clean Architecture):** las dependencias de código sólo pueden
-   apuntar hacia el interior. `domain/` no importa nada de `application/` ni de
-   `infrastructure/`. Cualquier cambio que viole esta regla debe rechazarse.
+1. **Dependency rule (Clean Architecture):** code dependencies can only
+   point inward. `domain/` imports nothing from `application/` or
+   `infrastructure/`. Any change violating this rule must be rejected.
 
-2. **Genericidad obligatoria:** el núcleo del sistema no puede acoplarse a ninguna
-   herramienta externa concreta. Toda integración se realiza implementando `IConnector`.
+2. **Mandatory genericity:** the system core cannot be coupled to any
+   specific external tool. All integration is done by implementing `IConnector`.
 
-3. **Motor de verificación:** el motor Rust reside en `engine/` y se comunica con el
-   backend vía HTTP (configurable via `ENGINE_URL`). El motor está completamente implementado
-   con evaluador paralelo (Rayon) y las 10 reglas RV-01…RV-10. No debe añadirse lógica de acceso a BD ni a conectores dentro
-   del engine.
+3. **Verification engine:** the Rust engine resides in `engine/` and communicates with the
+   backend via HTTP (configurable via `ENGINE_URL`). The engine is fully implemented
+   with a parallel evaluator (Rayon) and the 10 rules RV-01…RV-10. No DB access or connector logic
+   should be added inside the engine.
 
-4. **Multi-tenancy:** todos los repositorios y casos de uso deben filtrar obligatoriamente
-   por `organization_id`. Un agente no debe generar código que acceda a datos de otra
-   organización.
+4. **Multi-tenancy:** all repositories and use cases must mandatorily filter
+   by `organization_id`. An agent must not generate code that accesses data from another
+   organization.
 
-5. **RBAC:** los roles son `U1 < U2 < U3 < U4`. El agente debe respetar los guards
-   correspondientes en todo endpoint nuevo.
+5. **RBAC:** roles are `U1 < U2 < U3 < U4`. The agent must respect the corresponding guards
+   on every new endpoint.
 
-6. **No referencias a Indra, Multideployment ni Flask:** estos contextos son obsoletos.
-   Si aparecen en algún fichero existente, deben eliminarse o generalizarse.
+6. **No references to Indra, Multideployment, or Flask:** these contexts are obsolete.
+   If they appear in any existing file, they must be removed or generalized.
 
 ---
 
-## 5. Convenciones de código
+## 5. Code Conventions
 
 ### Python (backend — api/src/)
-- Formato: **Black** + **isort**. Longitud máxima de línea: 88.
-- Tipos: todas las funciones deben estar anotadas. Se usa **Pydantic v2** para modelos.
-- Tests: **pytest**. Cobertura mínima objetivo: 80 % en `domain/` y `application/`.
-- Migraciones Alembic: un fichero por cambio de esquema, con mensaje descriptivo.
-- Estructura interior de `src/`:
+- Formatting: **Black** + **isort**. Maximum line length: 88.
+- Types: all functions must be annotated. **Pydantic v2** is used for models.
+- Tests: **pytest**. Minimum target coverage: 80% in `domain/` and `application/`.
+- Alembic migrations: one file per schema change, with a descriptive message.
+- Internal structure of `src/`:
   ```
   src/
   ├── domain/           # entities/, enums.py, exceptions.py, ports/
@@ -119,61 +119,61 @@ svaes/
   ```
 
 ### TypeScript (frontend — web/)
-- Formato: **Prettier** + **ESLint** (angular-eslint).
-- Componentes standalone (Angular 17+).
+- Formatting: **Prettier** + **ESLint** (angular-eslint).
+- Standalone components (Angular 17+).
 
 ### Rust (engine — engine/)
-- Formato: **rustfmt** (configuración por defecto).
-- Sin `unsafe` salvo justificación documentada.
-- Tests unitarios dentro del mismo módulo (`#[cfg(test)]`).
+- Formatting: **rustfmt** (default configuration).
+- No `unsafe` unless documentedly justified.
+- Unit tests within the same module (`#[cfg(test)]`).
 
 ### Git
-- Ramas: `main` (estable), `dev` (integración), `feat/<nombre>`, `fix/<nombre>`.
-- Commits en **inglés**, formato Conventional Commits:
+- Branches: `main` (stable), `dev` (integration), `feat/<name>`, `fix/<name>`.
+- Commits in **English**, Conventional Commits format:
   `feat(api): add RV-07 traceability rule`.
-- No se hace push directamente a `main`.
+- No direct push to `main`.
 
 ---
 
-## 6. Tareas que el agente puede realizar sin confirmación
+## 6. Tasks the agent can perform without confirmation
 
-- Leer y analizar cualquier fichero del repositorio.
-- Proponer o generar código nuevo que respete los principios del §4.
-- Escribir o actualizar tests unitarios.
-- Generar migraciones Alembic a partir de cambios en los modelos SQLAlchemy.
-- Actualizar la especificación OpenAPI cuando se añaden endpoints.
-- Actualizar este fichero o `SPECS.md` / `API_DOCUMENTATION.md` para reflejar cambios aprobados.
+- Read and analyze any file in the repository.
+- Propose or generate new code that respects the principles in section 4.
+- Write or update unit tests.
+- Generate Alembic migrations from SQLAlchemy model changes.
+- Update the OpenAPI specification when endpoints are added.
+- Update this file or `SPECS.md` / `API_DOCUMENTATION.md` to reflect approved changes.
 
-## 7. Tareas que requieren confirmación explícita del desarrollador
+## 7. Tasks requiring explicit developer confirmation
 
-- Modificar el esquema de la base de datos (tablas, columnas, tipos enumerados).
-- Cambiar la interfaz HTTP entre backend y engine (cuando exista).
-- Añadir dependencias nuevas (`pyproject.toml`, `Cargo.toml`, `package.json`).
-- Eliminar o renombrar puertos (`IConnector`, `IReleaseRepository`, etc.).
-- Cualquier cambio en la lógica de agregación de veredictos (§4 de `SPECS.md`).
+- Modify the database schema (tables, columns, enum types).
+- Change the HTTP interface between backend and engine.
+- Add new dependencies (`pyproject.toml`, `Cargo.toml`, `package.json`).
+- Remove or rename ports (`IConnector`, `IReleaseRepository`, etc.).
+- Any change to the verdict aggregation logic (section 4 of `SPECS.md`).
 
 ---
 
-## 8. Lo que el agente NO debe hacer
+## 8. What the agent MUST NOT do
 
-- Añadir llamadas de red dentro de `domain/`.
-- Instanciar conectores concretos dentro de los casos de uso.
-- Hardcodear nombres de herramientas externas (Jira, GitLab, Confluence…) fuera de
+- Add network calls inside `domain/`.
+- Instantiate concrete connectors inside use cases.
+- Hardcode external tool names (Jira, GitLab, Confluence…) outside of
   `infrastructure/adapters/`.
-- Generar código que omita el filtro por `organization_id`.
-- Modificar `verification_result` para que sea mutable después de crearse.
+- Generate code that omits the `organization_id` filter.
+- Modify `verification_result` to be mutable after creation.
 
 ---
 
-## 9. Convenciones de testing
+## 9. Testing Conventions
 
-### Tests unitarios (`tests/unit/`)
+### Unit tests (`tests/unit/`)
 
 ```
 tests/
 ├── conftest.py              # PYTHONPATH, DATABASE_URL dummy
 ├── api/
-│   └── test_routers.py     # handlers HTTP
+│   └── test_routers.py     # HTTP handlers
 ├── application/use_cases/
 │   ├── test_auth_use_cases.py
 │   ├── test_configure_connector.py
@@ -184,44 +184,44 @@ tests/
 │   ├── test_organization_use_cases.py
 │   └── test_project_use_cases.py
 ├── domain/
-│   ├── test_entities.py    # entidades y enums
-│   └── test_ports.py       # puertos (si aplica)
+│   ├── test_entities.py    # entities and enums
+│   └── test_ports.py       # ports (if applicable)
 └── infrastructure/
-    ├── test_repositories.py # repositorios SQLAlchemy (mockeados)
+    ├── test_repositories.py # SQLAlchemy repositories (mocked)
     └── test_security.py    # JWT, Fernet, MockTaskQueue
 ```
 
-- Un archivo por módulo: `test_<nombre_del_módulo>.py`
-- Una clase por unidad: `class Test<NombreDeLaUnidad>`
-- Métodos: `test_<condición>_<resultado_esperado>`
-- Entidades de dominio y comandos de aplicación **nunca** se mockean.
+- One file per module: `test_<module_name>.py`
+- One class per unit: `class Test<UnitName>`
+- Methods: `test_<condition>_<expected_result>`
+- Domain entities and application commands are **never** mocked.
 
-### Niveles pendientes (`tests/integration/`, `tests/e2e/`, etc.)
+### Pending levels (`tests/integration/`, `tests/e2e/`, etc.)
 
-Pendientes de implementar según `tests/README.md`.
-
----
-
-## 10. Routers registrados en main.py
-
-Los siguientes routers están conectados en `api/src/main.py`:
-
-| Router | Archivo | Descripción |
-|--------|---------|-------------|
-| auth_router | v1/auth | Autenticación (login, refresh) |
-| organizations_router | v1/organizations | Gestión de organizaciones |
-| releases_router | v1/releases | Gestión de releases y artefactos |
-| connectors_router | v1/connectors | Gestión de conectores |
-| profiles_router | v1/profiles | Gestión de perfiles de verificación |
-| tasks_router | v1/tasks | Consulta de estado de tareas async |
-| users_router | v1/users | Gestión de usuarios |
-| custom_roles_router | v1/custom_roles | Roles personalizados |
-| dashboard_router | v1/dashboard | Métricas del dashboard |
-| api_keys_router | v1/api_keys | Gestión de API keys |
-| templates_router | v1/templates | Plantillas de release |
-| notifications_router | v1/notifications | Configuración de notificaciones |
-| admin_router | v1/admin | Operaciones de administración |
+Pending implementation according to `tests/README.md`.
 
 ---
 
-*Última actualización: mayo 2026 — Adrián Martínez Fuentes (UO295454)*
+## 10. Routers Registered in main.py
+
+The following routers are connected in `api/src/main.py`:
+
+| Router | File | Description |
+|--------|------|-------------|
+| auth_router | v1/auth | Authentication (login, refresh) |
+| organizations_router | v1/organizations | Organization management |
+| releases_router | v1/releases | Release and artifact management |
+| connectors_router | v1/connectors | Connector management |
+| profiles_router | v1/profiles | Verification profile management |
+| tasks_router | v1/tasks | Async task status query |
+| users_router | v1/users | User management |
+| custom_roles_router | v1/custom_roles | Custom roles |
+| dashboard_router | v1/dashboard | Dashboard metrics |
+| api_keys_router | v1/api_keys | API key management |
+| templates_router | v1/templates | Release templates |
+| notifications_router | v1/notifications | Notification configuration |
+| admin_router | v1/admin | Administration operations |
+
+---
+
+*Last updated: May 2026 — Adrian Martinez Fuentes (UO295454)*

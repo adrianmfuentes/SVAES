@@ -2,10 +2,10 @@
 version: alpha
 name: SVAES
 description: >
-  Sistema de Verificación Automática de Entregas de Software.
-  Plataforma de administración técnica orientada a operadores y managers
-  de equipos de software. La identidad visual prioriza la claridad del
-  veredicto de verificación sobre cualquier otro elemento de la pantalla.
+  Automatic Software Delivery Verification System.
+  Technical administration platform oriented toward software team
+  operators and managers. The visual identity prioritizes clarity of the
+  verification verdict over any other element on screen.
  
 colors:
   primary: "#1E3A5F"
@@ -152,149 +152,149 @@ components:
 
 ## Overview
 
-SVAES es una herramienta de trabajo para equipos técnicos, no una aplicación de
-consumo. El diseño refleja esto: funcional, denso en información, sin ornamentos
-innecesarios. La jerarquía visual está al servicio de una sola pregunta:
-**¿es válida esta release?**
+SVAES is a work tool for technical teams, not a consumer
+application. The design reflects this: functional, information-dense, without unnecessary
+ornaments. The visual hierarchy serves a single question:
+**is this release valid?**
 
-El veredicto de verificación es siempre el elemento más prominente de la pantalla.
-Todo lo demás —navegación, filtros, metadatos— ocupa un plano secundario deliberado.
+The verification verdict is always the most prominent element on screen.
+Everything else — navigation, filters, metadata — occupies a deliberately secondary plane.
 
-El lenguaje visual se inspira en los dashboards de herramientas de CI/CD y monitores
-de infraestructura: alto contraste, tipografía legible en pantallas de bajo DPI,
-colores semánticos con significado unívoco (verde = válido, rojo = inválido, siempre).
+The visual language is inspired by CI/CD tool dashboards and infrastructure
+monitors: high contrast, legible typography on low DPI screens,
+semantic colors with unambiguous meaning (green = valid, red = invalid, always).
 
 ## Colors
 
-La paleta combina un azul marino institucional con un verde de confirmación y un rojo
-de alerta. El neutro cálido (`#F4F6F8`) actúa como fondo de la aplicación para
-reducir la fatiga visual en sesiones largas.
+The palette combines an institutional navy blue with a confirmation green and an alert
+red. The warm neutral (`#F4F6F8`) acts as the application background to
+reduce visual fatigue in long sessions.
 
-- **Primary (`#1E3A5F`):** Azul marino. Barra lateral de navegación, botones
-  principales, cabeceras de sección. Transmite fiabilidad e institucionalidad.
+- **Primary (`#1E3A5F`):** Navy blue. Side navigation bar, primary
+  buttons, section headers. Conveys reliability and institutionality.
 
-- **Secondary (`#2D6A4F`):** Verde bosque. Usado exclusivamente para el veredicto
-  `VÁLIDA` y los estados de éxito. No debe emplearse para otros fines para preservar
-  su significado semántico.
+- **Secondary (`#2D6A4F`):** Forest green. Used exclusively for the
+  `VALID` verdict and success states. Must not be used for other purposes to preserve
+  its semantic meaning.
 
-- **Tertiary (`#C0392B`):** Rojo señal. Reservado para el veredicto `NO_VÁLIDA`,
-  errores de conector y acciones destructivas (botón «Rechazar release»).
+- **Tertiary (`#C0392B`):** Signal red. Reserved for the `INVALID` verdict,
+  connector errors, and destructive actions ("Reject release" button).
 
-- **Neutral (`#F4F6F8`):** Fondo de la aplicación y el menú lateral activo.
-  Más suave que el blanco puro para entornos de trabajo prolongado.
+- **Neutral (`#F4F6F8`):** Application background and active sidebar menu.
+  Softer than pure white for extended work environments.
 
-- **Muted (`#6C757D`):** Metadatos secundarios, fechas, identificadores, texto de ayuda.
-  Nunca para texto de acción o contenido operativo principal.
+- **Muted (`#6C757D`):** Secondary metadata, dates, identifiers, help text.
+  Never for action text or primary operational content.
 
-### Colores semánticos de veredicto
+### Verdict Semantic Colors
 
-Los cuatro estados de verificación tienen colores fijos que no pueden reasignarse
-a otros usos dentro de la interfaz:
+The four verification states have fixed colors that cannot be reassigned
+to other uses within the interface:
 
-| Estado | Color texto | Color fondo |
+| State | Text Color | Background Color |
 |---|---|---|
-| VÁLIDA | `#2D6A4F` | `#EAF5EE` |
-| CON_ADVERTENCIAS | `#B8860B` | `#FDF8E1` |
-| NO_VÁLIDA | `#C0392B` | `#FDECEC` |
-| NO_EVALUADA | `#6C757D` | `#F0F0F0` |
+| VALID | `#2D6A4F` | `#EAF5EE` |
+| WITH_WARNINGS | `#B8860B` | `#FDF8E1` |
+| INVALID | `#C0392B` | `#FDECEC` |
+| NOT_EVALUATED | `#6C757D` | `#F0F0F0` |
 
 ## Typography
 
-Se usa **Inter** para toda la interfaz: fuente sans-serif diseñada específicamente
-para legibilidad en pantalla a tamaños pequeños, con soporte completo de caracteres
-latinos (tildes, eñes).
+**Inter** is used for the entire interface: a sans-serif font designed specifically
+for screen readability at small sizes, with full Latin character support
+(accents, tildes).
 
-**JetBrains Mono** se usa exclusivamente para identificadores técnicos: UUIDs de
-releases, referencias de commits, nombres de reglas (RV-01…RV-10), valores de
-configuración JSONB y fragmentos de log. Nunca para texto de interfaz genérico.
+**JetBrains Mono** is used exclusively for technical identifiers: release
+UUIDs, commit references, rule names (RV-01…RV-10), JSONB configuration
+values, and log fragments. Never for generic interface text.
 
-La jerarquía tipográfica en la mayoría de vistas usa tres niveles: título de sección
-(`h2`), nombre del elemento (`h3`) y datos operativos (`body-md` / `body-sm`).
-Las etiquetas de tabla usan `label-caps` para distinguirlas del contenido sin
-recurrir a la negrita.
+The typographic hierarchy in most views uses three levels: section title
+(`h2`), element name (`h3`), and operational data (`body-md` / `body-sm`).
+Table labels use `label-caps` to distinguish them from content without
+resorting to bold.
 
 ## Layout
 
-La aplicación usa un layout de dos columnas:
+The application uses a two-column layout:
 
-- **Barra lateral fija (240 px):** navegación principal con fondo `primary`.
-  Texto de ítems en `on-primary` al 60 % de opacidad; ítem activo con fondo
-  `neutral` y texto `primary`.
+- **Fixed sidebar (240 px):** main navigation with `primary` background.
+  Item text in `on-primary` at 60% opacity; active item with
+  `neutral` background and `primary` text.
 
-- **Área de contenido principal:** fondo `neutral`, contenedor central de máximo
-  `1200 px` con padding de `spacing.xl` (32 px).
+- **Main content area:** `neutral` background, central container of maximum
+  `1200 px` with `spacing.xl` (32 px) padding.
 
-Las tarjetas (`card`) son la unidad de composición principal. Una vista típica
-contiene una tarjeta de cabecera con el veredicto global y tarjetas secundarias
-con el detalle regla a regla.
+Cards (`card`) are the main composition unit. A typical view
+contains a header card with the global verdict and secondary cards
+with rule-by-rule detail.
 
-Los formularios usan cuadrícula de dos columnas en pantallas ≥ 1024 px y una columna
-en móvil. Ancho máximo de campos de texto: `480 px`.
+Forms use a two-column grid on screens ≥ 1024 px and a single column
+on mobile. Maximum width for text fields: `480 px`.
 
 ## Elevation & Depth
 
-La interfaz es deliberadamente plana. Solo dos niveles de elevación:
+The interface is deliberately flat. Only two elevation levels:
 
-- **Nivel 0:** fondo de la aplicación (`neutral`).
-- **Nivel 1:** tarjetas y paneles (`surface`, `box-shadow: 0 1px 3px rgba(0,0,0,0.08)`).
+- **Level 0:** application background (`neutral`).
+- **Level 1:** cards and panels (`surface`, `box-shadow: 0 1px 3px rgba(0,0,0,0.08)`).
 
-Los modales añaden un overlay `rgba(0,0,0,0.4)` sobre el contenido.
-No se usan sombras pronunciadas ni efectos de profundidad adicionales.
+Modals add an overlay `rgba(0,0,0,0.4)` over the content.
+No pronounced shadows or additional depth effects are used.
 
 ## Shapes
 
-- `rounded.sm` (4 px): badges, chips de filtro, etiquetas de estado.
-- `rounded.md` (8 px): botones, inputs, tooltips.
-- `rounded.lg` (12 px): tarjetas, paneles, modales.
-- `rounded.full` (9999 px): badges de veredicto en modo compacto.
+- `rounded.sm` (4 px): badges, filter chips, status labels.
+- `rounded.md` (8 px): buttons, inputs, tooltips.
+- `rounded.lg` (12 px): cards, panels, modals.
+- `rounded.full` (9999 px): verdict badges in compact mode.
 
 ## Components
 
-### Badges de veredicto
+### Verdict Badges
 
-Son el componente más crítico de la interfaz. Siempre acompañan un icono y
-nunca se usan sin él:
+They are the most critical component of the interface. They always accompany an icon and
+are never used without one:
 
-- ✅ `badge-valid` → VÁLIDA
-- ⚠️ `badge-warning` → CON_ADVERTENCIAS
-- ❌ `badge-invalid` → NO_VÁLIDA
-- — `badge-unevaluated` → NO_EVALUADA
+- ✅ `badge-valid` → VALID
+- ⚠️ `badge-warning` → WITH_WARNINGS
+- ❌ `badge-invalid` → INVALID
+- — `badge-unevaluated` → NOT_EVALUATED
 
-El sufijo `_CON_INCIDENCIAS` se renderiza como indicador secundario en `body-sm`
-color `muted`, adyacente al badge principal, nunca dentro de él.
+The `_WITH_INCIDENTS` suffix is rendered as a secondary indicator in `body-sm`
+`muted` color, adjacent to the main badge, never inside it.
 
-### Tabla de reglas de verificación
+### Verification Rule Table
 
-Columnas: identificador (`mono`), nombre (`body-md`), conector consultado
-(`body-sm`), resultado (badge), evidencia (texto expandible en `body-sm`).
-El identificador de regla usa siempre `mono` para facilitar la búsqueda visual.
+Columns: identifier (`mono`), name (`body-md`), queried connector
+(`body-sm`), result (badge), evidence (expandable text in `body-sm`).
+The rule identifier always uses `mono` to facilitate visual search.
 
-### Inputs y formularios
+### Inputs and Forms
 
-- Estado normal: borde `1px solid {colors.border}`.
-- Estado foco: borde `2px solid {colors.primary}`.
-- Estado error: borde `{colors.tertiary}` + mensaje debajo en `body-sm` color `tertiary`.
+- Normal state: border `1px solid {colors.border}`.
+- Focus state: border `2px solid {colors.primary}`.
+- Error state: `{colors.tertiary}` border + message below in `body-sm` `tertiary` color.
 
-Siempre hay una etiqueta visible (`label-caps`) encima del input.
-No se usan placeholders como única indicación del campo.
+There is always a visible label (`label-caps`) above the input.
+Placeholders are not used as the only field indication.
 
-Los estados de carga usan skeleton screens, no spinners bloqueantes,
-porque las verificaciones son asíncronas y pueden tardar varios segundos.
+Loading states use skeleton screens, not blocking spinners,
+because verifications are asynchronous and may take several seconds.
 
 ## Do's and Don'ts
 
-**Hacer:**
-- Mostrar siempre el veredicto global en la parte superior de la vista de detalle
-  de una release, antes de cualquier otro dato.
-- Usar `mono` para todos los identificadores técnicos (UUIDs, RV-*, commits).
-- Mantener los colores semánticos de veredicto consistentes en toda la aplicación.
-- Usar skeleton screens para los estados de carga de resultados de verificación.
+**Do:**
+- Always show the global verdict at the top of the release detail
+  view, before any other data.
+- Use `mono` for all technical identifiers (UUIDs, RV-*, commits).
+- Keep verdict semantic colors consistent throughout the application.
+- Use skeleton screens for verification result loading states.
 
-**No hacer:**
-- No reutilizar el color `secondary` (verde) para nada que no sea el veredicto
-  VÁLIDA o estados de éxito explícitos.
-- No usar el color `tertiary` (rojo) para acciones destructivas rutinarias
-  como «cancelar» o «volver»; solo para acciones irreversibles sobre la release.
-- No truncar el campo de evidencia de una regla fallida: es el dato más importante
-  cuando el usuario necesita depurar un resultado `NO_VÁLIDA`.
-- No ocultar el sufijo `_CON_INCIDENCIAS` por razones estéticas.
+**Don't:**
+- Do not reuse the `secondary` color (green) for anything other than the
+  `VALID` verdict or explicit success states.
+- Do not use the `tertiary` color (red) for routine destructive actions
+  like "cancel" or "back"; only for irreversible actions on the release.
+- Do not truncate the evidence field of a failed rule: it is the most important data
+  when the user needs to debug an `INVALID` result.
+- Do not hide the `_WITH_INCIDENTS` suffix for aesthetic reasons.

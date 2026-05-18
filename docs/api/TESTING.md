@@ -1,128 +1,128 @@
-# Testing — API FastAPI
+# Testing — FastAPI API
 
-Documento para cualquier persona que necesite entender cómo se prueban los componentes de `api/`.
+Document for anyone who needs to understand how `api/` components are tested.
 
 ---
 
-## Dependencias de testing
+## Testing Dependencies
 
-Las dependencias ya presentes en `pyproject.toml` son:
+The dependencies already present in `pyproject.toml` are:
 
 - `pytest >=8.0` — Test runner
-- `pytest-asyncio >=0.24` — Soporte para funciones `async`
-- `pytest-cov >=5.0` — Reportes de cobertura
-- `httpx >=0.28.1` — Cliente HTTP async para tests de integración
+- `pytest-asyncio >=0.24` — Support for `async` functions
+- `pytest-cov >=5.0` — Coverage reports
+- `httpx >=0.28.1` — Async HTTP client for integration tests
 
-Faltan por agregar:
+Still to be added:
 
 ```toml
-pytest-mock       # creación de mocks
-factory-boy       # factories para generar datos de test
-faker             # generación de datos falsos (nombres, emails, etc.)
-testcontainers    # PostgreSQL real en containers para tests de integración
+pytest-mock       # mock creation
+factory-boy       # factories for generating test data
+faker             # fake data generation (names, emails, etc.)
+testcontainers    # real PostgreSQL in containers for integration tests
 ```
 
 ---
 
-## Ubicación de los tests
+## Test Location
 
-Todos los tests del sistema SVAES viven en `tests/` en la raíz del repositorio:
+All SVAES system tests live in `tests/` at the repository root:
 
 ```
 tests/
-├── conftest.py              # fixtures globales compartidas
-├── unit/                    # tests unitarios
+├── conftest.py              # shared global fixtures
+├── unit/                    # unit tests
 │   ├── api/
 │   │   ├── test_use_cases/
 │   │   └── test_services/
-│   └── ...                  # otros dominios si aplican
-├── integration/             # tests de integración
+│   └── ...                  # other domains if applicable
+├── integration/             # integration tests
 │   ├── api/
 │   │   ├── test_routers/
 │   │   └── test_repositories/
 │   └── ...
-├── performance/             # tests de rendimiento
-└── acceptance/              # tests de aceptación (BDD)
+├── performance/             # performance tests
+└── acceptance/              # acceptance tests (BDD)
 ```
 
 ---
 
-## Tipos de tests
+## Test Types
 
-### Unitarios
-Prueban **una sola unidad** (un use case, un servicio) **sin ningún I/O real**.
+### Unit
+Test **a single unit** (a use case, a service) **without any real I/O**.
 
-- Redis, PostgreSQL, Celery: todos mockeados
-- Ejecución muy rápida (menos de 1 segundo en total)
-- Técnica: injected dependencies + mocks
+- Redis, PostgreSQL, Celery: all mocked
+- Very fast execution (under 1 second total)
+- Technique: injected dependencies + mocks
 
-### Integración
-Prueban **un conjunto de componentes conectados** (por ejemplo, un router completo con su use case y repositorio real).
+### Integration
+Test **a set of connected components** (e.g., a full router with its use case and real repository).
 
-- PostgreSQL real via `testcontainers`
-- No se mockean las capas de acceso a datos
-- Ejecución más lenta (segundos por suite)
+- Real PostgreSQL via `testcontainers`
+- Data access layers are not mocked
+- Slower execution (seconds per suite)
 
 ### Performance
-Prueban que operaciones concretas cumplan requisitos de rendimiento (tiempo de respuesta, throughput).
+Test that specific operations meet performance requirements (response time, throughput).
 
-### Aceptación (BDD)
-Prueban el comportamiento del sistema desde el punto de vista del usuario, escritas en lenguaje natural.
+### Acceptance (BDD)
+Test system behavior from the user's perspective, written in natural language.
 
 ---
 
-## Conceptos clave
+## Key Concepts
 
 ### Mocks vs Stubs vs Fakes
 
-- **Mock**: objeto que verifica interacciones (qué método se llamó, con qué argumentos)
-- **Stub**: objeto que devuelve respuestas predefinidas
-- **Fake**: implementación simplificada que se comporta como la real pero no es la real (ej: SQLite en memoria en lugar de PostgreSQL)
+- **Mock**: object that verifies interactions (which method was called, with what arguments)
+- **Stub**: object that returns predefined responses
+- **Fake**: simplified implementation that behaves like the real one but isn't (e.g., in-memory SQLite instead of PostgreSQL)
 
-### Inyección de dependencias
+### Dependency Injection
 
-Los use cases y servicios reciben sus dependencias (repositorios, handlers) como argumentos o vía FastAPI DI. Esto permite sustituirlos por mocks en tests unitarios sin tocar el código de producción.
+Use cases and services receive their dependencies (repositories, handlers) as arguments or via FastAPI DI. This allows substituting them with mocks in unit tests without touching production code.
 
 ### Fixtures
 
-Son funciones de setup/teardown que proporcionan datos o recursos a los tests. Las más importantes:
+Setup/teardown functions that provide data or resources to tests. The most important:
 
-- `async_client` — cliente HTTP async que habla con la app real
-- `db_session` — sesión de base de datos async
-- `auth_headers` — headers de autenticación con un token JWT válido
-- `postgres_container` — container de PostgreSQL para tests de integración
+- `async_client` — async HTTP client that talks to the real app
+- `db_session` — async database session
+- `auth_headers` — authentication headers with a valid JWT token
+- `postgres_container` — PostgreSQL container for integration tests
 
 ---
 
-## Configuración de pytest
+## Pytest Configuration
 
-En `pyproject.toml` ya está configurado `asyncio_mode = "auto"`, lo que significa que cualquier función `async def test_*` se trata automáticamente como un test asíncrono sin necesidad de marcadores extra.
+`pyproject.toml` already has `asyncio_mode = "auto"` configured, meaning any `async def test_*` function is automatically treated as an async test without the need for extra markers.
 
-Parámetros relevantes:
+Relevant parameters:
 
-| Parámetro | Valor | Descripción |
+| Parameter | Value | Description |
 |---|---|---|
-| `asyncio_mode` | `auto` | Detecta funciones async automáticamente |
-| `testpaths` | `["../tests/api"]` | Carpeta donde pytest busca tests |
-| `python_files` | `test_*.py` | Patrón para文件名 |
+| `asyncio_mode` | `auto` | Detects async functions automatically |
+| `testpaths` | `["../tests/api"]` | Folder where pytest looks for tests |
+| `python_files` | `test_*.py` | File name pattern |
 | `addopts` | `-v --cov=src` | Verbose + coverage |
 
 ---
 
-## Cobertura objetivo
+## Coverage Targets
 
-| Capa | Objetivo |
+| Layer | Target |
 |---|---|
-| `routers` (api/ src/infrastructure/primary/routers/) | 90%+ |
-| `use_cases` (api/ src/application/use_cases/) | 80%+ |
-| `repositories` (api/ src/infrastructure/secondary/database/repositories/) | 70%+ |
-| `core` (api/ src/core/) | 50%+ |
+| `routers` (api/src/infrastructure/primary/routers/) | 90%+ |
+| `use_cases` (api/src/application/use_cases/) | 80%+ |
+| `repositories` (api/src/infrastructure/secondary/database/repositories/) | 70%+ |
+| `core` (api/src/core/) | 50%+ |
 
 ---
 
-## Ejemplos rápidos
+## Quick Examples
 
-### Test unitario de un use case
+### Unit Test for a Use Case
 
 ```python
 # tests/unit/api/test_use_cases/test_auth.py
@@ -146,7 +146,7 @@ class TestAuthService:
         mock_repo.get_by_email.assert_called_once_with("test@example.com")
 ```
 
-### Test de integración de un router
+### Router Integration Test
 
 ```python
 # tests/integration/api/test_routers/test_auth.py
@@ -167,41 +167,41 @@ class TestAuthRouter:
 
 ---
 
-## Dependencias externas en tests
+## External Dependencies in Tests
 
-| Servicio | Unit test | Integración test |
+| Service | Unit test | Integration test |
 |---|---|---|
-| PostgreSQL | Mockeado | `testcontainers` |
-| Redis | Mockeado con `fakeredis` | `fakeredis` real o mockeado |
-| Celery | Mockeado | Tareas reales en cola real o mockeadas |
-| HTTP externo | `httpx.MockTransport` | `httpx` real o `respx` |
+| PostgreSQL | Mocked | `testcontainers` |
+| Redis | Mocked with `fakeredis` | Real `fakeredis` or mocked |
+| Celery | Mocked | Real tasks in real queue or mocked |
+| External HTTP | `httpx.MockTransport` | Real `httpx` or `respx` |
 
 ---
 
-## Ejecutar los tests
+## Running Tests
 
 ```bash
-# Todos los tests
+# All tests
 pytest
 
-# Solo unitarios
+# Unit only
 pytest tests/unit/
 
-# Solo integración
+# Integration only
 pytest tests/integration/
 
-# Con coverage
+# With coverage
 pytest --cov=api/src --cov-report=html
 
-# Con coverage y verbose
+# With coverage and verbose
 pytest -v --cov=api/src --cov-report=term-missing
 ```
 
 ---
 
-## Notas para quienes contributean
+## Notes for Contributors
 
-1. **Ningún test puede hacer commit si deja pasar un bug conocido sin justificación**. Los tests existen para atrapar regresiones.
-2. **Los tests de integración tocan base de datos real**. Si necesitas datos de seed, agrégalos en `conftest.py` via factories — no a mano en la DB.
-3. **Los mocks viven en `conftest.py` o en el archivo que los usa**. No hardcodear lógica de mock dentro del test.
-4. **El coverage es una herramienta, no un objetivo en sí mismo**. Un test que no testa nada y solo sube el porcentaje no vale nada.
+1. **No test should be committed if it knowingly lets a bug pass without justification**. Tests exist to catch regressions.
+2. **Integration tests touch a real database**. If you need seed data, add it in `conftest.py` via factories — not manually in the DB.
+3. **Mocks live in `conftest.py` or in the file that uses them**. Do not hardcode mock logic inside the test.
+4. **Coverage is a tool, not a goal in itself**. A test that tests nothing and only increases the percentage is worthless.

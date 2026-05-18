@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -6,8 +7,11 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from application.ports.input.i_user_service import IUserService
 from application.ports.output.i_token_service import ITokenService
 from core.dependencies import get_user_service, get_current_user, CurrentUser, require_permission, require_role, get_jwt_handler
+from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from domain.enums import UserRole, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError, AuthenticationError
+
+_log = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Users"])
 
@@ -89,8 +93,9 @@ async def get_current_user_profile(
         }
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except Exception:
+        _log.exception("Error fetching profile for user_id=%s", current_user.user_id)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.patch("/api/v1/users/me")
@@ -125,8 +130,8 @@ async def update_current_user_profile(
         }
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.post("/api/v1/users/me/password")
@@ -162,7 +167,7 @@ async def change_password(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.delete("/api/v1/users/me/account", status_code=status.HTTP_204_NO_CONTENT)
@@ -187,7 +192,50 @@ async def delete_user_account(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+
+
+@router.get("/api/v1/users/me/export")
+async def export_user_data(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IUserService, Depends(get_user_service)],
+):
+    """GDPR Art.20 — Export all personal data for the authenticated user."""
+    try:
+        user = await service.get_user_by_id(current_user.user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.DATA_EXPORT_REQUESTED,
+            user_id=user.id,
+            organization_id=user.organization_id,
+            resource_type="user",
+            resource_id=user.id,
+        ))
+
+        return {
+            "schema_version": "1.0",
+            "export_format": "GDPR Art.20 Data Portability",
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "display_name": user.display_name,
+                "role": user.role.value,
+                "is_active": user.is_active,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+                "terms_accepted_at": user.terms_accepted_at.isoformat() if user.terms_accepted_at else None,
+                "privacy_accepted_at": user.privacy_accepted_at.isoformat() if user.privacy_accepted_at else None,
+                "organization_ids": [str(oid) for oid in user.organization_ids],
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        _log.exception("Error exporting data for user_id=%s", current_user.user_id)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/organizations/{org_id}/users")
@@ -226,7 +274,7 @@ async def list_organization_users(
             for u in users
         ]
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.post("/api/v1/organizations/{org_id}/users/invite", status_code=status.HTTP_201_CREATED)
@@ -271,7 +319,7 @@ async def invite_user(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.patch("/api/v1/organizations/{org_id}/users/{user_id}/role")
@@ -316,7 +364,7 @@ async def update_user_role(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.delete("/api/v1/organizations/{org_id}/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -354,7 +402,7 @@ async def remove_user_from_org(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.post("/api/v1/admin/users", status_code=status.HTTP_201_CREATED)
@@ -394,7 +442,7 @@ async def admin_create_user(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.patch("/api/v1/admin/users/{user_id}/activate")
@@ -426,7 +474,7 @@ async def admin_activate_user(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.patch("/api/v1/admin/users/{user_id}/deactivate")
@@ -460,7 +508,7 @@ async def admin_deactivate_user(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.patch("/api/v1/admin/users/{user_id}/role")
@@ -500,7 +548,7 @@ async def admin_update_global_role(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 
 @router.get("/api/v1/admin/users")
@@ -545,4 +593,4 @@ async def admin_list_users(
             for u in users
         ]
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
 from domain.entities.user import User
@@ -35,7 +36,15 @@ class IUserService(ABC):
         pass
 
     @abstractmethod
-    async def create_user(self, email: str, display_name: str, password: str, role: UserRole) -> User:
+    async def create_user(
+        self,
+        email: str,
+        display_name: str,
+        password: str,
+        role: UserRole,
+        terms_accepted_at: Optional[datetime] = None,
+        privacy_accepted_at: Optional[datetime] = None,
+    ) -> User:
         pass
 
     @abstractmethod

@@ -1,8 +1,8 @@
-# Despliegue de SVAES - Guía de Producción
+# SVAES Deployment - Production Guide
 
-## Requisitos
+## Requirements
 
-| Componente | Versión mínima |
+| Component | Minimum Version |
 |------------|----------------|
 | Python | 3.11+ |
 | PostgreSQL | 16 |
@@ -10,44 +10,44 @@
 | Docker | 25.x |
 | Docker Compose | 2.x |
 
-## Variables de Entorno Obligatorias
+## Required Environment Variables
 
-### 1. Generar Secrets
+### 1. Generate Secrets
 
-Ejecutar el script de generación de secrets:
+Run the secret generation script:
 
 ```bash
 cd scripts
 python generate_secrets.py
 ```
 
-Esto generará valores para:
+This will generate values for:
 
 ```env
 # ── Auth ──────────────────────────────────────────────────────────────────────
-# GENERADOS: python -c "import secrets; print(secrets.token_urlsafe(32))"
-JWT_SECRET_KEY=<valor_generado>
+# GENERATED: python -c "import secrets; print(secrets.token_urlsafe(32))"
+JWT_SECRET_KEY=<generated_value>
 
-# GENERADOS: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-ENCRYPTION_KEY=<valor_generado>
+# GENERATED: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+ENCRYPTION_KEY=<generated_value>
 ```
 
-### 2. Configuración de Base de Datos
+### 2. Database Configuration
 
 ```env
 DATABASE_URL=postgresql+psycopg://svaes:<password>@host:5432/svaes
 ```
 
-### 3. CORS (Producción)
+### 3. CORS (Production)
 
 ```env
-ALLOWED_ORIGINS=https://tu-dominio.com,https://app.tu-dominio.com
+ALLOWED_ORIGINS=https://your-domain.com,https://app.your-domain.com
 ENVIRONMENT=production
 ```
 
-## Despliegue con Docker Compose
+## Deployment with Docker Compose
 
-### servicios mínimos
+### Minimum Services
 
 ```yaml
 services:
@@ -108,9 +108,9 @@ volumes:
   pgdata:
 ```
 
-### Requisitos
+### Required Environment Variables
 
-| Componente | Versión mínima |
+| Component | Minimum Version |
 |------------|----------------|
 | Python | 3.11+ |
 | PostgreSQL | 16 |
@@ -119,18 +119,16 @@ volumes:
 | Docker | 25.x |
 | Docker Compose | 2.x |
 
-### Variables de Entorno Obligatorias
-
-### Opción 1: Reverse Proxy (Nginx/Traefik)
+### Option 1: Reverse Proxy (Nginx/Traefik)
 
 ```nginx
 # /etc/nginx/sites-available/svaes
 server {
     listen 443 ssl http2;
-    server_name api.tu-dominio.com;
+    server_name api.your-domain.com;
 
-    ssl_certificate /etc/letsencrypt/live/tu-dominio.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/tu-dominio.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
 
@@ -144,65 +142,65 @@ server {
 }
 ```
 
-### Opción 2: Cloudflare/Nginx
+### Option 2: Cloudflare/Nginx
 
-Usar servicios de CDN/cloud para terminate TLS.
+Use CDN/cloud services to terminate TLS.
 
 ## Rate Limiting
 
-El API aplica límites por defecto:
+The API applies default limits:
 
-| Endpoint | Límite |
+| Endpoint | Limit |
 |----------|--------|
-| `/api/v1/auth/login` | 30/minuto |
-| `/api/v1/auth/refresh` | 30/minuto |
-| Todos los demás | 100/minuto |
+| `/api/v1/auth/login` | 30/minute |
+| `/api/v1/auth/refresh` | 30/minute |
+| All others | 100/minute |
 
-## Logs y Monitorización
+## Logging and Monitoring
 
-### Formato de Logs
+### Log Format
 
 ```
 2026-05-13T10:30:00 | INFO     | audit | AUDIT | LOGIN_SUCCESS | user=abc123 | org=org456 | ...
 2026-05-13T10:30:01 | INFO     | api.main | request_id=xyz-123 GET /api/v1/releases → 200 (12.5ms)
 ```
 
-### Recommended: Enviar logs a
+### Recommended: Send logs to
 
-- **Desarrollo**: stdout (consola)
-- **Producción**: Loggly, Datadog, CloudWatch, ELK stack
+- **Development**: stdout (console)
+- **Production**: Loggly, Datadog, CloudWatch, ELK stack
 
-## Checklist de Producción
+## Production Checklist
 
-- [ ] `JWT_SECRET_KEY` generado con `secrets.token_urlsafe(32)`
-- [ ] `ENCRYPTION_KEY` generado con `Fernet.generate_key()`
-- [ ] `ENVIRONMENT=production` configurado
-- [ ] `ALLOWED_ORIGINS` configurado con dominios reales
-- [ ] `ENGINE_URL` configurado apuntando al servicio engine
-- [ ] TLS terminado (Nginx/reverse proxy o CDN)
-- [ ] Rate limiting verificado
-- [ ] Backup de PostgreSQL configurado
-- [ ] Redis persistence habilitado
-- [ ] Health check `/health` de API accesible
-- [ ] Health check `/health` de Engine accesible
-- [ ] Worker Celery iniciado y conectado a Redis
-- [ ] Firewall configurado (solo puertos 80/443)
+- [ ] `JWT_SECRET_KEY` generated with `secrets.token_urlsafe(32)`
+- [ ] `ENCRYPTION_KEY` generated with `Fernet.generate_key()`
+- [ ] `ENVIRONMENT=production` configured
+- [ ] `ALLOWED_ORIGINS` configured with real domains
+- [ ] `ENGINE_URL` configured pointing to the engine service
+- [ ] TLS terminated (Nginx/reverse proxy or CDN)
+- [ ] Rate limiting verified
+- [ ] PostgreSQL backup configured
+- [ ] Redis persistence enabled
+- [ ] API `/health` health check accessible
+- [ ] Engine `/health` health check accessible
+- [ ] Celery worker started and connected to Redis
+- [ ] Firewall configured (ports 80/443 only)
 
 ## Health Check
 
 ```bash
 # API
-curl https://api.tu-dominio.com/health
-# Respuesta: {"status": "ok", "service": "svaes-api", "version": "1.0.0"}
+curl https://api.your-domain.com/health
+# Response: {"status": "ok", "service": "svaes-api", "version": "1.0.0"}
 
 # Engine
 curl http://engine:8081/health
-# Respuesta: {"status": "healthy", "service": "svaes-engine", "version": "1.0.0"}
+# Response: {"status": "healthy", "service": "svaes-engine", "version": "1.0.0"}
 ```
 
 ## Rollback
 
-Si hay problemas tras actualizar:
+If issues arise after updating:
 
 ```bash
 docker-compose pull api

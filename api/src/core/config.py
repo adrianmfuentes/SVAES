@@ -25,12 +25,16 @@ class Settings(BaseSettings):
     # Environment
     environment: str
 
+    # Redis
+    redis_url: str = "redis://localhost:6379/0"
+
     # Celery
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/0"
 
     # Verification Engine
     engine_url: str = "http://localhost:8081"
+    engine_api_key: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 

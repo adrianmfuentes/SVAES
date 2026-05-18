@@ -78,6 +78,7 @@ def get_current_user_id(
         algorithm=settings.jwt_algorithm,
         access_token_expire_minutes=settings.jwt_expire_minutes,
         refresh_token_expire_days=30,
+        redis_url=settings.redis_url,
     )
     try:
         payload = handler.decode_token(credentials.credentials)
@@ -95,6 +96,7 @@ def get_current_user_role(
         algorithm=settings.jwt_algorithm,
         access_token_expire_minutes=settings.jwt_expire_minutes,
         refresh_token_expire_days=30,
+        redis_url=settings.redis_url,
     )
     try:
         payload = handler.decode_token(credentials.credentials)
@@ -126,6 +128,7 @@ def get_current_user(
         algorithm=settings.jwt_algorithm,
         access_token_expire_minutes=settings.jwt_expire_minutes,
         refresh_token_expire_days=30,
+        redis_url=settings.redis_url,
     )
     try:
         payload = handler.decode_token(credentials.credentials)
@@ -218,6 +221,7 @@ def get_jwt_handler(
         algorithm=settings.jwt_algorithm,
         access_token_expire_minutes=settings.jwt_expire_minutes,
         refresh_token_expire_days=30,
+        redis_url=settings.redis_url,
     )
 
 

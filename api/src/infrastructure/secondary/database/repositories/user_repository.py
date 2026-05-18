@@ -24,6 +24,8 @@ class SqlUserRepository(IUserRepository):
             locked_until=cast(datetime | None, row.locked_until),
             created_at=cast(datetime, row.created_at),
             updated_at=cast(datetime, row.updated_at),
+            terms_accepted_at=cast(datetime | None, row.terms_accepted_at),
+            privacy_accepted_at=cast(datetime | None, row.privacy_accepted_at),
         )
 
     async def create(self, user: User) -> User:
@@ -40,6 +42,8 @@ class SqlUserRepository(IUserRepository):
                 locked_until=user.locked_until,
                 created_at=user.created_at,
                 updated_at=user.updated_at,
+                terms_accepted_at=user.terms_accepted_at,
+                privacy_accepted_at=user.privacy_accepted_at,
             )
             session.add(user_model)
             await session.commit()
