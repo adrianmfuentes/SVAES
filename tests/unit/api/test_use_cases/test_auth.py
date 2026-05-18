@@ -2,14 +2,14 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 from datetime import datetime, timezone
-from src.application.use_cases.main.auth_service import AuthService
-from src.application.ports.input.i_auth_service import AuthTokens
-from src.application.ports.output.i_user_repository import IUserRepository
-from src.application.ports.output.i_token_service import ITokenService, TokenPayload
-from src.application.ports.output.i_password_hasher import IPasswordHasher
-from src.domain.entities.user import User
-from src.domain.enums import UserRole
-from src.domain.exceptions import ValidationError
+from application.use_cases.main.auth_service import AuthService
+from application.ports.input.i_auth_service import AuthTokens
+from application.ports.output.i_user_repository import IUserRepository
+from application.ports.output.i_token_service import ITokenService, TokenPayload
+from application.ports.output.i_password_hasher import IPasswordHasher
+from domain.entities.user import User
+from domain.enums import UserRole
+from domain.exceptions import ValidationError
 
 """
 Clase de pruebas unitarias para AuthService, enfocándose en la autenticación y renovación de tokens. Se utilizan fixtures para configurar el entorno 
@@ -53,6 +53,8 @@ class TestAuthService:
     def mock_token_service(self, user_entity: User) -> AsyncMock:
         service = AsyncMock(spec=ITokenService)
         service.create_access_token = MagicMock(return_value="access.token.here")
+        service.create_refresh_token = MagicMock(return_value="access.token.here")
+        service.is_refresh_token = MagicMock(return_value=True)
         service.decode_token = MagicMock(return_value=TokenPayload(
             user_id=user_entity.id,
             role=user_entity.role,

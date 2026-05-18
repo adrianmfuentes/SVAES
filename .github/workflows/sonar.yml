@@ -23,7 +23,14 @@ jobs:
         run: "pip install --only-binary :all: --require-hashes -r .github/requirements/uv.txt"
 
       - name: Run tests with coverage
-        run: uv run --frozen --no-build --project api --extra dev pytest --cov=api/src --cov-report=xml 
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/testdb
+          JWT_SECRET_KEY: ci-test-secret-key-not-used-in-production
+          JWT_ALGORITHM: HS256
+          JWT_EXPIRE_MINUTES: "30"
+          ALLOWED_ORIGINS: "http://localhost"
+          ENVIRONMENT: test
+        run: uv run --frozen --no-build --project api --extra dev pytest --cov=api/src --cov-report=xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@59db25f34e16620e48ab4bb9e4a5dce155cb5432 # v8.0.0
