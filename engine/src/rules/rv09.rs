@@ -212,7 +212,7 @@ mod tests {
     fn rv09_custom_reference_fields() {
         let artifacts = vec![
             make_artifact("D-001", "DOCUMENTO", json!({
-                "url": "invalid-url",
+                "url": "not@valid!url",
                 "accessible": true
             })),
         ];
@@ -229,6 +229,6 @@ mod tests {
         let result = evaluate(&artifacts, &rule);
 
         assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("invalid-url"));
+        assert!(result.message.unwrap().contains("not@valid!url"));
     }
 }
