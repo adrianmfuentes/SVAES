@@ -1,9 +1,6 @@
-import os
-import sys
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "api"))
 
 @pytest.fixture(scope="session")
 def anyio_backend():
@@ -13,7 +10,9 @@ def anyio_backend():
 @pytest.fixture
 def mock_httpx_client():
     with patch("httpx.AsyncClient") as mock_client_class:
-        mock_client = AsyncMock()
+        mock_client = MagicMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
         mock_client_class.return_value = mock_client
         yield mock_client
 
@@ -29,7 +28,7 @@ def connector_config():
 
 @pytest.fixture
 def gitlab_connector():
-    from api.src.infrastructure.secondary.connectors.source_control.gitlab_connector import (
+    from infrastructure.secondary.connectors.source_control.gitlab_connector import (
         GitLabConnector,
     )
 
@@ -38,7 +37,7 @@ def gitlab_connector():
 
 @pytest.fixture
 def jira_connector():
-    from api.src.infrastructure.secondary.connectors.task_management.jira_connector import (
+    from infrastructure.secondary.connectors.task_management.jira_connector import (
         JiraConnector,
     )
 

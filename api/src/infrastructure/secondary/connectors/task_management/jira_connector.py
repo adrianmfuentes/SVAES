@@ -5,7 +5,7 @@ from infrastructure.secondary.connectors.base_http_connector import (
 )
 
 
-class JiraConnector(BaseHttpConnector, AtlassianAuthMixin):
+class JiraConnector(AtlassianAuthMixin, BaseHttpConnector):
     BASE_URL = "https://api.atlassian.com"
     CONNECTOR_TYPE = "GESTOR_TAREAS"
     CONNECTOR_IMPLEMENTATION = "JIRA"
