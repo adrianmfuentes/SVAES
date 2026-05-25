@@ -43,5 +43,5 @@ async def get_task_status(
             "status": task_status.value,
             "result": str(result_value) if result_value is not None else None,
         }
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

@@ -60,7 +60,7 @@ async def list_notification_channels(
         return channels
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -101,7 +101,7 @@ async def configure_notification_channel(
         raise
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -134,7 +134,7 @@ async def update_notification_channel(
         return channel
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -160,7 +160,7 @@ async def delete_notification_channel(
         await service.delete_channel(channel_id=channel_id)
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -182,7 +182,7 @@ async def get_notification_preferences(
     try:
         preferences = await service.get_user_preferences(user_id=current_user.user_id)
         return preferences
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -212,7 +212,7 @@ async def update_notification_preferences(
             weekly_digest=payload.weekly_digest,
         )
         return preferences
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -242,7 +242,7 @@ async def subscribe_to_event(
         return subscription
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -265,5 +265,5 @@ async def unsubscribe_from_event(
     """
     try:
         await service.unsubscribe(user_id=current_user.user_id, event_type=event_type)
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

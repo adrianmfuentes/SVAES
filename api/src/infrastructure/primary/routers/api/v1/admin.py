@@ -40,5 +40,5 @@ async def reload_custom_rules(
             rules_loaded=result.get("rules_loaded", 0),
             message=result.get("message", "Reglas recargadas con éxito")
         )
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

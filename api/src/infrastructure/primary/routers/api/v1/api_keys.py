@@ -79,7 +79,7 @@ async def create_api_key(
         return APIKeyResponse(**result)
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -110,7 +110,7 @@ async def list_api_keys(
         use_case = ManageApiKeysUseCase(api_key_repository=api_key_repo)
         keys = await use_case.list_api_keys(user_id)
         return keys
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -145,5 +145,5 @@ async def revoke_api_key(
         await use_case.revoke_api_key(key_id, user_id)
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
