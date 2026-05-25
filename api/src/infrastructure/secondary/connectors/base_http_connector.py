@@ -46,7 +46,7 @@ class BaseHttpConnector(ABC):
                 response = await client.get(url, headers=self._build_headers(config), params=params)
                 return response
         except httpx.ConnectError as exc:
-            _log.error("SSL/connection error for %s: %s", url, exc)
+            _log.exception("SSL/connection error for %s: %s", url, exc)
             raise
 
     async def _post(
@@ -57,7 +57,7 @@ class BaseHttpConnector(ABC):
                 response = await client.post(url, headers=self._build_headers(config), json=json)
                 return response
         except httpx.ConnectError as exc:
-            _log.error("SSL/connection error for %s: %s", url, exc)
+            _log.exception("SSL/connection error for %s: %s", url, exc)
             raise
 
     async def test_connection(self, config: Dict[str, Any]) -> bool:

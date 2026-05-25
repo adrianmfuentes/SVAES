@@ -7,6 +7,7 @@ from application.ports.output.i_release_repository import IReleaseRepository
 from application.use_cases.others.get_dashboard_metrics import GetDashboardMetricsUseCase
 from core.dependencies import get_current_user, CurrentUser, get_release_repository, get_verification_result_repository
 from domain.enums import UserRole
+from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Dashboard"])
 
@@ -71,4 +72,4 @@ async def get_dashboard_metrics(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

@@ -6,6 +6,7 @@ from core.dependencies import get_task_service, get_current_user, CurrentUser
 from application.ports.output.i_task_queue import TaskStatus
 from celery.result import AsyncResult
 from infrastructure.secondary.queue.celery_app import celery_app
+from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Tasks"])
 
@@ -43,4 +44,4 @@ async def get_task_status(
             "result": str(result_value) if result_value is not None else None,
         }
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

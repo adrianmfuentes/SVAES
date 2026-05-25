@@ -7,6 +7,7 @@ from application.ports.input.i_profile_service import IProfileService
 from core.dependencies import get_profile_service, get_current_user, CurrentUser, require_permission, require_role, require_org_access, require_profile_access, require_rule_access
 from domain.enums import SeverityType, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError
+from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Profiles"])
 
@@ -74,7 +75,7 @@ async def list_profiles(
             for p in profiles
         ]
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/organizations/{org_id}/profiles", status_code=status.HTTP_201_CREATED)
@@ -109,7 +110,7 @@ async def create_profile(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.patch("/api/v1/profiles/{profile_id}")
@@ -148,7 +149,7 @@ async def update_profile(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.delete("/api/v1/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -175,7 +176,7 @@ async def delete_profile(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/profiles/{profile_id}/rules", status_code=status.HTTP_201_CREATED)
@@ -213,7 +214,7 @@ async def add_rule(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.patch("/api/v1/rules/{rule_id}")
@@ -252,7 +253,7 @@ async def update_rule(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.delete("/api/v1/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -280,4 +281,4 @@ async def delete_rule(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

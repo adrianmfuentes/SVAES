@@ -6,6 +6,7 @@ from application.ports.input.i_template_service import ITemplateService
 from core.dependencies import get_current_user, CurrentUser, require_permission, require_role, get_template_service
 from domain.enums import UserRole, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError
+from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Templates"])
 
@@ -64,7 +65,7 @@ async def create_template(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.get("/api/v1/templates")
@@ -99,7 +100,7 @@ async def list_templates(
         )
         return templates
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.get("/api/v1/templates/{template_id}")
@@ -128,7 +129,7 @@ async def get_template(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.patch("/api/v1/templates/{template_id}")
@@ -162,7 +163,7 @@ async def update_template(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/templates/{template_id}/archive", status_code=status.HTTP_200_OK)
@@ -189,7 +190,7 @@ async def archive_template(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/templates/{template_id}/clone", status_code=status.HTTP_201_CREATED)
@@ -225,4 +226,4 @@ async def clone_template(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

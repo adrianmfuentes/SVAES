@@ -6,6 +6,7 @@ from application.ports.input.i_connector_service import IConnectorService
 from core.dependencies import get_connector_service, get_current_user, CurrentUser, require_permission, require_org_access, require_connector_access
 from domain.enums import ConnectorStatus
 from domain.exceptions import EntityNotFoundError, ValidationError, ConnectorConnectionFailedError, DuplicateEntityError
+from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Connectors"])
 
@@ -215,7 +216,7 @@ async def list_connectors(
             for c in connectors
         ]
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/organizations/{org_id}/connectors", status_code=status.HTTP_201_CREATED)
@@ -254,7 +255,7 @@ async def register_connector(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.patch("/api/v1/organizations/{org_id}/connectors/{connector_id}")
@@ -294,7 +295,7 @@ async def update_connector(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.delete("/api/v1/organizations/{org_id}/connectors/{connector_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -326,7 +327,7 @@ async def delete_connector(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/organizations/{org_id}/connectors/{connector_id}/test", status_code=status.HTTP_200_OK)
@@ -363,4 +364,4 @@ async def test_connector(
     except ConnectorConnectionFailedError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

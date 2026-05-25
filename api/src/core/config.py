@@ -7,6 +7,9 @@ from pydantic_settings import BaseSettings
 
 _log = logging.getLogger(__name__)
 
+_DEFAULT_REDIS_URL = "redis://localhost:6379/0"
+
+
 class Settings(BaseSettings):
     # Database
     database_url: str
@@ -26,11 +29,11 @@ class Settings(BaseSettings):
     environment: str
 
     # Redis
-    redis_url: str = "redis://localhost:6379/0"
+    redis_url: str = _DEFAULT_REDIS_URL
 
     # Celery
-    celery_broker_url: str = "redis://localhost:6379/0"
-    celery_result_backend: str = "redis://localhost:6379/0"
+    celery_broker_url: str = _DEFAULT_REDIS_URL
+    celery_result_backend: str = _DEFAULT_REDIS_URL
 
     # Verification Engine
     engine_url: str = "http://localhost:8081"

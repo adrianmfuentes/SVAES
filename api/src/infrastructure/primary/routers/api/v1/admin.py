@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from application.ports.input.i_rules_service import IRulesService
 from core.dependencies import get_current_user, CurrentUser, require_role, get_rules_service
 from domain.enums import UserRole
+from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Admin"])
 
@@ -40,4 +41,4 @@ async def reload_custom_rules(
             message=result.get("message", "Reglas recargadas con éxito")
         )
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

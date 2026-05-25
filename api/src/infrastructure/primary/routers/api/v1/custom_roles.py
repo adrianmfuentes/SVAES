@@ -6,6 +6,7 @@ from application.ports.input.i_custom_role_service import ICustomRoleService
 from core.dependencies import get_custom_role_service, get_current_user, CurrentUser, require_permission, require_custom_role_access
 from domain.enums import Permission
 from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError
+from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Custom Roles"])
 
@@ -54,7 +55,7 @@ async def list_custom_roles(
             for r in roles
         ]
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/organizations/{org_id}/roles", status_code=status.HTTP_201_CREATED)
@@ -98,7 +99,7 @@ async def create_custom_role(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.patch("/api/v1/roles/{role_id}")
@@ -143,7 +144,7 @@ async def update_custom_role(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.delete("/api/v1/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -174,4 +175,4 @@ async def delete_custom_role(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

@@ -7,6 +7,7 @@ from application.use_cases.others.manage_api_keys import ManageApiKeysUseCase
 from core.dependencies import get_current_user, CurrentUser, get_api_key_repository, get_user_repository
 from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
 from domain.exceptions import ValidationError, EntityNotFoundError
+from . import ERROR_INTERNO
 
 router = APIRouter(tags=["API Keys"])
 
@@ -79,7 +80,7 @@ async def create_api_key(
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.get("/api/v1/users/{user_id}/api-keys")
@@ -110,7 +111,7 @@ async def list_api_keys(
         keys = await use_case.list_api_keys(user_id)
         return keys
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.delete("/api/v1/users/{user_id}/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -145,4 +146,4 @@ async def revoke_api_key(
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)

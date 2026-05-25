@@ -12,6 +12,7 @@ from core.rate_limit import rate_limit_auth
 from slowapi import Limiter
 from domain.exceptions import ValidationError, DuplicateEntityError
 from domain.enums import UserRole
+from . import ERROR_INTERNO
 
 _log = logging.getLogger(__name__)
 router = APIRouter(tags=["Auth"])
@@ -83,7 +84,7 @@ async def login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.message)
     except Exception as e:
         _log.exception("Login failed for user hash=%s", _hash_email(payload.email))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/auth/register", status_code=status.HTTP_201_CREATED)
@@ -116,7 +117,7 @@ async def register(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         _log.exception("Register failed for user hash=%s", _hash_email(payload.email))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/auth/refresh")
@@ -138,7 +139,7 @@ async def refresh(
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -151,4 +152,4 @@ async def logout(
         await service.logout(current_user.user_id, credentials.credentials)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
