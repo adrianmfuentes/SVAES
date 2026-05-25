@@ -67,6 +67,7 @@
     "pydantic",
     "pyproject",
     "pytest",
+    "pytestmark",
     "rbac",
     "Redmine",
     "redoc",
