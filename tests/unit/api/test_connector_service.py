@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 from cryptography.fernet import Fernet
-from application.use_cases.main.connector_service import ConnectorService
 from domain.entities.connector_instance import ConnectorInstance
 from domain.enums import ConnectorStatus, ConnectorType, ConnectorImplementation
 from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError, ConnectorConnectionFailedError
@@ -53,6 +52,16 @@ def connector_registry():
 
 @pytest.fixture
 def service(connector_repo, connector_registry, mock_audit_logger):
+    import os
+    os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+    os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-unit-tests")
+    os.environ.setdefault("JWT_ALGORITHM", "HS256")
+    os.environ.setdefault("JWT_EXPIRE_MINUTES", "60")
+    os.environ.setdefault("ALLOWED_ORIGINS", "http://localhost:4200")
+    os.environ.setdefault("ENVIRONMENT", "test")
+
+    from application.use_cases.main.connector_service import ConnectorService
+
     with patch(
         "application.use_cases.main.connector_service.get_audit_logger",
         return_value=mock_audit_logger,

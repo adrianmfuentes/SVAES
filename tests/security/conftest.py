@@ -26,6 +26,9 @@ def _test_env():
         "ENCRYPTION_KEY": "HnVk8Q2xLm9pR4sT6wYzA1bC3dF5gJ7kN=",
         "REDIS_URL": "redis://localhost:6379/0",
     })
+    import core.config as _cfg
+    _cfg.get_settings.cache_clear()
+    _cfg.settings = _cfg.get_settings()
     yield
 
 

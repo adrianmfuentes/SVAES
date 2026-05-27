@@ -26,7 +26,7 @@ unit/
     ├── test_organization_service.py   # OrganizationService: CRUD, projects, ownership transfer, restoration
     ├── test_password_hasher.py        # BcryptPasswordHasher: hash, verify, needs_rehash
     ├── test_profile_service.py        # ProfileService: CRUD, rules, reorder, duplication, default management
-    ├── test_rate_limit.py             # Rate limiter: module-level Limiter instance
+    ├── test_rate_limit_middleware.py   # Rate limiter: module-level Limiter instance
     ├── test_releases.py               # CreateReleaseUseCase: CRUD, states, artifacts, deletion, SemVer
     ├── test_toggle_connector_status.py # ToggleConnectorStatusUseCase: activate, deactivate, error states
     ├── test_update_release.py         # UpdateReleaseUseCase: update fields, SemVer validation
