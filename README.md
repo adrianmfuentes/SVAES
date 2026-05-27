@@ -4,8 +4,6 @@
 
 # SVAES
 
-<img width="310" height="312" alt="SVAES-Logo" src="https://github.com/user-attachments/assets/8f79b2cd-0912-4345-8c06-1e72cc7632e4" />
-
 ## Sistema de Verificación Automática de Entregas de Software
 
 Trabajo Fin de Grado
