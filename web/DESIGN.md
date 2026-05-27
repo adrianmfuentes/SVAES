@@ -1,300 +1,514 @@
 ---
-version: alpha
+version: beta
 name: SVAES
 description: >
   Automatic Software Delivery Verification System.
-  Technical administration platform oriented toward software team
-  operators and managers. The visual identity prioritizes clarity of the
-  verification verdict over any other element on screen.
- 
+  A technical operations platform for software teams.
+  The visual language is honest about what the system is:
+  infrastructure tooling, not a consumer product. The interface
+  looks like something engineers built for engineers, with
+  deliberate craft applied to the parts that matter operationally.
+
 colors:
-  primary: "#1E3A5F"
-  on-primary: "#FFFFFF"
-  secondary: "#2D6A4F"
-  on-secondary: "#FFFFFF"
-  tertiary: "#C0392B"
-  on-tertiary: "#FFFFFF"
-  neutral: "#F4F6F8"
-  on-neutral: "#1A1A2E"
-  surface: "#FFFFFF"
-  on-surface: "#1A1A2E"
-  border: "#D1D9E0"
-  muted: "#6C757D"
-  verdict-valid: "#2D6A4F"
-  verdict-valid-bg: "#EAF5EE"
-  verdict-warning: "#B8860B"
-  verdict-warning-bg: "#FDF8E1"
-  verdict-invalid: "#C0392B"
-  verdict-invalid-bg: "#FDECEC"
-  verdict-unevaluated: "#6C757D"
-  verdict-unevaluated-bg: "#F0F0F0"
+  # Core
+  ink: "#0D0F12"
+  ink-secondary: "#1C2027"
+  paper: "#F6F4F0"
+  paper-secondary: "#EDEAE4"
+
+  # Accent
+  accent: "#E8D5A3"          # warm gold — primary interactive accent
+  accent-dark: "#B8A06A"     # darker variant for hover states
+
+  # Semantic — verdict states (immutable)
+  verdict-valid: "#2A6B3C"
+  verdict-valid-bg: "#E8F5EC"
+  verdict-valid-border: "#A8D5B5"
+  verdict-warning: "#8B5E00"
+  verdict-warning-bg: "#FDF3DC"
+  verdict-warning-border: "#DFC070"
+  verdict-invalid: "#8B1A1A"
+  verdict-invalid-bg: "#FAEAEA"
+  verdict-invalid-border: "#D88080"
+  verdict-unevaluated: "#5A5E65"
+  verdict-unevaluated-bg: "#EBEBEB"
+  verdict-unevaluated-border: "#C0C0C0"
+
+  # Chrome
+  border: "#D4CFC7"
+  border-strong: "#9E9890"
+  muted: "#7A7670"
+  surface-raised: "#FFFFFF"
+  overlay: "rgba(13, 15, 18, 0.55)"
 
 typography:
-  h1:
-    fontFamily: Inter
-    fontSize: 2rem
-    fontWeight: 700
-    lineHeight: 1.2
+  # Display — section titles, page headings
+  display:
+    fontFamily: "DM Serif Display"
+    fontSize: 2.25rem
+    fontWeight: 400          # the weight IS the regular cut — already authoritative
+    lineHeight: 1.1
+    letterSpacing: "-0.02em"
+
+  # Heading — card titles, view labels
   h2:
-    fontFamily: Inter
+    fontFamily: "DM Serif Display"
     fontSize: 1.5rem
-    fontWeight: 600
-    lineHeight: 1.3
+    fontWeight: 400
+    lineHeight: 1.2
+    letterSpacing: "-0.01em"
+
   h3:
-    fontFamily: Inter
-    fontSize: 1.125rem
+    fontFamily: "IBM Plex Sans"
+    fontSize: 1rem
     fontWeight: 600
     lineHeight: 1.4
+
+  # Body — operational content
   body-md:
-    fontFamily: Inter
-    fontSize: 1rem
+    fontFamily: "IBM Plex Sans"
+    fontSize: 0.9375rem      # 15px — between 14 and 16, feels more considered
     fontWeight: 400
-    lineHeight: 1.6
+    lineHeight: 1.65
+
   body-sm:
-    fontFamily: Inter
-    fontSize: 0.875rem
+    fontFamily: "IBM Plex Sans"
+    fontSize: 0.8125rem      # 13px
     fontWeight: 400
-    lineHeight: 1.5
-  label-caps:
-    fontFamily: Inter
-    fontSize: 0.75rem
+    lineHeight: 1.55
+
+  # Labels — table headers, nav items, filter chips
+  label:
+    fontFamily: "IBM Plex Sans"
+    fontSize: 0.6875rem      # 11px
     fontWeight: 600
-    letterSpacing: 0.05em
+    letterSpacing: "0.08em"
+    textTransform: uppercase
+
+  # Code — UUIDs, rule IDs (RV-*), commit refs, JSONB, log fragments
   mono:
-    fontFamily: JetBrains Mono
-    fontSize: 0.875rem
+    fontFamily: "IBM Plex Mono"
+    fontSize: 0.8125rem
     fontWeight: 400
     lineHeight: 1.6
 
-rounded:
-  sm: 4px
-  md: 8px
-  lg: 12px
-  full: 9999px
+  mono-sm:
+    fontFamily: "IBM Plex Mono"
+    fontSize: 0.6875rem
+    fontWeight: 400
+    lineHeight: 1.5
 
 spacing:
   xs: 4px
   sm: 8px
   md: 16px
   lg: 24px
-  xl: 32px
-  xxl: 48px
+  xl: 40px
+  xxl: 64px
+
+rounded:
+  none: 0px
+  sm: 2px
+  md: 4px
+  lg: 6px
+  full: 9999px
+
+# IBM Plex is the system of choice precisely because it ships
+# a matched trio (Sans, Serif, Mono) designed by the same hand.
+# DM Serif Display adds editorial weight to headings without
+# colliding with the technical prose set in Plex.
+# Using Inter here would be the obvious choice — avoided on purpose.
 
 components:
+
   button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.paper}"
+    border: "1px solid {colors.ink}"
     rounded: "{rounded.md}"
-    padding: 10px 20px
+    padding: "9px 18px"
+    font: "{typography.label}"
 
   button-primary-hover:
-    backgroundColor: "#16304F"
-    textColor: "{colors.on-primary}"
-    rounded: "{rounded.md}"
+    backgroundColor: "{colors.ink-secondary}"
 
   button-secondary:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.primary}"
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    border: "1px solid {colors.border-strong}"
     rounded: "{rounded.md}"
-    padding: 10px 20px
+    padding: "9px 18px"
+    font: "{typography.label}"
+
+  button-secondary-hover:
+    backgroundColor: "{colors.paper-secondary}"
+
+  button-accent:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.ink}"
+    border: "1px solid {colors.accent-dark}"
+    rounded: "{rounded.md}"
+    padding: "9px 18px"
+    font: "{typography.label}"
 
   button-danger:
-    backgroundColor: "{colors.tertiary}"
-    textColor: "{colors.on-tertiary}"
+    backgroundColor: "transparent"
+    textColor: "{colors.verdict-invalid}"
+    border: "1px solid {colors.verdict-invalid-border}"
     rounded: "{rounded.md}"
-    padding: 10px 20px
+    padding: "9px 18px"
+    font: "{typography.label}"
 
   badge-valid:
     backgroundColor: "{colors.verdict-valid-bg}"
     textColor: "{colors.verdict-valid}"
-    rounded: "{rounded.full}"
-    padding: 2px 10px
+    border: "1px solid {colors.verdict-valid-border}"
+    rounded: "{rounded.sm}"
+    padding: "2px 8px"
+    font: "{typography.label}"
 
   badge-warning:
     backgroundColor: "{colors.verdict-warning-bg}"
     textColor: "{colors.verdict-warning}"
-    rounded: "{rounded.full}"
-    padding: 2px 10px
+    border: "1px solid {colors.verdict-warning-border}"
+    rounded: "{rounded.sm}"
+    padding: "2px 8px"
+    font: "{typography.label}"
 
   badge-invalid:
     backgroundColor: "{colors.verdict-invalid-bg}"
     textColor: "{colors.verdict-invalid}"
-    rounded: "{rounded.full}"
-    padding: 2px 10px
+    border: "1px solid {colors.verdict-invalid-border}"
+    rounded: "{rounded.sm}"
+    padding: "2px 8px"
+    font: "{typography.label}"
 
   badge-unevaluated:
     backgroundColor: "{colors.verdict-unevaluated-bg}"
     textColor: "{colors.verdict-unevaluated}"
-    rounded: "{rounded.full}"
-    padding: 2px 10px
+    border: "1px solid {colors.verdict-unevaluated-border}"
+    rounded: "{rounded.sm}"
+    padding: "2px 8px"
+    font: "{typography.label}"
 
   card:
-    backgroundColor: "{colors.surface}"
+    backgroundColor: "{colors.surface-raised}"
+    border: "1px solid {colors.border}"
     rounded: "{rounded.lg}"
-    padding: 24px
+    padding: "24px"
+    boxShadow: "none"
 
   input:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.on-surface}"
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.ink}"
+    border: "1px solid {colors.border-strong}"
     rounded: "{rounded.md}"
-    padding: 10px 14px
-
-  nav-item-active:
-    backgroundColor: "{colors.neutral}"
-    textColor: "{colors.primary}"
-    rounded: "{rounded.md}"
+    padding: "9px 12px"
+    font: "{typography.body-md}"
 
   nav-item:
-    backgroundColor: transparent
-    textColor: "{colors.muted}"
+    textColor: "rgba(246, 244, 240, 0.55)"
     rounded: "{rounded.md}"
+    padding: "7px 12px"
+
+  nav-item-active:
+    backgroundColor: "rgba(246, 244, 240, 0.10)"
+    textColor: "{colors.paper}"
+    borderLeft: "2px solid {colors.accent}"
 ---
 
 ## Overview
 
-SVAES is a work tool for technical teams, not a consumer
-application. The design reflects this: functional, information-dense, without unnecessary
-ornaments. The visual hierarchy serves a single question:
-**is this release valid?**
+SVAES is tooling, not a product. The interface reflects that distinction at every
+level: tight information density, no illustrations, no gradient backgrounds, no
+decorative iconography serving marketing purposes. What you see on screen maps
+directly to system state.
 
-The verification verdict is always the most prominent element on screen.
-Everything else — navigation, filters, metadata — occupies a deliberately secondary plane.
+The central design question for every view is: **does the operator understand
+what happened and what to do next, in under three seconds?** Every layout
+decision follows from that constraint.
 
-The visual language is inspired by CI/CD tool dashboards and infrastructure
-monitors: high contrast, legible typography on low DPI screens,
-semantic colors with unambiguous meaning (green = valid, red = invalid, always).
+The visual identity is warm-industrial. A parchment-toned paper background
+(`#F6F4F0`) replaces the cold white common in SaaS dashboards, reducing eye
+fatigue during long sessions on dim monitors. DM Serif Display adds editorial
+authority to headings without the stiffness of geometric sans-serif titles.
+IBM Plex Sans and IBM Plex Mono carry all operational text — they share a
+design DNA, so mixed-weight paragraphs with embedded code never look
+typographically inconsistent.
 
-## Colors
+The result should feel closer to a well-designed technical handbook than to
+a cloud dashboard template.
 
-The palette combines an institutional navy blue with a confirmation green and an alert
-red. The warm neutral (`#F4F6F8`) acts as the application background to
-reduce visual fatigue in long sessions.
+---
 
-- **Primary (`#1E3A5F`):** Navy blue. Side navigation bar, primary
-  buttons, section headers. Conveys reliability and institutionality.
+## Color
 
-- **Secondary (`#2D6A4F`):** Forest green. Used exclusively for the
-  `VALID` verdict and success states. Must not be used for other purposes to preserve
-  its semantic meaning.
+The palette is deliberately **paper-and-ink**, not blue-and-white.
 
-- **Tertiary (`#C0392B`):** Signal red. Reserved for the `INVALID` verdict,
-  connector errors, and destructive actions ("Reject release" button).
+- **Ink (`#0D0F12`):** Near-black with a slight blue cast. Used for the sidebar
+  background, primary buttons, and all text on light surfaces. Not pure black —
+  pure black on warm paper looks harsh.
 
-- **Neutral (`#F4F6F8`):** Application background and active sidebar menu.
-  Softer than pure white for extended work environments.
+- **Paper (`#F6F4F0`):** Warm off-white. Application background. Softer than
+  `#FFFFFF` on low-brightness screens; the warmth pairs with DM Serif Display
+  without the cold tension that a neutral white creates.
 
-- **Muted (`#6C757D`):** Secondary metadata, dates, identifiers, help text.
-  Never for action text or primary operational content.
+- **Paper-secondary (`#EDEAE4`):** Hover states on light backgrounds, table
+  row alternation, disabled input fields.
+
+- **Accent (`#E8D5A3`):** Warm gold. Used sparingly: the active nav indicator,
+  the primary CTA button on certain views, and the highlight state of the
+  global verdict banner when the result is valid. One accent, used twice per
+  screen maximum.
+
+- **Border (`#D4CFC7`) / Border-strong (`#9E9890`):** Two border weights avoid
+  the visual noise of a single border value applied everywhere. Card outlines use
+  `border`; input fields and interactive containers use `border-strong`.
+
+- **Muted (`#7A7670`):** Timestamps, secondary identifiers, help text. Warm
+  grey, not cool grey — stays consistent with the paper background.
 
 ### Verdict Semantic Colors
 
-The four verification states have fixed colors that cannot be reassigned
-to other uses within the interface:
+Fixed. Never reassigned. Each uses a background, text, and border token so
+components can use any combination without inventing new values.
 
-| State | Text Color | Background Color |
-|---|---|---|
-| VALID | `#2D6A4F` | `#EAF5EE` |
-| WITH_WARNINGS | `#B8860B` | `#FDF8E1` |
-| INVALID | `#C0392B` | `#FDECEC` |
-| NOT_EVALUATED | `#6C757D` | `#F0F0F0` |
+| State | Text | Background | Border |
+|---|---|---|---|
+| VALID | `#2A6B3C` | `#E8F5EC` | `#A8D5B5` |
+| WITH_WARNINGS | `#8B5E00` | `#FDF3DC` | `#DFC070` |
+| INVALID | `#8B1A1A` | `#FAEAEA` | `#D88080` |
+| NOT_EVALUATED | `#5A5E65` | `#EBEBEB` | `#C0C0C0` |
+
+The desaturated, earthy versions of green/amber/red (vs. the saturated `#27AE60`
+style common in SaaS) read as more credible in a technical context. A saturated
+green next to monospace text feels like a notification; a muted forest green
+feels like a status.
+
+---
 
 ## Typography
 
-**Inter** is used for the entire interface: a sans-serif font designed specifically
-for screen readability at small sizes, with full Latin character support
-(accents, tildes).
+Three fonts. One purpose each.
 
-**JetBrains Mono** is used exclusively for technical identifiers: release
-UUIDs, commit references, rule names (RV-01…RV-10), JSONB configuration
-values, and log fragments. Never for generic interface text.
+**DM Serif Display** is used only for page titles and card section headings. It is
+a high-contrast, slightly condensed serif with ink-trap details visible at display
+sizes — a choice that signals editorial craft rather than SaaS default. At `400`
+weight the regular cut is already visually dominant; no bold variant needed or used.
 
-The typographic hierarchy in most views uses three levels: section title
-(`h2`), element name (`h3`), and operational data (`body-md` / `body-sm`).
-Table labels use `label-caps` to distinguish them from content without
-resorting to bold.
+**IBM Plex Sans** handles all operational text: labels, body copy, nav items,
+table content, button text. It is a corporate grotesque with slightly wider
+letterforms than Neue Haas or DIN, which improves readability in dense tables.
+At `11px` uppercase with `0.08em` tracking it makes a clean table header without
+needing a separate typeface.
+
+**IBM Plex Mono** carries all technical identifiers: release UUIDs, rule names
+(`RV-01`…`RV-10`), commit refs, JSONB values, log fragments. Using the Mono from
+the same family as the Sans means mixed text (e.g., "Release `a3f2c1d` was
+rejected by rule `RV-05`") does not produce typographic collisions in size,
+weight, or vertical rhythm.
+
+**Scale:**
+- `2.25rem` / `DM Serif Display` — page title
+- `1.5rem` / `DM Serif Display` — card section heading
+- `1rem 600` / `IBM Plex Sans` — subheading, strong label
+- `0.9375rem` / `IBM Plex Sans` — body text (15px, not 16 — intentional)
+- `0.8125rem` / `IBM Plex Sans` — secondary text, table cells (13px)
+- `0.6875rem 600 caps` / `IBM Plex Sans` — column headers, nav labels (11px)
+- `0.8125rem` / `IBM Plex Mono` — inline code, identifiers
+- `0.6875rem` / `IBM Plex Mono` — compact identifiers in tables
+
+---
 
 ## Layout
 
-The application uses a two-column layout:
+The application is two-column:
 
-- **Fixed sidebar (240 px):** main navigation with `primary` background.
-  Item text in `on-primary` at 60% opacity; active item with
-  `neutral` background and `primary` text.
+**Sidebar (220px, fixed):** `ink` background. The narrower 220px (vs. the
+industry-default 240-260px) is intentional — it slightly compresses the nav to
+shift visual weight toward the content area. Navigation items use 11px uppercase
+labels, not 14px normal-weight text. Active items get a 2px `accent` left
+border, not a filled background pill.
 
-- **Main content area:** `neutral` background, central container of maximum
-  `1200 px` with `spacing.xl` (32 px) padding.
+**Content area:** `paper` background. Max-width `1120px`, centered, `40px`
+horizontal padding. Not `1200px` — the 80px difference at 1280px screen width
+produces a column that feels like it has breathing room rather than filling
+the viewport edge-to-edge.
 
-Cards (`card`) are the main composition unit. A typical view
-contains a header card with the global verdict and secondary cards
-with rule-by-rule detail.
+**Page structure within the content area:**
+```
+Page header (title + primary action)
+────────────────────────────────────
+Verdict banner (full width, prominent — only on release detail)
+────────────────────────────────────
+Content cards (1 or 2 columns depending on view)
+```
 
-Forms use a two-column grid on screens ≥ 1024 px and a single column
-on mobile. Maximum width for text fields: `480 px`.
+The **verdict banner** on the release detail view is a horizontal band spanning
+the full content width — 56px tall, left-bordered with a 4px verdict-colored
+stripe, containing the badge, release ID in mono, and timestamp. It occupies
+its own row before the card grid. It is never inside a card.
 
-## Elevation & Depth
+**Card grid:**
+- Release detail: 1 column (verification is a linear read)
+- Dashboard: 2×2 KPI cards + full-width chart card
+- Connectors/Profiles: 1 column list with inline expand
+- Admin: 2-column form layout
 
-The interface is deliberately flat. Only two elevation levels:
+---
 
-- **Level 0:** application background (`neutral`).
-- **Level 1:** cards and panels (`surface`, `box-shadow: 0 1px 3px rgba(0,0,0,0.08)`).
+## Elevation
 
-Modals add an overlay `rgba(0,0,0,0.4)` over the content.
-No pronounced shadows or additional depth effects are used.
+Flat. Two levels only.
+
+- **Level 0:** `paper` background.
+- **Level 1:** cards — `surface-raised` (`#FFFFFF`) with `1px solid border`.
+  No `box-shadow` on cards. The contrast between `#FFFFFF` and `#F6F4F0` at
+  that scale is enough separation. Shadow here would feel like a consumer product.
+
+Modals: `surface-raised` card, `rounded.lg`, `overlay` backdrop. No drop shadow
+on the modal itself — the backdrop provides sufficient separation.
+
+---
 
 ## Shapes
 
-- `rounded.sm` (4 px): badges, filter chips, status labels.
-- `rounded.md` (8 px): buttons, inputs, tooltips.
-- `rounded.lg` (12 px): cards, panels, modals.
-- `rounded.full` (9999 px): verdict badges in compact mode.
+Minimal rounding. This is tooling, not a consumer app.
+
+- `2px` — badges, status chips, filter tags
+- `4px` — buttons, inputs, tooltips, inline code blocks
+- `6px` — cards, panels, modals
+- `9999px` — the only pill shape allowed is the verdict badge in compact table
+  rows where a rectangular badge would create visual noise in a tight column
+
+No `border-radius: 12px` or higher anywhere. Generous rounding signals
+approachability; this system should signal precision.
+
+---
 
 ## Components
 
+### Verdict Banner (release detail — primary component)
+
+Full-width row above the card grid. Not a card. Specs:
+
+```
+height: 56px
+background: {verdict-*-bg}
+border-left: 4px solid {verdict-*} (the text color token)
+border: 1px solid {verdict-*-border}
+border-radius: 4px
+padding: 0 24px
+display: flex; align-items: center; gap: 12px
+```
+
+Left to right: icon (16px, SVG, same color as text token) → badge → release
+ID in `mono` → separator → timestamp in `body-sm muted`. The verdict badge
+inside the banner uses `rounded.sm`, not `rounded.full`.
+
 ### Verdict Badges
 
-They are the most critical component of the interface. They always accompany an icon and
-are never used without one:
+Used in tables, lists, and the banner. Always accompanied by an icon. The icon
+and text share the same color token — never use a different color for the icon.
 
-- ✅ `badge-valid` → VALID
-- ⚠️ `badge-warning` → WITH_WARNINGS
-- ❌ `badge-invalid` → INVALID
-- — `badge-unevaluated` → NOT_EVALUATED
+```
+badge-valid      →  ✓  VALID
+badge-warning    →  ⚠  WITH_WARNINGS
+badge-invalid    →  ✕  INVALID
+badge-unevaluated →  —  NOT_EVALUATED
+```
 
-The `_WITH_INCIDENTS` suffix is rendered as a secondary indicator in `body-sm`
-`muted` color, adjacent to the main badge, never inside it.
+The `_WITH_INCIDENTS` suffix renders as a separate `body-sm muted` text
+immediately to the right of the badge, outside the badge container. Never
+truncated, never inside the badge.
 
 ### Verification Rule Table
 
-Columns: identifier (`mono`), name (`body-md`), queried connector
-(`body-sm`), result (badge), evidence (expandable text in `body-sm`).
-The rule identifier always uses `mono` to facilitate visual search.
+This table is the primary information delivery mechanism of the entire system.
+It receives the most typographic care.
 
-### Inputs and Forms
+Column order and specs:
+```
+ID         | 80px  | mono-sm         | "RV-05"
+Rule name  | flex  | body-sm         | "Artifact count"
+Connector  | 140px | body-sm muted   | "GitLab"
+Result     | 120px | badge component | INVALID
+Evidence   | flex  | body-sm         | expandable on click
+```
 
-- Normal state: border `1px solid {colors.border}`.
-- Focus state: border `2px solid {colors.primary}`.
-- Error state: `{colors.tertiary}` border + message below in `body-sm` `tertiary` color.
+Row height: `44px` collapsed, unlimited expanded.
+Row separator: `1px solid border` (not zebra stripes — zebra stripes look dated).
+Hover state: `paper-secondary` background.
+The evidence cell, when expanded, shows a `mono` preformatted block with
+`paper` background and `border` outline — never a plain string.
 
-There is always a visible label (`label-caps`) above the input.
-Placeholders are not used as the only field indication.
+### Inputs
 
-Loading states use skeleton screens, not blocking spinners,
-because verifications are asynchronous and may take several seconds.
+Three states, no others:
 
-## Do's and Don'ts
+```
+Default:  border: 1px solid border-strong;  background: paper
+Focus:    border: 1px solid ink;  background: white;  outline: 3px solid accent at 40% opacity
+Error:    border: 1px solid verdict-invalid-border;  background: verdict-invalid-bg
+```
 
-**Do:**
-- Always show the global verdict at the top of the release detail
-  view, before any other data.
-- Use `mono` for all technical identifiers (UUIDs, RV-*, commits).
-- Keep verdict semantic colors consistent throughout the application.
-- Use skeleton screens for verification result loading states.
+Labels always use `label` typography (11px uppercase), positioned above the
+input, not floating. Placeholder text is allowed as a format hint (e.g.,
+`e.g. 2024-Q3`) but never as a substitute for the label.
 
-**Don't:**
-- Do not reuse the `secondary` color (green) for anything other than the
-  `VALID` verdict or explicit success states.
-- Do not use the `tertiary` color (red) for routine destructive actions
-  like "cancel" or "back"; only for irreversible actions on the release.
-- Do not truncate the evidence field of a failed rule: it is the most important data
-  when the user needs to debug an `INVALID` result.
-- Do not hide the `_WITH_INCIDENTS` suffix for aesthetic reasons.
+### Loading States
+
+Skeleton screens only. No spinners blocking the layout. Verification results
+are asynchronous and may take 5-15 seconds — a spinner over a blank area forces
+the user to wait without knowing what is coming. A skeleton preserves the
+layout and communicates that content is loading into a specific region.
+
+Skeleton color: `paper-secondary` animated with a left-to-right shimmer at
+`1.6s linear infinite`.
+
+### Navigation
+
+Nav items in the sidebar are 36px tall, `body-sm` text, `label` font for the
+section dividers. No icons unless they add disambiguation (avoid icon-only nav).
+Active state: left 2px border in `accent`, background `rgba(paper, 0.10)`.
+Hover state: background `rgba(paper, 0.06)`.
+
+Section dividers between nav groups: `label` size, `muted` color, no separator
+line — the uppercase label is enough visual separation.
+
+---
+
+## Do's
+
+- Show the global verdict as a banner above all other content on the release
+  detail view, before the card grid starts.
+- Use `mono` for every technical identifier: UUIDs, rule IDs (RV-*), commit
+  hashes, connector instance names, JSONB keys.
+- Keep verdict semantic tokens consistent. The green for VALID must be the
+  same green everywhere — in the banner, in the table badge, in the dashboard KPI.
+- Use skeleton screens for any content that loads asynchronously.
+- Use the `accent` gold sparingly. One or two uses per screen. More than that
+  and it stops being an accent.
+- Prefer `border-strong` for interactive components (inputs, buttons) and
+  `border` for structural components (cards, dividers).
+
+## Don'ts
+
+- No gradient backgrounds anywhere. Not on the sidebar, not on cards, not on
+  the hero area of the login screen.
+- No purple. No blue gradient on white. No frosted glass. These are the visual
+  signatures of AI-generated SaaS templates.
+- Do not use `border-radius` above `6px` on any component.
+- Do not use the `secondary` (valid green) for anything except the VALID
+  verdict and explicit success confirmations.
+- Do not use the `tertiary` (invalid red) for routine destructive actions like
+  "Cancel" or "Go back." Reserve it for `button-danger` only: irreversible
+  release-level actions ("Reject release," "Revoke API key").
+- Do not truncate the evidence field of a failed rule. The evidence is the
+  most important piece of data when a user is debugging an INVALID result. If
+  the table column is too narrow, expand the row — never clip the text.
+- Do not hide the `_WITH_INCIDENTS` suffix. It carries operational meaning.
+- Do not use `box-shadow` on cards. The background contrast handles separation.
+- Do not use `Inter`. The choice of IBM Plex is intentional; substitute with
+  an equivalent grotesque (Suisse Int'l, Aktiv Grotesk) only if licensing
+  requires it.

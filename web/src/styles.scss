@@ -1,1 +1,255 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  --ink: #0D0F12;
+  --ink-secondary: #1C2027;
+  --paper: #F6F4F0;
+  --paper-secondary: #EDEAE4;
+  --accent: #E8D5A3;
+  --accent-dark: #B8A06A;
+  --verdict-valid: #2A6B3C;
+  --verdict-valid-bg: #E8F5EC;
+  --verdict-valid-border: #A8D5B5;
+  --verdict-warning: #8B5E00;
+  --verdict-warning-bg: #FDF3DC;
+  --verdict-warning-border: #DFC070;
+  --verdict-invalid: #8B1A1A;
+  --verdict-invalid-bg: #FAEAEA;
+  --verdict-invalid-border: #D88080;
+  --verdict-unevaluated: #5A5E65;
+  --verdict-unevaluated-bg: #EBEBEB;
+  --verdict-unevaluated-border: #C0C0C0;
+  --border: #D4CFC7;
+  --border-strong: #9E9890;
+  --muted: #7A7670;
+  --surface-raised: #FFFFFF;
+  --overlay: rgba(13, 15, 18, 0.55);
+
+  --font-display: 'DM Serif Display', serif;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-xxl: 64px;
+
+  --rounded-none: 0;
+  --rounded-sm: 2px;
+  --rounded-md: 4px;
+  --rounded-lg: 6px;
+  --rounded-full: 9999px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--spacing-md);
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--spacing-sm);
+}
+
+h3 {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0 0 var(--spacing-sm);
+}
+
+p {
+  margin: 0 0 var(--spacing-md);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+input,
+select {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--rounded-md);
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--ink);
+  background: var(--surface-raised);
+  outline: 3px solid rgba(232, 213, 163, 0.4);
+}
+
+input.ng-invalid.ng-touched,
+select.ng-invalid.ng-touched {
+  border-color: var(--verdict-invalid-border);
+  background: var(--verdict-invalid-bg);
+}
+
+label {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: var(--spacing-xs);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: var(--rounded-md);
+  padding: 9px 18px;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--ink-secondary);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--rounded-md);
+  padding: 9px 18px;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--paper-secondary);
+}
+
+.btn-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  background: var(--accent);
+  color: var(--ink);
+  border: 1px solid var(--accent-dark);
+  border-radius: var(--rounded-md);
+  padding: 9px 18px;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-accent:hover:not(:disabled) {
+  background: var(--accent-dark);
+}
+
+.card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-lg);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-error {
+  font-size: 0.8125rem;
+  color: var(--verdict-invalid);
+  margin-top: var(--spacing-xs);
+}
+
+.alert-error {
+  background: var(--verdict-invalid-bg);
+  color: var(--verdict-invalid);
+  border: 1px solid var(--verdict-invalid-border);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.8125rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.full-width {
+  width: 100%;
+}

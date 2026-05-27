@@ -1,0 +1,5259 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SVAES API",
+    "description": "Automatic Software Delivery Verification System",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refresh",
+        "operationId": "refresh_api_v1_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "List Organizations",
+        "description": "Endpoint para listar las organizaciones. Solo los usuarios con rol ADMIN pueden acceder a esta informaci\u00f3n.\n\nAtributos:\n    - skip: int - N\u00famero de registros a omitir para paginaci\u00f3n.\n    - limit: int - N\u00famero m\u00e1ximo de registros a retornar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.\n\nRetorna:\n    - Una lista de diccionarios con la informaci\u00f3n de cada organizaci\u00f3n.\n    - Lanza HTTPException con status 403 si el usuario no tiene rol ADMIN.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "list_organizations_api_v1_organizations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Create Organization",
+        "description": "Endpoint para crear una nueva organizaci\u00f3n. Solo los usuarios con rol ADMIN pueden crear organizaciones.\n\nAtributos:\n    - payload: OrganizationCreateRequest - El cuerpo de la solicitud con los datos de la organizaci\u00f3n a crear.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con la informaci\u00f3n de la organizaci\u00f3n creada (id, name, slug).\n    - Lanza HTTPException con status 403 si el usuario no tiene rol ADMIN.\n    - Lanza HTTPException con status 409 si hay un error de validaci\u00f3n (e.g., slug ya existe).\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "create_organization_api_v1_organizations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get Organization",
+        "description": "Endpoint para obtener los detalles de una organizaci\u00f3n.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con la informaci\u00f3n de la organizaci\u00f3n (id, name, slug, owner_id, etc.).\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organizaci\u00f3n.\n    - Lanza HTTPException con status 404 si la organizaci\u00f3n no existe.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "get_organization_api_v1_organizations__org_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get Project By Id",
+        "operationId": "get_project_by_id_api_v1_projects__project_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "List Accessible Projects",
+        "operationId": "list_accessible_projects_api_v1_projects_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Size"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/projects": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "List Org Projects",
+        "operationId": "list_org_projects_api_v1_organizations__org_id__projects_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Create Project",
+        "description": "Endpoint para crear un nuevo proyecto dentro de una organizaci\u00f3n.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - payload: ProjectCreateRequest - El cuerpo de la solicitud con los datos del proyecto a crear.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con la informaci\u00f3n del proyecto creado (id, name).\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organizaci\u00f3n.\n    - Lanza HTTPException con status 404 si la organizaci\u00f3n no existe.\n    - Lanza HTTPException con status 409 si hay un error de validaci\u00f3n.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "create_project_api_v1_organizations__org_id__projects_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get Project",
+        "operationId": "get_project_api_v1_organizations__org_id__projects__project_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/projects/{project_id}/archive": {
+      "post": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Archive Project",
+        "description": "Endpoint para archivar un proyecto.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - project_id: UUID - El ID del proyecto a archivar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con el ID y nombre del proyecto archivado.\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organizaci\u00f3n.\n    - Lanza HTTPException con status 404 si la organizaci\u00f3n o el proyecto no existen.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "archive_project_api_v1_organizations__org_id__projects__project_id__archive_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/restore": {
+      "post": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Restore Organization",
+        "description": "Endpoint para restaurar (desarchivar) una organizaci\u00f3n marcada como inactiva.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n a restaurar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con el ID y nombre de la organizaci\u00f3n restaurada.\n    - Lanza HTTPException con status 403 si el usuario no tiene rol U3.\n    - Lanza HTTPException con status 404 si la organizaci\u00f3n no existe.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "restore_organization_api_v1_organizations__org_id__restore_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/transfer-ownership": {
+      "post": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Transfer Ownership",
+        "description": "Endpoint para transferir la propiedad de una organizaci\u00f3n a otro usuario.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - payload: TransferOwnershipRequest - El cuerpo de la solicitud con el ID del nuevo propietario.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con la informaci\u00f3n de la organizaci\u00f3n actualizada.\n    - Lanza HTTPException con status 403 si el usuario no es el propietario actual.\n    - Lanza HTTPException con status 404 si la organizaci\u00f3n no existe.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "transfer_ownership_api_v1_organizations__org_id__transfer_ownership_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferOwnershipRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/releases": {
+      "post": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Create Release",
+        "description": "Crea una nueva release dentro del proyecto especificado.\n\nAtributos:\n    - project_id: ID del proyecto al que pertenece la release.\n    - payload: Datos de la release a crear (nombre, versi\u00f3n, descripci\u00f3n).\n    - project_access: Acceso validado al proyecto con datos del usuario autenticado.\n    - service: Instancia del servicio de releases (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 201 Created con el ID y estado inicial de la release si se crea exitosamente\n    - 403 Forbidden si el usuario no tiene permisos en el proyecto\n    - 422 Unprocessable Entity si los datos de entrada no son v\u00e1lidos\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "create_release_api_v1_projects__project_id__releases_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "List Releases",
+        "description": "Lista todas las releases asociadas al proyecto especificado.\n\nAtributos:\n    - project_id: ID del proyecto del que se quieren listar las releases.\n    - project_access: Acceso validado al proyecto con datos del usuario autenticado.\n    - service: Instancia del servicio de releases (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 200 OK con la lista de releases si se encuentran exitosamente\n    - 403 Forbidden si el usuario no tiene acceso al proyecto\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "list_releases_api_v1_projects__project_id__releases_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}": {
+      "get": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Get Release",
+        "description": "Obtiene los detalles de una release espec\u00edfica por su ID.\n\nAtributos:\n    - id: ID de la release a obtener.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de releases (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 200 OK con los detalles de la release si se encuentra exitosamente\n    - 403 Forbidden si el usuario no tiene acceso a la release\n    - 404 Not Found si la release no se encuentra\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "get_release_api_v1_releases__id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Update Release",
+        "operationId": "update_release_api_v1_releases__id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Delete Release",
+        "description": "Elimina una release espec\u00edfica por su ID.\n\nAtributos:\n    - id: ID de la release a eliminar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de releases (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 204 No Content si se elimina exitosamente\n    - 403 Forbidden si el usuario no tiene acceso a la release\n    - 404 Not Found si la release no se encuentra\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "delete_release_api_v1_releases__id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}/archive": {
+      "post": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Archive Release",
+        "description": "Archiva una release espec\u00edfica por su ID, cambiando su estado a 'ARCHIVADA'.\n\nAtributos:\n    - id: ID de la release a archivar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de releases (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 200 OK con un mensaje de \u00e9xito si se archiva exitosamente\n    - 403 Forbidden si el usuario no tiene permiso para archivar\n    - 404 Not Found si la release no se encuentra\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "archive_release_api_v1_releases__id__archive_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}/restore": {
+      "post": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Restore Release",
+        "description": "Restaura una release archivada, cambiando su estado al anterior (BORRADOR).\n\nAtributos:\n    - id: ID de la release a restaurar.\n    - current_user: Usuario autenticado con rol U3 (reservado a administrador global).\n    - service: Instancia del servicio de releases (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 200 OK con un mensaje de \u00e9xito si se restaura exitosamente\n    - 403 Forbidden si el usuario no tiene rol U3\n    - 404 Not Found si la release no se encuentra o no est\u00e1 archivada\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "restore_release_api_v1_releases__id__restore_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}/artifacts": {
+      "get": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "List Artifacts",
+        "description": "Lista todos los artefactos asociados a una release espec\u00edfica por su ID.\n\nAtributos:\n    - id: ID de la release de la que se quieren listar los artefactos.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de artefactos (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 200 OK con la lista de artefactos si se encuentran exitosamente\n    - 403 Forbidden si el usuario no tiene acceso a la release\n    - 404 Not Found si la release no se encuentra\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "list_artifacts_api_v1_releases__id__artifacts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Add Artifact",
+        "description": "Agrega un nuevo artefacto a una release espec\u00edfica por su ID.\n\nAtributos:\n    - id: ID de la release a la que se quiere agregar el artefacto.\n    - payload: Datos del artefacto a agregar (tipo, conector, referencia externa\n        y descripci\u00f3n).\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de artefactos (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 201 Created con el ID del artefacto creado si se agrega exitosamente\n    - 403 Forbidden si el usuario no tiene acceso a la release\n    - 404 Not Found si la release no se encuentra\n    - 422 Unprocessable Entity si los datos de entrada no son v\u00e1lidos\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "add_artifact_api_v1_releases__id__artifacts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtifactCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}/artifacts/{artifact_id}": {
+      "delete": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Remove Artifact",
+        "description": "Elimina un artefacto espec\u00edfico de una release por sus IDs.\n\nAtributos:\n    - id: ID de la release de la que se quiere eliminar el artefacto.\n    - artifact_id: ID del artefacto a eliminar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de artefactos (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 204 No Content si se elimina exitosamente\n    - 403 Forbidden si el usuario no tiene acceso a la release\n    - 404 Not Found si la release o el artefacto no se encuentran\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "remove_artifact_api_v1_releases__id__artifacts__artifact_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Artifact Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}/verify": {
+      "post": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Verify Release",
+        "description": "Lanza la verificaci\u00f3n as\u00edncrona.\n\nAtributos:\n    - id: ID de la release a verificar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de verificaciones (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 202 Accepted con el ID de la tarea de verificaci\u00f3n y el nuevo estado de\n        la release si se lanza exitosamente\n    - 403 Forbidden si el usuario no tiene permiso para verificar\n    - 404 Not Found si la release no se encuentra\n    - 409 Conflict si la release no se encuentra en un estado v\u00e1lido para iniciar la verificaci\u00f3n\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "verify_release_api_v1_releases__id__verify_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}/results": {
+      "get": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Get Results",
+        "description": "Obtiene el historial paginado de verificaciones de esta release.\n\nAtributos:\n    - id: UUID - ID de la release de la que se quieren obtener las verificaciones.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de verificaciones (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 200 OK con la lista paginada de verificaciones si se encuentran\n    - 403 Forbidden si el usuario no tiene acceso\n    - 404 Not Found si la release no se encuentra\n    - 500 Internal Server Error para cualquier error inesperado",
+        "operationId": "get_results_api_v1_releases__id__results_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}/results/{rid}": {
+      "get": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Get Result Detail",
+        "description": "Obtiene el informe detallado de una verificaci\u00f3n individual.\n\nAtributos:\n    - id: UUID - ID de la release a la que pertenece la verificaci\u00f3n.\n    - rid: UUID - ID de la verificaci\u00f3n individual de la que se quieren obtener los detalles.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de verificaciones (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 200 OK con el informe detallado de la verificaci\u00f3n si se encuentra exitosamente\n    - 403 Forbidden si el usuario no tiene acceso\n    - 404 Not Found si la release o la verificaci\u00f3n no se encuentran\n    - 500 Internal Server Error para cualquier error inesperado",
+        "operationId": "get_result_detail_api_v1_releases__id__results__rid__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "rid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}/verifications/{verification_id}": {
+      "get": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Get Verification Detail",
+        "description": "Obtiene el informe detallado de una verificaci\u00f3n individual.\n\nAtributos:\n    - id: ID de la release a la que pertenece la verificaci\u00f3n.\n    - verification_id: ID de la verificaci\u00f3n individual de la que se quieren obtener los detalles.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de verificaciones (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 200 OK con el informe detallado de la verificaci\u00f3n si se encuentra exitosamente\n    - 403 Forbidden si el usuario no tiene acceso\n    - 404 Not Found si la release o la verificaci\u00f3n no se encuentran\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "get_verification_detail_api_v1_releases__id__verifications__verification_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "verification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Verification Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}/results/{rid}/export": {
+      "get": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Export Verification Result Pdf",
+        "description": "Exporta el resultado de una verificaci\u00f3n a formato PDF.\n\nAtributos:\n    - id: ID de la release a la que pertenece la verificaci\u00f3n.\n    - rid: ID de la verificaci\u00f3n individual a exportar.\n    - format: Formato de exportaci\u00f3n (solo PDF soportado actualmente).\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de verificaciones (inyecci\u00f3n de dependencias).\n    - export_service: Instancia del servicio de exportaci\u00f3n (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 200 OK con el archivo PDF si se exporta exitosamente\n    - 400 Bad Request si el formato no es soportado\n    - 403 Forbidden si el usuario no tiene acceso\n    - 404 Not Found si la release o la verificaci\u00f3n no se encuentran\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "export_verification_result_pdf_api_v1_releases__id__results__rid__export_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "rid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "pdf",
+              "type": "string",
+              "description": "Formato de exportaci\u00f3n",
+              "default": "pdf",
+              "title": "Format"
+            },
+            "description": "Formato de exportaci\u00f3n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/results/export": {
+      "get": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Export Project Results Csv",
+        "description": "Exporta el historial de verificaciones de un proyecto a formato CSV.\n\nAtributos:\n    - project_id: ID del proyecto cuyas verificaciones se exportar\u00e1n.\n    - format: Formato de exportaci\u00f3n (solo CSV soportado actualmente).\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de verificaciones (inyecci\u00f3n de dependencias).\n    - export_service: Instancia del servicio de exportaci\u00f3n (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 200 OK con el archivo CSV si se exporta exitosamente\n    - 400 Bad Request si el formato no es soportado\n    - 403 Forbidden si el usuario no tiene acceso al proyecto\n    - 500 Internal Server Error para cualquier otro error inesperado",
+        "operationId": "export_project_results_csv_api_v1_projects__project_id__results_export_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "csv",
+              "type": "string",
+              "description": "Formato de exportaci\u00f3n",
+              "default": "csv",
+              "title": "Format"
+            },
+            "description": "Formato de exportaci\u00f3n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/releases/{id}/artifacts/import": {
+      "post": {
+        "tags": [
+          "Releases"
+        ],
+        "summary": "Import Artifacts",
+        "description": "Importa m\u00faltiples artefactos a una release desde un fichero CSV.\n\nPermite la importaci\u00f3n masiva de artefactos a partir de un archivo CSV\nproporcionado en la solicitud. La operaci\u00f3n se ejecuta de forma as\u00edncrona.\n\nAtributos:\n    - id: ID de la release a la que se importar\u00e1n los artefactos.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Instancia del servicio de artefactos (inyecci\u00f3n de dependencias).\n\nRetorna:\n    - 202 Accepted si la importaci\u00f3n se inicia exitosamente.\n    - 403 Forbidden si el usuario no tiene acceso a la release.\n    - 404 Not Found si la release no se encuentra.\n    - 422 Unprocessable Entity si el fichero CSV no es v\u00e1lido.\n    - 500 Internal Server Error para cualquier otro error inesperado.",
+        "operationId": "import_artifacts_api_v1_releases__id__artifacts_import_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportArtifactsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/connectors/types": {
+      "get": {
+        "tags": [
+          "Connectors"
+        ],
+        "summary": "List Connector Types",
+        "description": "Endpoint para listar los tipos de conectores disponibles y sus implementaciones.\n\nRetorna la lista de todas las implementaciones de conectores registradas,\nagrupadas por tipo de conector, junto con sus metadatos y esquemas de\nconfiguraci\u00f3n.\n\nAtributos:\n    - current_user: Usuario autenticado con permisos del token JWT.\n\nRetorna:\n    - Diccionario con la lista de implementaciones y la agrupaci\u00f3n por tipo.\n    - 401 Unauthorized si el token es inv\u00e1lido.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "list_connector_types_api_v1_connectors_types_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org_id}/connectors": {
+      "get": {
+        "tags": [
+          "Connectors"
+        ],
+        "summary": "List Connectors",
+        "description": "Endpoint para listar los conectores de una organizaci\u00f3n.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - active_only: bool - Si se deben mostrar solo los conectores activos.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IConnectorService - El servicio de conectores, inyectado mediante dependencias.\n\nRetorna:\n    - Una lista de diccionarios con la informaci\u00f3n de cada conector.\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organizaci\u00f3n.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "list_connectors_api_v1_organizations__org_id__connectors_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Active Only"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Connectors"
+        ],
+        "summary": "Register Connector",
+        "description": "Endpoint para registrar un nuevo conector en una organizaci\u00f3n.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - payload: ConnectorCreateRequest - El cuerpo de la solicitud, que incluye el tipo, nombre y configuraci\u00f3n del conector.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IConnectorService - El servicio de conectores, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con el ID, nombre y estado del conector registrado.\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organizaci\u00f3n.\n    - Lanza HTTPException con status 422 si los datos de entrada son inv\u00e1lidos.\n    - Lanza HTTPException con status 500 para cualquier otro error inesperado.",
+        "operationId": "register_connector_api_v1_organizations__org_id__connectors_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectorCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/connectors/{connector_id}": {
+      "patch": {
+        "tags": [
+          "Connectors"
+        ],
+        "summary": "Update Connector",
+        "description": "Endpoint para actualizar un conector existente.\n\nAtributos:\n    - connector_id: UUID - El ID del conector a actualizar.\n    - payload: ConnectorUpdateRequest - El cuerpo de la solicitud, que incluye el nombre y configuraci\u00f3n actualizados del conector.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IConnectorService - El servicio de conectores, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con el ID, nombre y estado del conector actualizado.\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso.\n    - Lanza HTTPException con status 404 si el conector no es encontrado.\n    - Lanza HTTPException con status 422 si los datos de entrada son inv\u00e1lidos.\n    - Lanza HTTPException con status 500 para cualquier otro error inesperado.",
+        "operationId": "update_connector_api_v1_organizations__org_id__connectors__connector_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "connector_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Connector Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectorUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Connectors"
+        ],
+        "summary": "Delete Connector",
+        "description": "Endpoint para eliminar un conector existente.\n\nAtributos:\n    - connector_id: UUID - El ID del conector a eliminar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IConnectorService - El servicio de conectores, inyectado mediante dependencias.\n\nRetorna:\n    - No retorna contenido (204) si la eliminaci\u00f3n es exitosa.\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso.\n    - Lanza HTTPException con status 404 si el conector no es encontrado.\n    - Lanza HTTPException con status 500 para cualquier otro error inesperado.",
+        "operationId": "delete_connector_api_v1_organizations__org_id__connectors__connector_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "connector_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Connector Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/connectors/{connector_id}/test": {
+      "post": {
+        "tags": [
+          "Connectors"
+        ],
+        "summary": "Test Connector",
+        "description": "Endpoint para probar la conexi\u00f3n de un conector existente.\n\nAtributos:\n    - connector_id: UUID - El ID del conector a probar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IConnectorService - El servicio de conectores, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con el resultado de la prueba y un mensaje informativo.\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso.\n    - Lanza HTTPException con status 404 si el conector no es encontrado.\n    - Lanza HTTPException con status 409 si la conexi\u00f3n falla.\n    - Lanza HTTPException con status 500 para cualquier otro error inesperado.",
+        "operationId": "test_connector_api_v1_organizations__org_id__connectors__connector_id__test_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "connector_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Connector Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/profiles": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "List Profiles",
+        "description": "Endpoint para listar los perfiles de una organizaci\u00f3n.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - skip: int - N\u00famero de registros a omitir para paginaci\u00f3n.\n    - limit: int - N\u00famero m\u00e1ximo de registros a retornar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias\n\nRetorna:\n    - Una lista de diccionarios con la informaci\u00f3n de cada perfil, incluyendo el conteo de reglas asociadas.\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organizaci\u00f3n.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "list_profiles_api_v1_organizations__org_id__profiles_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Create Profile",
+        "description": "Endpoint para crear un nuevo perfil dentro de una organizaci\u00f3n.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - payload: ProfileCreateRequest - El cuerpo de la solicitud con los datos del perfil a crear.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con la informaci\u00f3n del perfil creado (id, name, is_default).\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organizaci\u00f3n.\n    - Lanza HTTPException con status 409 si hay un error de validaci\u00f3n.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "create_profile_api_v1_organizations__org_id__profiles_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{profile_id}": {
+      "patch": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Update Profile",
+        "description": "Endpoint para actualizar un perfil existente.\n\nAtributos:\n    - profile_id: UUID - El ID del perfil a actualizar.\n    - payload: ProfileUpdateRequest - El cuerpo de la solicitud con los datos del perfil a actualizar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con la informaci\u00f3n del perfil actualizado (id, name, is_default).\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso.\n    - Lanza HTTPException con status 404 si el perfil no existe.\n    - Lanza HTTPException con status 409 si hay un error de validaci\u00f3n.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "update_profile_api_v1_profiles__profile_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Delete Profile",
+        "description": "Endpoint para eliminar un perfil existente.\n\nAtributos:\n    - profile_id: UUID - El ID del perfil a eliminar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.\nRetorna:\n    - No retorna contenido (204 No Content) si la eliminaci\u00f3n es exitosa.\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso.\n    - Lanza HTTPException con status 404 si el perfil no existe.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "delete_profile_api_v1_profiles__profile_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profiles/{profile_id}/rules": {
+      "post": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Add Rule",
+        "description": "Endpoint para agregar una nueva regla a un perfil existente.\n\nAtributos:\n    - profile_id: UUID - El ID del perfil al que se agregar\u00e1 la regla.\n    - payload: RuleCreateRequest - El cuerpo de la solicitud con los datos de la regla a crear.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con la informaci\u00f3n de la regla creada (id, rule_template).\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso.\n    - Lanza HTTPException con status 404 si el perfil no existe.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "add_rule_api_v1_profiles__profile_id__rules_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rules/{rule_id}": {
+      "patch": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Update Rule",
+        "description": "Endpoint para actualizar una regla existente.\n\nAtributos:\n    - rule_id: UUID - El ID de la regla a actualizar.\n    - payload: RuleUpdateRequest - El cuerpo de la solicitud con los datos de la regla a actualizar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.\n\nRetorna:\n    - Un diccionario con la informaci\u00f3n de la regla actualizada (id, is_active).\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso.\n    - Lanza HTTPException con status 404 si la regla no existe.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "update_rule_api_v1_rules__rule_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Delete Rule",
+        "description": "Endpoint para eliminar una regla existente.\n\nAtributos:\n    - rule_id: UUID - El ID de la regla a eliminar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias\n\nRetorna:\n    - No retorna contenido (204 No Content) si la eliminaci\u00f3n es exitosa.\n    - Lanza HTTPException con status 403 si el usuario no tiene acceso.\n    - Lanza HTTPException con status 404 si la regla no existe.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "delete_rule_api_v1_rules__rule_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rule Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{task_id}": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Get Task Status",
+        "description": "Endpoint para obtener el estado de una tarea as\u00edncrona.\n\nAtributos:\n    - task_id: str - El ID de la tarea a consultar.\n    - service: ITaskService - El servicio de tareas, inyectado mediante dependencias\n    \nRetorna:\n    - Un diccionario con el ID de la tarea, su estado actual y el resultado si est\u00e1 disponible.\n    - Lanza HTTPException con status 404 si la tarea no existe.\n    - Lanza HTTPException con status 500 para cualquier error inesperado.",
+        "operationId": "get_task_status_api_v1_tasks__task_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get Current User Profile",
+        "description": "Obtiene el perfil del usuario autenticado actualmente.\n\nAtributos:\n    - current_user: Usuario autenticado (del token JWT).\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - Perfil del usuario con id, email, display_name, role y organization_id.\n    - 401 Unauthorized si el token es inv\u00e1lido.\n    - 500 Internal Server Error para cualquier otro error inesperado.",
+        "operationId": "get_current_user_profile_api_v1_users_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update Current User Profile",
+        "description": "Actualiza el perfil del usuario autenticado (display_name).\n\nAtributos:\n    - payload: Datos a actualizar (display_name).\n    - current_user: Usuario autenticado (del token JWT).\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - Perfil actualizado del usuario.\n    - 400 Bad Request si los datos son inv\u00e1lidos.\n    - 401 Unauthorized si el token es inv\u00e1lido.\n    - 500 Internal Server Error para cualquier otro error inesperado.",
+        "operationId": "update_current_user_profile_api_v1_users_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/users/me/password": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Change Password",
+        "description": "Cambia la contrase\u00f1a del usuario autenticado.\n\nAtributos:\n    - payload: Contrase\u00f1a actual y nueva contrase\u00f1a.\n    - current_user: Usuario autenticado (del token JWT).\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - Mensaje de \u00e9xito si la contrase\u00f1a se cambi\u00f3 correctamente.\n    - 400 Bad Request si la contrase\u00f1a actual es incorrecta.\n    - 401 Unauthorized si el token es inv\u00e1lido.\n    - 500 Internal Server Error para cualquier otro error inesperado.",
+        "operationId": "change_password_api_v1_users_me_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/users/me/account": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Delete User Account",
+        "operationId": "delete_user_account_api_v1_users_me_account_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/users/me/export": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Export User Data",
+        "description": "GDPR Art.20 \u2014 Export all personal data for the authenticated user.",
+        "operationId": "export_user_data_api_v1_users_me_export_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/organizations/{org_id}/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "List Organization Users",
+        "description": "Lista los usuarios de una organizaci\u00f3n.\n\nSolo accesible por usuarios con rol MANAGER o superior que pertenezcan a la organizaci\u00f3n.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - skip: int - N\u00famero de registros a omitir para paginaci\u00f3n.\n    - limit: int - N\u00famero m\u00e1ximo de registros a retornar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - Lista de usuarios con su id, email, display_name y role.\n    - 403 Forbidden si el usuario no tiene acceso a la organizaci\u00f3n.\n    - 500 Internal Server Error para cualquier otro error inesperado.",
+        "operationId": "list_organization_users_api_v1_organizations__org_id__users_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/users/invite": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Invite User",
+        "description": "Invita a un usuario a unirse a una organizaci\u00f3n.\n\nSolo accesible por usuarios con rol MANAGER o superior. El usuario recibe\nun email con un enlace para completar su registro.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - payload: Datos del usuario a invitar (email y rol).\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - Mensaje de \u00e9xito con el email del usuario invitado.\n    - 403 Forbidden si el usuario no tiene permisos.\n    - 409 Conflict si el email ya est\u00e1 registrado.\n    - 500 Internal Server Error para cualquier otro error inesperado.",
+        "operationId": "invite_user_api_v1_organizations__org_id__users_invite_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/users/{user_id}/role": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update User Role",
+        "description": "Actualiza el rol de un usuario dentro de una organizaci\u00f3n.\n\nSolo accesible por usuarios con rol MANAGER o superior.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - user_id: UUID - El ID del usuario cuyo rol se actualizar\u00e1.\n    - payload: Nuevo rol para el usuario.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - Usuario actualizado con su nuevo rol.\n    - 403 Forbidden si el usuario no tiene permisos o intenta cambiar el rol del Owner.\n    - 404 Not Found si el usuario no existe.\n    - 500 Internal Server Error para cualquier otro error inesperado.",
+        "operationId": "update_user_role_api_v1_organizations__org_id__users__user_id__role_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRoleUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/users/{user_id}": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Remove User From Org",
+        "description": "Elimina a un usuario de una organizaci\u00f3n.\n\nEl usuario podr\u00e1 seguir usando el sistema pero perder\u00e1 acceso a la organizaci\u00f3n.\nNo es posible eliminar al Owner de la organizaci\u00f3n.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - user_id: UUID - El ID del usuario a eliminar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - 204 No Content si el usuario fue eliminado correctamente.\n    - 403 Forbidden si el usuario no tiene permisos o es el Owner.\n    - 404 Not Found si el usuario no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "remove_user_from_org_api_v1_organizations__org_id__users__user_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Admin Create User",
+        "description": "Crea un nuevo usuario en el sistema (solo U3).\n\nAtributos:\n    - payload: Datos del usuario a crear.\n    - current_user: Usuario autenticado con rol U3.\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - 201 Created con la informaci\u00f3n del usuario creado.\n    - 403 Forbidden si el usuario no es U3.\n    - 409 Conflict si el email ya existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "admin_create_user_api_v1_admin_users_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Admin List Users",
+        "description": "Lista todos los usuarios del sistema con filtros (solo U3).\n\nAtributos:\n    - skip: int - N\u00famero de registros a omitir para paginaci\u00f3n.\n    - limit: int - N\u00famero m\u00e1ximo de registros a retornar.\n    - is_active: bool - Filtrar por estado de activaci\u00f3n.\n    - role: UserRole - Filtrar por rol global.\n    - current_user: Usuario autenticado con rol U3.\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - Lista de usuarios con su informaci\u00f3n.\n    - 403 Forbidden si el usuario no es U3.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "admin_list_users_api_v1_admin_users_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Is Active"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UserRole"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Role"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/activate": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Admin Activate User",
+        "description": "Activa una cuenta de usuario (solo U3).\n\nAtributos:\n    - user_id: UUID - El ID del usuario a activar.\n    - current_user: Usuario autenticado con rol U3.\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - 200 OK con el usuario activado.\n    - 403 Forbidden si el usuario no es U3.\n    - 404 Not Found si el usuario no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "admin_activate_user_api_v1_admin_users__user_id__activate_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/deactivate": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Admin Deactivate User",
+        "description": "Desactiva una cuenta de usuario (solo U3).\n\nAtributos:\n    - user_id: UUID - El ID del usuario a desactivar.\n    - current_user: Usuario autenticado con rol U3.\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - 200 OK con el usuario desactivado.\n    - 403 Forbidden si el usuario no es U3 o intenta desactivarse a s\u00ed mismo.\n    - 404 Not Found si el usuario no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "admin_deactivate_user_api_v1_admin_users__user_id__deactivate_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/role": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Admin Update Global Role",
+        "description": "Actualiza el rol global de un usuario (solo U3).\n\nAtributos:\n    - user_id: UUID - El ID del usuario cuyo rol se actualizar\u00e1.\n    - payload: Nuevo rol global para el usuario.\n    - current_user: Usuario autenticado con rol U3.\n    - service: Servicio de usuarios inyectado mediante dependencias.\n\nRetorna:\n    - 200 OK con el usuario actualizado.\n    - 403 Forbidden si el usuario no es U3 o intenta cambiar su propio rol.\n    - 404 Not Found si el usuario no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "admin_update_global_role_api_v1_admin_users__user_id__role_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRoleUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{org_id}/roles": {
+      "get": {
+        "tags": [
+          "Custom Roles"
+        ],
+        "summary": "List Custom Roles",
+        "description": "Lista los roles personalizados de una organizaci\u00f3n.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de roles personalizado inyectado.\n\nRetorna:\n    - Lista de roles personalizados con sus permisos.\n    - 403 Forbidden si el usuario no tiene acceso.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "list_custom_roles_api_v1_organizations__org_id__roles_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Custom Roles"
+        ],
+        "summary": "Create Custom Role",
+        "description": "Crea un rol personalizado dentro de una organizaci\u00f3n.\n\nLos roles personalizados permiten definir combinaciones espec\u00edficas de permisos\nque pueden asignarse a usuarios dentro de una organizaci\u00f3n.\n\nAtributos:\n    - org_id: UUID - El ID de la organizaci\u00f3n.\n    - payload: Datos del rol a crear (nombre y lista de permisos).\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de roles personalizado inyectado.\n\nRetorna:\n    - El rol personalizado creado con sus permisos.\n    - 403 Forbidden si el usuario no tiene acceso.\n    - 409 Conflict si ya existe un rol con ese nombre.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "create_custom_role_api_v1_organizations__org_id__roles_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomRoleCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/roles/{role_id}": {
+      "patch": {
+        "tags": [
+          "Custom Roles"
+        ],
+        "summary": "Update Custom Role",
+        "description": "Actualiza un rol personalizado existente.\n\nAtributos:\n    - role_id: UUID - El ID del rol a actualizar.\n    - payload: Datos actualizados del rol.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de roles personalizado inyectado.\n\nRetorna:\n    - El rol personalizado actualizado.\n    - 403 Forbidden si el usuario no tiene acceso.\n    - 404 Not Found si el rol no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "update_custom_role_api_v1_roles__role_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Role Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomRoleUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Custom Roles"
+        ],
+        "summary": "Delete Custom Role",
+        "description": "Elimina un rol personalizado.\n\nLos usuarios que tengan este rol asignado conservar\u00e1n sus permisos base\npero perder\u00e1n los permisos espec\u00edficos del rol eliminado.\n\nAtributos:\n    - role_id: UUID - El ID del rol a eliminar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de roles personalizado inyectado.\n\nRetorna:\n    - 204 No Content si el rol fue eliminado correctamente.\n    - 403 Forbidden si el usuario no tiene acceso.\n    - 404 Not Found si el rol no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "delete_custom_role_api_v1_roles__role_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Role Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/metrics": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Get Dashboard Metrics",
+        "description": "Endpoint para obtener m\u00e9tricas del dashboard.\n\nSi se proporciona org_id, retorna m\u00e9tricas de esa organizaci\u00f3n (requiere acceso).\nSi no se proporciona org_id, retorna m\u00e9tricas basadas en las organizaciones\na las que el usuario tiene acceso.\n\nAtributos:\n    - org_id: UUID opcional - Filtrar por ID de organizaci\u00f3n.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - release_repo: Repositorio de releases inyectado.\n    - verification_repo: Repositorio de resultados de verificaci\u00f3n inyectado.\n\nRetorna:\n    - M\u00e9tricas agregadas del dashboard incluyendo totales de releases,\n      verificaciones y tasa de aprobaci\u00f3n.",
+        "operationId": "get_dashboard_metrics_api_v1_dashboard_metrics_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by organization ID",
+              "title": "Org Id"
+            },
+            "description": "Filter by organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{user_id}/api-keys": {
+      "post": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Create Api Key",
+        "description": "Crea una nueva API key para el usuario autenticado.\n\nLa API key puede tener una fecha de expiraci\u00f3n opcional. Solo el propio\nusuario puede crear API keys para su cuenta.\n\nAtributos:\n    - user_id: UUID - El ID del usuario para el que se crea la API key.\n    - payload: Datos de la API key (nombre y d\u00edas de expiraci\u00f3n opcionales).\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - api_key_repo: Repositorio de API keys inyectado mediante dependencias.\n\nRetorna:\n    - 201 Created con los datos de la API key creada (incluyendo la clave completa).\n    - 400 Bad Request si el usuario no pertenece a una organizaci\u00f3n.\n    - 403 Forbidden si el usuario intenta crear una API key para otro usuario.\n    - 409 Conflict si los datos de la API key no son v\u00e1lidos.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "create_api_key_api_v1_users__user_id__api_keys_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAPIKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "List Api Keys",
+        "description": "Lista las API keys del usuario autenticado.\n\nSolo el propio usuario puede ver sus API keys. La clave completa solo se\nmuestra en el momento de la creaci\u00f3n; este endpoint retorna solo el prefijo.\n\nAtributos:\n    - user_id: UUID - El ID del usuario cuyas API keys se listan.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - api_key_repo: Repositorio de API keys inyectado mediante dependencias.\n\nRetorna:\n    - 200 OK con la lista de API keys del usuario.\n    - 403 Forbidden si el usuario intenta ver las API keys de otro usuario.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "list_api_keys_api_v1_users__user_id__api_keys_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{user_id}/api-keys/{key_id}": {
+      "delete": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Revoke Api Key",
+        "description": "Revoca (invalida) una API key del usuario autenticado.\n\nUna vez revocada, la API key ya no podr\u00e1 usarse para autenticar solicitudes.\nSolo el propio usuario puede revocar sus API keys.\n\nAtributos:\n    - user_id: UUID - El ID del usuario propietario de la API key.\n    - key_id: UUID - El ID de la API key a revocar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - api_key_repo: Repositorio de API keys inyectado mediante dependencias.\n\nRetorna:\n    - 204 No Content si la API key fue revocada correctamente.\n    - 403 Forbidden si el usuario intenta revocar una API key de otro usuario.\n    - 404 Not Found si la API key no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "revoke_api_key_api_v1_users__user_id__api_keys__key_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Key Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/templates": {
+      "post": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Create Template",
+        "description": "Crea una nueva plantilla de release.\n\nAtributos:\n    - payload: Datos de la plantilla a crear (nombre, descripci\u00f3n, profile_id).\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de plantillas inyectado mediante dependencias.\n\nRetorna:\n    - 201 Created con el ID de la plantilla creada.\n    - 403 Forbidden si el usuario no tiene permisos.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "create_template_api_v1_templates_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "List Templates",
+        "description": "Lista las plantillas de release accesibles por el usuario.\n\nAtributos:\n    - skip: int - N\u00famero de registros a omitir para paginaci\u00f3n.\n    - limit: int - N\u00famero m\u00e1ximo de registros a retornar.\n    - include_archived: bool - Incluir plantillas archivadas.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de plantillas inyectado mediante dependencias.\n\nRetorna:\n    - Lista de plantillas con su informaci\u00f3n.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "list_templates_api_v1_templates_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Archived"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/templates/{template_id}": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Get Template",
+        "description": "Obtiene los detalles de una plantilla espec\u00edfica.\n\nAtributos:\n    - template_id: UUID - El ID de la plantilla.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de plantillas inyectado mediante dependencias.\n\nRetorna:\n    - Detalles de la plantilla.\n    - 404 Not Found si la plantilla no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "get_template_api_v1_templates__template_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Update Template",
+        "description": "Actualiza una plantilla de release.\n\nAtributos:\n    - template_id: UUID - El ID de la plantilla a actualizar.\n    - payload: Datos actualizados de la plantilla.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de plantillas inyectado mediante dependencias.\n\nRetorna:\n    - 200 OK con la plantilla actualizada.\n    - 404 Not Found si la plantilla no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "update_template_api_v1_templates__template_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/templates/{template_id}/archive": {
+      "post": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Archive Template",
+        "description": "Archiva una plantilla de release.\n\nAtributos:\n    - template_id: UUID - El ID de la plantilla a archivar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de plantillas inyectado mediante dependencias.\n\nRetorna:\n    - 200 OK con mensaje de \u00e9xito.\n    - 404 Not Found si la plantilla no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "archive_template_api_v1_templates__template_id__archive_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/templates/{template_id}/clone": {
+      "post": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Clone Template",
+        "description": "Clona una plantilla de release a otra organizaci\u00f3n.\n\nAtributos:\n    - template_id: UUID - El ID de la plantilla a clonar.\n    - payload: Datos para la clonaci\u00f3n (nombre destino, organizaci\u00f3n destino).\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de plantillas inyectado mediante dependencias.\n\nRetorna:\n    - 201 Created con el ID de la nueva plantilla clonada.\n    - 404 Not Found si la plantilla no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "clone_template_api_v1_templates__template_id__clone_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateCloneRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/channels": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "List Notification Channels",
+        "description": "Lista los canales de notificaci\u00f3n disponibles y su configuraci\u00f3n.\n\nAtributos:\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de notificaciones inyectado mediante dependencias.\n\nRetorna:\n    - Lista de canales de notificaci\u00f3n configurados para la organizaci\u00f3n.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "list_notification_channels_api_v1_notifications_channels_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Configure Notification Channel",
+        "description": "Configura un nuevo canal de notificaci\u00f3n para la organizaci\u00f3n.\n\nAtributos:\n    - payload: Configuraci\u00f3n del canal (tipo, habilitado, datos espec\u00edficos).\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de notificaciones inyectado mediante dependencias.\n\nRetorna:\n    - 201 Created con el ID del canal configurado.\n    - 403 Forbidden si el usuario no tiene permisos.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "configure_notification_channel_api_v1_notifications_channels_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationChannelConfig"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notifications/channels/{channel_id}": {
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Update Notification Channel",
+        "description": "Actualiza la configuraci\u00f3n de un canal de notificaci\u00f3n.\n\nAtributos:\n    - channel_id: UUID - El ID del canal a actualizar.\n    - payload: Nueva configuraci\u00f3n del canal.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de notificaciones inyectado mediante dependencias.\n\nRetorna:\n    - 200 OK con el canal actualizado.\n    - 404 Not Found si el canal no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "update_notification_channel_api_v1_notifications_channels__channel_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "channel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Channel Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationChannelConfig"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Delete Notification Channel",
+        "description": "Elimina un canal de notificaci\u00f3n.\n\nAtributos:\n    - channel_id: UUID - El ID del canal a eliminar.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de notificaciones inyectado mediante dependencias.\n\nRetorna:\n    - 204 No Content si el canal fue eliminado correctamente.\n    - 404 Not Found si el canal no existe.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "delete_notification_channel_api_v1_notifications_channels__channel_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "channel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Channel Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/preferences": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Get Notification Preferences",
+        "description": "Obtiene las preferencias de notificaci\u00f3n del usuario actual.\n\nAtributos:\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de notificaciones inyectado mediante dependencias.\n\nRetorna:\n    - Preferencias de notificaci\u00f3n del usuario.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "get_notification_preferences_api_v1_notifications_preferences_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Update Notification Preferences",
+        "description": "Actualiza las preferencias de notificaci\u00f3n del usuario actual.\n\nAtributos:\n    - payload: Nuevas preferencias de notificaci\u00f3n.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de notificaciones inyectado mediante dependencias.\n\nRetorna:\n    - 200 OK con las preferencias actualizadas.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "update_notification_preferences_api_v1_notifications_preferences_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserNotificationPreferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notifications/subscriptions": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Subscribe To Event",
+        "description": "Suscribe al usuario a un tipo de evento de notificaci\u00f3n.\n\nAtributos:\n    - payload: Tipo de evento y habilitaci\u00f3n.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de notificaciones inyectado mediante dependencias.\n\nRetorna:\n    - 201 Created con la suscripci\u00f3n creada.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "subscribe_to_event_api_v1_notifications_subscriptions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notifications/subscriptions/{event_type}": {
+      "delete": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Unsubscribe From Event",
+        "description": "Cancela la suscripci\u00f3n del usuario a un tipo de evento.\n\nAtributos:\n    - event_type: str - El tipo de evento al que desea desuscribirse.\n    - current_user: Usuario autenticado con permisos del token JWT.\n    - service: Servicio de notificaciones inyectado mediante dependencias.\n\nRetorna:\n    - 204 No Content si la suscripci\u00f3n fue cancelada.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "unsubscribe_from_event_api_v1_notifications_subscriptions__event_type__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "event_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Event Type"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/rules/reload": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reload Custom Rules",
+        "description": "Recarga en caliente las reglas personalizadas (solo U3).\n\nEste endpoint permite a los administradores recargar las reglas personalizadas\nsin necesidad de reiniciar el sistema, tal como exige el requisito MV6.2.1.\n\nAtributos:\n    - current_user: Usuario autenticado con rol U3.\n    - service: Servicio de reglas inyectado mediante dependencias.\n\nRetorna:\n    - 200 OK con el resultado de la recarga.\n    - 403 Forbidden si el usuario no es U3.\n    - 500 Internal Server Error para cualquier error inesperado.",
+        "operationId": "reload_custom_rules_api_v1_admin_rules_reload_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RulesReloadResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdminRoleUpdateRequest": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "AdminRoleUpdateRequest"
+      },
+      "AdminUserCreateRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Email"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole",
+            "default": "OPERATOR"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "display_name",
+          "password"
+        ],
+        "title": "AdminUserCreateRequest"
+      },
+      "ArtifactCreateRequest": {
+        "properties": {
+          "artifact_type": {
+            "$ref": "#/components/schemas/ArtifactType"
+          },
+          "connector_instance_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Connector Instance Id"
+          },
+          "connector_implementation": {
+            "type": "string",
+            "title": "Connector Implementation"
+          },
+          "external_ref": {
+            "type": "string",
+            "title": "External Ref"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "artifact_type",
+          "connector_instance_id",
+          "connector_implementation",
+          "external_ref"
+        ],
+        "title": "ArtifactCreateRequest"
+      },
+      "ArtifactType": {
+        "type": "string",
+        "enum": [
+          "TAREA",
+          "CODIGO",
+          "DOCUMENTO"
+        ],
+        "title": "ArtifactType"
+      },
+      "ConnectorCreateRequest": {
+        "properties": {
+          "connector_type": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Connector Type"
+          },
+          "connector_implementation": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Connector Implementation"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "credentials": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Credentials",
+            "description": "Credenciales y configuraci\u00f3n del conector"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "connector_type",
+          "connector_implementation",
+          "name",
+          "credentials"
+        ],
+        "title": "ConnectorCreateRequest"
+      },
+      "ConnectorUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ConnectorUpdateRequest"
+      },
+      "CreateAPIKeyRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "expires_in_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires In Days"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CreateAPIKeyRequest"
+      },
+      "CustomRoleCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Permissions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "permissions"
+        ],
+        "title": "CustomRoleCreateRequest"
+      },
+      "CustomRoleUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "permissions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissions"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CustomRoleUpdateRequest"
+      },
+      "DeleteAccountRequest": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Password",
+            "description": "Contrase\u00f1a actual para confirmar la eliminaci\u00f3n"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "title": "DeleteAccountRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ImportArtifactsRequest": {
+        "properties": {
+          "artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/ArtifactCreateRequest"
+            },
+            "type": "array",
+            "title": "Artifacts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "artifacts"
+        ],
+        "title": "ImportArtifactsRequest"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "NotificationChannelConfig": {
+        "properties": {
+          "channel_type": {
+            "type": "string",
+            "title": "Channel Type",
+            "description": "EMAIL, SLACK, MS_TEAMS"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "config_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config Data",
+            "description": "Channel-specific configuration"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "channel_type"
+        ],
+        "title": "NotificationChannelConfig"
+      },
+      "OrganizationCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "pattern": "^[a-z0-9-]+$",
+            "title": "Slug"
+          },
+          "plan": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Plan",
+            "default": "default"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "slug"
+        ],
+        "title": "OrganizationCreateRequest"
+      },
+      "PasswordChangeRequest": {
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Current Password"
+          },
+          "new_password": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 8,
+            "title": "New Password"
+          },
+          "confirm_password": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Confirm Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password",
+          "confirm_password"
+        ],
+        "title": "PasswordChangeRequest"
+      },
+      "ProfileCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Description",
+            "default": ""
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ProfileCreateRequest"
+      },
+      "ProfileUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "is_default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Default"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProfileUpdateRequest"
+      },
+      "ProjectCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Description",
+            "default": ""
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Profile Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "profile_id"
+        ],
+        "title": "ProjectCreateRequest"
+      },
+      "RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "accept_terms": {
+            "type": "boolean",
+            "title": "Accept Terms"
+          },
+          "accept_privacy_policy": {
+            "type": "boolean",
+            "title": "Accept Privacy Policy"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "display_name",
+          "accept_terms",
+          "accept_privacy_policy"
+        ],
+        "title": "RegisterRequest"
+      },
+      "ReleaseCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Description",
+            "default": ""
+          },
+          "profile_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "version"
+        ],
+        "title": "ReleaseCreateRequest"
+      },
+      "ReleaseStatus": {
+        "type": "string",
+        "enum": [
+          "BORRADOR",
+          "PENDIENTE",
+          "EN_VERIFICACION",
+          "VALIDA",
+          "CON_ADVERTENCIAS",
+          "NO_VALIDA",
+          "ARCHIVADA"
+        ],
+        "title": "ReleaseStatus"
+      },
+      "ReleaseUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReleaseStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReleaseUpdateRequest"
+      },
+      "RuleCreateRequest": {
+        "properties": {
+          "rule_template": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Rule Template"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/SeverityType",
+            "default": "HIGH"
+          },
+          "connector_instance_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connector Instance Id"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "display_order": {
+            "type": "integer",
+            "title": "Display Order",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rule_template"
+        ],
+        "title": "RuleCreateRequest"
+      },
+      "RuleUpdateRequest": {
+        "properties": {
+          "severity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeverityType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "connector_instance_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Connector Instance Id"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params"
+          },
+          "display_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Order"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RuleUpdateRequest"
+      },
+      "RulesReloadResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "rules_loaded": {
+            "type": "integer",
+            "title": "Rules Loaded"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "rules_loaded",
+          "message"
+        ],
+        "title": "RulesReloadResponse"
+      },
+      "SeverityType": {
+        "type": "string",
+        "enum": [
+          "INFO",
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ],
+        "title": "SeverityType"
+      },
+      "SubscriptionRequest": {
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "title": "Event Type",
+            "description": "RELEASE_VALIDATED, RELEASE_INVALIDATED, RELEASE_PENDING, WEEKLY_DIGEST"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_type"
+        ],
+        "title": "SubscriptionRequest"
+      },
+      "TemplateCloneRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "target_organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Organization Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "target_organization_id"
+        ],
+        "title": "TemplateCloneRequest"
+      },
+      "TemplateCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Description",
+            "default": ""
+          },
+          "profile_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Profile Id"
+          },
+          "project_name_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Name Template"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "profile_id"
+        ],
+        "title": "TemplateCreateRequest"
+      },
+      "TemplateUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "is_archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Archived"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TemplateUpdateRequest"
+      },
+      "TransferOwnershipRequest": {
+        "properties": {
+          "new_owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "New Owner Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "new_owner_id"
+        ],
+        "title": "TransferOwnershipRequest"
+      },
+      "UserInviteRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Email"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole",
+            "default": "OPERATOR"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "UserInviteRequest"
+      },
+      "UserNotificationPreferences": {
+        "properties": {
+          "release_validated": {
+            "type": "boolean",
+            "title": "Release Validated",
+            "default": true
+          },
+          "release_invalidated": {
+            "type": "boolean",
+            "title": "Release Invalidated",
+            "default": true
+          },
+          "release_pending_reminder": {
+            "type": "boolean",
+            "title": "Release Pending Reminder",
+            "default": false
+          },
+          "weekly_digest": {
+            "type": "boolean",
+            "title": "Weekly Digest",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UserNotificationPreferences"
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": [
+          "VIEWER",
+          "OPERATOR",
+          "ADMIN",
+          "MANAGER"
+        ],
+        "title": "UserRole"
+      },
+      "UserRoleUpdateRequest": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "UserRoleUpdateRequest"
+      },
+      "UserUpdateRequest": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UserUpdateRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

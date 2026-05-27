@@ -1,0 +1,81 @@
+<div class="login-view">
+  <div class="login-card">
+    <div class="login-brand">
+      <a routerLink="/" class="login-logo">SVAES</a>
+    </div>
+
+    <h2>Iniciar sesi&oacute;n</h2>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+      <div class="form-group">
+        <label for="email">Correo electr&oacute;nico</label>
+        <input
+          id="email"
+          type="email"
+          class="full-width"
+          formControlName="email"
+          placeholder="usuario@ejemplo.com"
+          autocomplete="email"
+          autofocus
+        />
+        <div class="form-error" *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.hasError('required')">
+          El correo electr&oacute;nico es obligatorio.
+        </div>
+        <div class="form-error" *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.hasError('email')">
+          Ingrese un correo v&aacute;lido.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contrase&ntilde;a</label>
+        <input
+          id="password"
+          type="password"
+          class="full-width"
+          formControlName="password"
+          placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+          autocomplete="current-password"
+        />
+        <div class="form-error" *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required')">
+          La contrase&ntilde;a es obligatoria.
+        </div>
+        <div class="form-error" *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.hasError('minlength')">
+          M&iacute;nimo 6 caracteres.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="organizationId">Organizaci&oacute;n</label>
+        <select
+          id="organizationId"
+          class="full-width"
+          formControlName="organizationId"
+        >
+          <option value="" disabled selected>Seleccione una organizaci&oacute;n</option>
+          <option *ngFor="let org of organizations" [value]="org.id">
+            {{ org.name }}
+          </option>
+        </select>
+        <div class="form-error" *ngIf="loginForm.get('organizationId')?.touched && loginForm.get('organizationId')?.hasError('required')">
+          Seleccione una organizaci&oacute;n.
+        </div>
+      </div>
+
+      <div class="alert-error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <button
+        type="submit"
+        class="btn-primary full-width"
+        [disabled]="loginForm.invalid || loading"
+      >
+        {{ loading ? 'Verificando&hellip;' : 'Iniciar sesi&oacute;n' }}
+      </button>
+    </form>
+
+    <p class="login-back">
+      <a routerLink="/">&larr; Volver al inicio</a>
+    </p>
+  </div>
+</div>

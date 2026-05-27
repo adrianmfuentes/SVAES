@@ -39,3 +39,8 @@ dev = [
 asyncio_mode = "auto"
 testpaths = ["../tests"]
 pythonpath = ["."]
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.22.1",
+]

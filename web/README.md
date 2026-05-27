@@ -1,39 +1,87 @@
 # SVAES — Web Frontend
 
-Frontend application for the **Automatic Software Delivery Verification System (SVAES)** built with **Angular**.
+Frontend application for the **Automatic Software Delivery Verification System (SVAES)**
+built with **Angular** (standalone components, no NgModules).
+
+---
+
+## Docker access
+
+When all services are started with `docker compose up`, the frontend is available at:
+
+```
+http://localhost:4200
+```
+
+(The `web` service runs `nginx:alpine` serving the built app on container port 80, mapped to host port 4200.)
 
 ---
 
 ## Project structure
 
 ```
-web/                            # Project root
+web/
 ├── src/
 │   ├── app/
-│   │   ├── core/             # Core modules (singleton services, guards, interceptors)
-│   │   ├── shared/           # Shared components, directives, pipes
-│   │   ├── features/        # Feature modules
-│   │   ├── layouts/         # Layout components
-│   │   └── app.config.ts    # Application configuration
-│   ├── assets/               # Static assets
-│   ├── styles/              # Global styles
-│   └── environments/        # Environment configurations
-├── public/                   # Public static files
-├── package.json              # Dependencies
-└── angular.json             # Angular CLI configuration
+│   │   ├── core/
+│   │   │   ├── api/              # Generated typed REST client (OpenAPI → TypeScript)
+│   │   │   ├── guards/           # auth.guard.ts, role.guard.ts
+│   │   │   ├── interceptors/     # jwt.interceptor.ts, error.interceptor.ts
+│   │   │   └── services/         # auth.service.ts
+│   │   ├── features/
+│   │   │   ├── auth/login/       # Login page (public)
+│   │   │   ├── layout/shell/     # AppShell with sidebar + router-outlet
+│   │   │   ├── dashboard/        # Placeholder
+│   │   │   ├── releases/         # Placeholder
+│   │   │   ├── connectors/       # Placeholder
+│   │   │   └── profiles/         # Placeholder
+│   │   ├── app.config.ts         # Providers: HttpClient, interceptors, router, animations
+│   │   ├── app.routes.ts         # Lazy-loaded route tree
+│   │   └── app.ts                # Root component (<router-outlet>)
+│   ├── index.html
+│   ├── main.ts
+│   └── styles.scss               # Material indigo-pink theme + global styles
+├── public/                        # Static assets (favicon, etc.)
+├── openapi.json                   # Cached OpenAPI 3.1 spec (generated from backend)
+├── openapi-ts.config.ts           # Config for @hey-api/openapi-ts codegen
+├── package.json
+├── pnpm-lock.yaml
+├── tsconfig.json
+└── angular.json
 ```
 
 ---
 
 ## Technologies
 
-| Component | Technology | Version |
-|---|---|---|
-| Framework | Angular | 17+ |
-| Language | TypeScript | 5.x |
-| Package manager | npm | 10.x |
-| Testing | Jasmine + Karma / Vitest | — |
-| Styling | SCSS | — |
+| Component      | Technology              | Version      |
+| -------------- | ----------------------- | ------------ |
+| Framework      | Angular (standalone)    | 21.x         |
+| Language       | TypeScript              | 5.9          |
+| UI library     | Angular Material        | 21.x         |
+| Package manager| pnpm                    | 10.x         |
+| Styling        | SCSS                    | —            |
+| Testing        | Vitest                  | 4.x          |
+| API codegen    | @hey-api/openapi-ts     | 0.97         |
+
+---
+
+## Implemented features
+
+| Feature                    | Status  | Details |
+| -------------------------- | ------- | ------- |
+| **Authentication**         | Done    | Login page at `/auth/login` with reactive form (email, password, organization selector). JWT stored in localStorage. |
+| **JWT interceptor**        | Done    | Attaches `Authorization: Bearer <token>` to all outgoing requests. |
+| **401 error interceptor**  | Done    | Clears token and redirects to `/auth/login` on 401 responses. |
+| **AuthGuard**              | Done    | `CanActivateFn` — blocks unauthenticated access, redirects to login. |
+| **RoleGuard**              | Done    | `CanActivateFn` — checks route `data.role` against the user's role. |
+| **AppShell layout**        | Done    | Sidebar nav (Dashboard, Entregas, Conectores, Perfiles) + top bar with logout. |
+| **REST client**            | Done    | Typed API client generated from the backend OpenAPI 3.1 spec (63 endpoints). |
+| **Dashboard**              | Stub    | Placeholder component only. |
+| **Releases / Entregas**    | Stub    | Placeholder component only. |
+| **Connectors / Conectores**| Stub    | Placeholder component only. |
+| **Profiles / Perfiles**    | Stub    | Placeholder component only. |
+| **Admin panel**            | Stub    | Not yet wired. |
 
 ---
 
@@ -42,43 +90,76 @@ web/                            # Project root
 ### Prerequisites
 
 - Node.js 18+
-- npm 10+
+- pnpm 10+
 
-### Installation
+### Install dependencies
 
 ```bash
 cd web
-npm install
+pnpm install
 ```
 
 ### Development server
 
 ```bash
-ng serve
+pnpm start
 ```
 
-Navigate to `http://localhost:4200/`. The application will automatically reload when source files change.
+Navigate to `http://localhost:4200/`. The app proxies API calls to `http://localhost:8000` (the backend).
 
-### Build
+### Build for production
 
 ```bash
-ng build
+pnpm run build
 ```
 
-Build artifacts are stored in the `dist/` directory.
+Output goes to `dist/web/browser/`. Docker Compose serves this directory via nginx.
 
-### Testing
+### Regenerate REST client
+
+If the backend OpenAPI spec changes, regenerate the typed client:
 
 ```bash
-# Unit tests
-ng test
+# 1. Fetch the latest spec
+cd ../api
+$env:PYTHONPATH = "src"; uv run python -c "from main import app; import json; f=open('../web/openapi.json','w'); json.dump(app.openapi(),f,indent=2)"
 
-# E2E tests
-ng e2e
+# 2. Regenerate TypeScript types and SDK
+cd ../web
+pnpm exec openapi-ts
+```
+
+Output lands in `src/app/core/api/`.
+
+### Run tests
+
+```bash
+pnpm test
 ```
 
 ---
 
-## Additional resources
+## Auth flow
 
-For more information about Angular CLI, visit [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli).
+```
+User → /auth/login → POST /api/v1/auth/login → JWT (access + refresh tokens)
+                                                    ↓
+                                          Stored in localStorage
+                                                    ↓
+                          JWT interceptor attaches Bearer token to every request
+                                                    ↓
+                          On 401 → 401 interceptor clears token → redirect to login
+```
+
+- **Public routes**: `/auth/login`, `/auth/register` (to be added).
+- **Protected routes**: Everything else — guarded by `AuthGuard`.
+- **RBAC**: Role-based guards check route data for `role` (USER, MANAGER, ADMIN).
+
+---
+
+## Environment
+
+| Variable          | Purpose                     | Default                  |
+| ----------------- | --------------------------- | ------------------------ |
+| `ALLOWED_ORIGINS` | CORS allowed origins (backend) | `http://localhost:4200` |
+| —                 | Frontend proxies API calls via Angular dev server or nginx reverse proxy. |        |
