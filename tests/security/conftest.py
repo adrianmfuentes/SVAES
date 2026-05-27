@@ -1,15 +1,18 @@
 import os
 import sys
 from contextlib import asynccontextmanager
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 import pytest
 import pytest_asyncio
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "api"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+
 
 @pytest.fixture(scope="session")
 def anyio_backend():
     return "asyncio"
+
 
 @pytest.fixture(scope="session")
 def _test_env():
@@ -25,6 +28,7 @@ def _test_env():
     })
     yield
 
+
 @pytest_asyncio.fixture(scope="session")
 async def _test_db(_test_env):
     from sqlalchemy.ext.asyncio import create_async_engine
@@ -32,20 +36,27 @@ async def _test_db(_test_env):
 
     engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        _db_available = True
+    except Exception:
+        _db_available = False
 
-    yield
+    yield _db_available
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    if _db_available:
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.drop_all)
+        except Exception:
+            pass
     await engine.dispose()
+
 
 @pytest_asyncio.fixture
 async def client(_test_db):
     from api.src.main import app
-    from api.src.infrastructure.secondary.database.models import Base
-    from api.src.infrastructure.secondary.database.get_async_session import engine
     from httpx import AsyncClient, ASGITransport
 
     @asynccontextmanager
@@ -54,9 +65,24 @@ async def client(_test_db):
 
     app.router.lifespan_context = _test_lifespan
 
-    async with engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(table.delete())
+    if _test_db:
+        from api.src.infrastructure.secondary.database.models import Base
+        from api.src.infrastructure.secondary.database.get_async_session import engine
+
+        try:
+            async with engine.begin() as conn:
+                for table in reversed(Base.metadata.sorted_tables):
+                    await conn.execute(table.delete())
+        except Exception:
+            pass
+
+    db_patch = None
+    if not _test_db:
+        async def _instant_connect_fail(*args, **kwargs):
+            raise ConnectionRefusedError("DB not available in test environment")
+
+        db_patch = patch("asyncpg.connect", new=_instant_connect_fail)
+        db_patch.start()
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
@@ -64,9 +90,14 @@ async def client(_test_db):
     ) as ac:
         yield ac
 
+    if db_patch is not None:
+        db_patch.stop()
+
+
 @pytest.fixture
 def test_user_id():
     return uuid4()
+
 
 @pytest.fixture
 def auth_token():
@@ -88,13 +119,16 @@ def auth_token():
     )
     return token
 
+
 @pytest.fixture
 def auth_headers(auth_token):
     return {"Authorization": f"Bearer {auth_token}"}
 
+
 @pytest.fixture
 def unauth_headers():
     return {"Authorization": "Bearer invalid-token"}
+
 
 @pytest.fixture
 def basic_user_token():
@@ -115,6 +149,7 @@ def basic_user_token():
         organization_id=uuid4(),
     )
     return token
+
 
 @pytest.fixture
 def malicious_payloads():

@@ -62,7 +62,7 @@ app = FastAPI(
 
 app.state.limiter = limiter
 async def _rate_limit_exceeded_handler_wrapper(request: Request, exc: Exception):
-    return await _rate_limit_exceeded_handler(request, exc)  # type: ignore[arg-type]
+    return _rate_limit_exceeded_handler(request, exc)  # type: ignore[arg-type]
 
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler_wrapper)
 

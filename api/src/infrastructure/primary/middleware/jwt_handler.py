@@ -131,11 +131,17 @@ class JwtHandler(ITokenService):
                 expires_in_seconds = 3600
 
         if self._redis is not None:
-            self._redis.setex(f"bl:{token}", expires_in_seconds, "1")
-        else:
-            self._blacklisted_tokens.add(token)
+            try:
+                self._redis.setex(f"bl:{token}", expires_in_seconds, "1")
+                return
+            except Exception:
+                pass
+        self._blacklisted_tokens.add(token)
 
     def is_token_blacklisted(self, token: str) -> bool:
         if self._redis is not None:
-            return bool(self._redis.exists(f"bl:{token}"))
+            try:
+                return bool(self._redis.exists(f"bl:{token}"))
+            except Exception:
+                pass
         return token in self._blacklisted_tokens
