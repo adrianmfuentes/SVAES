@@ -1,5 +1,5 @@
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from application.ports.output.i_profile_repository import IProfileRepository
 from application.ports.output.i_verification_rule_repository import IVerificationRuleRepository
 from domain.entities.verification_profile import VerificationProfile
@@ -35,7 +35,7 @@ class ManageProfileUseCase:
                 await self._profile_repo.update(existing_default)
 
         profile = VerificationProfile(
-            id=UUID(),
+            id=uuid4(),
             organization_id=organization_id,
             name=name,
             description=description,
@@ -87,7 +87,7 @@ class ManageProfileUseCase:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
 
         new_profile = VerificationProfile(
-            id=UUID(),
+            id=uuid4(),
             organization_id=original.organization_id,
             name=new_name,
             description=original.description,

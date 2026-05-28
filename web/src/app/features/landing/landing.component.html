@@ -1,18 +1,126 @@
 <div class="landing">
   <header class="landing-header">
-    <div class="landing-logo">SVAES</div>
+    <div class="landing-logo">
+      SVAES
+      <span class="landing-logo-badge">beta</span>
+    </div>
     <nav class="landing-nav">
+      <span class="landing-nav-tagline">Sistema de Verificación Automática de Entregas</span>
       <a routerLink="/auth/login" class="btn-primary">Acceder</a>
     </nav>
   </header>
 
-  <main class="landing-hero">
-    <h1>Sistema de Verificaci&oacute;n<br />Autom&aacute;tica de Entregas</h1>
-    <p class="landing-subtitle">
-      Infraestructura de verificaci&oacute;n para equipos de software.
-      Automatice la validaci&oacute;n de entregas, conecte sus herramientas
-      y mantenga la trazabilidad completa del ciclo de release.
-    </p>
-    <a routerLink="/auth/login" class="btn-accent">Comenzar</a>
-  </main>
+  <section class="landing-hero">
+    <div class="landing-hero-inner">
+
+      <div class="landing-left">
+        <span class="landing-eyebrow">Infraestructura operacional</span>
+        <h1 class="landing-heading">
+          Verificación<br>
+          automática<br>
+          de entregas
+        </h1>
+        <p class="landing-subtitle">
+          Conecte sus herramientas de desarrollo, defina reglas de
+          verificación y obtenga trazabilidad completa de cada release.
+          Infraestructura honesta para equipos que operan con exigencia.
+        </p>
+        <div class="landing-actions">
+          <a routerLink="/auth/login" class="btn-accent">Comenzar</a>
+          <a routerLink="/auth/login" class="btn-secondary">Acceder al sistema</a>
+        </div>
+        <div class="landing-stats">
+          <div class="landing-stat">
+            <span class="landing-stat-value">10</span>
+            <span class="landing-stat-label">Reglas</span>
+          </div>
+          <span class="landing-stat-sep"></span>
+          <div class="landing-stat">
+            <span class="landing-stat-value">5+</span>
+            <span class="landing-stat-label">Conectores</span>
+          </div>
+          <span class="landing-stat-sep"></span>
+          <div class="landing-stat">
+            <span class="landing-stat-value">100%</span>
+            <span class="landing-stat-label">Trazabilidad</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="landing-right">
+        <div class="mock-window">
+          <div class="mock-window-bar">
+            <span class="mock-window-title">Verificación · release/2024-Q3-hotfix</span>
+            <span class="mock-window-id">a3f2c1d9</span>
+          </div>
+
+          <div class="mock-verdict">
+            <span class="mock-verdict-badge">✕ INVALID</span>
+            <span class="mock-verdict-release">release/2024-Q3-hotfix</span>
+            <span class="mock-verdict-meta">hace 2 min</span>
+          </div>
+
+          <table class="mock-table">
+            <thead>
+              <tr class="mock-thead-row">
+                <th>ID</th>
+                <th>Regla</th>
+                <th>Conector</th>
+                <th>Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="mock-row mock-row-1">
+                <td class="mock-id">RV-01</td>
+                <td>Artifact count</td>
+                <td class="mock-connector">GitLab</td>
+                <td><span class="mock-badge mock-valid">✓ VALID</span></td>
+              </tr>
+              <tr class="mock-row mock-row-2">
+                <td class="mock-id">RV-02</td>
+                <td>Build status</td>
+                <td class="mock-connector">Jenkins</td>
+                <td><span class="mock-badge mock-valid">✓ VALID</span></td>
+              </tr>
+              <tr class="mock-row mock-row-3">
+                <td class="mock-id">RV-03</td>
+                <td>Code coverage</td>
+                <td class="mock-connector">SonarQube</td>
+                <td><span class="mock-badge mock-invalid">✕ INVALID</span></td>
+              </tr>
+              <tr class="mock-row mock-row-4">
+                <td class="mock-id">RV-04</td>
+                <td>Security scan</td>
+                <td class="mock-connector">Trivy</td>
+                <td><span class="mock-badge mock-warning">⚠ WARNING</span></td>
+              </tr>
+              <tr class="mock-row mock-row-5">
+                <td class="mock-id">RV-05</td>
+                <td>Approval gate</td>
+                <td class="mock-connector">GitHub</td>
+                <td><span class="mock-badge mock-checking"></span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="mock-footer">
+            <span>5 reglas · 3 conectores activos</span>
+            <span>27 mayo 2026, 14:32</span>
+          </div>
+
+          <div class="mock-scan-line"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="landing-footer">
+    <span class="landing-footer-copy">© 2026 [NOMBRE EMPRESA]. Todos los derechos reservados.</span>
+    <nav class="landing-footer-nav">
+      <a routerLink="/legal/privacidad">Política de privacidad</a>
+      <span aria-hidden="true">·</span>
+      <a routerLink="/legal/aviso-legal">Aviso legal</a>
+    </nav>
+  </footer>
 </div>

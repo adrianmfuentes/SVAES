@@ -61,5 +61,19 @@ export const routes: Routes = [
       },
     ],
   },
+  {
+    path: 'legal/aviso-legal',
+    loadComponent: () =>
+      import('./features/legal/aviso-legal/aviso-legal.component').then(
+        (m) => m.AvisoLegalComponent,
+      ),
+  },
+  {
+    path: 'legal/privacidad',
+    loadComponent: () =>
+      import('./features/legal/privacidad/privacidad.component').then(
+        (m) => m.PrivacidadComponent,
+      ),
+  },
   { path: '**', redirectTo: '' },
 ];

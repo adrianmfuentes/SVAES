@@ -30,15 +30,15 @@
 }
 
 .login-back {
-  text-align: center;
-  margin-top: var(--spacing-lg);
-  font-size: 0.8125rem;
+  margin-top: var(--spacing-md);
 }
 
-.login-back a {
+.login-legal-notice {
+  font-size: 0.75rem;
   color: var(--muted);
-}
-
-.login-back a:hover {
-  color: var(--ink);
+  text-align: center;
+  margin-top: var(--spacing-md);
+  margin-bottom: 0;
+  line-height: 1.5;
+  a { color: var(--muted); text-decoration: underline; &:hover { color: var(--ink); } }
 }
