@@ -66,6 +66,8 @@ services:
       ALLOWED_ORIGINS: http://localhost:4200,http://localhost:3000
       ENGINE_URL: http://engine:8081
       ENGINE_API_KEY: ${ENGINE_API_KEY}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     ports:
       - "8000:8000"
     depends_on:
@@ -92,8 +94,11 @@ services:
       JWT_ALGORITHM: HS256
       JWT_EXPIRE_MINUTES: 60
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ALLOWED_ORIGINS: http://localhost:4200,http://localhost:3000
       ENGINE_URL: http://engine:8081
       ENGINE_API_KEY: ${ENGINE_API_KEY}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,6 +114,7 @@ services:
       - "4200:80"
     volumes:
       - ./web/dist/web/browser:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 30s
