@@ -62,7 +62,7 @@ def sample_user():
     return User(
         id=uuid4(),
         email="test@example.com",
-        hashed_password="old_hashed",
+        hashed_password="old_hashed", # NOSONAR
         display_name="Test User",
         role=UserRole.U2,
         is_active=True,
@@ -76,7 +76,7 @@ def sample_user_with_org():
     return User(
         id=uuid4(),
         email="orguser@example.com",
-        hashed_password="old_hashed",
+        hashed_password="old_hashed", # NOSONAR
         display_name="Org User",
         role=UserRole.U2,
         is_active=True,
@@ -451,7 +451,7 @@ class TestCreateUser:
         result = await service.create_user(
             email="newuser@example.com",
             display_name="New User",
-            password="secure123",
+            password="secure123", # NOSONAR
             role=UserRole.U2,
         )
 
@@ -473,7 +473,7 @@ class TestCreateUser:
             await service.create_user(
                 email=sample_user.email,
                 display_name="Another",
-                password="pass123",
+                password="pass123", # NOSONAR
                 role=UserRole.U2,
             )
 
@@ -488,7 +488,7 @@ class TestCreateUser:
         result = await service.create_user(
             email="terms@example.com",
             display_name="Terms User",
-            password="pass123",
+            password="pass123", # NOSONAR
             role=UserRole.U2,
             terms_accepted_at=now,
             privacy_accepted_at=now,
@@ -598,7 +598,7 @@ class TestListAllUsers:
         admin_user = User(
             id=uuid4(),
             email="admin@example.com",
-            hashed_password="hashed",
+            hashed_password="hashed", # NOSONAR
             display_name="Admin",
             role=UserRole.U3,
             is_active=True,
@@ -647,7 +647,7 @@ class TestDeleteUserAccount:
         await service.delete_user_account(
             user_id=sample_user.id,
             requested_by=requested_by,
-            password="correct_pass",
+            password="correct_pass", # NOSONAR
         )
 
         mock_password_hasher.verify_password.assert_called_once_with("correct_pass", sample_user.hashed_password)
@@ -665,7 +665,7 @@ class TestDeleteUserAccount:
             await service.delete_user_account(
                 user_id=sample_user.id,
                 requested_by=sample_user.id,
-                password="wrong_pass",
+                password="wrong_pass", # NOSONAR
             )
 
         mock_user_repo.delete.assert_not_called()
@@ -678,7 +678,7 @@ class TestDeleteUserAccount:
             await service.delete_user_account(
                 user_id=uuid4(),
                 requested_by=uuid4(),
-                password="any_pass",
+                password="any_pass", # NOSONAR
             )
 
     async def test_raises_validation_error_when_user_is_org_owner(
@@ -697,7 +697,7 @@ class TestDeleteUserAccount:
             await service.delete_user_account(
                 user_id=sample_user_with_org.id,
                 requested_by=sample_user_with_org.id,
-                password="correct",
+                password="correct", # NOSONAR
             )
 
         mock_user_repo.delete.assert_not_called()
@@ -713,7 +713,7 @@ class TestDeleteUserAccount:
         await service.delete_user_account(
             user_id=sample_user_with_org.id,
             requested_by=sample_user_with_org.id,
-            password="correct",
+            password="correct", # NOSONAR
         )
 
         mock_user_repo.delete.assert_called_once()

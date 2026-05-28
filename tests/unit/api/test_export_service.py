@@ -65,7 +65,7 @@ def sample_result(sample_release):
             {"rule": "check_1", "status": "passed", "message": "OK"},
             {"rule": "check_2", "status": "failed", "message": "Error"},
         ],
-        summary="All checks passed",
+        summary={"message": "All checks passed"},
         executed_at=datetime.now(timezone.utc),
     )
 

@@ -89,7 +89,7 @@ class TestCallVerificationEngine:
                 mock_settings.engine_url = "http://engine:8000"
                 mock_settings.engine_api_key = None
 
-                result = await _call_verification_engine([], [])
+                await _call_verification_engine([], [])
 
                 call_kwargs = mock_client.post.call_args
                 assert "X-Engine-Api-Key" not in call_kwargs[1].get("headers", {})

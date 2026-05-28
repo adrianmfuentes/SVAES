@@ -181,7 +181,7 @@ class TestRefreshToken:
         user_id = uuid4()
         token_service.decode_token.return_value = TokenPayload(
             user_id=user_id,
-            role="OPERATOR",
+            role=UserRole.U2,
             email="test@example.com",
             organization_id=None,
             exp=0,
@@ -189,7 +189,7 @@ class TestRefreshToken:
         sample_user = User(
             id=user_id,
             email="test@example.com",
-            hashed_password="hashed",
+            hashed_password="hashed", # NOSONAR
             display_name="Test",
             role=UserRole.U2,
             organization_ids=[uuid4()],
@@ -227,7 +227,7 @@ class TestRefreshToken:
         token_service.is_refresh_token.return_value = True
         token_service.decode_token.return_value = TokenPayload(
             user_id=uuid4(),
-            role="OPERATOR",
+            role=UserRole.U2,
             email="test@example.com",
             organization_id=None,
             exp=0,

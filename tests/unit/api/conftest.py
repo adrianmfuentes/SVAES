@@ -6,6 +6,8 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "api"))
 
+TEST_REDIS_URL = "redis://localhost:6379/0"
+
 
 def pytest_configure():
     os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://svaes:svaes@localhost:5432/svaes_test")
@@ -15,9 +17,9 @@ def pytest_configure():
     os.environ.setdefault("JWT_EXPIRE_MINUTES", "60")
     os.environ.setdefault("ALLOWED_ORIGINS", "*")
     os.environ.setdefault("ENCRYPTION_KEY", "HnVk8Q2xLm9pR4sT6wYzA1bC3dF5gJ7kN=")
-    os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
-    os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:6379/0")
-    os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+    os.environ.setdefault("REDIS_URL", TEST_REDIS_URL)
+    os.environ.setdefault("CELERY_BROKER_URL", TEST_REDIS_URL)
+    os.environ.setdefault("CELERY_RESULT_BACKEND", TEST_REDIS_URL)
     os.environ.setdefault("ENGINE_URL", "http://localhost:8081")
     os.environ.setdefault("ENGINE_API_KEY", "")
 

@@ -221,9 +221,6 @@ class TestListOrganizations:
 
     async def test_list_organizations_active_only(self, service, org_repo, sample_org):
         """Verifica que solo se listen las organizaciones activas por defecto."""
-        inactive_org = Organization(
-            name="Inactive Org", slug="inactive-org", is_active=False
-        )
         org_repo.list_all.return_value = [sample_org]
 
         result = await service.list_organizations(active_only=True)
@@ -432,8 +429,6 @@ class TestListAccessibleProjects:
             )
             for i in range(10)
         ]
-        project_ids = [p.id for p in projects]
-
         org_repo.list_all.return_value = [sample_org]
         project_repo.list_by_organization.return_value = projects
 

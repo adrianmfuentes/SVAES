@@ -326,11 +326,14 @@ class TestDuplicateProfile:
             is_default=False,
             rules=[sample_rule],
         )
-        profile_repo.get_by_id.side_effect = lambda pid: (
-            sample_profile if pid == sample_profile.id
-            else duplicated_profile if pid == duplicated_profile.id
-            else None
-        )
+        def get_profile_by_id(pid):
+            if pid == sample_profile.id:
+                return sample_profile
+            if pid == duplicated_profile.id:
+                return duplicated_profile
+            return None
+
+        profile_repo.get_by_id.side_effect = get_profile_by_id
         profile_repo.create.return_value = duplicated_profile
 
         result = await use_case.duplicate_profile(
@@ -357,11 +360,14 @@ class TestDuplicateProfile:
             is_default=False,
             rules=[],
         )
-        profile_repo.get_by_id.side_effect = lambda pid: (
-            sample_profile if pid == sample_profile.id
-            else duplicated_profile if pid == duplicated_profile.id
-            else None
-        )
+        def get_profile_by_id(pid):
+            if pid == sample_profile.id:
+                return sample_profile
+            if pid == duplicated_profile.id:
+                return duplicated_profile
+            return None
+
+        profile_repo.get_by_id.side_effect = get_profile_by_id
         profile_repo.create.return_value = duplicated_profile
 
         result = await use_case.duplicate_profile(
@@ -391,11 +397,14 @@ class TestDuplicateProfile:
             is_default=False,
             rules=[],
         )
-        profile_repo.get_by_id.side_effect = lambda pid: (
-            sample_profile if pid == sample_profile.id
-            else duplicated_profile if pid == duplicated_profile.id
-            else None
-        )
+        def get_profile_by_id(pid):
+            if pid == sample_profile.id:
+                return sample_profile
+            if pid == duplicated_profile.id:
+                return duplicated_profile
+            return None
+
+        profile_repo.get_by_id.side_effect = get_profile_by_id
         profile_repo.create.return_value = duplicated_profile
 
         result = await use_case.duplicate_profile(
