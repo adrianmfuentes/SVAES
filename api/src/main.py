@@ -29,6 +29,7 @@ from infrastructure.primary.routers.api.routers import (
 )
 from core.config import settings
 from core.logger import _configure_root_logger, get_logger
+from core.bootstrap import seed_admin_user
 
 from domain.exceptions import (
     EntityNotFoundError,
@@ -46,6 +47,8 @@ async def lifespan(app: FastAPI):
     _log.info("Applying database migrations...")
     alembic_cfg = Config(str(Path(__file__).parent.parent / "alembic.ini"))
     await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
+    _log.info("Database migrations applied")
+    await seed_admin_user(settings)
     _log.info("SVAES API starting up (env=%s)", settings.environment)
     yield
     _log.info("SVAES API shutting down")

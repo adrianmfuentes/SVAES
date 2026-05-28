@@ -3,6 +3,20 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 
+let _accessToken: string | null = null;
+
+export function setAccessToken(token: string): void {
+  _accessToken = token;
+}
+
+export function getAccessToken(): string | null {
+  return _accessToken;
+}
+
+export function clearAccessToken(): void {
+  _accessToken = null;
+}
+
 export interface LoginResponse {
   access_token: string;
   refresh_token: string;
@@ -54,6 +68,7 @@ export class AuthService {
   }
 
   logout(): void {
+    _accessToken = null;
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_KEY);
     localStorage.removeItem(this.USER_KEY);
@@ -61,11 +76,11 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return !!localStorage.getItem(this.TOKEN_KEY);
+    return !!_accessToken || !!localStorage.getItem(this.TOKEN_KEY);
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    return _accessToken ?? localStorage.getItem(this.TOKEN_KEY);
   }
 
   getUser(): UserInfo | null {

@@ -19,6 +19,13 @@ export const routes: Routes = [
             (m) => m.LoginComponent,
           ),
       },
+      {
+        path: 'activate',
+        loadComponent: () =>
+          import(
+            './features/auth/activate/activate-account.component'
+          ).then((m) => m.ActivateAccountComponent),
+      },
       { path: '', redirectTo: 'login', pathMatch: 'full' },
     ],
   },

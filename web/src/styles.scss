@@ -1,3 +1,7 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
 :root {
   --ink: #0D0F12;
   --ink-secondary: #1C2027;

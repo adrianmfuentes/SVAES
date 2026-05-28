@@ -7,8 +7,6 @@ from pydantic_settings import BaseSettings
 
 _log = logging.getLogger(__name__)
 
-_DEFAULT_REDIS_URL = "redis://localhost:6379/0"
-
 
 class Settings(BaseSettings):
     # Database
@@ -29,15 +27,19 @@ class Settings(BaseSettings):
     environment: str
 
     # Redis
-    redis_url: str = _DEFAULT_REDIS_URL
+    redis_url: str
 
     # Celery
-    celery_broker_url: str = _DEFAULT_REDIS_URL
-    celery_result_backend: str = _DEFAULT_REDIS_URL
+    celery_broker_url: str
+    celery_result_backend: str
 
     # Verification Engine
-    engine_url: str = "http://localhost:8081"
-    engine_api_key: str = ""
+    engine_url: str
+    engine_api_key: str
+
+    # Admin bootstrap
+    admin_email: str
+    admin_password: str
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
