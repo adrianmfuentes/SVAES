@@ -90,7 +90,7 @@
 }
 
 .landing-left {
-  flex: 0 0 480px;
+  flex: 0 0 540px;
 }
 
 .landing-eyebrow {
@@ -391,7 +391,7 @@
 
 @media (max-width: 1100px) {
   .landing-hero-inner { gap: var(--spacing-xl); }
-  .landing-left { flex: 0 0 400px; }
+  .landing-left { flex: 0 0 460px; }
 }
 
 @media (max-width: 768px) {

@@ -1,91 +1,202 @@
-<div class="legal-page">
-  <header class="legal-header">
+<a href="#contenido-principal" class="skip-link">Ir al contenido principal</a>
+
+<div class="legal-page" lang="es">
+  <header class="legal-header" role="banner">
     <a routerLink="/" class="legal-logo">SVAES</a>
-    <a routerLink="/" class="btn-secondary">← Inicio</a>
+    <a routerLink="/" class="btn-secondary" aria-label="Volver al inicio">← Inicio</a>
   </header>
-  <main class="legal-content">
-    <h1>Política de privacidad</h1>
-    <p class="legal-updated">Última actualización: mayo de 2026</p>
 
-    <div class="legal-section">
-      <h2>1. Responsable del tratamiento</h2>
-      <ul>
-        <li><strong>Identidad:</strong> <span class="legal-placeholder">[NOMBRE EMPRESA]</span></li>
-        <li><strong>NIF/CIF:</strong> <span class="legal-placeholder">[NIF]</span></li>
-        <li><strong>Domicilio:</strong> <span class="legal-placeholder">[DOMICILIO SOCIAL]</span></li>
-        <li><strong>Contacto:</strong> <span class="legal-placeholder">[EMAIL CONTACTO]</span></li>
-        <li><strong>Delegado de Protección de Datos (DPD):</strong> <span class="legal-placeholder">[EMAIL DPD, si procede]</span></li>
-      </ul>
-    </div>
+  <div class="legal-body">
+    <aside class="legal-sidebar">
+      <nav aria-label="Tabla de contenidos de la política de privacidad">
+        <p class="legal-toc-heading" aria-hidden="true">Índice</p>
+        <ol class="legal-toc-list">
+          <li class="legal-toc-item"><a href="#responsable"          class="legal-toc-link">Responsable del tratamiento</a></li>
+          <li class="legal-toc-item"><a href="#datos-finalidades"    class="legal-toc-link">Datos tratados y finalidades</a></li>
+          <li class="legal-toc-item"><a href="#base-juridica"        class="legal-toc-link">Base jurídica</a></li>
+          <li class="legal-toc-item"><a href="#plazo-conservacion"   class="legal-toc-link">Plazo de conservación</a></li>
+          <li class="legal-toc-item"><a href="#destinatarios"        class="legal-toc-link">Destinatarios</a></li>
+          <li class="legal-toc-item"><a href="#transferencias"       class="legal-toc-link">Transferencias internacionales</a></li>
+          <li class="legal-toc-item"><a href="#derechos"             class="legal-toc-link">Derechos del interesado</a></li>
+          <li class="legal-toc-item"><a href="#almacenamiento-local" class="legal-toc-link">Almacenamiento local</a></li>
+          <li class="legal-toc-item"><a href="#cambios"              class="legal-toc-link">Cambios en esta política</a></li>
+        </ol>
+      </nav>
+    </aside>
 
-    <div class="legal-section">
-      <h2>2. Datos tratados y finalidades</h2>
-      <p>En el marco del servicio SVAES, tratamos los siguientes datos personales:</p>
-      <ul>
-        <li><strong>Datos de identificación y acceso:</strong> dirección de correo electrónico, nombre de usuario y rol en la organización. Finalidad: gestión de la cuenta de usuario y control de acceso a la plataforma.</li>
-        <li><strong>Datos de sesión:</strong> tokens de autenticación (JWT) almacenados en el almacenamiento local del navegador (<em>localStorage</em>). Finalidad: mantenimiento de la sesión activa durante el uso de la plataforma. Estos datos son estrictamente necesarios para el funcionamiento del servicio y se eliminan al cerrar sesión.</li>
-        <li><strong>Datos de actividad:</strong> registros de acceso y operaciones realizadas en la plataforma (logs de auditoría). Finalidad: seguridad, trazabilidad y cumplimiento normativo.</li>
-      </ul>
-      <p>No se recogen datos especialmente protegidos (salud, origen racial, creencias, etc.).</p>
-    </div>
+    <main class="legal-content" id="contenido-principal" tabindex="-1">
+      <article aria-labelledby="legal-title">
 
-    <div class="legal-section">
-      <h2>3. Base jurídica del tratamiento</h2>
-      <p>El tratamiento se fundamenta en:</p>
-      <ul>
-        <li><strong>Ejecución de un contrato</strong> (art. 6.1.b RGPD): el tratamiento es necesario para la prestación del servicio contratado por la organización del usuario.</li>
-        <li><strong>Interés legítimo</strong> (art. 6.1.f RGPD): registro de actividad para garantizar la seguridad e integridad de la plataforma.</li>
-        <li><strong>Cumplimiento de obligaciones legales</strong> (art. 6.1.c RGPD): conservación de registros de auditoría conforme a la normativa aplicable.</li>
-      </ul>
-    </div>
+        <header class="legal-doc-header">
+          <div class="legal-doc-meta">
+            <span class="legal-doc-type">Documento legal</span>
+            <span class="legal-doc-sep" aria-hidden="true">·</span>
+            <span class="legal-doc-jurisdiction">España y Unión Europea</span>
+          </div>
+          <h1 id="legal-title" class="legal-title">Política de privacidad</h1>
+          <p class="legal-intro">
+            Esta política describe cómo se recogen, utilizan y protegen los datos personales de
+            los usuarios de la plataforma SVAES, de conformidad con el
+            <abbr title="Reglamento General de Protección de Datos (UE) 2016/679">RGPD</abbr>
+            y la <abbr title="Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales">LOPDGDD</abbr>.
+          </p>
+          <p class="legal-updated">
+            Última actualización: <time datetime="2026-05">mayo de 2026</time>
+          </p>
+        </header>
 
-    <div class="legal-section">
-      <h2>4. Plazo de conservación</h2>
-      <p>Los datos de identificación se conservarán mientras la cuenta de usuario esté activa en la plataforma. Una vez desactivada la cuenta, se procederá a su supresión o anonimización en un plazo máximo de <span class="legal-placeholder">[X meses/años]</span>, salvo que exista obligación legal de conservación.</p>
-      <p>Los tokens de sesión almacenados en <em>localStorage</em> se eliminan automáticamente al cerrar sesión o al expirar su vigencia.</p>
-      <p>Los registros de auditoría se conservarán durante <span class="legal-placeholder">[X meses/años]</span> conforme a los requisitos legales aplicables.</p>
-    </div>
+        <section id="responsable" class="legal-section" aria-labelledby="h-responsable">
+          <h2 id="h-responsable">
+            <span class="legal-section-num" aria-hidden="true">1</span>Responsable del tratamiento
+          </h2>
+          <dl class="legal-dl">
+            <div class="legal-dl-row">
+              <dt>Identidad</dt>
+              <dd><span class="legal-placeholder">Adrián Martínez Fuentes</span></dd>
+            </div>
+            <div class="legal-dl-row">
+              <dt>NIF</dt>
+              <dd><span class="legal-placeholder">71743428B</span></dd>
+            </div>
+            <div class="legal-dl-row">
+              <dt>Domicilio</dt>
+              <dd><span class="legal-placeholder">Campus de Los Catalanes, C/&nbsp;Valdés Salas, 33007 Oviedo</span></dd>
+            </div>
+            <div class="legal-dl-row">
+              <dt>Contacto</dt>
+              <dd><a href="mailto:UO295454@uniovi.es" class="legal-link">UO295454&#64;uniovi.es</a></dd>
+            </div>
+          </dl>
+        </section>
 
-    <div class="legal-section">
-      <h2>5. Destinatarios y encargados del tratamiento</h2>
-      <p>Los datos no se ceden a terceros salvo obligación legal. No obstante, para la prestación del servicio podemos contar con encargados del tratamiento (proveedores de infraestructura, alojamiento, etc.) que actúan bajo instrucciones del responsable y han suscrito los contratos de encargo de tratamiento requeridos por el RGPD.</p>
-      <p>Los proveedores actuales de infraestructura son: <span class="legal-placeholder">[PROVEEDOR/ES DE HOSTING]</span>.</p>
-    </div>
+        <section id="datos-finalidades" class="legal-section" aria-labelledby="h-datos-finalidades">
+          <h2 id="h-datos-finalidades">
+            <span class="legal-section-num" aria-hidden="true">2</span>Datos tratados y finalidades
+          </h2>
+          <p>En el marco del servicio SVAES, tratamos los siguientes datos personales:</p>
+          <ul>
+            <li>
+              <strong>Datos de identificación y acceso:</strong> dirección de correo electrónico,
+              nombre de usuario y rol en la organización. Finalidad: gestión de la cuenta de usuario
+              y control de acceso a la plataforma.
+            </li>
+            <li>
+              <strong>Datos de sesión:</strong> tokens de autenticación (JWT) almacenados en el
+              almacenamiento local del navegador (<em>localStorage</em>). Finalidad: mantenimiento
+              de la sesión activa durante el uso de la plataforma. Se eliminan al cerrar sesión.
+            </li>
+            <li>
+              <strong>Datos de actividad:</strong> registros de acceso y operaciones realizadas en
+              la plataforma (logs de auditoría). Finalidad: seguridad, trazabilidad y cumplimiento
+              normativo.
+            </li>
+          </ul>
+          <p>No se recogen datos especialmente protegidos (salud, origen racial, creencias, etc.).</p>
+        </section>
 
-    <div class="legal-section">
-      <h2>6. Transferencias internacionales</h2>
-      <p><span class="legal-placeholder">[Indicar si existen transferencias fuera del EEE y la base de legitimación (cláusulas contractuales tipo, decisión de adecuación, etc.) o bien indicar "No se realizan transferencias internacionales de datos."]</span></p>
-    </div>
+        <section id="base-juridica" class="legal-section" aria-labelledby="h-base-juridica">
+          <h2 id="h-base-juridica">
+            <span class="legal-section-num" aria-hidden="true">3</span>Base jurídica del tratamiento
+          </h2>
+          <p>El tratamiento se fundamenta en:</p>
+          <ul>
+            <li>
+              <strong>Ejecución de un contrato</strong> (art.&nbsp;6.1.b <abbr title="Reglamento General de Protección de Datos">RGPD</abbr>):
+              necesario para la prestación del servicio contratado por la organización del usuario.
+            </li>
+            <li>
+              <strong>Interés legítimo</strong> (art.&nbsp;6.1.f <abbr title="Reglamento General de Protección de Datos">RGPD</abbr>):
+              registro de actividad para garantizar la seguridad e integridad de la plataforma.
+            </li>
+            <li>
+              <strong>Cumplimiento de obligaciones legales</strong> (art.&nbsp;6.1.c <abbr title="Reglamento General de Protección de Datos">RGPD</abbr>):
+              conservación de registros de auditoría conforme a la normativa aplicable.
+            </li>
+          </ul>
+        </section>
 
-    <div class="legal-section">
-      <h2>7. Derechos del interesado</h2>
-      <p>Conforme al RGPD y a la Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD), el usuario puede ejercer los siguientes derechos:</p>
-      <ul>
-        <li><strong>Acceso:</strong> conocer qué datos personales se tratan.</li>
-        <li><strong>Rectificación:</strong> corregir datos inexactos o incompletos.</li>
-        <li><strong>Supresión:</strong> solicitar la eliminación de sus datos cuando no sean necesarios para los fines que motivaron su recogida.</li>
-        <li><strong>Limitación del tratamiento:</strong> solicitar la restricción del tratamiento en los supuestos previstos legalmente.</li>
-        <li><strong>Portabilidad:</strong> recibir sus datos en un formato estructurado, de uso común y legible por máquina.</li>
-        <li><strong>Oposición:</strong> oponerse al tratamiento de sus datos por motivos relacionados con su situación particular.</li>
-      </ul>
-      <p>Para ejercer estos derechos, puede dirigirse por escrito a <span class="legal-placeholder">[EMAIL CONTACTO / DPD]</span>, indicando el derecho que desea ejercer y adjuntando copia de documento acreditativo de identidad.</p>
-      <p>Tiene derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (AEPD) — <a href="https://www.aepd.es" target="_blank" rel="noopener noreferrer">www.aepd.es</a> — si considera que el tratamiento de sus datos no es conforme a la normativa vigente.</p>
-    </div>
+        <section id="plazo-conservacion" class="legal-section" aria-labelledby="h-plazo">
+          <h2 id="h-plazo">
+            <span class="legal-section-num" aria-hidden="true">4</span>Plazo de conservación
+          </h2>
+          <p>Los datos de identificación se conservarán mientras la cuenta de usuario esté activa. Una vez desactivada, se procederá a su supresión o anonimización en un plazo máximo de <span class="legal-placeholder">12 meses</span>, salvo que exista obligación legal de conservación.</p>
+          <p>Los tokens de sesión almacenados en <em>localStorage</em> se eliminan automáticamente al cerrar sesión o al expirar su vigencia.</p>
+          <p>Los registros de auditoría se conservarán durante <span class="legal-placeholder">6 meses</span> conforme a los requisitos legales aplicables.</p>
+        </section>
 
-    <div class="legal-section">
-      <h2>8. Almacenamiento local (localStorage)</h2>
-      <p>Esta plataforma utiliza el mecanismo de almacenamiento local del navegador (<em>localStorage</em>) con la única finalidad de mantener la sesión del usuario autenticado. Los elementos almacenados son:</p>
-      <ul>
-        <li><strong>access_token:</strong> token JWT de acceso a la API. Duración: hasta la expiración del token o el cierre de sesión.</li>
-        <li><strong>refresh_token:</strong> token de renovación de sesión. Duración: hasta el cierre de sesión.</li>
-        <li><strong>user:</strong> información básica del perfil (correo, nombre, rol). Duración: hasta el cierre de sesión.</li>
-      </ul>
-      <p>Estos datos son técnicamente necesarios para el funcionamiento del servicio y no se utilizan con fines de seguimiento, publicidad ni análisis del comportamiento. No se instalan cookies de seguimiento ni de publicidad.</p>
-    </div>
+        <section id="destinatarios" class="legal-section" aria-labelledby="h-destinatarios">
+          <h2 id="h-destinatarios">
+            <span class="legal-section-num" aria-hidden="true">5</span>Destinatarios y encargados del tratamiento
+          </h2>
+          <p>Los datos no se ceden a terceros salvo obligación legal. Para la prestación del servicio podemos contar con encargados del tratamiento (proveedores de infraestructura, alojamiento, etc.) que actúan bajo instrucciones del responsable y han suscrito los contratos de encargo de tratamiento requeridos por el <abbr title="Reglamento General de Protección de Datos">RGPD</abbr>.</p>
+          <p>Los proveedores actuales de infraestructura son: <span class="legal-placeholder">[PROVEEDOR/ES DE HOSTING]</span>.</p>
+        </section>
 
-    <div class="legal-section">
-      <h2>9. Cambios en esta política</h2>
-      <p>El responsable del tratamiento se reserva el derecho a modificar la presente política de privacidad para adaptarla a novedades legislativas o jurisprudenciales. Los cambios entrarán en vigor desde su publicación en la plataforma. Se recomienda revisar periódicamente esta página.</p>
-    </div>
-  </main>
+        <section id="transferencias" class="legal-section" aria-labelledby="h-transferencias">
+          <h2 id="h-transferencias">
+            <span class="legal-section-num" aria-hidden="true">6</span>Transferencias internacionales
+          </h2>
+          <p><span class="legal-placeholder">No se realizan transferencias internacionales de datos fuera del Espacio Económico Europeo.</span></p>
+        </section>
+
+        <section id="derechos" class="legal-section" aria-labelledby="h-derechos">
+          <h2 id="h-derechos">
+            <span class="legal-section-num" aria-hidden="true">7</span>Derechos del interesado
+          </h2>
+          <p>
+            Conforme al <abbr title="Reglamento General de Protección de Datos">RGPD</abbr>
+            y a la <abbr title="Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales">LOPDGDD</abbr>,
+            el usuario puede ejercer los siguientes derechos:
+          </p>
+          <ul>
+            <li><strong>Acceso:</strong> conocer qué datos personales se tratan.</li>
+            <li><strong>Rectificación:</strong> corregir datos inexactos o incompletos.</li>
+            <li><strong>Supresión:</strong> solicitar la eliminación de sus datos cuando no sean necesarios para los fines que motivaron su recogida.</li>
+            <li><strong>Limitación del tratamiento:</strong> solicitar la restricción del tratamiento en los supuestos previstos legalmente.</li>
+            <li><strong>Portabilidad:</strong> recibir sus datos en un formato estructurado, de uso común y legible por máquina.</li>
+            <li><strong>Oposición:</strong> oponerse al tratamiento de sus datos por motivos relacionados con su situación particular.</li>
+          </ul>
+          <p>Para ejercer estos derechos, diríjase por escrito a <a href="mailto:UO295454@uniovi.es" class="legal-link">UO295454&#64;uniovi.es</a>, indicando el derecho que desea ejercer y adjuntando copia de documento acreditativo de identidad.</p>
+          <p>
+            Tiene derecho a presentar una reclamación ante la
+            <strong>Agencia Española de Protección de Datos</strong>
+            (<abbr title="Agencia Española de Protección de Datos">AEPD</abbr>) —
+            <a href="https://www.aepd.es" target="_blank" rel="external noopener noreferrer" class="legal-link">www.aepd.es</a> —
+            si considera que el tratamiento de sus datos no es conforme a la normativa vigente.
+          </p>
+        </section>
+
+        <section id="almacenamiento-local" class="legal-section" aria-labelledby="h-localstorage">
+          <h2 id="h-localstorage">
+            <span class="legal-section-num" aria-hidden="true">8</span>Almacenamiento local (<em>localStorage</em>)
+          </h2>
+          <p>Esta plataforma utiliza el mecanismo de almacenamiento local del navegador (<em>localStorage</em>) con la única finalidad de mantener la sesión del usuario autenticado. Los elementos almacenados son:</p>
+          <ul>
+            <li><strong>access_token:</strong> token JWT de acceso a la API. Duración: hasta la expiración del token o el cierre de sesión.</li>
+            <li><strong>refresh_token:</strong> token de renovación de sesión. Duración: hasta el cierre de sesión.</li>
+            <li><strong>user:</strong> información básica del perfil (correo, nombre, rol). Duración: hasta el cierre de sesión.</li>
+          </ul>
+          <p>Estos datos son técnicamente necesarios para el funcionamiento del servicio y no se utilizan con fines de seguimiento, publicidad ni análisis del comportamiento. No se instalan cookies de seguimiento ni de publicidad.</p>
+        </section>
+
+        <section id="cambios" class="legal-section" aria-labelledby="h-cambios">
+          <h2 id="h-cambios">
+            <span class="legal-section-num" aria-hidden="true">9</span>Cambios en esta política
+          </h2>
+          <p>El responsable del tratamiento se reserva el derecho a modificar la presente política de privacidad para adaptarla a novedades legislativas o jurisprudenciales. Los cambios entrarán en vigor desde su publicación en la plataforma. Se recomienda revisar periódicamente esta página.</p>
+        </section>
+
+        <footer class="legal-doc-footer">
+          <p>
+            Documento redactado conforme al
+            <abbr title="Reglamento General de Protección de Datos (UE) 2016/679">RGPD</abbr>
+            y la <abbr title="Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales">LOPDGDD</abbr>.
+            Autoridad de control competente:
+            <abbr title="Agencia Española de Protección de Datos">AEPD</abbr>.
+          </p>
+        </footer>
+
+      </article>
+    </main>
+  </div>
 </div>

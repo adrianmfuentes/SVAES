@@ -1,54 +1,146 @@
-<div class="legal-page">
-  <header class="legal-header">
+<a href="#contenido-principal" class="skip-link">Ir al contenido principal</a>
+
+<div class="legal-page" lang="es">
+  <header class="legal-header" role="banner">
     <a routerLink="/" class="legal-logo">SVAES</a>
-    <a routerLink="/" class="btn-secondary">← Inicio</a>
+    <a routerLink="/" class="btn-secondary" aria-label="Volver al inicio">← Inicio</a>
   </header>
-  <main class="legal-content">
-    <h1>Aviso legal</h1>
-    <p class="legal-updated">Última actualización: mayo de 2026</p>
 
-    <div class="legal-section">
-      <h2>1. Datos del titular</h2>
-      <p>En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa que el presente sitio web es titularidad de:</p>
-      <ul>
-        <li><strong>Denominación social:</strong> <span class="legal-placeholder">[NOMBRE EMPRESA]</span></li>
-        <li><strong>NIF/CIF:</strong> <span class="legal-placeholder">[NIF]</span></li>
-        <li><strong>Domicilio social:</strong> <span class="legal-placeholder">[DOMICILIO SOCIAL]</span></li>
-        <li><strong>Correo electrónico:</strong> <span class="legal-placeholder">[EMAIL CONTACTO]</span></li>
-        <li><strong>Inscripción registral:</strong> <span class="legal-placeholder">[REGISTRO MERCANTIL, TOMO, FOLIO]</span></li>
-      </ul>
-    </div>
+  <div class="legal-body">
+    <aside class="legal-sidebar">
+      <nav aria-label="Tabla de contenidos del aviso legal">
+        <p class="legal-toc-heading" aria-hidden="true">Índice</p>
+        <ol class="legal-toc-list">
+          <li class="legal-toc-item"><a href="#datos-titular"           class="legal-toc-link">Datos del titular</a></li>
+          <li class="legal-toc-item"><a href="#objeto-aceptacion"       class="legal-toc-link">Objeto y aceptación</a></li>
+          <li class="legal-toc-item"><a href="#acceso-uso"              class="legal-toc-link">Acceso y uso</a></li>
+          <li class="legal-toc-item"><a href="#propiedad-intelectual"   class="legal-toc-link">Propiedad intelectual</a></li>
+          <li class="legal-toc-item"><a href="#exclusion-responsabilidad" class="legal-toc-link">Exclusión de responsabilidad</a></li>
+          <li class="legal-toc-item"><a href="#proteccion-datos"        class="legal-toc-link">Protección de datos</a></li>
+          <li class="legal-toc-item"><a href="#ley-aplicable"           class="legal-toc-link">Ley aplicable y jurisdicción</a></li>
+        </ol>
+      </nav>
+    </aside>
 
-    <div class="legal-section">
-      <h2>2. Objeto y aceptación</h2>
-      <p>SVAES es una plataforma de verificación automática de entregas de software destinada a equipos de ingeniería. El acceso y uso de esta plataforma implica la aceptación plena y sin reservas de las presentes condiciones legales.</p>
-      <p>El titular se reserva el derecho a modificar, en cualquier momento y sin previo aviso, las presentes condiciones, así como los contenidos del sitio web.</p>
-    </div>
+    <main class="legal-content" id="contenido-principal" tabindex="-1">
+      <article aria-labelledby="legal-title">
 
-    <div class="legal-section">
-      <h2>3. Acceso y uso de la plataforma</h2>
-      <p>El acceso a la plataforma requiere autenticación previa mediante credenciales corporativas. El uso está restringido a personas autorizadas por la organización contratante del servicio. Queda prohibido el acceso no autorizado, la reproducción no consentida de los contenidos y cualquier uso que contravenga la legislación vigente.</p>
-      <p>El usuario se compromete a hacer un uso correcto de la plataforma, de conformidad con las leyes, la buena fe, el orden público y el presente aviso legal. El titular no será responsable de los daños y perjuicios que pudieran derivarse de un uso inadecuado.</p>
-    </div>
+        <header class="legal-doc-header">
+          <div class="legal-doc-meta">
+            <span class="legal-doc-type">Documento legal</span>
+            <span class="legal-doc-sep" aria-hidden="true">·</span>
+            <span class="legal-doc-jurisdiction">España y Unión Europea</span>
+          </div>
+          <h1 id="legal-title" class="legal-title">Aviso legal</h1>
+          <p class="legal-intro">
+            El presente sitio web corresponde al Trabajo Fin de Grado titulado
+            "Diseño y desarrollo de un Sistema de Verificación Automática de Entregas" (SVAES),
+            desarrollado por Adrián Martínez Fuentes como estudiante de la Escuela de Ingeniería
+            Informática de la Universidad de Oviedo. La plataforma tiene carácter exclusivamente
+            académico y no constituye un servicio comercial.
+          </p>
+          <p class="legal-updated">
+            Última actualización: <time datetime="2026-05">mayo de 2026</time>
+          </p>
+        </header>
 
-    <div class="legal-section">
-      <h2>4. Propiedad intelectual e industrial</h2>
-      <p>Todos los contenidos de la plataforma (código fuente, diseño, textos, logotipos, marcas e imágenes) son propiedad del titular o de terceros que han autorizado su uso, y están protegidos por la legislación española e internacional sobre propiedad intelectual e industrial. Queda expresamente prohibida su reproducción, distribución, comunicación pública o transformación sin autorización escrita del titular.</p>
-    </div>
+        <section id="datos-titular" class="legal-section" aria-labelledby="h-datos-titular">
+          <h2 id="h-datos-titular">
+            <span class="legal-section-num" aria-hidden="true">1</span>Datos del titular
+          </h2>
+          <p>
+            En cumplimiento del artículo&nbsp;10 de la Ley 34/2002, de 11 de julio, de Servicios
+            de la Sociedad de la Información y de Comercio Electrónico
+            (<abbr title="Ley de Servicios de la Sociedad de la Información y de Comercio Electrónico">LSSI-CE</abbr>),
+            se informa que el presente sitio web es titularidad de:
+          </p>
+          <dl class="legal-dl">
+            <div class="legal-dl-row">
+              <dt>Denominación social</dt>
+              <dd><span class="legal-placeholder">Adrián Martínez Fuentes</span></dd>
+            </div>
+            <div class="legal-dl-row">
+              <dt>NIF</dt>
+              <dd><span class="legal-placeholder">71743428B</span></dd>
+            </div>
+            <div class="legal-dl-row">
+              <dt>Domicilio</dt>
+              <dd><span class="legal-placeholder">Campus de Los Catalanes, C/&nbsp;Valdés Salas, 33007 Oviedo</span></dd>
+            </div>
+            <div class="legal-dl-row">
+              <dt>Correo electrónico</dt>
+              <dd><a href="mailto:UO295454@uniovi.es" class="legal-link">UO295454&#64;uniovi.es</a></dd>
+            </div>
+            <div class="legal-dl-row">
+              <dt>Inscripción registral</dt>
+              <dd><span class="legal-placeholder">No aplicable — proyecto académico sin actividad mercantil registrada</span></dd>
+            </div>
+          </dl>
+        </section>
 
-    <div class="legal-section">
-      <h2>5. Exclusión de responsabilidad</h2>
-      <p>El titular no garantiza la disponibilidad continua e ininterrumpida del servicio, ni se responsabiliza de los daños que pudieran derivarse de interrupciones técnicas, fallos de conectividad o causas de fuerza mayor. Los resultados de verificación generados por la plataforma tienen carácter informativo y no constituyen asesoramiento técnico o legal.</p>
-    </div>
+        <section id="objeto-aceptacion" class="legal-section" aria-labelledby="h-objeto">
+          <h2 id="h-objeto">
+            <span class="legal-section-num" aria-hidden="true">2</span>Objeto y aceptación
+          </h2>
+          <p>SVAES es una plataforma de verificación automática de entregas de software destinada a equipos de ingeniería. El acceso y uso de esta plataforma implica la aceptación plena y sin reservas de las presentes condiciones legales.</p>
+          <p>El titular se reserva el derecho a modificar, en cualquier momento y sin previo aviso, las presentes condiciones, así como los contenidos del sitio web.</p>
+        </section>
 
-    <div class="legal-section">
-      <h2>6. Protección de datos</h2>
-      <p>El tratamiento de los datos personales de los usuarios se rige por la <a routerLink="/legal/privacidad">Política de privacidad</a>, disponible en todo momento en esta plataforma.</p>
-    </div>
+        <section id="acceso-uso" class="legal-section" aria-labelledby="h-acceso">
+          <h2 id="h-acceso">
+            <span class="legal-section-num" aria-hidden="true">3</span>Acceso y uso de la plataforma
+          </h2>
+          <p>El acceso a la plataforma requiere autenticación previa mediante credenciales corporativas. El uso está restringido a personas autorizadas por la organización contratante del servicio. Queda prohibido el acceso no autorizado, la reproducción no consentida de los contenidos y cualquier uso que contravenga la legislación vigente.</p>
+          <p>El usuario se compromete a hacer un uso correcto de la plataforma, de conformidad con las leyes, la buena fe, el orden público y el presente aviso legal. El titular no será responsable de los daños y perjuicios que pudieran derivarse de un uso inadecuado.</p>
+        </section>
 
-    <div class="legal-section">
-      <h2>7. Ley aplicable y jurisdicción</h2>
-      <p>Las presentes condiciones legales se rigen por la legislación española. Para la resolución de cualquier controversia derivada del uso de esta plataforma, las partes se someten a los Juzgados y Tribunales de <span class="legal-placeholder">[CIUDAD DE LA SEDE SOCIAL]</span>, con renuncia expresa a cualquier otro fuero que pudiera corresponderles.</p>
-    </div>
-  </main>
+        <section id="propiedad-intelectual" class="legal-section" aria-labelledby="h-propiedad">
+          <h2 id="h-propiedad">
+            <span class="legal-section-num" aria-hidden="true">4</span>Propiedad intelectual e industrial
+          </h2>
+          <p>Todos los contenidos de la plataforma (código fuente, diseño, textos, logotipos, marcas e imágenes) son propiedad del titular o de terceros que han autorizado su uso, y están protegidos por la legislación española e internacional sobre propiedad intelectual e industrial. Queda expresamente prohibida su reproducción, distribución, comunicación pública o transformación sin autorización escrita del titular.</p>
+        </section>
+
+        <section id="exclusion-responsabilidad" class="legal-section" aria-labelledby="h-responsabilidad">
+          <h2 id="h-responsabilidad">
+            <span class="legal-section-num" aria-hidden="true">5</span>Exclusión de responsabilidad
+          </h2>
+          <p>El titular no garantiza la disponibilidad continua e ininterrumpida del servicio, ni se responsabiliza de los daños que pudieran derivarse de interrupciones técnicas, fallos de conectividad o causas de fuerza mayor. Los resultados de verificación generados por la plataforma tienen carácter informativo y no constituyen asesoramiento técnico o legal.</p>
+        </section>
+
+        <section id="proteccion-datos" class="legal-section" aria-labelledby="h-datos">
+          <h2 id="h-datos">
+            <span class="legal-section-num" aria-hidden="true">6</span>Protección de datos personales
+          </h2>
+          <p>
+            El tratamiento de los datos personales de los usuarios se rige por el
+            <strong>Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo</strong>
+            (<abbr title="Reglamento General de Protección de Datos">RGPD</abbr>),
+            la <strong>Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales
+            y garantía de los derechos digitales</strong>
+            (<abbr title="Ley Orgánica de Protección de Datos Personales y garantía de los derechos digitales">LOPDGDD</abbr>),
+            y la <a routerLink="/legal/privacidad" class="legal-link">Política de privacidad</a>
+            disponible en todo momento en esta plataforma.
+          </p>
+        </section>
+
+        <section id="ley-aplicable" class="legal-section" aria-labelledby="h-ley">
+          <h2 id="h-ley">
+            <span class="legal-section-num" aria-hidden="true">7</span>Ley aplicable y jurisdicción
+          </h2>
+          <p>Las presentes condiciones legales se rigen por la legislación española. Para la resolución de cualquier controversia derivada del uso de esta plataforma, las partes se someten a los Juzgados y Tribunales de <span class="legal-placeholder">Oviedo</span>, con renuncia expresa a cualquier otro fuero que pudiera corresponderles.</p>
+        </section>
+
+        <footer class="legal-doc-footer">
+          <p>
+            Documento redactado conforme a la
+            <abbr title="Ley de Servicios de la Sociedad de la Información y de Comercio Electrónico">LSSI-CE</abbr>,
+            el <abbr title="Reglamento General de Protección de Datos (UE) 2016/679">RGPD</abbr>
+            y la <abbr title="Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales">LOPDGDD</abbr>.
+          </p>
+        </footer>
+
+      </article>
+    </main>
+  </div>
 </div>
