@@ -71,9 +71,110 @@ export const createClient = (config: Config = {}): Client => {
     return { opts: resolvedOpts, url };
   };
 
+  const resolveParseAs = (opts: Pick<ResolvedRequestOptions, 'parseAs'>, response: Response) =>
+    (opts.parseAs === 'auto'
+      ? getParseAs(response.headers.get('Content-Type'))
+      : opts.parseAs) ?? 'json';
+
+  const getEmptyBodyData = async (response: Response, parseAs: string) => {
+    switch (parseAs) {
+      case 'json':
+      case 'arrayBuffer':
+      case 'blob':
+      case 'text':
+        return (response as unknown as Record<string, () => Promise<any>>)[parseAs]();
+      case 'formData':
+        return new FormData();
+      case 'stream':
+        return response.body;
+      default:
+        return {};
+    }
+  };
+
+  const getBodyData = async (response: Response, parseAs: string) => {
+    switch (parseAs) {
+      case 'arrayBuffer':
+      case 'blob':
+      case 'formData':
+      case 'text':
+        return (response as unknown as Record<string, () => Promise<any>>)[parseAs]();
+      case 'json': {
+        // Some servers return 200 with no Content-Length and empty body.
+        // response.json() would throw; read as text and parse if non-empty.
+        const text = await response.text();
+        return text ? JSON.parse(text) : {};
+      }
+    }
+  };
+
+  const handleSuccessResponse = async (
+    response: Response,
+    opts: ResolvedRequestOptions,
+    result: { request: Request; response: Response },
+  ) => {
+    const parseAs = resolveParseAs(opts, response);
+
+    if (response.status === 204 || response.headers.get('Content-Length') === '0') {
+      const emptyData = await getEmptyBodyData(response, parseAs);
+      return opts.responseStyle === 'data'
+        ? emptyData
+        : { data: emptyData, ...result };
+    }
+
+    if (parseAs === 'stream') {
+      return opts.responseStyle === 'data'
+        ? response.body
+        : { data: response.body, ...result };
+    }
+
+    let data = await getBodyData(response, parseAs);
+
+    if (parseAs === 'json') {
+      if (opts.responseValidator) {
+        await opts.responseValidator(data);
+      }
+
+      if (opts.responseTransformer) {
+        data = await opts.responseTransformer(data);
+      }
+    }
+
+    return opts.responseStyle === 'data'
+      ? data
+      : { data, ...result };
+  };
+
+  const handleErrorResponse = async (
+    error: unknown,
+    response: Response | undefined,
+    request: Request | undefined,
+    options: any,
+    throwOnError: boolean,
+    responseStyle: 'data' | 'fields',
+  ) => {
+    let finalError = error;
+
+    for (const fn of interceptors.error.fns) {
+      if (fn) {
+        finalError = await fn(finalError, response, request, options as ResolvedRequestOptions);
+      }
+    }
+
+    finalError = finalError || {};
+
+    if (throwOnError) {
+      throw finalError;
+    }
+
+    return responseStyle === 'data'
+      ? finalError
+      : { error: finalError, request, response };
+  };
+
   const request: Client['request'] = async (options) => {
-    const throwOnError = options.throwOnError ?? _config.throwOnError;
-    const responseStyle = options.responseStyle ?? _config.responseStyle;
+    const throwOnError = options.throwOnError ?? _config.throwOnError ?? false;
+    const responseStyle = options.responseStyle ?? _config.responseStyle ?? 'fields';
 
     let request: Request | undefined;
     let response: Response | undefined;
@@ -96,7 +197,7 @@ export const createClient = (config: Config = {}): Client => {
 
       // fetch must be assigned here, otherwise it would throw the error:
       // TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation
-      const _fetch = opts.fetch!;
+      const _fetch = opts.fetch;
 
       response = await _fetch(request);
 
@@ -106,84 +207,8 @@ export const createClient = (config: Config = {}): Client => {
         }
       }
 
-      const result = {
-        request,
-        response,
-      };
-
       if (response.ok) {
-        const parseAs =
-          (opts.parseAs === 'auto'
-            ? getParseAs(response.headers.get('Content-Type'))
-            : opts.parseAs) ?? 'json';
-
-        if (response.status === 204 || response.headers.get('Content-Length') === '0') {
-          let emptyData: any;
-          switch (parseAs) {
-            case 'arrayBuffer':
-            case 'blob':
-            case 'text':
-              emptyData = await response[parseAs]();
-              break;
-            case 'formData':
-              emptyData = new FormData();
-              break;
-            case 'stream':
-              emptyData = response.body;
-              break;
-            case 'json':
-            default:
-              emptyData = {};
-              break;
-          }
-          return opts.responseStyle === 'data'
-            ? emptyData
-            : {
-                data: emptyData,
-                ...result,
-              };
-        }
-
-        let data: any;
-        switch (parseAs) {
-          case 'arrayBuffer':
-          case 'blob':
-          case 'formData':
-          case 'text':
-            data = await response[parseAs]();
-            break;
-          case 'json': {
-            // Some servers return 200 with no Content-Length and empty body.
-            // response.json() would throw; read as text and parse if non-empty.
-            const text = await response.text();
-            data = text ? JSON.parse(text) : {};
-            break;
-          }
-          case 'stream':
-            return opts.responseStyle === 'data'
-              ? response.body
-              : {
-                  data: response.body,
-                  ...result,
-                };
-        }
-
-        if (parseAs === 'json') {
-          if (opts.responseValidator) {
-            await opts.responseValidator(data);
-          }
-
-          if (opts.responseTransformer) {
-            data = await opts.responseTransformer(data);
-          }
-        }
-
-        return opts.responseStyle === 'data'
-          ? data
-          : {
-              data,
-              ...result,
-            };
+        return handleSuccessResponse(response, opts, { request, response });
       }
 
       const textError = await response.text();
@@ -197,28 +222,7 @@ export const createClient = (config: Config = {}): Client => {
 
       throw jsonError ?? textError;
     } catch (error) {
-      let finalError = error;
-
-      for (const fn of interceptors.error.fns) {
-        if (fn) {
-          finalError = await fn(finalError, response, request, options as ResolvedRequestOptions);
-        }
-      }
-
-      finalError = finalError || {};
-
-      if (throwOnError) {
-        throw finalError;
-      }
-
-      // TODO: we probably want to return error and improve types
-      return responseStyle === 'data'
-        ? undefined
-        : {
-            error: finalError,
-            request,
-            response,
-          };
+      return handleErrorResponse(error, response, request, options, throwOnError, responseStyle);
     }
   };
 

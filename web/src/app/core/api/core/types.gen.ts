@@ -53,7 +53,7 @@ export interface Config {
     | RequestInit['headers']
     | Record<
         string,
-        string | number | boolean | (string | number | boolean)[] | null | undefined | unknown
+        string | number | boolean | (string | number | boolean)[] | null | undefined
       >;
   /**
    * The request method.
@@ -93,10 +93,8 @@ export interface Config {
 
 type IsExactlyNeverOrNeverUndefined<T> = [T] extends [never]
   ? true
-  : [T] extends [never | undefined]
-    ? [undefined] extends [T]
-      ? false
-      : true
+  : [Exclude<T, undefined>] extends [never]
+    ? true
     : false;
 
 export type OmitNever<T extends Record<string, unknown>> = {

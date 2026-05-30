@@ -63,9 +63,7 @@ type KeyMap = Map<
 >;
 
 const buildKeyMap = (fields: FieldsConfig, map?: KeyMap): KeyMap => {
-  if (!map) {
-    map = new Map();
-  }
+  map ??= new Map();
 
   for (const config of fields) {
     if ('in' in config) {
@@ -102,6 +100,66 @@ const stripEmptySlots = (params: Params) => {
   }
 };
 
+type InField = Extract<Field, { in: Slot }>;
+
+const setSlotValue = (params: Params, slot: Slot, key: string, value: unknown) => {
+  (params[slot] as Record<string, unknown>)[key] = value;
+};
+
+const handleMappedArg = (params: Params, config: InField, arg: unknown, map: KeyMap) => {
+  if (config.key) {
+    const field = map.get(config.key)!;
+    const name = field.map || config.key;
+    if (field.in) {
+      setSlotValue(params, field.in, name, arg);
+    }
+  } else {
+    params.body = arg;
+  }
+};
+
+const handleExtraField = (params: Params, key: string, value: unknown, config: FieldsConfig[number]) => {
+  const extra = extraPrefixes.find(([prefix]) => key.startsWith(prefix));
+  if (extra) {
+    const [prefix, slot] = extra;
+    setSlotValue(params, slot, key.slice(prefix.length), value);
+    return;
+  }
+  if ('allowExtra' in config && config.allowExtra) {
+    for (const [slot, allowed] of Object.entries(config.allowExtra)) {
+      if (allowed) {
+        setSlotValue(params, slot as Slot, key, value);
+        break;
+      }
+    }
+  }
+};
+
+const handleFieldGroupEntry = (
+  params: Params,
+  key: string,
+  value: unknown,
+  map: KeyMap,
+  config: FieldsConfig[number],
+) => {
+  const field = map.get(key);
+  if (field) {
+    if (field.in) {
+      const name = field.map || key;
+      setSlotValue(params, field.in, name, value);
+    } else {
+      if (field.map === 'body') {
+        params.body = value;
+        return;
+      }
+
+      setSlotValue(params, field.map, key, value);
+    }
+  } else {
+    handleExtraField(params, key, value, config);
+  }
+};
+
 export const buildClientParams = (args: ReadonlyArray<unknown>, fields: FieldsConfig) => {
   const params: Params = {
     body: Object.create(null),
@@ -124,41 +182,10 @@ export const buildClientParams = (args: ReadonlyArray<unknown>, fields: FieldsCo
     }
 
     if ('in' in config) {
-      if (config.key) {
-        const field = map.get(config.key)!;
-        const name = field.map || config.key;
-        if (field.in) {
-          (params[field.in] as Record<string, unknown>)[name] = arg;
-        }
-      } else {
-        params.body = arg;
-      }
+      handleMappedArg(params, config, arg, map);
     } else {
       for (const [key, value] of Object.entries(arg ?? {})) {
-        const field = map.get(key);
-
-        if (field) {
-          if (field.in) {
-            const name = field.map || key;
-            (params[field.in] as Record<string, unknown>)[name] = value;
-          } else {
-            params[field.map] = value;
-          }
-        } else {
-          const extra = extraPrefixes.find(([prefix]) => key.startsWith(prefix));
-
-          if (extra) {
-            const [prefix, slot] = extra;
-            (params[slot] as Record<string, unknown>)[key.slice(prefix.length)] = value;
-          } else if ('allowExtra' in config && config.allowExtra) {
-            for (const [slot, allowed] of Object.entries(config.allowExtra)) {
-              if (allowed) {
-                (params[slot as Slot] as Record<string, unknown>)[key] = value;
-                break;
-              }
-            }
-          }
-        }
+        handleFieldGroupEntry(params, key, value, map, config);
       }
     }
   }

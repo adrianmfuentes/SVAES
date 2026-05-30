@@ -27,10 +27,21 @@ interface AdminUser {
 
 type ServiceStatus = 'up' | 'down' | 'unknown';
 
+interface RulesReloadResult {
+  success: boolean;
+  rules_loaded: number;
+  message: string;
+}
+
 interface ServiceCard {
   name: string;
   status: ServiceStatus;
   detail?: string;
+}
+
+interface ProbeResult<T> {
+  data: T | null;
+  ok: boolean;
 }
 
 @Component({
@@ -115,6 +126,40 @@ interface ServiceCard {
           </div>
         </div>
       </ng-template>
+
+      <!-- Rules reload action -->
+      <div class="section-label" style="margin-top:var(--spacing-lg)">Acciones del sistema</div>
+      <div class="action-card">
+        <div class="action-info">
+          <div class="action-title">Recarga de reglas</div>
+          <p class="action-desc">
+            Recarga en caliente las reglas de verificaci&oacute;n personalizadas sin reiniciar el sistema.
+            Usa esta acci&oacute;n tras modificar reglas en el c&oacute;digo fuente.
+          </p>
+          <div *ngIf="reloadResult()" class="reload-result" [class.reload-ok]="reloadResult()!.success" [class.reload-fail]="!reloadResult()!.success">
+            <span class="result-icon">{{ reloadResult()!.success ? '✓' : '✕' }}</span>
+            <span>{{ reloadResult()!.message }}</span>
+            <span class="result-count" *ngIf="reloadResult()!.success">&nbsp;&mdash;&nbsp;{{ reloadResult()!.rules_loaded }} reglas cargadas</span>
+          </div>
+          <div *ngIf="reloadError()" class="reload-error">{{ reloadError() }}</div>
+        </div>
+        <div class="action-controls">
+          <ng-container *ngIf="!confirmingReload()">
+            <button class="btn-secondary" (click)="confirmingReload.set(true)" [disabled]="reloading()">
+              Recargar reglas
+            </button>
+          </ng-container>
+          <ng-container *ngIf="confirmingReload()">
+            <span class="confirm-label">¿Confirmar recarga?</span>
+            <button class="btn-primary" (click)="executeReload()" [disabled]="reloading()">
+              {{ reloading() ? 'Recargando…' : 'Confirmar' }}
+            </button>
+            <button class="btn-ghost-sm" (click)="confirmingReload.set(false)" [disabled]="reloading()">
+              Cancelar
+            </button>
+          </ng-container>
+        </div>
+      </div>
 
       <!-- Organizations overview -->
       <div class="section-label" style="margin-top:var(--spacing-lg)">Organizaciones registradas</div>
@@ -377,6 +422,98 @@ interface ServiceCard {
       margin-top: 4px;
     }
 
+    .action-card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--rounded-lg);
+      padding: var(--spacing-lg);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--spacing-xl);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .action-info { flex: 1; }
+
+    .action-title {
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .action-desc {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0 0 var(--spacing-sm);
+    }
+
+    .action-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      flex-shrink: 0;
+      padding-top: 4px;
+    }
+
+    .confirm-label {
+      font-size: 0.8125rem;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .btn-ghost-sm {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--rounded-md);
+      padding: 7px 12px;
+      cursor: pointer;
+      transition: color 0.12s ease, border-color 0.12s ease;
+    }
+
+    .btn-ghost-sm:hover:not(:disabled) { color: var(--ink); border-color: var(--border-strong); }
+    .btn-ghost-sm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .reload-result {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8125rem;
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-xs) var(--spacing-sm);
+      margin-top: var(--spacing-xs);
+    }
+
+    .reload-ok {
+      color: var(--verdict-valid);
+      background: var(--verdict-valid-bg);
+      border: 1px solid var(--verdict-valid-border);
+    }
+
+    .reload-fail {
+      color: var(--verdict-invalid);
+      background: var(--verdict-invalid-bg);
+      border: 1px solid var(--verdict-invalid-border);
+    }
+
+    .result-icon { font-weight: 700; }
+    .result-count { color: inherit; opacity: 0.8; }
+
+    .reload-error {
+      font-size: 0.8125rem;
+      color: var(--verdict-invalid);
+      margin-top: var(--spacing-xs);
+    }
+
     .data-table-wrap {
       background: var(--surface-raised);
       border: 1px solid var(--border);
@@ -473,6 +610,11 @@ export class SystemComponent implements OnInit, OnDestroy {
   orgs = signal<Org[]>([]);
   users = signal<AdminUser[]>([]);
 
+  reloading = signal(false);
+  confirmingReload = signal(false);
+  reloadResult = signal<RulesReloadResult | null>(null);
+  reloadError = signal<string | null>(null);
+
   activeUserCount = computed(() => this.users().filter(u => u.is_active).length);
 
   secondsSince = signal(0);
@@ -497,7 +639,7 @@ export class SystemComponent implements OnInit, OnDestroy {
 
     const probe = <T>(req: Observable<T>) =>
       req.pipe(map(d => ({ data: d, ok: true as const })),
-               catchError(() => of({ data: null as T | null, ok: false as const })));
+               catchError(() => of({ data: null, ok: false as const })));
 
     forkJoin({
       health:    probe(this.http.get<HealthResponse>('/health')),
@@ -505,45 +647,89 @@ export class SystemComponent implements OnInit, OnDestroy {
       users:     probe(this.http.get<AdminUser[]>('/api/v1/admin/users?limit=200')),
       connTypes: probe(this.http.get<unknown[]>('/api/v1/connectors/types')),
     }).subscribe(({ health, orgs, users, connTypes }) => {
-      // /health is at root and may not be proxied — data calls are primary signals
-      const dataOk  = orgs.ok || users.ok;
-      const apiUp   = health.ok || dataOk;
-      const dbUp    = dataOk;
-      const engUp   = connTypes.ok;
+      const dataOk = orgs.ok || users.ok;
 
       this.apiVersion.set(health.data?.version ?? null);
-
-      this.services.set([
-        {
-          name: 'API REST',
-          status: apiUp ? 'up' : 'down',
-          detail: health.ok
-            ? `${(health.data as HealthResponse).service} v${(health.data as HealthResponse).version}`
-            : (dataOk ? 'Respondiendo' : 'Sin respuesta'),
-        },
-        {
-          name: 'Base de datos',
-          status: dbUp ? 'up' : (apiUp ? 'unknown' : 'down'),
-          detail: dbUp ? 'Accesible' : (apiUp ? 'Sin datos' : 'Inaccesible'),
-        },
-        {
-          name: 'Motor de verificación',
-          status: engUp ? 'up' : (apiUp ? 'unknown' : 'down'),
-          detail: engUp
-            ? (Array.isArray(connTypes.data) ? `${connTypes.data.length} tipos cargados` : 'Respondiendo')
-            : (apiUp ? 'Sin datos' : 'Inaccesible'),
-        },
-        {
-          name: 'Cola / Redis',
-          status: apiUp ? 'up' : 'unknown',
-          detail: apiUp ? 'Inferido de API' : 'No verificable',
-        },
-      ]);
-
+      this.services.set(this.buildServiceCards(health, dataOk, connTypes));
       this.orgs.set((orgs.data as Org[] | null) ?? []);
       this.users.set((users.data as AdminUser[] | null) ?? []);
       this.loading.set(false);
     });
+  }
+
+  private buildServiceCards(
+    health: ProbeResult<HealthResponse>,
+    dataOk: boolean,
+    connTypes: ProbeResult<unknown[]>,
+  ): ServiceCard[] {
+    const apiUp = health.ok || dataOk;
+    const dbUp = dataOk;
+    const engUp = connTypes.ok;
+
+    type Status = 'up' | 'unknown' | 'down';
+
+    let dbStatus: Status;
+    if (dbUp) {
+      dbStatus = 'up';
+    } else if (apiUp) {
+      dbStatus = 'unknown';
+    } else {
+      dbStatus = 'down';
+    }
+    let engStatus: Status;
+    if (engUp) {
+      engStatus = 'up';
+    } else if (apiUp) {
+      engStatus = 'unknown';
+    } else {
+      engStatus = 'down';
+    }
+    const apiStatus: Status = apiUp ? 'up' : 'down';
+    const redisStatus: Status = apiUp ? 'up' : 'unknown';
+
+    return [
+      { name: 'API REST', status: apiStatus, detail: this.apiDetail(health, dataOk) },
+      { name: 'Base de datos', status: dbStatus, detail: this.dbDetail(dbUp, apiUp) },
+      { name: 'Motor de verificaci\u00f3n', status: engStatus, detail: this.engineDetail(engUp, apiUp, connTypes) },
+      { name: 'Cola / Redis', status: redisStatus, detail: apiUp ? 'Inferido de API' : 'No verificable' },
+    ];
+  }
+
+  private apiDetail(health: ProbeResult<HealthResponse>, dataOk: boolean): string {
+    if (health.ok) return `${health.data?.service ?? 'Servicio'} v${health.data?.version ?? 'desconocida'}`;
+    return dataOk ? 'Respondiendo' : 'Sin respuesta';
+  }
+
+  private dbDetail(dbUp: boolean, apiUp: boolean): string {
+    if (dbUp) return 'Accesible';
+    return apiUp ? 'Sin datos' : 'Inaccesible';
+  }
+
+  private engineDetail(engUp: boolean, apiUp: boolean, connTypes: ProbeResult<unknown[]>): string {
+    if (engUp) {
+      return Array.isArray(connTypes.data) ? `${connTypes.data.length} tipos cargados` : 'Respondiendo';
+    }
+    return apiUp ? 'Sin datos' : 'Inaccesible';
+  }
+
+  executeReload(): void {
+    this.reloading.set(true);
+    this.reloadResult.set(null);
+    this.reloadError.set(null);
+    this.http.post<RulesReloadResult>('/api/v1/admin/rules/reload', {})
+      .pipe(catchError((err: import('@angular/common/http').HttpErrorResponse) => {
+        this.reloadError.set(err.error?.detail ?? 'Error al recargar reglas');
+        this.reloading.set(false);
+        this.confirmingReload.set(false);
+        return of(null);
+      }))
+      .subscribe(result => {
+        if (result) {
+          this.reloadResult.set(result);
+        }
+        this.reloading.set(false);
+        this.confirmingReload.set(false);
+      });
   }
 
   statusLabel(status: ServiceStatus): string {

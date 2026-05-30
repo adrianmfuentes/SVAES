@@ -57,7 +57,7 @@ export class AuthService {
   decodeToken(token: string): JwtPayload | null {
     try {
       const payload = token.split('.')[1];
-      const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      const decoded = atob(payload.replaceAll('-', '+').replaceAll('_', '/'));
       return JSON.parse(decoded) as JwtPayload;
     } catch {
       return null;

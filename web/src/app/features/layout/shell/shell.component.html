@@ -5,7 +5,7 @@
     </div>
 
     <!-- ADMIN (U3) navigation -->
-    <nav class="sidebar-nav" *ngIf="isAdmin">
+    <nav class="sidebar-nav" *ngIf="isAdmin" aria-label="Navegación de administrador">
       <div class="nav-section">Sistema</div>
 
       <a
@@ -36,10 +36,21 @@
       >
         Registros
       </a>
+
+      <div class="nav-section">Cuenta</div>
+
+      <a
+        routerLink="/app/profile"
+        routerLinkActive="nav-item-active"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="nav-item"
+      >
+        Mi perfil
+      </a>
     </nav>
 
     <!-- REGULAR USER (U2/U4) navigation -->
-    <nav class="sidebar-nav" *ngIf="!isAdmin">
+    <nav class="sidebar-nav" *ngIf="!isAdmin" aria-label="Navegación de usuario">
       <div class="nav-section">Principal</div>
 
       <a
@@ -78,6 +89,17 @@
         class="nav-item"
       >
         Perfiles
+      </a>
+
+      <div class="nav-section">Cuenta</div>
+
+      <a
+        routerLink="/app/profile"
+        routerLinkActive="nav-item-active"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="nav-item"
+      >
+        Mi perfil
       </a>
     </nav>
 

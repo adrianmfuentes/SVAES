@@ -356,14 +356,14 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadKpi(): void {
-    const url = this.isAdmin ? '/api/v1/stats/kpi' : '/api/v1/stats/kpi';
+    const url = '/api/v1/stats/kpi';
     this.http.get<KpiData>(url)
       .pipe(catchError(() => { this.kpiError.set('Error al cargar métricas'); return of(null); }))
       .subscribe(data => { this.kpi.set(data); this.kpiLoading.set(false); });
   }
 
   private loadRecentReleases(): void {
-    const params = this.isAdmin ? '?limit=10' : '?limit=10';
+    const params = '?limit=10';
     this.http.get<RecentRelease[]>(`/api/v1/releases${params}`)
       .pipe(catchError(() => { this.releasesError.set('Error al cargar entregas'); return of([]); }))
       .subscribe(data => { this.recentReleases.set(data); this.releasesLoading.set(false); });

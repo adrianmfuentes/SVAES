@@ -65,7 +65,7 @@ export type ServerSentEventsOptions<TData = unknown> = Omit<RequestInit, 'method
   };
 
 export interface StreamEvent<TData = unknown> {
-  data: TData;
+  data: TData extends Record<string, unknown> ? TData[keyof TData] : TData;
   event?: string;
   id?: string;
   retry?: number;
@@ -77,6 +77,158 @@ export type ServerSentEventsResult<TData = unknown, TReturn = void, TNext = unkn
     TReturn,
     TNext
   >;
+};
+
+const prepareHeaders = (options: Omit<ServerSentEventsOptions, 'url'>, lastEventId?: string): Headers => {
+  const headers = options.headers instanceof Headers
+    ? options.headers
+    : new Headers(options.headers);
+  if (lastEventId !== undefined) {
+    headers.set('Last-Event-ID', lastEventId);
+  }
+  return headers;
+};
+
+const fetchSseResponse = async (
+  url: string,
+  options: Omit<ServerSentEventsOptions, 'url'>,
+  headers: Headers,
+  signal: AbortSignal,
+  onRequest?: ServerSentEventsOptions['onRequest'],
+): Promise<Response> => {
+  const requestInit: RequestInit = {
+    redirect: 'follow',
+    ...options,
+    body: options.serializedBody,
+    headers,
+    signal,
+  };
+  let request = new Request(url, requestInit);
+  if (onRequest) {
+    request = await onRequest(url, requestInit);
+  }
+  // fetch must be assigned here, otherwise it would throw the error:
+  // TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation
+  const _fetch = options.fetch ?? globalThis.fetch;
+  const response = await _fetch(request);
+
+  if (!response.ok) {
+    throw new Error(`SSE failed: ${response.status} ${response.statusText}`);
+  }
+  if (!response.body) {
+    throw new Error('No body in SSE response');
+  }
+  return response;
+};
+
+interface SseParseResult {
+  dataLines: string[];
+  eventName?: string;
+  lastEventId?: string;
+  retryDelay?: number;
+}
+
+const parseSseChunk = (chunk: string): SseParseResult => {
+  const dataLines: string[] = [];
+  let eventName: string | undefined;
+  let lastEventId: string | undefined;
+  let retryDelay: number | undefined;
+
+  for (const line of chunk.split('\n')) {
+    if (line.startsWith('data:')) {
+      dataLines.push(line.replace(/^data:\s*/, ''));
+    } else if (line.startsWith('event:')) {
+      eventName = line.replace(/^event:\s*/, '');
+    } else if (line.startsWith('id:')) {
+      lastEventId = line.replace(/^id:\s*/, '');
+    } else if (line.startsWith('retry:')) {
+      const parsed = Number.parseInt(line.replace(/^retry:\s*/, ''), 10);
+      if (!Number.isNaN(parsed)) {
+        retryDelay = parsed;
+      }
+    }
+  }
+
+  return { dataLines, eventName, lastEventId, retryDelay };
+};
+
+const processChunkData = async (
+  dataLines: string[],
+  responseValidator?: ServerSentEventsOptions['responseValidator'],
+  responseTransformer?: ServerSentEventsOptions['responseTransformer'],
+): Promise<{ data: unknown; hasData: boolean }> => {
+  let data: unknown;
+  let parsedJson = false;
+
+  if (dataLines.length) {
+    const rawData = dataLines.join('\n');
+    try {
+      data = JSON.parse(rawData);
+      parsedJson = true;
+    } catch {
+      data = rawData;
+    }
+  }
+
+  if (parsedJson) {
+    if (responseValidator) {
+      await responseValidator(data);
+    }
+    if (responseTransformer) {
+      data = await responseTransformer(data);
+    }
+  }
+
+  return { data, hasData: dataLines.length > 0 };
+};
+
+const computeBackoff = (
+  retryDelay: number,
+  attempt: number,
+  sseMaxRetryDelay?: number,
+): number => {
+  return Math.min(retryDelay * 2 ** (attempt - 1), sseMaxRetryDelay ?? 30000);
+};
+
+interface StreamContext {
+  lastEventId?: string;
+  retryDelay: number;
+}
+
+const readStreamEvents = async function* <TData,>(
+  reader: ReadableStreamDefaultReader<string>,
+  ctx: StreamContext,
+  onSseEvent: ServerSentEventsOptions<TData>['onSseEvent'],
+  responseValidator?: ServerSentEventsOptions<TData>['responseValidator'],
+  responseTransformer?: ServerSentEventsOptions<TData>['responseTransformer'],
+): AsyncGenerator<TData extends Record<string, unknown> ? TData[keyof TData] : TData, void, unknown> {
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) return;
+
+    buffer += value;
+    buffer = buffer.replace(/\r\n?/g, '\n');
+    const chunks = buffer.split('\n\n');
+    buffer = chunks.pop() ?? '';
+
+    for (const chunk of chunks) {
+      const parsed = parseSseChunk(chunk);
+      if (parsed.lastEventId !== undefined) ctx.lastEventId = parsed.lastEventId;
+      if (parsed.retryDelay !== undefined) ctx.retryDelay = parsed.retryDelay;
+
+      const { data, hasData } = await processChunkData(
+        parsed.dataLines, responseValidator, responseTransformer,
+      );
+
+      // Cast data to the expected generic event data type to satisfy TypeScript
+      onSseEvent?.({ data: data as TData extends Record<string, unknown> ? TData[keyof TData] : TData, event: parsed.eventName, id: ctx.lastEventId, retry: ctx.retryDelay });
+
+      if (hasData) {
+        yield data as TData extends Record<string, unknown> ? TData[keyof TData] : TData;
+      }
+    }
+  }
 };
 
 export function createSseClient<TData = unknown>({
@@ -91,13 +243,15 @@ export function createSseClient<TData = unknown>({
   sseSleepFn,
   url,
   ...options
-}: ServerSentEventsOptions): ServerSentEventsResult<TData> {
-  let lastEventId: string | undefined;
+}: ServerSentEventsOptions<TData>): ServerSentEventsResult<TData> {
+  const ctx: StreamContext = {
+    lastEventId: undefined,
+    retryDelay: sseDefaultRetryDelay ?? 3000,
+  };
 
   const sleep = sseSleepFn ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
 
-  const createStream = async function* () {
-    let retryDelay: number = sseDefaultRetryDelay ?? 3000;
+  const createStream = async function* (): AsyncGenerator<TData extends Record<string, unknown> ? TData[keyof TData] : TData, void, unknown> {
     let attempt = 0;
     const signal = options.signal ?? new AbortController().signal;
 
@@ -106,131 +260,32 @@ export function createSseClient<TData = unknown>({
 
       attempt++;
 
-      const headers =
-        options.headers instanceof Headers
-          ? options.headers
-          : new Headers(options.headers as Record<string, string> | undefined);
-
-      if (lastEventId !== undefined) {
-        headers.set('Last-Event-ID', lastEventId);
-      }
+      const headers = prepareHeaders(options, ctx.lastEventId);
 
       try {
-        const requestInit: RequestInit = {
-          redirect: 'follow',
-          ...options,
-          body: options.serializedBody,
-          headers,
-          signal,
-        };
-        let request = new Request(url, requestInit);
-        if (onRequest) {
-          request = await onRequest(url, requestInit);
-        }
-        // fetch must be assigned here, otherwise it would throw the error:
-        // TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation
-        const _fetch = options.fetch ?? globalThis.fetch;
-        const response = await _fetch(request);
-
-        if (!response.ok) throw new Error(`SSE failed: ${response.status} ${response.statusText}`);
-
-        if (!response.body) throw new Error('No body in SSE response');
-
-        const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-
-        let buffer = '';
-
+        const response = await fetchSseResponse(url, options, headers, signal, onRequest);
+        const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader();
         const abortHandler = () => {
-          try {
-            reader.cancel();
-          } catch {
-            // noop
-          }
+          void reader.cancel().catch(() => {});
         };
 
         signal.addEventListener('abort', abortHandler);
 
         try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += value;
-            buffer = buffer.replace(/\r\n?/g, '\n'); // normalize line endings
-
-            const chunks = buffer.split('\n\n');
-            buffer = chunks.pop() ?? '';
-
-            for (const chunk of chunks) {
-              const lines = chunk.split('\n');
-              const dataLines: Array<string> = [];
-              let eventName: string | undefined;
-
-              for (const line of lines) {
-                if (line.startsWith('data:')) {
-                  dataLines.push(line.replace(/^data:\s*/, ''));
-                } else if (line.startsWith('event:')) {
-                  eventName = line.replace(/^event:\s*/, '');
-                } else if (line.startsWith('id:')) {
-                  lastEventId = line.replace(/^id:\s*/, '');
-                } else if (line.startsWith('retry:')) {
-                  const parsed = Number.parseInt(line.replace(/^retry:\s*/, ''), 10);
-                  if (!Number.isNaN(parsed)) {
-                    retryDelay = parsed;
-                  }
-                }
-              }
-
-              let data: unknown;
-              let parsedJson = false;
-
-              if (dataLines.length) {
-                const rawData = dataLines.join('\n');
-                try {
-                  data = JSON.parse(rawData);
-                  parsedJson = true;
-                } catch {
-                  data = rawData;
-                }
-              }
-
-              if (parsedJson) {
-                if (responseValidator) {
-                  await responseValidator(data);
-                }
-
-                if (responseTransformer) {
-                  data = await responseTransformer(data);
-                }
-              }
-
-              onSseEvent?.({
-                data,
-                event: eventName,
-                id: lastEventId,
-                retry: retryDelay,
-              });
-
-              if (dataLines.length) {
-                yield data as any;
-              }
-            }
-          }
+          yield* readStreamEvents(reader, ctx, onSseEvent, responseValidator, responseTransformer);
+          break;
         } finally {
           signal.removeEventListener('abort', abortHandler);
           reader.releaseLock();
         }
-
-        break; // exit loop on normal completion
       } catch (error) {
-        // connection failed or aborted; retry after delay
         onSseError?.(error);
 
         if (sseMaxRetryAttempts !== undefined && attempt >= sseMaxRetryAttempts) {
-          break; // stop after firing error
+          break;
         }
 
-        // exponential backoff: double retry each attempt, cap at 30s
-        const backoff = Math.min(retryDelay * 2 ** (attempt - 1), sseMaxRetryDelay ?? 30000);
+        const backoff = computeBackoff(ctx.retryDelay, attempt, sseMaxRetryDelay);
         await sleep(backoff);
       }
     }

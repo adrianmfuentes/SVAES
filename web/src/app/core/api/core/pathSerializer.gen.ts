@@ -52,16 +52,10 @@ export const separatorArrayNoExplode = (style: ArraySeparatorStyle) => {
 };
 
 export const separatorObjectExplode = (style: ObjectSeparatorStyle) => {
-  switch (style) {
-    case 'label':
-      return '.';
-    case 'matrix':
-      return ';';
-    case 'simple':
-      return ',';
-    default:
-      return '&';
-  }
+  if (style === 'label') return '.';
+  if (style === 'matrix') return ';';
+  if (style === 'simple') return ',';
+  return '&';
 };
 
 export const serializeArrayParam = ({
@@ -116,7 +110,7 @@ export const serializePrimitiveParam = ({
   }
 
   if (typeof value === 'object') {
-    throw new Error(
+    throw new TypeError(
       'Deeply-nested arrays/objects aren’t supported. Provide your own `querySerializer()` to handle these.',
     );
   }

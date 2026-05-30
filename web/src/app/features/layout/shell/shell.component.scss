@@ -62,7 +62,7 @@
 
 .nav-item:hover {
   background: rgba(246, 244, 240, 0.06);
-  color: rgba(246, 244, 240, 0.8);
+  color: var(--paper);
 }
 
 .nav-item-active {

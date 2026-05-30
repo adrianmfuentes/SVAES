@@ -2,7 +2,6 @@
 
 import type { BodySerializer, QuerySerializer } from './bodySerializer.gen';
 import {
-  type ArraySeparatorStyle,
   serializeArrayParam,
   serializeObjectParam,
   serializePrimitiveParam,
@@ -15,68 +14,76 @@ export interface PathSerializer {
 
 export const PATH_PARAM_RE = /\{[^{}]+\}/g;
 
+interface PathParamMeta {
+  explode: boolean;
+  name: string;
+  style: 'simple' | 'label' | 'matrix';
+}
+
+const parsePathParamMeta = (match: string): PathParamMeta => {
+  let explode = false;
+  let name = match.substring(1, match.length - 1);
+  let style: PathParamMeta['style'] = 'simple';
+
+  if (name.endsWith('*')) {
+    explode = true;
+    name = name.substring(0, name.length - 1);
+  }
+
+  if (name.startsWith('.')) {
+    name = name.substring(1);
+    style = 'label';
+  } else if (name.startsWith(';')) {
+    name = name.substring(1);
+    style = 'matrix';
+  }
+
+  return { explode, name, style };
+};
+
+const serializePathParamValue = (
+  match: string,
+  meta: PathParamMeta,
+  value: unknown,
+): string => {
+  const { explode, name, style } = meta;
+
+  if (Array.isArray(value)) {
+    return serializeArrayParam({ explode, name, style, value });
+  }
+
+  if (typeof value === 'object') {
+    return serializeObjectParam({
+      explode,
+      name,
+      style,
+      value: value as Record<string, unknown>,
+      valueOnly: true,
+    });
+  }
+
+  if (style === 'matrix') {
+    return `;${serializePrimitiveParam({ name, value: value as string })}`;
+  }
+
+  return encodeURIComponent(
+    style === 'label' ? `.${value as string}` : (value as string),
+  );
+};
+
 export const defaultPathSerializer = ({ path, url: _url }: PathSerializer) => {
   let url = _url;
   const matches = _url.match(PATH_PARAM_RE);
   if (matches) {
     for (const match of matches) {
-      let explode = false;
-      let name = match.substring(1, match.length - 1);
-      let style: ArraySeparatorStyle = 'simple';
-
-      if (name.endsWith('*')) {
-        explode = true;
-        name = name.substring(0, name.length - 1);
-      }
-
-      if (name.startsWith('.')) {
-        name = name.substring(1);
-        style = 'label';
-      } else if (name.startsWith(';')) {
-        name = name.substring(1);
-        style = 'matrix';
-      }
-
-      const value = path[name];
+      const meta = parsePathParamMeta(match);
+      const value = path[meta.name];
 
       if (value === undefined || value === null) {
         continue;
       }
 
-      if (Array.isArray(value)) {
-        url = url.replace(match, serializeArrayParam({ explode, name, style, value }));
-        continue;
-      }
-
-      if (typeof value === 'object') {
-        url = url.replace(
-          match,
-          serializeObjectParam({
-            explode,
-            name,
-            style,
-            value: value as Record<string, unknown>,
-            valueOnly: true,
-          }),
-        );
-        continue;
-      }
-
-      if (style === 'matrix') {
-        url = url.replace(
-          match,
-          `;${serializePrimitiveParam({
-            name,
-            value: value as string,
-          })}`,
-        );
-        continue;
-      }
-
-      const replaceValue = encodeURIComponent(
-        style === 'label' ? `.${value as string}` : (value as string),
-      );
-      url = url.replace(match, replaceValue);
+      url = url.replace(match, serializePathParamValue(match, meta, value));
     }
   }
   return url;
@@ -127,7 +134,8 @@ export function getValidRequestBody(options: {
     }
 
     // not all clients implement a serializedBody property (i.e., client-axios)
-    return options.body !== '' ? options.body : null;
+    // prefer a positive condition to avoid negated condition lint warnings
+    return options.body === '' ? null : options.body;
   }
 
   // plain/text body

@@ -664,7 +664,7 @@ export class AdminComponent implements OnInit {
   });
 
 
-  private loaded = new Set<AdminTab>();
+  private readonly loaded = new Set<AdminTab>();
 
   ngOnInit(): void {
     this.loadTab('organizations');
