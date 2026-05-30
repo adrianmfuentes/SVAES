@@ -63,4 +63,4 @@ Please see [SECURITY.md](./SECURITY.md) for how to report security vulnerabiliti
 
 ---
 
-*Adrián Martínez Fuentes (UO295454) — Universidad de Oviedo*
+_Adrián Martínez (UO295454) — Universidad de Oviedo_

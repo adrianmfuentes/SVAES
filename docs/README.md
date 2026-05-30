@@ -1,7 +1,7 @@
 # SVAES — Automatic Software Delivery Verification System
 
 > **Final Degree Project** — Software Engineering Degree, University of Oviedo (2025/2026)
-> Author: Adrián Martínez Fuentes
+> Author: Adrián Martínez
 
 SVAES is an extensible, decoupled **Quality Gate platform** that automates the validation of software releases within modern CI/CD workflows. By integrating with multiple external tools across five functional categories, it verifies the consistency, integrity, and completeness of artifacts linked to a release — eliminating manual checks and guaranteeing full traceability.
 
@@ -19,14 +19,14 @@ SVAES is an extensible, decoupled **Quality Gate platform** that automates the v
 
 ## Architecture at a Glance
 
-| Component | Technology | Role |
-|-----------|------------|------|
-| **API Backend** | FastAPI (Python 3.11+) | REST API, business logic, multi-tenant management |
-| **Verification Engine** | Rust (Actix-web + Rayon) | Parallel rule evaluation and verdict computation |
-| **Task Queue** | Celery + Redis | Async dispatch of verification jobs |
-| **Database** | PostgreSQL 16 | Persistent storage with UUIDs and JSONB support |
-| **Frontend** | Angular 21 | Web UI (WIP) |
-| **Infrastructure** | Docker + Docker Compose | Containerized multi-service deployment |
+| Component               | Technology               | Role                                              |
+| ----------------------- | ------------------------ | ------------------------------------------------- |
+| **API Backend**         | FastAPI (Python 3.11+)   | REST API, business logic, multi-tenant management |
+| **Verification Engine** | Rust (Actix-web + Rayon) | Parallel rule evaluation and verdict computation  |
+| **Task Queue**          | Celery + Redis           | Async dispatch of verification jobs               |
+| **Database**            | PostgreSQL 16            | Persistent storage with UUIDs and JSONB support   |
+| **Frontend**            | Angular 21               | Web UI (WIP)                                      |
+| **Infrastructure**      | Docker + Docker Compose  | Containerized multi-service deployment            |
 
 The system follows a **Hexagonal (Ports & Adapters)** and **Clean Architecture** approach, ensuring the domain core has zero external dependencies.
 
@@ -48,20 +48,20 @@ api/src/
 
 The integration layer has a **two-level abstraction** that decouples functional intent from implementation:
 
-| Level | Concept | Examples |
-|-------|---------|----------|
-| **ConnectorType** | Generic functional category | `TASK_MANAGEMENT`, `SOURCE_CONTROL`, `DOCUMENTATION_SYSTEM` |
-| **ConnectorImplementation** | Concrete integration | `JIRA`, `GITHUB`, `CONFLUENCE`, `LINEAR` |
+| Level                       | Concept                     | Examples                                                    |
+| --------------------------- | --------------------------- | ----------------------------------------------------------- |
+| **ConnectorType**           | Generic functional category | `TASK_MANAGEMENT`, `SOURCE_CONTROL`, `DOCUMENTATION_SYSTEM` |
+| **ConnectorImplementation** | Concrete integration        | `JIRA`, `GITHUB`, `CONFLUENCE`, `LINEAR`                    |
 
 ### Available Connectors (20 total)
 
-| Category | Implementations |
-|----------|----------------|
-| **Task Management** | Jira, Linear, Trello, Asana |
-| **Source Control** | GitHub, GitLab, Bitbucket, Gitea |
-| **Documentation** | Confluence, Notion, Wiki.js, BookStack |
+| Category              | Implementations                                |
+| --------------------- | ---------------------------------------------- |
+| **Task Management**   | Jira, Linear, Trello, Asana                    |
+| **Source Control**    | GitHub, GitLab, Bitbucket, Gitea               |
+| **Documentation**     | Confluence, Notion, Wiki.js, BookStack         |
 | **Change Management** | Jira Service Management, GLPI, Zammad, Redmine |
-| **Planning** | ClickUp, Taiga, Plane, Miro |
+| **Planning**          | ClickUp, Taiga, Plane, Miro                    |
 
 All connectors implement the `IConnector` interface (`fetch_artifact`, `list_artifacts`, `test_connection`, `get_metadata`) and store credentials encrypted with **Fernet (AES-128-CBC)**.
 
@@ -69,18 +69,18 @@ All connectors implement the `IConnector` interface (`fetch_artifact`, `list_art
 
 ## Verification Rules (RV-01 → RV-10)
 
-| Rule | Name | Description |
-|------|------|-------------|
-| RV-01 | Artifact Existence | Validates that referenced artifacts actually exist in external systems |
-| RV-02 | Artifact Traceability | Checks bidirectional links between tasks, commits, and documents |
-| RV-03 | Artifact State | Verifies artifacts are in a valid/completed state |
+| Rule  | Name                    | Description                                                             |
+| ----- | ----------------------- | ----------------------------------------------------------------------- |
+| RV-01 | Artifact Existence      | Validates that referenced artifacts actually exist in external systems  |
+| RV-02 | Artifact Traceability   | Checks bidirectional links between tasks, commits, and documents        |
+| RV-03 | Artifact State          | Verifies artifacts are in a valid/completed state                       |
 | RV-04 | Numeric Field Integrity | Ensures numeric fields (story points, estimates) are positive and valid |
-| RV-05 | Document Accessibility | Confirms linked documents are publicly accessible or reachable |
-| RV-06 | Attribute Coherence | Ensures title fields, descriptions, and labels are populated |
-| RV-07 | External Registration | Validates records exist in external registration/CHG systems |
-| RV-08 | List Alignment | Checks that artifact lists match expected counts or content |
-| RV-09 | Reference Validation | Validates cross-references between artifacts are consistent |
-| RV-10 | Final Approval | Verifies final sign-off or approval artifacts are present |
+| RV-05 | Document Accessibility  | Confirms linked documents are publicly accessible or reachable          |
+| RV-06 | Attribute Coherence     | Ensures title fields, descriptions, and labels are populated            |
+| RV-07 | External Registration   | Validates records exist in external registration/CHG systems            |
+| RV-08 | List Alignment          | Checks that artifact lists match expected counts or content             |
+| RV-09 | Reference Validation    | Validates cross-references between artifacts are consistent             |
+| RV-10 | Final Approval          | Verifies final sign-off or approval artifacts are present               |
 
 Each rule returns a `PASS`, `FAIL`, or `WARNING` status with a severity level (`BLOCKING`, `NON_BLOCKING`, `INFORMATIONAL`).
 
@@ -102,15 +102,15 @@ DRAFT → PENDING → IN_VERIFICATION → VALID
 
 ## Security
 
-| Layer | Mechanism | Details |
-|-------|-----------|---------|
-| Authentication | JWT (HS256) | Signed tokens with `sub`, `role`, `iat`, `exp` claims |
-| Passwords | bcrypt (cost 12) | Constant-time comparison via passlib |
-| Connector Credentials | Fernet (AES-128-CBC) | Authenticated encryption at rest |
-| Multi-tenancy | `organization_id` filtering | 403 on cross-tenant access |
-| Rate Limiting | slowapi | 100 req/min reads, 20 req/min writes |
-| Brute Force | Account lockout | 5 failed attempts → 15 min block |
-| API Keys | Up to 5 per user | Programmatic CI/CD access |
+| Layer                 | Mechanism                   | Details                                               |
+| --------------------- | --------------------------- | ----------------------------------------------------- |
+| Authentication        | JWT (HS256)                 | Signed tokens with `sub`, `role`, `iat`, `exp` claims |
+| Passwords             | bcrypt (cost 12)            | Constant-time comparison via passlib                  |
+| Connector Credentials | Fernet (AES-128-CBC)        | Authenticated encryption at rest                      |
+| Multi-tenancy         | `organization_id` filtering | 403 on cross-tenant access                            |
+| Rate Limiting         | slowapi                     | 100 req/min reads, 20 req/min writes                  |
+| Brute Force           | Account lockout             | 5 failed attempts → 15 min block                      |
+| API Keys              | Up to 5 per user            | Programmatic CI/CD access                             |
 
 ---
 
@@ -155,33 +155,37 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 Base: `http://localhost:8000/api/v1`
 
 ### Auth
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/auth/login` | Authenticate, returns JWT |
-| `POST` | `/auth/refresh` | Refresh access token |
+
+| Method | Path            | Description               |
+| ------ | --------------- | ------------------------- |
+| `POST` | `/auth/login`   | Authenticate, returns JWT |
+| `POST` | `/auth/refresh` | Refresh access token      |
 
 ### Releases & Verification
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/projects/{id}/releases` | Create a release |
-| `POST` | `/releases/{id}/verify` | Trigger verification |
-| `GET` | `/releases/{id}/results` | Get verification results |
+
+| Method | Path                      | Description              |
+| ------ | ------------------------- | ------------------------ |
+| `POST` | `/projects/{id}/releases` | Create a release         |
+| `POST` | `/releases/{id}/verify`   | Trigger verification     |
+| `GET`  | `/releases/{id}/results`  | Get verification results |
 
 ### Connectors
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/connectors/types` | List available connector types and implementations |
-| `POST` | `/connectors/{id}/test` | Test connector connection |
-| `GET` | `/organizations/{org_id}/connectors` | List configured connectors |
-| `POST` | `/organizations/{org_id}/connectors` | Register a new connector |
+
+| Method | Path                                 | Description                                        |
+| ------ | ------------------------------------ | -------------------------------------------------- |
+| `GET`  | `/connectors/types`                  | List available connector types and implementations |
+| `POST` | `/connectors/{id}/test`              | Test connector connection                          |
+| `GET`  | `/organizations/{org_id}/connectors` | List configured connectors                         |
+| `POST` | `/organizations/{org_id}/connectors` | Register a new connector                           |
 
 ### Organizations & Users
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/organizations` | List all organizations |
-| `POST` | `/organizations` | Create organization |
-| `GET` | `/users` | List users |
-| `POST` | `/users` | Create user |
+
+| Method | Path             | Description            |
+| ------ | ---------------- | ---------------------- |
+| `GET`  | `/organizations` | List all organizations |
+| `POST` | `/organizations` | Create organization    |
+| `GET`  | `/users`         | List users             |
+| `POST` | `/users`         | Create user            |
 
 ---
 
@@ -219,12 +223,12 @@ SVAES/
 
 ## RBAC Roles
 
-| Role | Permissions |
-|------|-------------|
-| **Viewer** | Read-only access to releases, results, dashboards |
-| **Operator** | Create releases, trigger verifications, manage artifacts |
-| **Manager** | Configure connectors, profiles, projects; view audit logs |
-| **Admin** | Manage users, organizations, system configuration |
+| Role         | Permissions                                               |
+| ------------ | --------------------------------------------------------- |
+| **Viewer**   | Read-only access to releases, results, dashboards         |
+| **Operator** | Create releases, trigger verifications, manage artifacts  |
+| **Manager**  | Configure connectors, profiles, projects; view audit logs |
+| **Admin**    | Manage users, organizations, system configuration         |
 
 Custom roles with granular permissions are also supported.
 
@@ -232,38 +236,38 @@ Custom roles with granular permissions are also supported.
 
 ## Tech Stack
 
-| Layer | Technology | Status |
-|-------|------------|--------|
-| API Backend | FastAPI (Python 3.11+) | Complete |
-| Database | PostgreSQL 16 | Operational |
-| ORM | SQLAlchemy 2.x (async) | Operational |
-| Migrations | Alembic | Operational |
-| Auth | PyJWT + bcrypt | Complete |
-| HTTP Client | httpx (async) | Integrated |
-| Task Queue | Celery + Redis 7 | Implemented |
-| Engine | Rust (Actix-web + Rayon) | Implemented |
-| Frontend | Angular 21 | Pending |
-| Containers | Docker + Docker Compose | Configured |
-| CI | GitHub Actions, SonarCloud, CodeQL | Active |
-| Testing | pytest + pytest-asyncio + pytest-cov | Configured |
+| Layer       | Technology                           | Status      |
+| ----------- | ------------------------------------ | ----------- |
+| API Backend | FastAPI (Python 3.11+)               | Complete    |
+| Database    | PostgreSQL 16                        | Operational |
+| ORM         | SQLAlchemy 2.x (async)               | Operational |
+| Migrations  | Alembic                              | Operational |
+| Auth        | PyJWT + bcrypt                       | Complete    |
+| HTTP Client | httpx (async)                        | Integrated  |
+| Task Queue  | Celery + Redis 7                     | Implemented |
+| Engine      | Rust (Actix-web + Rayon)             | Implemented |
+| Frontend    | Angular 21                           | Pending     |
+| Containers  | Docker + Docker Compose              | Configured  |
+| CI          | GitHub Actions, SonarCloud, CodeQL   | Active      |
+| Testing     | pytest + pytest-asyncio + pytest-cov | Configured  |
 
 ---
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | `postgresql+asyncpg://user:pass@host:5432/svaes` |
-| `JWT_SECRET_KEY` | Yes | JWT signing key (generate with `secrets.token_urlsafe(32)`) |
-| `ENCRYPTION_KEY` | Yes | Fernet key for connector credential encryption |
-| `JWT_ALGORITHM` | No | Algorithm (default: `HS256`) |
-| `JWT_EXPIRE_MINUTES` | No | Token expiry in minutes (default: `60`) |
-| `ENVIRONMENT` | No | `development` or `production` |
-| `ALLOWED_ORIGINS` | No | Comma-separated CORS origins |
-| `POSTGRES_USER` | Yes | Database user |
-| `POSTGRES_PASSWORD` | Yes | Database password |
-| `REDIS_PASSWORD` | No | Redis authentication password |
-| `ENGINE_API_KEY` | Yes | Internal API key for engine communication |
+| Variable             | Required | Description                                                 |
+| -------------------- | -------- | ----------------------------------------------------------- |
+| `DATABASE_URL`       | Yes      | `postgresql+asyncpg://user:pass@host:5432/svaes`            |
+| `JWT_SECRET_KEY`     | Yes      | JWT signing key (generate with `secrets.token_urlsafe(32)`) |
+| `ENCRYPTION_KEY`     | Yes      | Fernet key for connector credential encryption              |
+| `JWT_ALGORITHM`      | No       | Algorithm (default: `HS256`)                                |
+| `JWT_EXPIRE_MINUTES` | No       | Token expiry in minutes (default: `60`)                     |
+| `ENVIRONMENT`        | No       | `development` or `production`                               |
+| `ALLOWED_ORIGINS`    | No       | Comma-separated CORS origins                                |
+| `POSTGRES_USER`      | Yes      | Database user                                               |
+| `POSTGRES_PASSWORD`  | Yes      | Database password                                           |
+| `REDIS_PASSWORD`     | No       | Redis authentication password                               |
+| `ENGINE_API_KEY`     | Yes      | Internal API key for engine communication                   |
 
 ---
 
@@ -276,4 +280,4 @@ Custom roles with granular permissions are also supported.
 
 ---
 
-*Last updated: May 2026 — Adrián Martínez Fuentes*
+_Last updated: May 2026 — Adrián Martínez_

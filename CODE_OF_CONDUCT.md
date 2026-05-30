@@ -25,7 +25,7 @@ professional and respectful environment for contributors, reviewers, and users.
 
 Reports of unacceptable behavior may be directed to the project maintainer:
 
-**Adrián Martínez Fuentes** — Universidad de Oviedo (UO295454)
+**Adrián Martínez** — Universidad de Oviedo (UO295454)
 
 All reports are reviewed confidentially. Repeated violations may result in removal
 from the project contributor list.

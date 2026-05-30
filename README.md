@@ -10,7 +10,7 @@ Trabajo Fin de Grado
 Grado en Ingeniería Informática del Software
 Universidad de Oviedo
 
-Autor: Adrián Martínez Fuentes
+Autor: Adrián Martínez
 Curso: 2025/2026
 
 ---
@@ -43,13 +43,13 @@ Diseñar e implementar un sistema extensible y desacoplado capaz de verificar au
 
 # 3. Estado del proyecto
 
-| Componente | Estado | Descripción |
-|------------|--------|-------------|
-| Backend FastAPI | ✅ Completo | API REST completa con todos los endpoints |
-| Frontend Angular | ⏳ Pendiente | SPA vacía, pendiente de implementación |
-| Motor Rust | ✅ Implementado | Motor completo en engine/, evaluador paralelo + 10 reglas |
-| Worker Celery | ✅ Implementado | worker real en verification_worker.py |
-| Conectores | ✅ Implementados | 20 conectores en 5 categorías funcionales |
+| Componente       | Estado           | Descripción                                               |
+| ---------------- | ---------------- | --------------------------------------------------------- |
+| Backend FastAPI  | ✅ Completo      | API REST completa con todos los endpoints                 |
+| Frontend Angular | ⏳ Pendiente     | SPA vacía, pendiente de implementación                    |
+| Motor Rust       | ✅ Implementado  | Motor completo en engine/, evaluador paralelo + 10 reglas |
+| Worker Celery    | ✅ Implementado  | worker real en verification_worker.py                     |
+| Conectores       | ✅ Implementados | 20 conectores en 5 categorías funcionales                 |
 
 ---
 
@@ -136,64 +136,69 @@ api/src/
 
 El sistema de conectores sigue un diseño de **dos niveles**:
 
-| Concepto | Descripción | Ejemplos |
-|----------|-------------|----------|
-| **ConnectorType** | Tipo funcional genérico | `GESTOR_TAREAS`, `REPO_CODIGO`, `SISTEMA_DOCUMENTAL` |
-| **ConnectorImplementation** | Implementación concreta | `JIRA`, `GITHUB`, `CONFLUENCE`, `LINEAR` |
+| Concepto                    | Descripción             | Ejemplos                                             |
+| --------------------------- | ----------------------- | ---------------------------------------------------- |
+| **ConnectorType**           | Tipo funcional genérico | `GESTOR_TAREAS`, `REPO_CODIGO`, `SISTEMA_DOCUMENTAL` |
+| **ConnectorImplementation** | Implementación concreta | `JIRA`, `GITHUB`, `CONFLUENCE`, `LINEAR`             |
 
 Un manager configura en su organización qué implementaciones concretas quiere usar para cada tipo funcional.
 
 ## 6.2 Tipos funcionales disponibles
 
-| Tipo | Descripción |
-|------|-------------|
-| `GESTOR_TAREAS` | Herramientas que rastrean trabajo diario, historias de usuario y bugs |
-| `REPO_CODIGO` | Fuentes de verdad para ramas, commits y etiquetas de versión |
-| `SISTEMA_DOCUMENTAL` | Informes de pruebas, manuales técnicos y planes de entrega |
-| `HERRAMIENTA_PLANIFICACION` | Roadmap a largo plazo, épicas y planes de versiones |
-| `GESTION_CAMBIOS` | Sistemas ITSM para aprobaciones formales, CABs e incidencias |
+| Tipo                        | Descripción                                                           |
+| --------------------------- | --------------------------------------------------------------------- |
+| `GESTOR_TAREAS`             | Herramientas que rastrean trabajo diario, historias de usuario y bugs |
+| `REPO_CODIGO`               | Fuentes de verdad para ramas, commits y etiquetas de versión          |
+| `SISTEMA_DOCUMENTAL`        | Informes de pruebas, manuales técnicos y planes de entrega            |
+| `HERRAMIENTA_PLANIFICACION` | Roadmap a largo plazo, épicas y planes de versiones                   |
+| `GESTION_CAMBIOS`           | Sistemas ITSM para aprobaciones formales, CABs e incidencias          |
 
 ## 6.3 Implementaciones disponibles
 
 ### GESTOR_TAREAS
-| Implementación | API | Plan gratuito |
-|---------------|-----|--------------|
-| Jira | REST v2/v3 | 10 usuarios |
-| Linear | GraphQL | Sólido |
-| Trello | REST | Muy permisivo |
-| Asana | REST | 15 usuarios |
+
+| Implementación | API        | Plan gratuito |
+| -------------- | ---------- | ------------- |
+| Jira           | REST v2/v3 | 10 usuarios   |
+| Linear         | GraphQL    | Sólido        |
+| Trello         | REST       | Muy permisivo |
+| Asana          | REST       | 15 usuarios   |
 
 ### REPO_CODIGO
-| Implementación | API | Plan gratuito |
-|---------------|-----|--------------|
-| GitLab | REST v4 | Ilimitado |
-| GitHub | REST | Ilimitado |
-| Bitbucket | REST | 5 usuarios |
-| Gitea | REST | Auto-alojado, open source |
+
+| Implementación | API     | Plan gratuito             |
+| -------------- | ------- | ------------------------- |
+| GitLab         | REST v4 | Ilimitado                 |
+| GitHub         | REST    | Ilimitado                 |
+| Bitbucket      | REST    | 5 usuarios                |
+| Gitea          | REST    | Auto-alojado, open source |
 
 ### SISTEMA_DOCUMENTAL
-| Implementación | API | Plan gratuito |
-|---------------|-----|--------------|
-| Confluence | REST | 10 usuarios |
-| Notion | REST | Muy completo |
-| Wiki.js | GraphQL | Auto-alojado, open source |
-| BookStack | REST | Auto-alojado, open source |
+
+| Implementación | API     | Plan gratuito             |
+| -------------- | ------- | ------------------------- |
+| Confluence     | REST    | 10 usuarios               |
+| Notion         | REST    | Muy completo              |
+| Wiki.js        | GraphQL | Auto-alojado, open source |
+| BookStack      | REST    | Auto-alojado, open source |
 
 ### HERRAMIENTA_PLANIFICACION
-| Implementación | API | Plan gratuito |
-|---------------|-----|--------------|
-| ClickUp | REST | Muy completo |
-| Taiga | REST | Cloud o auto-alojado |
-| Plane | REST | Auto-alojado, open source |
-| Miro | REST | 3 pizarras |
+
+| Implementación | API  | Plan gratuito             |
+| -------------- | ---- | ------------------------- |
+| ClickUp        | REST | Muy completo              |
+| Taiga          | REST | Cloud o auto-alojado      |
+| Plane          | REST | Auto-alojado, open source |
+| Miro           | REST | 3 pizarras                |
 
 ### GESTION_CAMBIOS
-| Implementación | API | Plan gratuito |
-|---------------|-----|--------------|
-| Jira Service Management | REST | 3 agentes |
-| GLPI | REST | Auto-alojado, open source |
-| Zammad | REST | Auto-alojado, open source |
-| Redmine | REST/XML | Auto-alojado, open source |
+
+| Implementación          | API      | Plan gratuito             |
+| ----------------------- | -------- | ------------------------- |
+| Jira Service Management | REST     | 3 agentes                 |
+| GLPI                    | REST     | Auto-alojado, open source |
+| Zammad                  | REST     | Auto-alojado, open source |
+| Redmine                 | REST/XML | Auto-alojado, open source |
 
 ## 6.4 Puerto IConnector
 
@@ -254,14 +259,14 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
     └──────────────────────────────────→ ARCHIVADA
 ```
 
-| Estado | Descripción |
-| --- | --- |
-| `BORRADOR` | Release creada, todavía editable y sin enviar a verificación. |
-| `PENDIENTE` | Release preparada para ser verificada. |
-| `EN_VERIFICACION` | Verificación en curso por parte del worker. |
-| `VALIDA` | Release verificada correctamente. |
-| `NO_VALIDA` | Release rechazada por incumplir reglas obligatorias. |
-| `CON_ADVERTENCIAS` | Release aceptable, pero con incidencias no bloqueantes. |
+| Estado             | Descripción                                                   |
+| ------------------ | ------------------------------------------------------------- |
+| `BORRADOR`         | Release creada, todavía editable y sin enviar a verificación. |
+| `PENDIENTE`        | Release preparada para ser verificada.                        |
+| `EN_VERIFICACION`  | Verificación en curso por parte del worker.                   |
+| `VALIDA`           | Release verificada correctamente.                             |
+| `NO_VALIDA`        | Release rechazada por incumplir reglas obligatorias.          |
+| `CON_ADVERTENCIAS` | Release aceptable, pero con incidencias no bloqueantes.       |
 
 ---
 
@@ -278,48 +283,49 @@ Base de datos PostgreSQL:
 
 # 10. Seguridad
 
-| Capa | Mecanismo | Detalle |
-| --- | --- | --- |
-| Autenticación | JWT (HS256) | Tokens firmados. Claims: `sub`, `role`, `iat`, `exp` |
-| Contraseñas | bcrypt (passlib) | Cost factor 12. Comparación en tiempo constante |
-| Credenciales conectores | Fernet (AES-128-CBC) | Cifrado autenticado |
-| Endpoints protegidos | Bearer token | `Authorization: Bearer <jwt>` obligatorio |
-| Aislamiento multi-tenant | Filtro por `organization_id` | 403 en acceso cruzado |
-| Rate limiting | slowapi | 100 req/min reads, 20 req/min writes |
-| Fuerza bruta | Bloqueo de cuenta | 5 intentos fallidos → 15 min bloqueo |
+| Capa                     | Mecanismo                    | Detalle                                              |
+| ------------------------ | ---------------------------- | ---------------------------------------------------- |
+| Autenticación            | JWT (HS256)                  | Tokens firmados. Claims: `sub`, `role`, `iat`, `exp` |
+| Contraseñas              | bcrypt (passlib)             | Cost factor 12. Comparación en tiempo constante      |
+| Credenciales conectores  | Fernet (AES-128-CBC)         | Cifrado autenticado                                  |
+| Endpoints protegidos     | Bearer token                 | `Authorization: Bearer <jwt>` obligatorio            |
+| Aislamiento multi-tenant | Filtro por `organization_id` | 403 en acceso cruzado                                |
+| Rate limiting            | slowapi                      | 100 req/min reads, 20 req/min writes                 |
+| Fuerza bruta             | Bloqueo de cuenta            | 5 intentos fallidos → 15 min bloqueo                 |
 
 ---
 
 # 11. Tecnologías
 
-| Capa | Tecnología | Estado |
-|------|-------------|--------|
-| API Backend | FastAPI (Python 3.11+) | ✅ Completo |
-| Base de datos | PostgreSQL 16 | ✅ Operativo |
-| ORM | SQLAlchemy 2.x | ✅ Operativo |
-| Migraciones | Alembic | ✅ Operativo |
-| Autenticación | JWT (PyJWT) | ✅ Completo |
-| HTTP Client | httpx (async) | ✅ Integrado en conectores |
-| Frontend | Angular 17 | ⏳ Pendiente |
-| Motor verificación | Rust (Actix-web + Rayon) | ✅ Implementado |
-| Cola de tareas | Celery + Redis | ✅ Implementado |
-| Contenedores | Docker + Docker Compose | ✅ Configurado |
+| Capa               | Tecnología               | Estado                     |
+| ------------------ | ------------------------ | -------------------------- |
+| API Backend        | FastAPI (Python 3.11+)   | ✅ Completo                |
+| Base de datos      | PostgreSQL 16            | ✅ Operativo               |
+| ORM                | SQLAlchemy 2.x           | ✅ Operativo               |
+| Migraciones        | Alembic                  | ✅ Operativo               |
+| Autenticación      | JWT (PyJWT)              | ✅ Completo                |
+| HTTP Client        | httpx (async)            | ✅ Integrado en conectores |
+| Frontend           | Angular 17               | ⏳ Pendiente               |
+| Motor verificación | Rust (Actix-web + Rayon) | ✅ Implementado            |
+| Cola de tareas     | Celery + Redis           | ✅ Implementado            |
+| Contenedores       | Docker + Docker Compose  | ✅ Configurado             |
 
 ---
 
 # 12. Variables de entorno
 
-| Variable | Descripción | Obligatoria |
-| --- | --- | --- |
-| `DATABASE_URL` | `postgresql+asyncpg://user:pass@host:5432/db` | Sí |
-| `JWT_SECRET_KEY` | Clave de firma de tokens JWT | Sí |
-| `JWT_ALGORITHM` | Algoritmo JWT (default: `HS256`) | No |
-| `JWT_EXPIRE_MINUTES` | Expiración del token en minutos (default: `60`) | No |
-| `ENCRYPTION_KEY` | Clave Fernet para cifrado de credenciales | Sí |
-| `ENVIRONMENT` | `development` o `production` | No |
-| `ALLOWED_ORIGINS` | Orígenes CORS separados por coma | No |
+| Variable             | Descripción                                     | Obligatoria |
+| -------------------- | ----------------------------------------------- | ----------- |
+| `DATABASE_URL`       | `postgresql+asyncpg://user:pass@host:5432/db`   | Sí          |
+| `JWT_SECRET_KEY`     | Clave de firma de tokens JWT                    | Sí          |
+| `JWT_ALGORITHM`      | Algoritmo JWT (default: `HS256`)                | No          |
+| `JWT_EXPIRE_MINUTES` | Expiración del token en minutos (default: `60`) | No          |
+| `ENCRYPTION_KEY`     | Clave Fernet para cifrado de credenciales       | Sí          |
+| `ENVIRONMENT`        | `development` o `production`                    | No          |
+| `ALLOWED_ORIGINS`    | Orígenes CORS separados por coma                | No          |
 
 Generar `ENCRYPTION_KEY`:
+
 ```bash
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
@@ -332,31 +338,35 @@ Base URL: `http://localhost:8000/api/v1`
 Documentación interactiva: `http://localhost:8000/docs`
 
 ### Autenticación
-| Método | Ruta | Auth | Descripción |
-| --- | --- | --- | --- |
-| `POST` | `/auth/login` | No | Login → devuelve JWT |
-| `POST` | `/auth/refresh` | No | Refrescar token |
+
+| Método | Ruta            | Auth | Descripción          |
+| ------ | --------------- | ---- | -------------------- |
+| `POST` | `/auth/login`   | No   | Login → devuelve JWT |
+| `POST` | `/auth/refresh` | No   | Refrescar token      |
 
 ### Organizaciones
-| Método | Ruta | Auth | Descripción |
-| --- | --- | --- | --- |
-| `GET` | `/organizations` | ADMIN | Listar todas |
-| `POST` | `/organizations` | ADMIN | Crear |
-| `GET` | `/organizations/{org_id}/connectors` | MANAGER+ | Listar conectores |
+
+| Método | Ruta                                 | Auth     | Descripción        |
+| ------ | ------------------------------------ | -------- | ------------------ |
+| `GET`  | `/organizations`                     | ADMIN    | Listar todas       |
+| `POST` | `/organizations`                     | ADMIN    | Crear              |
+| `GET`  | `/organizations/{org_id}/connectors` | MANAGER+ | Listar conectores  |
 | `POST` | `/organizations/{org_id}/connectors` | MANAGER+ | Registrar conector |
 
 ### Releases y verificaciones
-| Método | Ruta | Auth | Descripción |
-| --- | --- | --- | --- |
-| `POST` | `/projects/{id}/releases` | OPERATOR+ | Crear release |
-| `POST` | `/releases/{id}/verify` | OPERATOR+ | Lanzar verificación |
-| `GET` | `/releases/{id}/results` | OPERATOR+ | Historial resultados |
+
+| Método | Ruta                      | Auth      | Descripción          |
+| ------ | ------------------------- | --------- | -------------------- |
+| `POST` | `/projects/{id}/releases` | OPERATOR+ | Crear release        |
+| `POST` | `/releases/{id}/verify`   | OPERATOR+ | Lanzar verificación  |
+| `GET`  | `/releases/{id}/results`  | OPERATOR+ | Historial resultados |
 
 ### Conectores
-| Método | Ruta | Auth | Descripción |
-| --- | --- | --- | --- |
-| `GET` | `/connectors/types` | Cualquier usuario | Listar tipos e implementaciones |
-| `POST` | `/connectors/{id}/test` | MANAGER+ | Probar conexión |
+
+| Método | Ruta                    | Auth              | Descripción                     |
+| ------ | ----------------------- | ----------------- | ------------------------------- |
+| `GET`  | `/connectors/types`     | Cualquier usuario | Listar tipos e implementaciones |
+| `POST` | `/connectors/{id}/test` | MANAGER+          | Probar conexión                 |
 
 ---
 
@@ -398,6 +408,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 El sistema proporciona una solución desacoplada, extensible y robusta para la verificación automática de entregas de software.
 
 El backend FastAPI está completamente operativo con:
+
 - 20 implementaciones de conectores across 5 tipos funcionales
 - Sistema de configuración via UI para managers
 - Aislamiento multi-tenant completo
@@ -407,4 +418,4 @@ Pendiente: frontend Angular, motor Rust y worker Celery.
 
 ---
 
-*Última actualización: Mayo 2026 — Adrián Martínez Fuentes (UO295454)*
+_Última actualización: Mayo 2026 — Adrián Martínez (UO295454)_
