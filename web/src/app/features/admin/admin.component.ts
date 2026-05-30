@@ -11,7 +11,6 @@ interface Org {
   id: string;
   name: string;
   slug: string;
-  plan?: string;
 }
 
 interface GlobalUser {
@@ -62,14 +61,12 @@ interface GlobalUser {
               <tr>
                 <th>Nombre</th>
                 <th>Slug</th>
-                <th>Plan</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let org of orgs()">
                 <td class="cell-primary">{{ org.name }}</td>
                 <td><code class="mono-cell">{{ org.slug }}</code></td>
-                <td class="cell-muted">{{ org.plan ?? 'default' }}</td>
               </tr>
             </tbody>
           </table>
@@ -164,10 +161,6 @@ interface GlobalUser {
             <label for="org-slug">Slug</label>
             <input id="org-slug" type="text" formControlName="slug" placeholder="acme-corp" />
             <div class="field-hint">Solo min&uacute;sculas, n&uacute;meros y guiones.</div>
-          </div>
-          <div class="form-group">
-            <label for="org-plan">Plan</label>
-            <input id="org-plan" type="text" formControlName="plan" placeholder="default" />
           </div>
           <div *ngIf="createOrgError()" class="error-banner error-sm">{{ createOrgError() }}</div>
           <div class="modal-footer">
@@ -645,7 +638,6 @@ export class AdminComponent implements OnInit {
   createOrgForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     slug: ['', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
-    plan: ['default'],
   });
 
   // Users
@@ -707,7 +699,7 @@ export class AdminComponent implements OnInit {
         if (org) {
           this.orgs.update(list => [...list, org]);
           this.showCreateOrgModal.set(false);
-          this.createOrgForm.reset({ name: '', slug: '', plan: 'default' });
+          this.createOrgForm.reset({ name: '', slug: '' });
         }
         this.createOrgLoading.set(false);
       });

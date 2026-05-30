@@ -16,7 +16,6 @@ class SqlOrganizationRepository(IOrganizationRepository):
             slug=cast(str, row.slug),
             owner_id=cast(uuid.UUID | None, row.owner_id),
             is_active=cast(bool, row.is_active),
-            plan=cast(str, row.plan),
             created_at=cast(datetime, row.created_at),
             updated_at=cast(datetime, row.updated_at),
         )
@@ -29,7 +28,6 @@ class SqlOrganizationRepository(IOrganizationRepository):
                 slug=organization.slug,
                 owner_id=organization.owner_id,
                 is_active=organization.is_active,
-                plan=organization.plan,
                 created_at=organization.created_at,
                 updated_at=organization.updated_at,
             )
@@ -79,7 +77,6 @@ class SqlOrganizationRepository(IOrganizationRepository):
             org_model.slug = organization.slug  # pyright: ignore[reportAttributeAccessIssue]
             org_model.owner_id = organization.owner_id  # pyright: ignore[reportAttributeAccessIssue]
             org_model.is_active = organization.is_active  # pyright: ignore[reportAttributeAccessIssue]
-            org_model.plan = organization.plan  # pyright: ignore[reportAttributeAccessIssue]
             org_model.updated_at = datetime.now(datetime.timezone.utc)
 
             await session.commit()

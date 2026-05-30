@@ -115,7 +115,6 @@ name: str
 slug: str (unique, indexed)
 owner_id: Optional[UUID] (FK → user.id)
 is_active: bool = True
-plan: str = "default"
 created_at: datetime
 updated_at: datetime
 ```
@@ -409,7 +408,6 @@ REVOKED = "REVOKED"
 | slug | VARCHAR(100) | UNIQUE, NOT NULL, INDEX |
 | owner_id | UUID | FK → user.id, NULLABLE |
 | is_active | BOOLEAN | NOT NULL, default=True |
-| plan | VARCHAR(50) | NOT NULL, default='default' |
 | created_at | TIMESTAMP | NOT NULL |
 | updated_at | TIMESTAMP | NOT NULL |
 
@@ -642,8 +640,7 @@ REVOKED = "REVOKED"
 ```json
 {
   "name": "string (1-100 chars)",
-  "slug": "string (1-100 chars, URL-safe)",
-  "plan": "string (default: 'default')"
+  "slug": "string (1-100 chars, URL-safe)"
 }
 ```
 
@@ -655,7 +652,6 @@ REVOKED = "REVOKED"
   "slug": "string",
   "owner_id": "uuid|null",
   "is_active": "boolean",
-  "plan": "string",
   "created_at": "datetime (ISO 8601)",
   "updated_at": "datetime (ISO 8601)"
 }

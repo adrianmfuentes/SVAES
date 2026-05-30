@@ -4539,12 +4539,6 @@
             "minLength": 1,
             "pattern": "^[a-z0-9-]+$",
             "title": "Slug"
-          },
-          "plan": {
-            "type": "string",
-            "maxLength": 50,
-            "title": "Plan",
-            "default": "default"
           }
         },
         "additionalProperties": false,

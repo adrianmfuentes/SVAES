@@ -14,7 +14,6 @@ interface Org {
   id: string;
   name: string;
   slug: string;
-  plan?: string;
 }
 
 interface AdminUser {
@@ -172,14 +171,12 @@ interface ProbeResult<T> {
             <tr>
               <th>Nombre</th>
               <th>Identificador</th>
-              <th>Plan</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let org of orgs()">
               <td class="cell-primary">{{ org.name }}</td>
               <td><code class="mono-sm">{{ org.slug }}</code></td>
-              <td class="cell-muted">{{ org.plan ?? 'default' }}</td>
             </tr>
           </tbody>
         </table>

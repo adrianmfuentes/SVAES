@@ -12,6 +12,5 @@ class OrganizationModel(Base):
     slug = Column(String(100), unique=True, nullable=False, index=True)
     owner_id = Column(PG_UUID(as_uuid=True), ForeignKey("user.id"), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
-    plan = Column(String(50), nullable=False, default="default")
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

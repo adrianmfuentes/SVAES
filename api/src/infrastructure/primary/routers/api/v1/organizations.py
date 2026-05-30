@@ -14,7 +14,6 @@ class OrganizationCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     name: str = Field(..., min_length=1, max_length=100)
     slug: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-z0-9-]+$")
-    plan: str = Field(default="default", max_length=50)
 
 class ProjectCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -73,7 +72,6 @@ async def create_organization(
         org = await service.create_organization(
             name=payload.name,
             slug=payload.slug,
-            plan=payload.plan,
             owner_id=current_user.user_id,
         )
         return {"id": str(org.id), "name": org.name, "slug": org.slug}
@@ -113,7 +111,6 @@ async def get_organization(
             "name": org.name,
             "slug": org.slug,
             "owner_id": str(org.owner_id) if org.owner_id else None,
-            "plan": org.plan,
             "is_active": org.is_active,
             "created_at": org.created_at.isoformat() if org.created_at else None,
         }

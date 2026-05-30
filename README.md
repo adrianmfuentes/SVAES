@@ -233,7 +233,7 @@ class IConnector(Protocol):
 
 Entidades principales:
 
-- **Organization** — Tenant principal con plan y owner
+- **Organization** — Tenant principal con owner
 - **User** — Usuario con rol y organización
 - **Project** — Pertenece a una org, tiene perfil de verificación
 - **Release** — Versión de software con estado y artefactos

@@ -59,7 +59,6 @@ def sample_org():
         name="Test Org",
         slug="test-org",
         owner_id=uuid4(),
-        plan="default",
     )
 
 
@@ -86,13 +85,11 @@ class TestCreateOrganization:
         result = await service.create_organization(
             name=sample_org.name,
             slug=sample_org.slug,
-            plan=sample_org.plan,
             owner_id=None,
         )
 
         assert result.name == sample_org.name
         assert result.slug == sample_org.slug
-        assert result.plan == sample_org.plan
         org_repo.get_by_slug.assert_called_once_with(sample_org.slug)
         org_repo.create.assert_called_once()
 
@@ -104,7 +101,6 @@ class TestCreateOrganization:
             await service.create_organization(
                 name=sample_org.name,
                 slug=sample_org.slug,
-                plan=sample_org.plan,
             )
 
         org_repo.create.assert_not_called()
@@ -124,7 +120,6 @@ class TestCreateOrganization:
         result = await service.create_organization(
             name=sample_org.name,
             slug=sample_org.slug,
-            plan=sample_org.plan,
             owner_id=owner_id,
         )
 
@@ -143,7 +138,6 @@ class TestCreateOrganization:
         result = await service.create_organization(
             name=sample_org.name,
             slug=sample_org.slug,
-            plan=sample_org.plan,
             owner_id=owner_id,
         )
 
@@ -165,7 +159,6 @@ class TestCreateOrganization:
             result = await service_no_user.create_organization(
                 name=sample_org.name,
                 slug=sample_org.slug,
-                plan=sample_org.plan,
                 owner_id=uuid4(),
             )
 

@@ -12,7 +12,6 @@ class IOrganizationService(ABC):
         self,
         name: str,
         slug: str,
-        plan: str = "default",
         owner_id: Optional[UUID] = None,
     ) -> Organization:
         pass

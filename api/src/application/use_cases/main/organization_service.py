@@ -29,14 +29,13 @@ class OrganizationService(IOrganizationService):
         self,
         name: str,
         slug: str,
-        plan: str = "default",
         owner_id: Optional[UUID] = None,
     ) -> Organization:
         existing = await self._org_repo.get_by_slug(slug)
         if existing:
             raise DuplicateEntityError(f"Ya existe una organización con slug: {slug}")
 
-        org = Organization(name=name, slug=slug, owner_id=owner_id, plan=plan)
+        org = Organization(name=name, slug=slug, owner_id=owner_id)
         created_org = await self._org_repo.create(org)
 
         if owner_id and self._user_repo:

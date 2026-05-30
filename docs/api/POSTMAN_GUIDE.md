@@ -131,8 +131,7 @@ Response:
 ```json
 {
   "name": "My Organization",
-  "slug": "my-organization",
-  "plan": "default"
+  "slug": "my-organization"
 }
 ```
 

@@ -94,7 +94,6 @@ class TestListOrganizations:
             slug="test-org",
             owner_id=uuid4(),
             is_active=True,
-            plan="default",
             created_at=datetime.now(timezone.utc),
         )
         mock_org_service.list_organizations.return_value = [org]
@@ -121,13 +120,12 @@ class TestCreateOrganization:
             slug="new-org",
             owner_id=uuid4(),
             is_active=True,
-            plan="default",
         )
         mock_org_service.create_organization.return_value = org
 
         response = test_app.post(
             "/api/v1/organizations",
-            json={"name": "New Org", "slug": "new-org", "plan": "default"},
+            json={"name": "New Org", "slug": "new-org"},
         )
         assert response.status_code == 201
         data = response.json()
@@ -165,7 +163,6 @@ class TestGetOrganization:
             slug="my-org",
             owner_id=admin_user.user_id,
             is_active=True,
-            plan="default",
             created_at=datetime.now(timezone.utc),
         )
         mock_org_service.get_organization.return_value = org
@@ -320,7 +317,6 @@ class TestRestoreOrganization:
             slug="restored-org",
             owner_id=uuid4(),
             is_active=True,
-            plan="default",
         )
         mock_org_service.restore_organization.return_value = org
 
@@ -354,7 +350,6 @@ class TestTransferOwnership:
             slug="org",
             owner_id=new_owner_id,
             is_active=True,
-            plan="default",
         )
         mock_org_service.transfer_ownership.return_value = org
 

@@ -27,14 +27,8 @@ class TestCreateOrganizationSuccess:
         assert isinstance(result, Organization)
         assert result.name == "Test Org"
         assert result.slug == "test-org"
-        assert result.plan == "default"
         org_repo.get_by_slug.assert_called_once_with("test-org")
         org_repo.create.assert_called_once()
-
-    async def test_with_custom_plan(self, use_case, org_repo):
-        result = await use_case.execute(name="Pro Plan", slug="pro-plan", plan="pro")
-
-        assert result.plan == "pro"
 
     async def test_checks_slug_uniqueness(self, use_case, org_repo):
         await use_case.execute(name="Org", slug="unique-slug")

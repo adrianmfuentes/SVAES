@@ -234,10 +234,6 @@ export type OrganizationCreateRequest = {
      * Slug
      */
     slug: string;
-    /**
-     * Plan
-     */
-    plan?: string;
 };
 
 /**

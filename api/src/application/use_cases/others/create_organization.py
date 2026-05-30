@@ -12,10 +12,10 @@ class CreateOrganizationUseCase:
     def __init__(self, organization_repository: IOrganizationRepository) -> None:
         self._org_repo = organization_repository
 
-    async def execute(self, name: str, slug: str, plan: str = "default") -> Organization:
+    async def execute(self, name: str, slug: str) -> Organization:
         existing = await self._org_repo.get_by_slug(slug)
         if existing:
             raise DuplicateEntityError(f"Ya existe una organización con slug: {slug}")
 
-        org = Organization(name=name, slug=slug, plan=plan)
+        org = Organization(name=name, slug=slug)
         return await self._org_repo.create(org)

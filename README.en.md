@@ -233,7 +233,7 @@ class IConnector(Protocol):
 
 Main entities:
 
-- **Organization** — Main tenant with plan and owner
+- **Organization** — Main tenant with owner
 - **User** — User with role and organization
 - **Project** — Belongs to an org, has verification profile
 - **Release** — Software version with status and artifacts
