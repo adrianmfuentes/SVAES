@@ -15,6 +15,7 @@ from infrastructure.primary.routers.api.v1.api_keys import router as api_keys_ro
 from infrastructure.primary.routers.api.v1.templates import router as templates_router
 from infrastructure.primary.routers.api.v1.notifications import router as notifications_router
 from infrastructure.primary.routers.api.v1.admin import router as admin_router
+from infrastructure.primary.routers.api.v1.audit import router as audit_router
 
 __all__ = [
     "auth_router",
@@ -30,4 +31,5 @@ __all__ = [
     "templates_router",
     "notifications_router",
     "admin_router",
+    "audit_router",
 ]

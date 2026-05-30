@@ -37,6 +37,14 @@ export interface UserInfo {
   organization_id?: string;
 }
 
+interface JwtPayload {
+  sub: string;
+  email?: string;
+  role?: string;
+  organization_id?: string;
+  exp?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
@@ -46,23 +54,39 @@ export class AuthService {
   private readonly REFRESH_KEY = 'refresh_token';
   private readonly USER_KEY = 'user';
 
+  decodeToken(token: string): JwtPayload | null {
+    try {
+      const payload = token.split('.')[1];
+      const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(decoded) as JwtPayload;
+    } catch {
+      return null;
+    }
+  }
+
+  isAdmin(): boolean {
+    const token = this.getToken();
+    if (!token) return false;
+    return this.decodeToken(token)?.role === 'ADMIN';
+  }
+
   login(email: string, password: string, orgId?: string): Observable<LoginResponse> {
     return this.http
       .post<LoginResponse>('/api/v1/auth/login', { email, password })
       .pipe(
         tap((response) => {
+          _accessToken = response.access_token;
           localStorage.setItem(this.TOKEN_KEY, response.access_token);
           localStorage.setItem(this.REFRESH_KEY, response.refresh_token);
-          if (orgId) {
-            const user: UserInfo = {
-              id: '',
-              email,
-              display_name: email,
-              role: 'USER',
-              organization_id: orgId,
-            };
-            localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-          }
+          const payload = this.decodeToken(response.access_token);
+          const user: UserInfo = {
+            id: payload?.sub ?? '',
+            email: payload?.email ?? email,
+            display_name: payload?.email ?? email,
+            role: payload?.role ?? 'USER',
+            organization_id: payload?.organization_id ?? orgId,
+          };
+          localStorage.setItem(this.USER_KEY, JSON.stringify(user));
         }),
       );
   }
@@ -94,6 +118,11 @@ export class AuthService {
   }
 
   getUserRole(): string {
+    const token = this.getToken();
+    if (token) {
+      const role = this.decodeToken(token)?.role;
+      if (role) return role;
+    }
     return this.getUser()?.role ?? '';
   }
 

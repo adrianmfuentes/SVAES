@@ -1,8 +1,365 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../core/services/auth.service';
+import { catchError, of } from 'rxjs';
+
+interface Release {
+  id: string;
+  name?: string;
+  verdict: string;
+  organization_id?: string;
+  organization_name?: string;
+  created_at: string;
+  created_by?: string;
+}
 
 @Component({
   selector: 'app-releases',
   standalone: true,
-  template: '<p>Releases placeholder</p>',
+  imports: [CommonModule, FormsModule, RouterModule],
+  template: `
+    <div class="releases-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-title">Entregas</h1>
+          <span *ngIf="isAdmin" class="global-badge">Vista global</span>
+        </div>
+        <button *ngIf="!isAdmin" class="btn-primary">Nueva entrega</button>
+      </div>
+
+      <div class="filters-bar">
+        <input
+          type="text"
+          class="filter-input"
+          placeholder="Filtrar por nombre o ID…"
+          [(ngModel)]="filterText"
+          (ngModelChange)="onFilterChange()"
+        />
+        <select class="filter-select" [(ngModel)]="filterVerdict" (ngModelChange)="onFilterChange()">
+          <option value="">Todos los veredictos</option>
+          <option value="VALID">Válidas</option>
+          <option value="WITH_WARNINGS">Con advertencias</option>
+          <option value="INVALID">Inválidas</option>
+          <option value="NOT_EVALUATED">Sin evaluar</option>
+        </select>
+      </div>
+
+      <div *ngIf="loading()" class="skeleton-list">
+        <div class="skeleton skeleton-row" *ngFor="let i of [1,2,3,4,5,6]"></div>
+      </div>
+
+      <div *ngIf="error() && !loading()" class="error-banner">{{ error() }}</div>
+
+      <div *ngIf="!loading() && !error()" class="data-table-wrap">
+        <table class="data-table" *ngIf="filtered().length > 0; else emptyState">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th *ngIf="isAdmin">Organización</th>
+              <th>Veredicto</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let r of paginated()"
+              [routerLink]="['/app/releases', r.id]"
+              class="clickable-row"
+            >
+              <td><code class="mono-sm">{{ r.id | slice:0:8 }}</code></td>
+              <td class="cell-primary">{{ r.name ?? '—' }}</td>
+              <td *ngIf="isAdmin" class="cell-muted">{{ r.organization_name ?? '—' }}</td>
+              <td>
+                <span class="verdict-badge" [ngClass]="verdictClass(r.verdict)">
+                  {{ r.verdict || 'NOT_EVALUATED' }}
+                </span>
+              </td>
+              <td class="cell-muted">{{ r.created_at | date:'dd MMM yyyy, HH:mm' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #emptyState>
+          <div class="empty-state">No hay entregas que coincidan con el filtro.</div>
+        </ng-template>
+
+        <div class="pagination" *ngIf="filtered().length > pageSize">
+          <button class="btn-ghost" [disabled]="page() === 0" (click)="prevPage()">Anterior</button>
+          <span class="page-info">
+            {{ page() + 1 }} / {{ totalPages() }}
+          </span>
+          <button class="btn-ghost" [disabled]="page() >= totalPages() - 1" (click)="nextPage()">Siguiente</button>
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [`
+    :host { display: block; }
+
+    .releases-page { padding: 0; }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .page-header-left {
+      display: flex;
+      align-items: baseline;
+      gap: var(--spacing-md);
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 2.25rem;
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin: 0;
+      color: var(--ink);
+    }
+
+    .global-badge {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--paper-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--rounded-sm);
+      padding: 2px 8px;
+    }
+
+    .filters-bar {
+      display: flex;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .filter-input {
+      flex: 1;
+      max-width: 320px;
+    }
+
+    .filter-select {
+      width: auto;
+    }
+
+    .data-table-wrap {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--rounded-lg);
+      overflow: hidden;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: var(--spacing-sm) var(--spacing-md);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: var(--paper-secondary);
+    }
+
+    .data-table td {
+      font-size: 0.8125rem;
+      color: var(--ink);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      height: 44px;
+    }
+
+    .data-table tr:last-child td { border-bottom: none; }
+
+    .clickable-row { cursor: pointer; }
+    .clickable-row:hover td { background: var(--paper-secondary); }
+
+    .cell-primary { font-weight: 500; }
+    .cell-muted { color: var(--muted); }
+
+    .mono-sm {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--muted);
+    }
+
+    .verdict-badge {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-radius: var(--rounded-sm);
+      padding: 2px 8px;
+      border: 1px solid;
+    }
+
+    .verdict-valid { color: var(--verdict-valid); background: var(--verdict-valid-bg); border-color: var(--verdict-valid-border); }
+    .verdict-warning { color: var(--verdict-warning); background: var(--verdict-warning-bg); border-color: var(--verdict-warning-border); }
+    .verdict-invalid { color: var(--verdict-invalid); background: var(--verdict-invalid-bg); border-color: var(--verdict-invalid-border); }
+    .verdict-unevaluated { color: var(--verdict-unevaluated); background: var(--verdict-unevaluated-bg); border-color: var(--verdict-unevaluated-border); }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      border-top: 1px solid var(--border);
+    }
+
+    .page-info {
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+
+    .btn-ghost {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--rounded-md);
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: color 0.12s ease, background-color 0.12s ease;
+    }
+
+    .btn-ghost:hover:not(:disabled) { color: var(--ink); background: var(--paper-secondary); }
+    .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      background: var(--ink);
+      color: var(--paper);
+      border: 1px solid var(--ink);
+      border-radius: var(--rounded-md);
+      padding: 9px 18px;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-primary:hover { background: var(--ink-secondary); }
+
+    .error-banner {
+      background: var(--verdict-invalid-bg);
+      color: var(--verdict-invalid);
+      border: 1px solid var(--verdict-invalid-border);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: 0.8125rem;
+    }
+
+    .skeleton-list { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+
+    .skeleton {
+      border-radius: var(--rounded-md);
+      background: linear-gradient(90deg, var(--paper-secondary) 25%, #e5e2db 50%, var(--paper-secondary) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s linear infinite;
+    }
+
+    .skeleton-row { height: 44px; }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .empty-state {
+      padding: var(--spacing-xl) var(--spacing-lg);
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+  `],
 })
-export class ReleasesComponent {}
+export class ReleasesComponent implements OnInit {
+  private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
+
+  readonly isAdmin = this.authService.isAdmin();
+  readonly pageSize = 20;
+
+  releases = signal<Release[]>([]);
+  filtered = signal<Release[]>([]);
+  loading = signal(true);
+  error = signal<string | null>(null);
+  page = signal(0);
+
+  filterText = '';
+  filterVerdict = '';
+
+  ngOnInit(): void {
+    const url = '/api/v1/releases';
+    this.http.get<Release[]>(url)
+      .pipe(catchError(() => { this.error.set('Error al cargar entregas'); return of([]); }))
+      .subscribe(data => {
+        this.releases.set(data);
+        this.filtered.set(data);
+        this.loading.set(false);
+      });
+  }
+
+  onFilterChange(): void {
+    this.page.set(0);
+    const text = this.filterText.toLowerCase();
+    const verdict = this.filterVerdict;
+    this.filtered.set(
+      this.releases().filter(r => {
+        const matchText = !text || r.id.toLowerCase().includes(text) || (r.name ?? '').toLowerCase().includes(text);
+        const matchVerdict = !verdict || r.verdict === verdict;
+        return matchText && matchVerdict;
+      })
+    );
+  }
+
+  paginated(): Release[] {
+    const start = this.page() * this.pageSize;
+    return this.filtered().slice(start, start + this.pageSize);
+  }
+
+  totalPages(): number {
+    return Math.ceil(this.filtered().length / this.pageSize);
+  }
+
+  prevPage(): void { this.page.update(p => Math.max(0, p - 1)); }
+  nextPage(): void { this.page.update(p => Math.min(this.totalPages() - 1, p + 1)); }
+
+  verdictClass(verdict: string): Record<string, boolean> {
+    return {
+      'verdict-valid': verdict === 'VALID',
+      'verdict-warning': verdict === 'WITH_WARNINGS',
+      'verdict-invalid': verdict === 'INVALID',
+      'verdict-unevaluated': verdict === 'NOT_EVALUATED' || !verdict,
+    };
+  }
+}

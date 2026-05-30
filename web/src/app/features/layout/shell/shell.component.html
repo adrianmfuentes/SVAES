@@ -4,7 +4,42 @@
       <a routerLink="/" class="sidebar-logo">SVAES</a>
     </div>
 
-    <nav class="sidebar-nav">
+    <!-- ADMIN (U3) navigation -->
+    <nav class="sidebar-nav" *ngIf="isAdmin">
+      <div class="nav-section">Sistema</div>
+
+      <a
+        routerLink="/app/system"
+        routerLinkActive="nav-item-active"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="nav-item"
+      >
+        Visi&oacute;n general
+      </a>
+
+      <div class="nav-section">Gesti&oacute;n</div>
+
+      <a
+        routerLink="/app/admin"
+        routerLinkActive="nav-item-active"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="nav-item"
+      >
+        Administraci&oacute;n
+      </a>
+
+      <a
+        routerLink="/app/logs"
+        routerLinkActive="nav-item-active"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="nav-item"
+      >
+        Registros
+      </a>
+    </nav>
+
+    <!-- REGULAR USER (U2/U4) navigation -->
+    <nav class="sidebar-nav" *ngIf="!isAdmin">
       <div class="nav-section">Principal</div>
 
       <a
@@ -47,6 +82,10 @@
     </nav>
 
     <div class="sidebar-footer">
+      <div class="sidebar-role-indicator" *ngIf="isAdmin">
+        <span class="role-label">Admin global</span>
+        <span class="role-badge">U3</span>
+      </div>
       <button class="sidebar-logout" (click)="logout()">
         Cerrar sesi&oacute;n
       </button>
@@ -54,6 +93,8 @@
   </aside>
 
   <main class="main-content">
-    <router-outlet></router-outlet>
+    <div class="content-inner">
+      <router-outlet></router-outlet>
+    </div>
   </main>
 </div>

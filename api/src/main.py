@@ -26,6 +26,7 @@ from infrastructure.primary.routers.api.routers import (
     templates_router,
     notifications_router,
     admin_router,
+    audit_router,
 )
 from core.config import settings
 from core.logger import _configure_root_logger, get_logger
@@ -155,6 +156,7 @@ app.include_router(api_keys_router)
 app.include_router(templates_router)
 app.include_router(notifications_router)
 app.include_router(admin_router)
+app.include_router(audit_router)
 
 
 # ---------------------------------------------------------------------------

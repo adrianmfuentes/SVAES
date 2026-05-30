@@ -13,6 +13,10 @@ import { AuthService } from '../../../core/services/auth.service';
 export class ShellComponent {
   readonly authService = inject(AuthService);
 
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
   logout(): void {
     this.authService.logout();
   }

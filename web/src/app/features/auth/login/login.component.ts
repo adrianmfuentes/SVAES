@@ -5,14 +5,10 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { AuthService, setAccessToken } from '../../../core/services/auth.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { catchError, of } from 'rxjs';
-
-interface LoginResponse {
-  access_token: string;
-}
 
 function parseLoginError(err: HttpErrorResponse): string {
   if (err.status === 0 || !err.status) {
@@ -458,7 +454,6 @@ function parseLoginError(err: HttpErrorResponse): string {
 })
 export class LoginComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
-  private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
 
@@ -492,8 +487,8 @@ export class LoginComponent implements OnInit {
 
     const { email, password } = this.loginForm.value;
 
-    this.http
-      .post<LoginResponse>('/api/v1/auth/login', { email, password })
+    this.authService
+      .login(email!, password!)
       .pipe(
         catchError((err: HttpErrorResponse) => {
           this.errorMessage = parseLoginError(err);
@@ -509,9 +504,8 @@ export class LoginComponent implements OnInit {
             this.loading = false;
             return;
           }
-
-          setAccessToken(response.access_token);
-          this.router.navigate(['/app/dashboard']);
+          const destination = this.authService.isAdmin() ? '/app/system' : '/app/dashboard';
+          this.router.navigate([destination]);
         },
         error: () => {
           this.errorMessage =

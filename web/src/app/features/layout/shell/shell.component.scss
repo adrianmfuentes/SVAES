@@ -77,6 +77,34 @@
   border-top: 1px solid rgba(246, 244, 240, 0.08);
 }
 
+.sidebar-role-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-sm) var(--spacing-sm);
+}
+
+.role-label {
+  font-family: var(--font-sans);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(232, 213, 163, 0.7);
+}
+
+.role-badge {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: rgba(232, 213, 163, 0.12);
+  border: 1px solid rgba(232, 213, 163, 0.25);
+  border-radius: var(--rounded-sm);
+  padding: 1px 5px;
+}
+
 .sidebar-logout {
   display: block;
   width: 100%;
@@ -104,6 +132,10 @@
   flex: 1;
   overflow-y: auto;
   background: var(--paper);
+}
+
+.content-inner {
+  width: 100%;
   padding: var(--spacing-xl);
-  max-width: 1120px;
+  box-sizing: border-box;
 }
