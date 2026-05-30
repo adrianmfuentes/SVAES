@@ -1,0 +1,51 @@
+<div class="card releases-card">
+  <div class="card-header">
+    <h2>Recent releases</h2>
+    <a class="view-all" [routerLink]="['/app/releases']">View all</a>
+  </div>
+
+  @if (loading) {
+    <div class="skeleton-rows">
+      @for (item of [1,2,3,4,5,6,7,8,9,10]; track item) {
+        <div class="skeleton row-skeleton"></div>
+      }
+    </div>
+  } @else if (error) {
+    <div class="error-banner">{{ error }}</div>
+  } @else if (releases.length === 0) {
+    <p class="empty">No releases found.</p>
+  } @else {
+    <table class="releases-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Project</th>
+          <th>Verdict</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (release of releases; track release.id) {
+          <tr class="release-row">
+            <td>
+              <span class="release-uuid">{{ shortId(release.id) }}</span>
+            </td>
+            <td>
+              <a class="release-name-link" [routerLink]="['/app/releases', release.id]">
+                {{ release.name }}
+              </a>
+            </td>
+            <td class="cell-muted">{{ release.project_name ?? '—' }}</td>
+            <td>
+              <span class="verdict-badge" [ngClass]="verdictClass(release.verdict)">
+                {{ release.verdict ?? 'N/A' }}
+              </span>
+            </td>
+            <td class="cell-muted">{{ relativeDate(release.created_at) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

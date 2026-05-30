@@ -109,6 +109,13 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'request-access',
+    loadComponent: () =>
+      import('./features/access-request/access-request-form.component').then(
+        (m) => m.AccessRequestFormComponent,
+      ),
+  },
+  {
     path: 'legal/aviso-legal',
     loadComponent: () =>
       import('./features/legal/aviso-legal/aviso-legal.component').then(

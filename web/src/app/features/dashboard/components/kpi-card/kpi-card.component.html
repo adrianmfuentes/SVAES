@@ -1,0 +1,14 @@
+<div class="kpi-card">
+  @if (loading) {
+    <div class="skeleton skeleton-label"></div>
+    <div class="skeleton skeleton-value"></div>
+  } @else if (error) {
+    <p class="card-label">{{ label }}</p>
+    <div class="error-banner">{{ error }}</div>
+  } @else {
+    <p class="card-label">{{ label }}</p>
+    <div class="card-value">
+      <ng-content></ng-content>
+    </div>
+  }
+</div>

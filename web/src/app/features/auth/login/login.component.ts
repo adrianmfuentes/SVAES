@@ -141,6 +141,10 @@ function parseLoginError(err: HttpErrorResponse): string {
                 <span *ngIf="loading">Verificando&hellip;</span>
               </button>
             </form>
+            <p class="form-footer-link">
+              Don't have an account?
+              <a routerLink="/request-access">Request access</a>
+            </p>
           </div>
         </div>
       </main>
@@ -389,6 +393,24 @@ function parseLoginError(err: HttpErrorResponse): string {
       .alert-icon {
         flex-shrink: 0;
         margin-top: 2px;
+      }
+
+      .form-footer-link {
+        font-family: var(--font-sans);
+        font-size: 0.8125rem;
+        color: var(--muted);
+        text-align: center;
+        margin: var(--spacing-md) 0 0;
+      }
+
+      .form-footer-link a {
+        font-weight: 500;
+        color: var(--ink);
+        transition: color 0.15s ease;
+      }
+
+      .form-footer-link a:hover {
+        color: var(--accent-dark);
       }
 
       .login-footer {

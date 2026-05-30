@@ -1,11 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 
-type AdminTab = 'organizations' | 'users';
+type AdminTab = 'organizations' | 'users' | 'access-requests';
+type AccessRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 interface Org {
   id: string;
@@ -21,11 +22,23 @@ interface GlobalUser {
   is_active: boolean;
 }
 
+interface AccessRequest {
+  id: string;
+  requester_name: string;
+  requester_email: string;
+  organization_name: string;
+  organization_description?: string;
+  slug_preview?: string;
+  status: AccessRequestStatus;
+  created_at?: string;
+  rejection_reason?: string;
+}
+
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
     <div class="admin-page">
       <div class="page-header">
@@ -143,6 +156,72 @@ interface GlobalUser {
         </div>
       </div>
 
+      <!-- ACCESS REQUESTS TAB -->
+      <div *ngIf="activeTab() === 'access-requests'" class="tab-content">
+        <div class="tab-toolbar">
+          <h2 class="tab-title">Access Requests</h2>
+        </div>
+
+        <div class="ar-status-tabs">
+          <button
+            *ngFor="let st of accessRequestStatuses"
+            class="ar-status-tab"
+            [class.ar-status-tab-active]="arStatus() === st.value"
+            (click)="setArStatus(st.value)"
+          >{{ st.label }}</button>
+        </div>
+
+        <div *ngIf="arLoading()" class="skeleton-list">
+          <div class="skeleton-row" *ngFor="let i of [1,2,3,4]"></div>
+        </div>
+
+        <div *ngIf="arError() && !arLoading()" class="error-banner">{{ arError() }}</div>
+
+        <div *ngIf="arSuccess()" class="success-banner">{{ arSuccess() }}</div>
+
+        <div *ngIf="!arLoading() && !arError()" class="data-table-wrap">
+          <table class="data-table" *ngIf="accessRequests().length > 0; else arEmpty">
+            <thead>
+              <tr>
+                <th>Requester</th>
+                <th>Organization</th>
+                <th>Requested</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ar of accessRequests()">
+                <td>
+                  <div class="cell-primary">{{ ar.requester_name }}</div>
+                  <div class="cell-muted">{{ ar.requester_email }}</div>
+                </td>
+                <td>
+                  <div class="cell-primary">{{ ar.organization_name }}</div>
+                  <code class="mono-cell" *ngIf="ar.slug_preview">{{ ar.slug_preview }}</code>
+                  <code class="mono-cell" *ngIf="!ar.slug_preview">{{ slugFromName(ar.organization_name) }}</code>
+                </td>
+                <td class="cell-muted">{{ relativeDate(ar.created_at) }}</td>
+                <td>
+                  <span class="badge" [class.badge-pending]="ar.status === 'PENDING'" [class.badge-approved]="ar.status === 'APPROVED'" [class.badge-rejected]="ar.status === 'REJECTED'">
+                    {{ ar.status === 'PENDING' ? 'Pending' : ar.status === 'APPROVED' ? 'Approved' : 'Rejected' }}
+                  </span>
+                </td>
+                <td class="cell-actions">
+                  <ng-container *ngIf="ar.status === 'PENDING'">
+                    <button class="btn-ghost btn-approve-ghost" (click)="openApproveModal(ar)">Approve</button>
+                    <button class="btn-ghost btn-danger-ghost" (click)="openRejectModal(ar)">Reject</button>
+                  </ng-container>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ng-template #arEmpty>
+            <div class="empty-state">No {{ arStatus().toLowerCase() }} access requests.</div>
+          </ng-template>
+        </div>
+      </div>
+
     </div>
 
     <!-- MODAL: Create Organization -->
@@ -209,6 +288,61 @@ interface GlobalUser {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Approve Access Request -->
+    <div class="modal-overlay" *ngIf="approveTarget()" (click)="closeApproveModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Approve request</h3>
+          <button class="modal-close" (click)="closeApproveModal()">&times;</button>
+        </div>
+        <p class="modal-body-text">
+          This will create a user account and organization for
+          <strong>{{ approveTarget()?.requester_name }}</strong>.
+          An activation email will be sent to
+          <strong>{{ approveTarget()?.requester_email }}</strong>.
+          This action cannot be undone.
+        </p>
+        <div *ngIf="approveError()" class="error-banner error-sm">{{ approveError() }}</div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeApproveModal()">Cancel</button>
+          <button type="button" class="btn-primary" [disabled]="approveLoading()" (click)="confirmApprove()">
+            {{ approveLoading() ? 'Approving…' : 'Approve' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Reject Access Request -->
+    <div class="modal-overlay" *ngIf="rejectTarget()" (click)="closeRejectModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Reject request</h3>
+          <button class="modal-close" (click)="closeRejectModal()">&times;</button>
+        </div>
+        <p class="modal-body-text">
+          Reject the access request from
+          <strong>{{ rejectTarget()?.requester_name }}</strong>
+          ({{ rejectTarget()?.requester_email }}).
+        </p>
+        <div class="form-group">
+          <label for="reject-reason">Reason (optional)</label>
+          <textarea
+            id="reject-reason"
+            [(ngModel)]="rejectReasonText"
+            placeholder="Explain why the request is being rejected"
+            rows="3"
+          ></textarea>
+        </div>
+        <div *ngIf="rejectError()" class="error-banner error-sm">{{ rejectError() }}</div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeRejectModal()">Cancel</button>
+          <button type="button" class="btn-primary" [disabled]="rejectLoading()" (click)="confirmReject()">
+            {{ rejectLoading() ? 'Rejecting…' : 'Reject' }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -612,6 +746,97 @@ interface GlobalUser {
       line-height: 1.65;
       margin: 0 0 var(--spacing-sm);
     }
+
+    .success-banner {
+      background: var(--verdict-valid-bg);
+      color: var(--verdict-valid);
+      border: 1px solid var(--verdict-valid-border);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: 0.8125rem;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .ar-status-tabs {
+      display: flex;
+      gap: 2px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .ar-status-tab {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: var(--spacing-sm) var(--spacing-md);
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: color 0.12s ease, border-color 0.12s ease;
+    }
+
+    .ar-status-tab:hover { color: var(--ink); }
+    .ar-status-tab-active { color: var(--ink); border-bottom-color: var(--accent); }
+
+    .badge-pending {
+      color: var(--verdict-warning);
+      background: var(--verdict-warning-bg);
+      border-color: var(--verdict-warning-border);
+    }
+
+    .badge-approved {
+      color: var(--verdict-valid);
+      background: var(--verdict-valid-bg);
+      border-color: var(--verdict-valid-border);
+    }
+
+    .badge-rejected {
+      color: var(--verdict-invalid);
+      background: var(--verdict-invalid-bg);
+      border-color: var(--verdict-invalid-border);
+    }
+
+    .btn-approve-ghost { color: var(--verdict-valid); }
+    .btn-approve-ghost:hover:not(:disabled) { background: var(--verdict-valid-bg); border-color: var(--verdict-valid-border); }
+
+    .modal-body-text {
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      color: var(--ink);
+      line-height: 1.65;
+      margin: 0 0 var(--spacing-md);
+    }
+
+    .modal-body-text strong {
+      font-weight: 600;
+    }
+
+    .form-group textarea {
+      width: 100%;
+      background: var(--paper);
+      color: var(--ink);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--rounded-md);
+      padding: 9px 12px;
+      font-family: var(--font-sans);
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      outline: none;
+      resize: vertical;
+      min-height: 72px;
+      transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .form-group textarea:focus {
+      border-color: var(--ink);
+      background: var(--surface-raised);
+      box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
+    }
   `],
 })
 export class AdminComponent implements OnInit {
@@ -624,6 +849,7 @@ export class AdminComponent implements OnInit {
   readonly tabs: { id: AdminTab; label: string }[] = [
     { id: 'organizations', label: 'Organizaciones' },
     { id: 'users', label: 'Usuarios' },
+    { id: 'access-requests', label: 'Access Requests' },
   ];
 
   activeTab = signal<AdminTab>('organizations');
@@ -655,6 +881,52 @@ export class AdminComponent implements OnInit {
     role: ['OPERATOR', [Validators.required]],
   });
 
+  // Access Requests
+  accessRequests = signal<AccessRequest[]>([]);
+  arLoading = signal(true);
+  arError = signal<string | null>(null);
+  arSuccess = signal<string | null>(null);
+  arStatus = signal<AccessRequestStatus>('PENDING');
+  accessRequestStatuses: { value: AccessRequestStatus; label: string }[] = [
+    { value: 'PENDING', label: 'Pending' },
+    { value: 'APPROVED', label: 'Approved' },
+    { value: 'REJECTED', label: 'Rejected' },
+  ];
+
+  approveTarget = signal<AccessRequest | null>(null);
+  approveLoading = signal(false);
+  approveError = signal<string | null>(null);
+
+  rejectTarget = signal<AccessRequest | null>(null);
+  rejectLoading = signal(false);
+  rejectError = signal<string | null>(null);
+  rejectReasonText = '';
+
+  slugFromName(name: string): string {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  relativeDate(iso: string | undefined): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const now = Date.now();
+    const diff = now - d.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days}d ago`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
 
   private readonly loaded = new Set<AdminTab>();
 
@@ -673,6 +945,7 @@ export class AdminComponent implements OnInit {
     switch (tab) {
       case 'organizations': this.loadOrgs(); break;
       case 'users': this.loadUsers(); break;
+      case 'access-requests': this.loadAccessRequests(); break;
     }
   }
 
@@ -766,4 +1039,116 @@ export class AdminComponent implements OnInit {
       });
   }
 
+  // ── Access Requests ───────────────────────────────────────────
+
+  setArStatus(status: AccessRequestStatus): void {
+    this.arStatus.set(status);
+    this.arLoading.set(true);
+    this.arError.set(null);
+    this.arSuccess.set(null);
+    this.loadAccessRequests();
+  }
+
+  private loadAccessRequests(): void {
+    this.arLoading.set(true);
+    this.http
+      .get<AccessRequest[]>(`/api/v1/access-requests?status=${this.arStatus()}`)
+      .pipe(
+        catchError(() => {
+          this.arError.set('Error loading access requests');
+          return of([]);
+        }),
+      )
+      .subscribe((data) => {
+        this.accessRequests.set(data);
+        this.arLoading.set(false);
+      });
+  }
+
+  openApproveModal(ar: AccessRequest): void {
+    this.approveTarget.set(ar);
+    this.approveError.set(null);
+  }
+
+  closeApproveModal(): void {
+    if (this.approveLoading()) return;
+    this.approveTarget.set(null);
+    this.approveError.set(null);
+  }
+
+  confirmApprove(): void {
+    const ar = this.approveTarget();
+    if (!ar) return;
+    this.approveLoading.set(true);
+    this.approveError.set(null);
+    this.http
+      .patch<AccessRequest>(`/api/v1/access-requests/${ar.id}`, { action: 'APPROVE' })
+      .pipe(
+        catchError((err: HttpErrorResponse) => {
+          this.approveError.set(err.error?.detail ?? 'Error approving request');
+          this.approveLoading.set(false);
+          return of(null);
+        }),
+      )
+      .subscribe((updated) => {
+        if (updated) {
+          this.accessRequests.update((list) =>
+            list.map((r) =>
+              r.id === updated.id ? { ...r, status: updated.status } : r,
+            ),
+          );
+          this.approveTarget.set(null);
+          this.arSuccess.set(`Request approved. Activation email sent to ${ar.requester_email}.`);
+          setTimeout(() => this.arSuccess.set(null), 6000);
+        }
+        this.approveLoading.set(false);
+      });
+  }
+
+  openRejectModal(ar: AccessRequest): void {
+    this.rejectTarget.set(ar);
+    this.rejectError.set(null);
+    this.rejectReasonText = '';
+  }
+
+  closeRejectModal(): void {
+    if (this.rejectLoading()) return;
+    this.rejectTarget.set(null);
+    this.rejectError.set(null);
+    this.rejectReasonText = '';
+  }
+
+  confirmReject(): void {
+    const ar = this.rejectTarget();
+    if (!ar) return;
+    this.rejectLoading.set(true);
+    this.rejectError.set(null);
+    const body: { action: string; rejection_reason?: string } = { action: 'REJECT' };
+    if (this.rejectReasonText.trim()) {
+      body.rejection_reason = this.rejectReasonText.trim();
+    }
+    this.http
+      .patch<AccessRequest>(`/api/v1/access-requests/${ar.id}`, body)
+      .pipe(
+        catchError((err: HttpErrorResponse) => {
+          this.rejectError.set(err.error?.detail ?? 'Error rejecting request');
+          this.rejectLoading.set(false);
+          return of(null);
+        }),
+      )
+      .subscribe((updated) => {
+        if (updated) {
+          this.accessRequests.update((list) =>
+            list.map((r) =>
+              r.id === updated.id ? { ...r, status: updated.status } : r,
+            ),
+          );
+          this.rejectTarget.set(null);
+          this.rejectReasonText = '';
+          this.arSuccess.set(`Request from ${ar.requester_name} rejected.`);
+          setTimeout(() => this.arSuccess.set(null), 6000);
+        }
+        this.rejectLoading.set(false);
+      });
+  }
 }

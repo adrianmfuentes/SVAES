@@ -244,7 +244,7 @@
 - Git hook `prepare-commit-msg` sends staged diff content to **external Groq API** (`https://api.groq.com/`) for commit message generation — **potential source code data leakage**
 
 ### Supply Chain
-- `uv` pinned to 0.11.11 with SHA-256 hashes in `.github/requirements/uv.txt`
+- `uv` pinned to 0.11.15 with SHA-256 hashes in `.github/requirements/uv.txt`
 
 ---
 

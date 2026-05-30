@@ -1,7 +1,7 @@
 # SVAES — Automatic Software Delivery Verification System
 
 > **Final Degree Project** — Software Engineering Degree, University of Oviedo (2025/2026)
-> Author: Adrián Martínez
+> Author: Adrian Martinez
 
 SVAES is an extensible, decoupled **Quality Gate platform** that automates the validation of software releases within modern CI/CD workflows. By integrating with multiple external tools across five functional categories, it verifies the consistency, integrity, and completeness of artifacts linked to a release — eliminating manual checks and guaranteeing full traceability.
 
@@ -25,7 +25,7 @@ SVAES is an extensible, decoupled **Quality Gate platform** that automates the v
 | **Verification Engine** | Rust (Actix-web + Rayon) | Parallel rule evaluation and verdict computation  |
 | **Task Queue**          | Celery + Redis           | Async dispatch of verification jobs               |
 | **Database**            | PostgreSQL 16            | Persistent storage with UUIDs and JSONB support   |
-| **Frontend**            | Angular 21               | Web UI (WIP)                                      |
+| **Frontend**            | Angular 21               | Web UI (in development)                           |
 | **Infrastructure**      | Docker + Docker Compose  | Containerized multi-service deployment            |
 
 The system follows a **Hexagonal (Ports & Adapters)** and **Clean Architecture** approach, ensuring the domain core has zero external dependencies.
@@ -209,10 +209,18 @@ SVAES/
 │   └── Dockerfile
 ├── tests/                       # Unit, integration, performance, acceptance
 ├── docs/                        # Project documentation
-│   ├── api/                     # API guides, Postman collection
-│   ├── engine/                  # Engine technical docs
-│   ├── agents/                  # AI agent specifications
-│   └── security/                # Security audit documentation
+│   ├── api/
+│   │   ├── reference.md         # Full API endpoint & domain reference
+│   │   └── postman/             # Postman collection & environment
+│   ├── engine/
+│   │   └── reference.md         # Engine technical reference
+│   ├── development/
+│   │   ├── guidelines.md        # AI agent & contributor conventions
+│   │   ├── specifications.md    # Functional specification (SRS summary)
+│   │   └── testing.md           # Test suite guide
+│   ├── security/
+│   │   └── audit.md             # Security & compliance audit
+│   └── deployment.md            # Production deployment guide
 ├── scripts/                     # Utility scripts
 ├── docker-compose.yml           # Base compose (6 services)
 ├── docker-compose.override.yml  # Dev overrides
@@ -246,7 +254,7 @@ Custom roles with granular permissions are also supported.
 | HTTP Client | httpx (async)                        | Integrated  |
 | Task Queue  | Celery + Redis 7                     | Implemented |
 | Engine      | Rust (Actix-web + Rayon)             | Implemented |
-| Frontend    | Angular 21                           | Pending     |
+| Frontend    | Angular 21                           | In development |
 | Containers  | Docker + Docker Compose              | Configured  |
 | CI          | GitHub Actions, SonarCloud, CodeQL   | Active      |
 | Testing     | pytest + pytest-asyncio + pytest-cov | Configured  |
@@ -273,11 +281,15 @@ Custom roles with granular permissions are also supported.
 
 ## Further Reading
 
-- [API Documentation & Guides](api/)
-- [Verification Engine](engine/)
-- [Security Documentation](security/)
-- [Agent Specifications](agents/)
+- [API Reference & Domain Model](api/reference.md)
+- [Postman Collection & Testing Guide](api/postman/)
+- [Verification Engine Technical Reference](engine/reference.md)
+- [Functional Specifications](development/specifications.md)
+- [Developer Guidelines](development/guidelines.md)
+- [Testing Guide](development/testing.md)
+- [Production Deployment](deployment.md)
+- [Security & Compliance Audit](security/audit.md)
 
 ---
 
-_Last updated: May 2026 — Adrián Martínez_
+*Last updated: May 2026 — Adrian Martinez*

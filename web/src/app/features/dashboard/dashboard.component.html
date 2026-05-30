@@ -1,0 +1,92 @@
+<div class="dashboard">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="period-control" role="group" aria-label="Time period">
+      @for (period of periods; track period) {
+        <button
+          class="period-btn"
+          [class.period-btn--active]="activePeriod() === period"
+          (click)="selectPeriod(period)">
+          {{ period }}
+        </button>
+      }
+    </div>
+
+    <select class="project-select" (change)="onProjectChange($event)">
+      <option value="">All projects</option>
+      @for (proj of projects(); track proj.id) {
+        <option [value]="proj.id">{{ proj.name }}</option>
+      }
+    </select>
+
+    @if (metrics(); as m) {
+      <span class="record-count">{{ m.total_releases | number }} releases in selection</span>
+    }
+  </div>
+
+  <!-- KPI cards 2×2 -->
+  <div class="kpi-grid">
+    <app-kpi-card label="Success rate" [loading]="metricsLoading()" [error]="metricsError()">
+      @if (metrics(); as m) {
+        <span [class]="successRateClass(m.success_rate)">
+          {{ m.success_rate | number:'1.1-1' }}%
+        </span>
+      }
+    </app-kpi-card>
+
+    <app-kpi-card label="Total releases" [loading]="metricsLoading()" [error]="metricsError()">
+      @if (metrics(); as m) {
+        {{ m.total_releases | number }}
+      }
+    </app-kpi-card>
+
+    <app-kpi-card label="Avg time to valid" [loading]="metricsLoading()" [error]="metricsError()">
+      @if (metrics(); as m) {
+        {{ formatTime(m.avg_validation_time_minutes) }}
+      }
+    </app-kpi-card>
+
+    <app-kpi-card label="Status distribution" [loading]="metricsLoading()" [error]="metricsError()">
+      @if (metrics(); as m) {
+        <div class="dist-badges">
+          <span class="dist-badge dist-badge--valid">
+            {{ m.release_status_distribution.valid }}
+          </span>
+          <span class="dist-badge dist-badge--warning">
+            {{ m.release_status_distribution.with_warnings }}
+          </span>
+          <span class="dist-badge dist-badge--invalid">
+            {{ m.release_status_distribution.invalid }}
+          </span>
+        </div>
+      }
+    </app-kpi-card>
+  </div>
+
+  <!-- Chart card -->
+  <app-success-rate-chart
+    [data]="metrics()?.temporal_evolution ?? []"
+    [loading]="metricsLoading()"
+    [error]="metricsError()">
+  </app-success-rate-chart>
+
+  <!-- Bottom row -->
+  <div class="bottom-row">
+    <app-top-failed-rules
+      [rules]="metrics()?.top_failed_rules ?? []"
+      [activePeriod]="activePeriod()"
+      [loading]="metricsLoading()"
+      [error]="metricsError()">
+    </app-top-failed-rules>
+
+    <app-recent-releases-table
+      [releases]="recentReleases()"
+      [loading]="releasesLoading()"
+      [error]="releasesError()">
+    </app-recent-releases-table>
+  </div>
+</div>

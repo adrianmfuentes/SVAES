@@ -57,7 +57,9 @@ svaes/
 │   └── src/
 ├── docs/
 │   ├── api/                   # API documentation
-│   └── agents/                # Agent specifications
+│   ├── engine/                # Engine documentation
+│   ├── development/           # Developer specifications & guidelines
+│   └── security/              # Security audit documentation
 ├── scripts/                   # Auxiliary scripts
 ├── docker-compose.yml         # Services: api, postgres, redis
 └── tests/                     # Full test suite
@@ -142,7 +144,7 @@ svaes/
 - Write or update unit tests.
 - Generate Alembic migrations from SQLAlchemy model changes.
 - Update the OpenAPI specification when endpoints are added.
-- Update this file or `SPECS.md` / `API_DOCUMENTATION.md` to reflect approved changes.
+- Update this file or `specifications.md` / `api/reference.md` to reflect approved changes.
 
 ## 7. Tasks requiring explicit developer confirmation
 

@@ -1,0 +1,19 @@
+<div class="chart-card card">
+  <h2 class="chart-title">Release trend</h2>
+
+  @if (loading) {
+    <div class="chart-skeleton skeleton"></div>
+  } @else if (error) {
+    <div class="error-banner">{{ error }}</div>
+  } @else if (data.length === 0) {
+    <div class="chart-empty">No data available for this period.</div>
+  } @else {
+    <div class="chart-wrapper">
+      <canvas baseChart
+        [type]="'bar'"
+        [data]="chartData"
+        [options]="chartOptions">
+      </canvas>
+    </div>
+  }
+</div>

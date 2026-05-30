@@ -17,12 +17,12 @@ RESTful API for managing organizations, projects, releases, and artifact verific
 
 ## Documentation
 
-Full API documentation: [docs/api/API_DOCUMENTATION.md](../docs/api/API_DOCUMENTATION.md)
+Full API documentation: [docs/api/reference.md](../docs/api/reference.md)
 
 Additional guides:
-- [Testing](../docs/api/TESTING.md)
-- [Deployment](../docs/api/DEPLOYMENT.md)
-- [Postman](../docs/api/POSTMAN_GUIDE.md)
+- [Testing](../docs/development/testing.md)
+- [Deployment](../docs/deployment.md)
+- [Postman](../docs/api/postman/README.md)
 
 ## Usage
 

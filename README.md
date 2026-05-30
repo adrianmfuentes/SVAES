@@ -305,7 +305,7 @@ Base de datos PostgreSQL:
 | Migraciones        | Alembic                  | ✅ Operativo               |
 | Autenticación      | JWT (PyJWT)              | ✅ Completo                |
 | HTTP Client        | httpx (async)            | ✅ Integrado en conectores |
-| Frontend           | Angular 17               | ⏳ Pendiente               |
+| Frontend           | Angular 21               | ⏳ Pendiente               |
 | Motor verificación | Rust (Actix-web + Rayon) | ✅ Implementado            |
 | Cola de tareas     | Celery + Redis           | ✅ Implementado            |
 | Contenedores       | Docker + Docker Compose  | ✅ Configurado             |

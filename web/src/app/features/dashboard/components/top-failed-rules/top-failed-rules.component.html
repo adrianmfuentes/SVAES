@@ -1,0 +1,31 @@
+<div class="card rules-card">
+  <h2>Top failed rules</h2>
+
+  @if (loading) {
+    @for (item of [1,2,3,4,5]; track item) {
+      <div class="skeleton rule-skeleton"></div>
+    }
+  } @else if (error) {
+    <div class="error-banner">{{ error }}</div>
+  } @else if (rules.length === 0) {
+    <p class="empty">No failed rules in this period.</p>
+  } @else {
+    @for (rule of rules.slice(0, 5); track rule.rule_id) {
+      <a class="rule-row"
+         [routerLink]="['/app/releases']"
+         [queryParams]="{ rule_id: rule.rule_id, period: activePeriod }">
+        <div class="rule-meta">
+          <span class="rule-id">{{ rule.rule_id }}</span>
+          <span class="rule-name">{{ rule.rule_name }}</span>
+          <span class="rule-count">{{ rule.count }}</span>
+        </div>
+        <div class="rule-bar-row">
+          <div class="rule-bar-track">
+            <div class="rule-bar-fill" [style.--bar-fill]="rule.percentage + '%'"></div>
+          </div>
+          <span class="rule-pct">{{ rule.percentage | number:'1.0-1' }}%</span>
+        </div>
+      </a>
+    }
+  }
+</div>

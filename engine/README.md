@@ -151,4 +151,4 @@ cargo test -- --nocapture           # Con salida de logs
 
 ## Documentacion Tecnica
 
-Documentacion tecnica completa: [docs/engine/README.md](../docs/engine/README.md)
+Documentacion tecnica completa: [docs/engine/reference.md](../docs/engine/reference.md)
