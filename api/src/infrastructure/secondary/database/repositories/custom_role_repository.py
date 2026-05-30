@@ -1,7 +1,7 @@
 from sqlalchemy.future import select
 from typing import Optional, List, cast
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from application.ports.output.i_custom_role_repository import ICustomRoleRepository
 from domain.entities.custom_role import CustomRole
 from domain.enums import Permission
@@ -65,7 +65,7 @@ class SqlCustomRoleRepository(ICustomRoleRepository):
             model.name = role.name  # pyright: ignore[reportAttributeAccessIssue]
             model.permissions = [p.value for p in role.permissions]  # pyright: ignore[reportAttributeAccessIssue]
             model.is_active = role.is_active  # pyright: ignore[reportAttributeAccessIssue]
-            model.updated_at = datetime.now(datetime.timezone.utc)
+            model.updated_at = datetime.now(timezone.utc)
 
             await session.commit()
             await session.refresh(model)

@@ -1,7 +1,7 @@
 from sqlalchemy.future import select
 from typing import Optional, List, cast
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from application.ports.output.i_organization_repository import IOrganizationRepository
 from domain.entities.organization import Organization
 from infrastructure.secondary.database.models.organization_model import OrganizationModel
@@ -77,7 +77,7 @@ class SqlOrganizationRepository(IOrganizationRepository):
             org_model.slug = organization.slug  # pyright: ignore[reportAttributeAccessIssue]
             org_model.owner_id = organization.owner_id  # pyright: ignore[reportAttributeAccessIssue]
             org_model.is_active = organization.is_active  # pyright: ignore[reportAttributeAccessIssue]
-            org_model.updated_at = datetime.now(datetime.timezone.utc)
+            org_model.updated_at = datetime.now(timezone.utc)
 
             await session.commit()
             await session.refresh(org_model)

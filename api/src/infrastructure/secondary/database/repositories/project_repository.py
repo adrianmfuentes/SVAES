@@ -1,7 +1,7 @@
 from sqlalchemy.future import select
 from typing import Optional, cast
 import uuid, sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from application.ports.output.i_project_repository import IProjectRepository
 from domain.entities.project import Project
@@ -98,7 +98,7 @@ class SqlProjectRepository(IProjectRepository):
             setattr(project_model, "organization_id", project.organization_id)
             setattr(project_model, "profile_id", project.profile_id)
             setattr(project_model, "is_archived", project.is_archived)
-            setattr(project_model, "updated_at", datetime.now(datetime.timezone.utc))
+            setattr(project_model, "updated_at", datetime.now(timezone.utc))
 
             await session.commit()
             await session.refresh(project_model)

@@ -648,8 +648,8 @@ export class SystemComponent implements OnInit, OnDestroy {
 
       this.apiVersion.set(health.data?.version ?? null);
       this.services.set(this.buildServiceCards(health, dataOk, connTypes));
-      this.orgs.set((orgs.data as Org[] | null) ?? []);
-      this.users.set((users.data as AdminUser[] | null) ?? []);
+      this.orgs.set(orgs.data ?? []);
+      this.users.set(users.data ?? []);
       this.loading.set(false);
     });
   }

@@ -1,7 +1,7 @@
 from sqlalchemy.future import select
 from typing import Optional, List, cast
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from application.ports.output.i_template_repository import ITemplateRepository
 from domain.entities.template import Template
 from infrastructure.secondary.database.models.template_model import TemplateModel
@@ -74,7 +74,7 @@ class SqlTemplateRepository(ITemplateRepository):
             model.profile_id = template.profile_id  # pyright: ignore[reportAttributeAccessIssue]
             model.project_name_template = template.project_name_template  # pyright: ignore[reportAttributeAccessIssue]
             model.is_archived = template.is_archived  # pyright: ignore[reportAttributeAccessIssue]
-            model.updated_at = datetime.now(datetime.timezone.utc)
+            model.updated_at = datetime.now(timezone.utc)
 
             await session.commit()
             await session.refresh(model)

@@ -83,7 +83,8 @@ class ExportService(IExportService):
 
         if result.summary:
             story.append(Paragraph("Summary", styles['Heading2']))
-            story.append(Paragraph(result.summary, styles['Normal']))
+            summary_text = result.summary.get('message', str(result.summary)) if isinstance(result.summary, dict) else str(result.summary)
+            story.append(Paragraph(summary_text, styles['Normal']))
             story.append(Spacer(1, 0.2 * inch))
 
         if result.rule_results:

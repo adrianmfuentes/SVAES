@@ -1,7 +1,7 @@
 from sqlalchemy.future import select
 from typing import Optional, List, cast
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from application.ports.output.i_profile_repository import IProfileRepository
 from domain.entities.verification_profile import VerificationProfile
 from domain.entities.verification_rule import VerificationRule
@@ -100,7 +100,7 @@ class SqlProfileRepository(IProfileRepository):
             profile_model.name = profile.name  # pyright: ignore[reportAttributeAccessIssue]
             profile_model.description = profile.description  # pyright: ignore[reportAttributeAccessIssue]
             profile_model.is_default = profile.is_default  # pyright: ignore[reportAttributeAccessIssue]
-            profile_model.updated_at = datetime.now(datetime.timezone.utc)
+            profile_model.updated_at = datetime.now(timezone.utc)
 
             await session.commit()
             await session.refresh(profile_model)

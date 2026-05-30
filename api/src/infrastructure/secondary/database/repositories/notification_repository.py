@@ -1,6 +1,6 @@
 from typing import Optional, List, cast
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from application.ports.output.i_notification_repository import INotificationRepository
 from domain.entities.notification_channel import NotificationChannel
 from domain.entities.notification_subscription import NotificationSubscription
@@ -84,7 +84,7 @@ class SqlNotificationRepository(INotificationRepository):
             model.channel_type = channel.channel_type
             model.enabled = channel.enabled
             model.config_data = channel.config_data
-            model.updated_at = datetime.now(datetime.timezone.utc)
+            model.updated_at = datetime.now(timezone.utc)
             await session.commit()
             await session.refresh(model)
             return self._channel_model_to_entity(model)
@@ -129,7 +129,7 @@ class SqlNotificationRepository(INotificationRepository):
             existing = result.scalar_one_or_none()
             if existing:
                 existing.enabled = subscription.enabled
-                existing.updated_at = datetime.now(datetime.timezone.utc)
+                existing.updated_at = datetime.now(timezone.utc)
                 await session.commit()
                 await session.refresh(existing)
                 return self._subscription_model_to_entity(existing)
