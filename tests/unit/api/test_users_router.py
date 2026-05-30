@@ -84,7 +84,7 @@ class TestGetCurrentUserProfile:
         user = User(
             id=test_user.user_id,
             email="admin@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="Admin",
             role=UserRole.U3,
             organization_ids=[test_user.organization_id],
@@ -110,7 +110,7 @@ class TestUpdateCurrentUserProfile:
         user = User(
             id=test_user.user_id,
             email="admin@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="Updated Name",
             role=UserRole.U3,
             created_at=datetime.now(timezone.utc),
@@ -131,9 +131,9 @@ class TestUpdateCurrentUserProfile:
 class TestChangePassword:
     def test_change_password_success(self, test_app, mock_user_service):
         response = test_app.post("/api/v1/users/me/password", json={
-            "current_password": "old",
-            "new_password": "newsecret123",
-            "confirm_password": "newsecret123",
+            "current_password": "old", # NOSONAR
+            "new_password": "newsecret123", # NOSONAR
+            "confirm_password": "newsecret123", # NOSONAR
         })
         assert response.status_code == 200
         assert "cambiada" in response.json()["message"].lower()
@@ -141,9 +141,9 @@ class TestChangePassword:
     def test_change_password_wrong(self, test_app, mock_user_service):
         mock_user_service.change_password.return_value = False
         response = test_app.post("/api/v1/users/me/password", json={
-            "current_password": "wrong",
-            "new_password": "newsecret123",
-            "confirm_password": "newsecret123",
+            "current_password": "wrong", # NOSONAR
+            "new_password": "newsecret123", # NOSONAR
+            "confirm_password": "newsecret123", # NOSONAR
         })
         assert response.status_code == 400
 
@@ -153,7 +153,7 @@ class TestExportUserData:
         user = User(
             id=test_user.user_id,
             email="admin@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="Admin",
             role=UserRole.U3,
             organization_ids=[test_user.organization_id],
@@ -190,7 +190,7 @@ class TestInviteUser:
         user = User(
             id=uuid4(),
             email="invited@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="Invited",
             role=UserRole.U2,
             created_at=datetime.now(timezone.utc),
@@ -218,7 +218,7 @@ class TestUpdateUserRole:
         user = User(
             id=uuid4(),
             email="user@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="User",
             role=UserRole.U4,
             created_at=datetime.now(timezone.utc),
@@ -262,7 +262,7 @@ class TestAdminCreateUser:
         user = User(
             id=uuid4(),
             email="new@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="New User",
             role=UserRole.U2,
             created_at=datetime.now(timezone.utc),
@@ -294,7 +294,7 @@ class TestAdminActivateUser:
         user = User(
             id=uuid4(),
             email="user@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="User",
             role=UserRole.U2,
             is_active=True,
@@ -317,7 +317,7 @@ class TestAdminDeactivateUser:
         user = User(
             id=uuid4(),
             email="user@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="User",
             role=UserRole.U2,
             is_active=False,
@@ -340,7 +340,7 @@ class TestAdminUpdateGlobalRole:
         user = User(
             id=uuid4(),
             email="user@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="User",
             role=UserRole.U3,
             created_at=datetime.now(timezone.utc),
@@ -362,7 +362,7 @@ class TestAdminListUsers:
         user = User(
             id=uuid4(),
             email="user@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="User",
             role=UserRole.U2,
             is_active=True,

@@ -39,7 +39,7 @@ class TestGitLabConnectorHeaders:
     def test_build_headers_with_token(self, gitlab_connector):
         """Verifica que se construyan los headers con el token Bearer."""
         # Use a non-sensitive placeholder token for tests
-        headers = gitlab_connector._build_headers({"token": "token-placeholder"})
+        headers = gitlab_connector._build_headers({"token": "token-placeholder"}) # NOSONAR
         assert headers == {"Authorization": "Bearer token-placeholder"}
 
     def test_build_headers_without_token(self, gitlab_connector):

@@ -10,8 +10,22 @@ pytestmark = pytest.mark.unit
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://user:pass@localhost:5432/db")
 
 
+_create_async_engine_patcher = None
+
+
 def pytest_configure():
-    patch("sqlalchemy.ext.asyncio.create_async_engine", return_value=MagicMock()).start()
+    global _create_async_engine_patcher
+    _create_async_engine_patcher = patch(
+        "sqlalchemy.ext.asyncio.create_async_engine", return_value=MagicMock()
+    )
+    _create_async_engine_patcher.start()
+
+
+def pytest_unconfigure():
+    global _create_async_engine_patcher
+    if _create_async_engine_patcher is not None:
+        _create_async_engine_patcher.stop()
+        _create_async_engine_patcher = None
 
 
 @pytest.fixture

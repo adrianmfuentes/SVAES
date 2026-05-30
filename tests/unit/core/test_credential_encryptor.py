@@ -24,8 +24,10 @@ class TestFernetCredentialEncryptorInit:
         assert isinstance(encryptor._fernet, Fernet)
 
     def test_init_with_bytes_key(self):
+        # Fernet.generate_key() returns bytes; test with bytes directly
         key = Fernet.generate_key()
-        encryptor = FernetCredentialEncryptor(key)
+        # allow passing bytes to constructor; static type checkers may complain
+        encryptor = FernetCredentialEncryptor(key)  # type: ignore[arg-type]
         assert isinstance(encryptor._fernet, Fernet)
 
 

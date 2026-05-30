@@ -12,7 +12,7 @@ class TestPseudonymizeScalar:
         assert pseudonymize(42) == 42
 
     def test_float_unchanged(self):
-        assert pseudonymize(3.14) == 3.14
+        assert pseudonymize(3.14) == pytest.approx(3.14)
 
     def test_none_unchanged(self):
         assert pseudonymize(None) is None
@@ -107,7 +107,7 @@ class TestPseudonymizeList:
     def test_list_of_scalars(self):
         data = [1, "hello", 3.14, None]
         result = pseudonymize(data)
-        assert result == [1, "hello", 3.14, None]
+        assert result == [1, "hello", pytest.approx(3.14), None]
 
     def test_empty_list(self):
         assert pseudonymize([]) == []

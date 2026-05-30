@@ -50,7 +50,7 @@ class TestCreate:
         user = User(
             id=uuid4(),
             email="test@example.com",
-            hashed_password="hashed_abc",
+            hashed_password="hashed_abc", # NOSONAR
             display_name="Test User",
             role=UserRole.U2,
             organization_ids=[uuid4()],
@@ -73,7 +73,7 @@ class TestGetById:
         row = MagicMock()
         row.id = uuid4()
         row.email = "user@test.com"
-        row.hashed_password = "hash"
+        row.hashed_password = "hash" # NOSONAR
         row.display_name = "User"
         row.role = UserRole.U2.value
         row.organization_id = org_id
@@ -108,7 +108,7 @@ class TestGetByEmail:
         row = MagicMock()
         row.id = uuid4()
         row.email = "test@example.com"
-        row.hashed_password = "hash"
+        row.hashed_password = "hash" # NOSONAR
         row.display_name = "Tester"
         row.role = UserRole.U3.value
         row.organization_id = org_id
@@ -143,7 +143,7 @@ class TestListAll:
         row = MagicMock()
         row.id = uuid4()
         row.email = "user@test.com"
-        row.hashed_password = "hash"
+        row.hashed_password = "hash" # NOSONAR
         row.display_name = "User"
         row.role = UserRole.U2.value
         row.organization_id = org_id
@@ -181,7 +181,7 @@ class TestUpdate:
         user = User(
             id=user_id,
             email="updated@test.com",
-            hashed_password="newhash",
+            hashed_password="newhash", # NOSONAR
             display_name="Updated",
             role=UserRole.U4,
             organization_ids=[uuid4()],
@@ -200,7 +200,7 @@ class TestUpdate:
         user = User(
             id=uuid4(),
             email="nope@test.com",
-            hashed_password="hash",
+            hashed_password="hash", # NOSONAR
             display_name="Nope",
             role=UserRole.U2,
             created_at=datetime.now(timezone.utc),

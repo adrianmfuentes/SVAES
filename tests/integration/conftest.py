@@ -39,7 +39,10 @@ async def _test_db(_test_env):
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
+    try:
+        await engine.dispose()
+    except Exception:
+        pass
 
 
 @pytest_asyncio.fixture
