@@ -1,7 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -38,12 +37,29 @@ interface AccessRequest {
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule],
   template: `
     <div class="admin-page">
       <div class="page-header">
         <h1 class="page-title">Administraci&oacute;n</h1>
         <span class="page-badge">Global &middot; U3</span>
+      </div>
+
+      <div class="info-panel" style="margin-bottom: var(--spacing-lg)">
+        <span class="info-icon">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M8 5V4.5M8 7v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <div class="info-body">
+          <div class="info-title">Datos anonimizados</div>
+          <p class="info-desc">
+            Por cumplimiento normativo y protecci&oacute;n de datos, la informaci&oacute;n de organizaciones,
+            usuarios y solicitudes se muestra de forma anonimizada. La administraci&oacute;n de estas
+            entidades se gestiona exclusivamente a trav&eacute;s de los flujos operativos del sistema.
+          </p>
+        </div>
       </div>
 
       <nav class="admin-tabs">
@@ -59,7 +75,7 @@ interface AccessRequest {
       <div *ngIf="activeTab() === 'organizations'" class="tab-content">
         <div class="tab-toolbar">
           <h2 class="tab-title">Organizaciones</h2>
-          <button class="btn-primary" (click)="showCreateOrgModal.set(true)">Nueva organizaci&oacute;n</button>
+          <span class="tab-meta">Solo lectura</span>
         </div>
 
         <div *ngIf="orgsLoading()" class="skeleton-list">
@@ -72,14 +88,14 @@ interface AccessRequest {
           <table class="data-table" *ngIf="orgs().length > 0; else orgsEmpty">
             <thead>
               <tr>
-                <th>Nombre</th>
-                <th>Slug</th>
+                <th>Identificador</th>
+                <th>Nombre anonimizado</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let org of orgs()">
+                <td><code class="mono-cell">{{ org.id }}</code></td>
                 <td class="cell-primary">{{ org.name }}</td>
-                <td><code class="mono-cell">{{ org.slug }}</code></td>
               </tr>
             </tbody>
           </table>
@@ -93,7 +109,7 @@ interface AccessRequest {
       <div *ngIf="activeTab() === 'users'" class="tab-content">
         <div class="tab-toolbar">
           <h2 class="tab-title">Usuarios globales</h2>
-          <button class="btn-primary" (click)="showCreateUserModal.set(true)">Nuevo usuario</button>
+          <span class="tab-meta">Solo lectura</span>
         </div>
 
         <div *ngIf="usersLoading()" class="skeleton-list">
@@ -106,46 +122,27 @@ interface AccessRequest {
           <table class="data-table" *ngIf="users().length > 0; else usersEmpty">
             <thead>
               <tr>
-                <th>Email</th>
-                <th>Nombre</th>
+                <th>Identificador</th>
+                <th>Nombre anonimizado</th>
                 <th>Rol</th>
                 <th>Estado</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let user of users()" [class.row-locked]="user.role === 'ADMIN'">
-                <td><code class="mono-cell">{{ user.email }}</code></td>
+                <td><code class="mono-cell">{{ user.id }}</code></td>
                 <td class="cell-primary">
                   {{ user.display_name }}
-                  <span class="self-tag" *ngIf="user.id === currentUserId">Tú</span>
+                  <span class="self-tag" *ngIf="user.id === currentUserId">T&uacute;</span>
                 </td>
                 <td>
                   <span *ngIf="user.role === 'ADMIN'" class="role-fixed">Admin global</span>
-                  <select
-                    *ngIf="user.role !== 'ADMIN'"
-                    class="role-select"
-                    [value]="user.role"
-                    (change)="changeUserRole(user, $any($event.target).value)"
-                  >
-                    <option value="VIEWER">Viewer</option>
-                    <option value="OPERATOR">Operator</option>
-                    <option value="MANAGER">Manager</option>
-                  </select>
+                  <span *ngIf="user.role !== 'ADMIN'" class="role-text">{{ user.role }}</span>
                 </td>
                 <td>
                   <span class="badge" [class.badge-active]="user.is_active" [class.badge-inactive]="!user.is_active">
                     {{ user.is_active ? 'Activo' : 'Inactivo' }}
                   </span>
-                </td>
-                <td class="cell-actions">
-                  <button
-                    class="btn-ghost"
-                    [disabled]="user.role === 'ADMIN' || togglingUserId() === user.id"
-                    (click)="user.role !== 'ADMIN' && toggleUser(user)"
-                  >
-                    {{ togglingUserId() === user.id ? '…' : (user.is_active ? 'Desactivar' : 'Activar') }}
-                  </button>
                 </td>
               </tr>
             </tbody>
@@ -160,6 +157,7 @@ interface AccessRequest {
       <div *ngIf="activeTab() === 'access-requests'" class="tab-content">
         <div class="tab-toolbar">
           <h2 class="tab-title">Access Requests</h2>
+          <span class="tab-meta">Solo lectura</span>
         </div>
 
         <div class="ar-status-tabs">
@@ -187,7 +185,6 @@ interface AccessRequest {
                 <th>Organization</th>
                 <th>Requested</th>
                 <th>Status</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -198,20 +195,12 @@ interface AccessRequest {
                 </td>
                 <td>
                   <div class="cell-primary">{{ ar.organization_name }}</div>
-                  <code class="mono-cell" *ngIf="ar.slug_preview">{{ ar.slug_preview }}</code>
-                  <code class="mono-cell" *ngIf="!ar.slug_preview">{{ slugFromName(ar.organization_name) }}</code>
                 </td>
                 <td class="cell-muted">{{ relativeDate(ar.created_at) }}</td>
                 <td>
                   <span class="badge" [class.badge-pending]="ar.status === 'PENDING'" [class.badge-approved]="ar.status === 'APPROVED'" [class.badge-rejected]="ar.status === 'REJECTED'">
                     {{ ar.status === 'PENDING' ? 'Pending' : ar.status === 'APPROVED' ? 'Approved' : 'Rejected' }}
                   </span>
-                </td>
-                <td class="cell-actions">
-                  <ng-container *ngIf="ar.status === 'PENDING'">
-                    <button class="btn-ghost btn-approve-ghost" (click)="openApproveModal(ar)">Approve</button>
-                    <button class="btn-ghost btn-danger-ghost" (click)="openRejectModal(ar)">Reject</button>
-                  </ng-container>
                 </td>
               </tr>
             </tbody>
@@ -222,128 +211,6 @@ interface AccessRequest {
         </div>
       </div>
 
-    </div>
-
-    <!-- MODAL: Create Organization -->
-    <div class="modal-overlay" *ngIf="showCreateOrgModal()" (click)="showCreateOrgModal.set(false)">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3 class="modal-title">Nueva organizaci&oacute;n</h3>
-          <button class="modal-close" (click)="showCreateOrgModal.set(false)">&times;</button>
-        </div>
-        <form [formGroup]="createOrgForm" (ngSubmit)="submitCreateOrg()">
-          <div class="form-group">
-            <label for="org-name">Nombre</label>
-            <input id="org-name" type="text" formControlName="name" placeholder="Acme Corp" />
-          </div>
-          <div class="form-group">
-            <label for="org-slug">Slug</label>
-            <input id="org-slug" type="text" formControlName="slug" placeholder="acme-corp" />
-            <div class="field-hint">Solo min&uacute;sculas, n&uacute;meros y guiones.</div>
-          </div>
-          <div *ngIf="createOrgError()" class="error-banner error-sm">{{ createOrgError() }}</div>
-          <div class="modal-footer">
-            <button type="button" class="btn-secondary" (click)="showCreateOrgModal.set(false)">Cancelar</button>
-            <button type="submit" class="btn-primary" [disabled]="createOrgLoading()">
-              {{ createOrgLoading() ? 'Creando…' : 'Crear organización' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL: Create User -->
-    <div class="modal-overlay" *ngIf="showCreateUserModal()" (click)="showCreateUserModal.set(false)">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3 class="modal-title">Nuevo usuario</h3>
-          <button class="modal-close" (click)="showCreateUserModal.set(false)">&times;</button>
-        </div>
-        <form [formGroup]="createUserForm" (ngSubmit)="submitCreateUser()">
-          <div class="form-group">
-            <label for="user-email">Correo electr&oacute;nico</label>
-            <input id="user-email" type="email" formControlName="email" placeholder="usuario@ejemplo.com" />
-          </div>
-          <div class="form-group">
-            <label for="user-name">Nombre</label>
-            <input id="user-name" type="text" formControlName="display_name" placeholder="Nombre completo" />
-          </div>
-          <div class="form-group">
-            <label for="user-pw">Contrase&ntilde;a inicial</label>
-            <input id="user-pw" type="password" formControlName="password" placeholder="M&iacute;nimo 8 caracteres" />
-          </div>
-          <div class="form-group">
-            <label for="user-role">Rol</label>
-            <select id="user-role" formControlName="role">
-              <option value="VIEWER">Viewer</option>
-              <option value="OPERATOR">Operator</option>
-              <option value="MANAGER">Manager</option>
-            </select>
-          </div>
-          <div *ngIf="createUserError()" class="error-banner error-sm">{{ createUserError() }}</div>
-          <div class="modal-footer">
-            <button type="button" class="btn-secondary" (click)="showCreateUserModal.set(false)">Cancelar</button>
-            <button type="submit" class="btn-primary" [disabled]="createUserLoading()">
-              {{ createUserLoading() ? 'Creando…' : 'Crear usuario' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL: Approve Access Request -->
-    <div class="modal-overlay" *ngIf="approveTarget()" (click)="closeApproveModal()">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3 class="modal-title">Approve request</h3>
-          <button class="modal-close" (click)="closeApproveModal()">&times;</button>
-        </div>
-        <p class="modal-body-text">
-          This will create a user account and organization for
-          <strong>{{ approveTarget()?.requester_name }}</strong>.
-          An activation email will be sent to
-          <strong>{{ approveTarget()?.requester_email }}</strong>.
-          This action cannot be undone.
-        </p>
-        <div *ngIf="approveError()" class="error-banner error-sm">{{ approveError() }}</div>
-        <div class="modal-footer">
-          <button type="button" class="btn-secondary" (click)="closeApproveModal()">Cancel</button>
-          <button type="button" class="btn-primary" [disabled]="approveLoading()" (click)="confirmApprove()">
-            {{ approveLoading() ? 'Approving…' : 'Approve' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL: Reject Access Request -->
-    <div class="modal-overlay" *ngIf="rejectTarget()" (click)="closeRejectModal()">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3 class="modal-title">Reject request</h3>
-          <button class="modal-close" (click)="closeRejectModal()">&times;</button>
-        </div>
-        <p class="modal-body-text">
-          Reject the access request from
-          <strong>{{ rejectTarget()?.requester_name }}</strong>
-          ({{ rejectTarget()?.requester_email }}).
-        </p>
-        <div class="form-group">
-          <label for="reject-reason">Reason (optional)</label>
-          <textarea
-            id="reject-reason"
-            [(ngModel)]="rejectReasonText"
-            placeholder="Explain why the request is being rejected"
-            rows="3"
-          ></textarea>
-        </div>
-        <div *ngIf="rejectError()" class="error-banner error-sm">{{ rejectError() }}</div>
-        <div class="modal-footer">
-          <button type="button" class="btn-secondary" (click)="closeRejectModal()">Cancel</button>
-          <button type="button" class="btn-primary" [disabled]="rejectLoading()" (click)="confirmReject()">
-            {{ rejectLoading() ? 'Rejecting…' : 'Reject' }}
-          </button>
-        </div>
-      </div>
     </div>
 
   `,
@@ -388,7 +255,8 @@ interface AccessRequest {
       margin-bottom: var(--spacing-lg);
     }
 
-    .admin-tab {
+    .admin-tab,
+    .ar-status-tab {
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -404,8 +272,11 @@ interface AccessRequest {
       transition: color 0.12s ease, border-color 0.12s ease;
     }
 
-    .admin-tab:hover { color: var(--ink); }
-    .admin-tab-active { color: var(--ink); border-bottom-color: var(--accent); }
+    .admin-tab:hover,
+    .ar-status-tab:hover { color: var(--ink); }
+
+    .admin-tab-active,
+    .ar-status-tab-active { color: var(--ink); border-bottom-color: var(--accent); }
 
     .tab-content { animation: fadeIn 0.12s ease; }
 
@@ -441,7 +312,6 @@ interface AccessRequest {
     .data-table { width: 100%; border-collapse: collapse; }
 
     .data-table th {
-      font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
       letter-spacing: 0.08em;
@@ -532,6 +402,26 @@ interface AccessRequest {
       cursor: pointer;
     }
 
+    .role-text {
+      font-family: var(--font-sans);
+      font-size: 0.8125rem;
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .tab-meta {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--verdict-unevaluated);
+      background: var(--verdict-unevaluated-bg);
+      border: 1px solid var(--verdict-unevaluated-border);
+      border-radius: var(--rounded-sm);
+      padding: 2px 8px;
+      text-transform: uppercase;
+    }
+
     .btn-ghost {
       font-family: var(--font-sans);
       font-size: 0.6875rem;
@@ -616,7 +506,6 @@ interface AccessRequest {
     }
 
     .modal-title {
-      font-family: var(--font-sans);
       font-size: 1rem;
       font-weight: 600;
       line-height: 1.4;
@@ -662,7 +551,8 @@ interface AccessRequest {
     .form-group input[type=text],
     .form-group input[type=email],
     .form-group input[type=password],
-    .form-group select {
+    .form-group select,
+    .form-group textarea {
       width: 100%;
       background: var(--paper);
       color: var(--ink);
@@ -676,7 +566,8 @@ interface AccessRequest {
     }
 
     .form-group input:focus,
-    .form-group select:focus {
+    .form-group select:focus,
+    .form-group textarea:focus {
       border-color: var(--ink);
       background: var(--surface-raised);
       box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
@@ -733,7 +624,6 @@ interface AccessRequest {
     .info-body { flex: 1; }
 
     .info-title {
-      font-family: var(--font-sans);
       font-size: 1rem;
       font-weight: 600;
       color: var(--ink);
@@ -763,25 +653,6 @@ interface AccessRequest {
       border-bottom: 1px solid var(--border);
       margin-bottom: var(--spacing-md);
     }
-
-    .ar-status-tab {
-      font-family: var(--font-sans);
-      font-size: 0.6875rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      padding: var(--spacing-sm) var(--spacing-md);
-      cursor: pointer;
-      margin-bottom: -1px;
-      transition: color 0.12s ease, border-color 0.12s ease;
-    }
-
-    .ar-status-tab:hover { color: var(--ink); }
-    .ar-status-tab-active { color: var(--ink); border-bottom-color: var(--accent); }
 
     .badge-pending {
       color: var(--verdict-warning);
@@ -817,31 +688,14 @@ interface AccessRequest {
     }
 
     .form-group textarea {
-      width: 100%;
-      background: var(--paper);
-      color: var(--ink);
-      border: 1px solid var(--border-strong);
-      border-radius: var(--rounded-md);
-      padding: 9px 12px;
-      font-family: var(--font-sans);
-      font-size: 0.9375rem;
       line-height: 1.5;
-      outline: none;
       resize: vertical;
       min-height: 72px;
-      transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .form-group textarea:focus {
-      border-color: var(--ink);
-      background: var(--surface-raised);
-      box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
     }
   `],
 })
 export class AdminComponent implements OnInit {
   private readonly http = inject(HttpClient);
-  private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
 
   readonly currentUserId = this.authService.getUser()?.id ?? '';
@@ -858,28 +712,11 @@ export class AdminComponent implements OnInit {
   orgs = signal<Org[]>([]);
   orgsLoading = signal(true);
   orgsError = signal<string | null>(null);
-  showCreateOrgModal = signal(false);
-  createOrgLoading = signal(false);
-  createOrgError = signal<string | null>(null);
-  createOrgForm = this.fb.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    slug: ['', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
-  });
 
   // Users
   users = signal<GlobalUser[]>([]);
   usersLoading = signal(true);
   usersError = signal<string | null>(null);
-  showCreateUserModal = signal(false);
-  createUserLoading = signal(false);
-  createUserError = signal<string | null>(null);
-  togglingUserId = signal<string | null>(null);
-  createUserForm = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
-    display_name: ['', [Validators.required]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
-    role: ['OPERATOR', [Validators.required]],
-  });
 
   // Access Requests
   accessRequests = signal<AccessRequest[]>([]);
@@ -893,23 +730,14 @@ export class AdminComponent implements OnInit {
     { value: 'REJECTED', label: 'Rejected' },
   ];
 
-  approveTarget = signal<AccessRequest | null>(null);
-  approveLoading = signal(false);
-  approveError = signal<string | null>(null);
-
-  rejectTarget = signal<AccessRequest | null>(null);
-  rejectLoading = signal(false);
-  rejectError = signal<string | null>(null);
-  rejectReasonText = '';
-
-  slugFromName(name: string): string {
-    return name
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+  private simpleHash(input: string): string {
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash |= 0;
+    }
+    return Math.abs(hash).toString(16).slice(0, 8).padStart(8, '0');
   }
 
   relativeDate(iso: string | undefined): string {
@@ -955,26 +783,13 @@ export class AdminComponent implements OnInit {
     this.orgsLoading.set(true);
     this.http.get<Org[]>('/api/v1/organizations')
       .pipe(catchError(() => { this.orgsError.set('Error al cargar organizaciones'); return of([]); }))
-      .subscribe(data => { this.orgs.set(data); this.orgsLoading.set(false); });
-  }
-
-  submitCreateOrg(): void {
-    if (this.createOrgForm.invalid) { this.createOrgForm.markAllAsTouched(); return; }
-    this.createOrgLoading.set(true);
-    this.createOrgError.set(null);
-    this.http.post<Org>('/api/v1/organizations', this.createOrgForm.value)
-      .pipe(catchError((err: HttpErrorResponse) => {
-        this.createOrgError.set(err.error?.detail ?? 'Error al crear organización');
-        this.createOrgLoading.set(false);
-        return of(null);
-      }))
-      .subscribe(org => {
-        if (org) {
-          this.orgs.update(list => [...list, org]);
-          this.showCreateOrgModal.set(false);
-          this.createOrgForm.reset({ name: '', slug: '' });
-        }
-        this.createOrgLoading.set(false);
+      .subscribe(data => {
+        const anonymized = data.map(org => ({
+          ...org,
+          name: `Organization ${this.simpleHash(org.id)}`,
+        }));
+        this.orgs.set(anonymized);
+        this.orgsLoading.set(false);
       });
   }
 
@@ -984,58 +799,14 @@ export class AdminComponent implements OnInit {
     this.usersLoading.set(true);
     this.http.get<GlobalUser[]>('/api/v1/admin/users?limit=200')
       .pipe(catchError(() => { this.usersError.set('Error al cargar usuarios'); return of([]); }))
-      .subscribe(data => { this.users.set(data); this.usersLoading.set(false); });
-  }
-
-  toggleUser(user: GlobalUser): void {
-    this.togglingUserId.set(user.id);
-    const endpoint = user.is_active
-      ? `/api/v1/admin/users/${user.id}/deactivate`
-      : `/api/v1/admin/users/${user.id}/activate`;
-    this.http.patch<{ id: string; email: string; is_active: boolean }>(endpoint, {})
-      .pipe(catchError(() => { this.togglingUserId.set(null); return of(null); }))
-      .subscribe(updated => {
-        if (updated) {
-          this.users.update(list =>
-            list.map(u => u.id === updated.id ? { ...u, is_active: updated.is_active } : u)
-          );
-        }
-        this.togglingUserId.set(null);
-      });
-  }
-
-  changeUserRole(user: GlobalUser, role: string): void {
-    this.http.patch<{ id: string; email: string; role: string }>(
-      `/api/v1/admin/users/${user.id}/role`,
-      { role }
-    )
-      .pipe(catchError(() => of(null)))
-      .subscribe(updated => {
-        if (updated) {
-          this.users.update(list =>
-            list.map(u => u.id === updated.id ? { ...u, role: updated.role } : u)
-          );
-        }
-      });
-  }
-
-  submitCreateUser(): void {
-    if (this.createUserForm.invalid) { this.createUserForm.markAllAsTouched(); return; }
-    this.createUserLoading.set(true);
-    this.createUserError.set(null);
-    this.http.post<GlobalUser>('/api/v1/admin/users', this.createUserForm.value)
-      .pipe(catchError((err: HttpErrorResponse) => {
-        this.createUserError.set(err.error?.detail ?? 'Error al crear usuario');
-        this.createUserLoading.set(false);
-        return of(null);
-      }))
-      .subscribe(user => {
-        if (user) {
-          this.users.update(list => [...list, { ...user, is_active: true }]);
-          this.showCreateUserModal.set(false);
-          this.createUserForm.reset({ email: '', display_name: '', password: '', role: 'OPERATOR' });
-        }
-        this.createUserLoading.set(false);
+      .subscribe(data => {
+        const anonymized = data.map(user => ({
+          ...user,
+          email: `user-${this.simpleHash(user.id)}@anonymous.local`,
+          display_name: `User ${this.simpleHash(user.id).slice(0, 6)}`,
+        }));
+        this.users.set(anonymized);
+        this.usersLoading.set(false);
       });
   }
 
@@ -1060,95 +831,16 @@ export class AdminComponent implements OnInit {
         }),
       )
       .subscribe((data) => {
-        this.accessRequests.set(data);
+        const anonymized = data.map(ar => ({
+          ...ar,
+          requester_name: `Requester ${this.simpleHash(ar.id).slice(0, 6)}`,
+          requester_email: `req-${this.simpleHash(ar.id)}@anonymous.local`,
+          organization_name: `Org ${this.simpleHash(ar.id).slice(0, 6)}`,
+          slug_preview: undefined,
+          organization_description: undefined,
+        }));
+        this.accessRequests.set(anonymized);
         this.arLoading.set(false);
-      });
-  }
-
-  openApproveModal(ar: AccessRequest): void {
-    this.approveTarget.set(ar);
-    this.approveError.set(null);
-  }
-
-  closeApproveModal(): void {
-    if (this.approveLoading()) return;
-    this.approveTarget.set(null);
-    this.approveError.set(null);
-  }
-
-  confirmApprove(): void {
-    const ar = this.approveTarget();
-    if (!ar) return;
-    this.approveLoading.set(true);
-    this.approveError.set(null);
-    this.http
-      .patch<AccessRequest>(`/api/v1/access-requests/${ar.id}`, { action: 'APPROVE' })
-      .pipe(
-        catchError((err: HttpErrorResponse) => {
-          this.approveError.set(err.error?.detail ?? 'Error approving request');
-          this.approveLoading.set(false);
-          return of(null);
-        }),
-      )
-      .subscribe((updated) => {
-        if (updated) {
-          this.accessRequests.update((list) =>
-            list.map((r) =>
-              r.id === updated.id ? { ...r, status: updated.status } : r,
-            ),
-          );
-          this.approveTarget.set(null);
-          this.arSuccess.set(`Request approved. Activation email sent to ${ar.requester_email}.`);
-          setTimeout(() => this.arSuccess.set(null), 6000);
-        }
-        this.approveLoading.set(false);
-      });
-  }
-
-  openRejectModal(ar: AccessRequest): void {
-    this.rejectTarget.set(ar);
-    this.rejectError.set(null);
-    this.rejectReasonText = '';
-  }
-
-  closeRejectModal(): void {
-    if (this.rejectLoading()) return;
-    this.rejectTarget.set(null);
-    this.rejectError.set(null);
-    this.rejectReasonText = '';
-  }
-
-  confirmReject(): void {
-    const ar = this.rejectTarget();
-    if (!ar) return;
-    this.rejectLoading.set(true);
-    this.rejectError.set(null);
-    const body: { action: string; rejection_reason?: string } = { action: 'REJECT' };
-    if (this.rejectReasonText.trim()) {
-      body.rejection_reason = this.rejectReasonText.trim();
-    }
-    this.http
-      .patch<AccessRequest>(`/api/v1/access-requests/${ar.id}`, body)
-      .pipe(
-        catchError((err: HttpErrorResponse) => {
-          this.rejectError.set(err.error?.detail ?? 'Error rejecting request');
-          this.rejectLoading.set(false);
-          return of(null);
-        }),
-      )
-      .subscribe((updated) => {
-        if (updated) {
-          this.accessRequests.update((list) =>
-            list.map((r) =>
-              r.id === updated.id ? { ...r, status: updated.status } : r,
-            ),
-          );
-          this.rejectTarget.set(null);
-          this.rejectReasonText = '';
-          this.arSuccess.set(`Request from ${ar.requester_name} rejected.`);
-          setTimeout(() => this.arSuccess.set(null), 6000);
-        }
-        this.rejectLoading.set(false);
       });
   }
 }

@@ -15,6 +15,7 @@ from domain.enums import UserRole
 from . import ERROR_INTERNO
 
 _log = logging.getLogger(__name__)
+
 router = APIRouter(tags=["Auth"])
 
 
@@ -139,6 +140,73 @@ async def refresh(
     except HTTPException:
         raise
     except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
+class ActivateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    activation_token: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=8, max_length=255)
+    password_confirm: str = Field(..., min_length=1, max_length=255)
+
+    @field_validator("password")
+    @classmethod
+    def password_complexity(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("La contraseña debe contener al menos una letra mayúscula")
+        if not any(c.islower() for c in v):
+            raise ValueError("La contraseña debe contener al menos una letra minúscula")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("La contraseña debe contener al menos un número")
+        if not any(not c.isalnum() for c in v):
+            raise ValueError("La contraseña debe contener al menos un carácter especial")
+        return v
+
+    @model_validator(mode="after")
+    def passwords_match(self) -> "ActivateRequest":
+        if self.password != self.password_confirm:
+            raise ValueError("Las contraseñas no coinciden")
+        return self
+
+
+@router.post("/api/v1/auth/activate")
+async def activate_account(
+    payload: ActivateRequest,
+    auth_service: Annotated[IAuthService, Depends(get_auth_service)],
+):
+    from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
+    from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+
+    user_repo = SqlUserRepository()
+    hasher = BcryptPasswordHasher()
+
+    user = await user_repo.get_by_activation_token(payload.activation_token)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token de activación inválido.")
+
+    now = datetime.now(timezone.utc)
+    expiry = user.activation_token_expiry
+    if expiry and expiry.tzinfo is None:
+        from datetime import timezone as tz
+        expiry = expiry.replace(tzinfo=tz.utc)
+    if expiry and expiry < now:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="El token de activación ha expirado.")
+
+    user.hashed_password = hasher.hash_password(payload.password)
+    user.is_active = True
+    user.activation_token = None
+    user.activation_token_expiry = None
+    await user_repo.update(user)
+
+    try:
+        tokens, user_id, role = await auth_service.authenticate(user.email, payload.password)
+        return {
+            "access_token": str(tokens.access_token),
+            "refresh_token": str(tokens.refresh_token),
+            "token_type": str(tokens.token_type),
+        }
+    except Exception:
+        _log.exception("[activate] authenticate failed for %s", user.email)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 

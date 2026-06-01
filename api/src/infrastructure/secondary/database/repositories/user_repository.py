@@ -26,6 +26,8 @@ class SqlUserRepository(IUserRepository):
             updated_at=cast(datetime, row.updated_at),
             terms_accepted_at=cast(datetime | None, row.terms_accepted_at),
             privacy_accepted_at=cast(datetime | None, row.privacy_accepted_at),
+            activation_token=cast(str | None, row.activation_token),
+            activation_token_expiry=cast(datetime | None, row.activation_token_expiry),
         )
 
     async def create(self, user: User) -> User:
@@ -45,6 +47,8 @@ class SqlUserRepository(IUserRepository):
                 terms_accepted_at=user.terms_accepted_at,
                 privacy_accepted_at=user.privacy_accepted_at,
             )
+            user_model.activation_token = user.activation_token  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.activation_token_expiry = user.activation_token_expiry  # pyright: ignore[reportAttributeAccessIssue]
             session.add(user_model)
             await session.commit()
             await session.refresh(user_model)
@@ -91,10 +95,18 @@ class SqlUserRepository(IUserRepository):
             user_model.is_active = user.is_active  # pyright: ignore[reportAttributeAccessIssue]
             user_model.failed_login_attempts = user.failed_login_attempts  # pyright: ignore[reportAttributeAccessIssue]
             user_model.locked_until = user.locked_until  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.activation_token = user.activation_token  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.activation_token_expiry = user.activation_token_expiry  # pyright: ignore[reportAttributeAccessIssue]
             user_model.updated_at = datetime.now(timezone.utc)
             await session.commit()
             await session.refresh(user_model)
             return self._model_to_entity(user_model)
+
+    async def get_by_activation_token(self, token: str) -> Optional[User]:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(select(UserModel).where(UserModel.activation_token == token))
+            row = result.scalar_one_or_none()
+            return self._model_to_entity(row) if row else None
 
     async def delete(self, user_id: uuid.UUID) -> None:
         async with AsyncSessionLocal() as session:

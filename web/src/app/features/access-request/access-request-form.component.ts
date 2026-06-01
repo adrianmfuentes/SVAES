@@ -34,7 +34,7 @@ function generateSlug(name: string): string {
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
           <path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Volver al inicio
+        Back to home
       </a>
 
       <main class="request-main">
@@ -42,120 +42,203 @@ function generateSlug(name: string): string {
 
           <!-- Success state -->
           <ng-container *ngIf="submitted(); else formBlock">
-            <div class="success-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="var(--verdict-valid)" stroke-width="1.5"/>
-                <path d="M8 12l3 3 5-5" stroke="var(--verdict-valid)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+            <div class="success-state step-block">
+              <div class="success-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="var(--verdict-valid)" stroke-width="1.5"/>
+                  <path d="M8 12l3 3 5-5" stroke="var(--verdict-valid)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <h2 class="card-title">Request submitted</h2>
+              <p class="card-desc">Check your email for an activation link to get started.</p>
+              <a routerLink="/" class="btn-secondary success-back">Back to home</a>
             </div>
-            <h2 class="card-title">Request submitted</h2>
-            <p class="card-desc">You will receive an email when the administrator reviews it.</p>
           </ng-container>
 
           <!-- Form state -->
           <ng-template #formBlock>
-            <h2 class="card-title">Request access to SVAES</h2>
-            <p class="card-subtitle">Your request will be reviewed by the system administrator.</p>
 
-            <div class="alert-error" *ngIf="errorMessage()">
-              <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
-                <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-              </svg>
-              <span>{{ errorMessage() }}</span>
+            <!-- Stepper -->
+            <div class="stepper">
+              <div class="stepper-item" [class.done]="currentStep() > 1" [class.active]="currentStep() === 1">
+                <div class="stepper-dot">
+                  <svg *ngIf="currentStep() > 1" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 5l2.5 2.5L8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span *ngIf="currentStep() <= 1">1</span>
+                </div>
+                <span class="stepper-label">You</span>
+              </div>
+              <div class="stepper-connector" [class.active]="currentStep() > 1"></div>
+              <div class="stepper-item" [class.done]="currentStep() > 2" [class.active]="currentStep() === 2">
+                <div class="stepper-dot">
+                  <svg *ngIf="currentStep() > 2" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 5l2.5 2.5L8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span *ngIf="currentStep() <= 2">2</span>
+                </div>
+                <span class="stepper-label">Organization</span>
+              </div>
+              <div class="stepper-connector" [class.active]="currentStep() > 2"></div>
+              <div class="stepper-item" [class.active]="currentStep() === 3">
+                <div class="stepper-dot"><span>3</span></div>
+                <span class="stepper-label">Review</span>
+              </div>
             </div>
 
-            <form [formGroup]="requestForm" (ngSubmit)="onSubmit()" novalidate>
-              <div class="form-group">
-                <label for="requester-name">Full name</label>
-                <input
-                  id="requester-name"
-                  type="text"
-                  formControlName="requester_name"
-                  autocomplete="name"
-                  placeholder="Jane Smith"
-                  [class.input-error]="fieldHasError('requester_name')"
-                />
-                <div class="field-error" *ngIf="requestForm.get('requester_name')?.hasError('required') && requestForm.get('requester_name')?.touched">
-                  Full name is required.
+            <form [formGroup]="requestForm" (ngSubmit)="handleFormSubmit()" novalidate>
+
+              <!-- Step 1 — You -->
+              <div class="step-block" *ngIf="currentStep() === 1">
+                <h2 class="card-title">About you</h2>
+                <p class="card-subtitle">Your contact information for the access request.</p>
+
+                <div class="form-group">
+                  <label for="requester-name">Full name</label>
+                  <input
+                    id="requester-name"
+                    type="text"
+                    formControlName="requester_name"
+                    autocomplete="name"
+                    placeholder="Jane Smith"
+                    [class.input-error]="fieldHasError('requester_name')"
+                  />
+                  <div class="field-error" *ngIf="requestForm.get('requester_name')?.hasError('required') && requestForm.get('requester_name')?.touched">
+                    Full name is required.
+                  </div>
+                  <div class="field-error" *ngIf="requestForm.get('requester_name')?.hasError('minlength') && requestForm.get('requester_name')?.touched">
+                    Name must be at least 2 characters.
+                  </div>
+                  <div class="field-error" *ngIf="requestForm.get('requester_name')?.hasError('maxlength') && requestForm.get('requester_name')?.touched">
+                    Name must be at most 80 characters.
+                  </div>
                 </div>
-                <div class="field-error" *ngIf="requestForm.get('requester_name')?.hasError('minlength') && requestForm.get('requester_name')?.touched">
-                  Name must be at least 2 characters.
+
+                <div class="form-group">
+                  <label for="requester-email">Work email</label>
+                  <input
+                    id="requester-email"
+                    type="email"
+                    formControlName="requester_email"
+                    autocomplete="email"
+                    placeholder="jane@example.com"
+                    [class.input-error]="fieldHasError('requester_email')"
+                  />
+                  <div class="field-error" *ngIf="requestForm.get('requester_email')?.hasError('required') && requestForm.get('requester_email')?.touched">
+                    Work email is required.
+                  </div>
+                  <div class="field-error" *ngIf="requestForm.get('requester_email')?.hasError('email') && requestForm.get('requester_email')?.touched">
+                    Enter a valid email address.
+                  </div>
                 </div>
-                <div class="field-error" *ngIf="requestForm.get('requester_name')?.hasError('maxlength') && requestForm.get('requester_name')?.touched">
-                  Name must be at most 80 characters.
+
+                <div class="step-nav step-nav-end">
+                  <button type="submit" class="btn-primary">Continue</button>
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="requester-email">Work email</label>
-                <input
-                  id="requester-email"
-                  type="email"
-                  formControlName="requester_email"
-                  autocomplete="email"
-                  placeholder="jane@example.com"
-                  [class.input-error]="fieldHasError('requester_email')"
-                />
-                <div class="field-error" *ngIf="requestForm.get('requester_email')?.hasError('required') && requestForm.get('requester_email')?.touched">
-                  Work email is required.
+              <!-- Step 2 — Organization -->
+              <div class="step-block" *ngIf="currentStep() === 2">
+                <h2 class="card-title">Your organization</h2>
+                <p class="card-subtitle">Tell us about the organization requesting access.</p>
+
+                <div class="form-group">
+                  <label for="org-name">Organization name</label>
+                  <input
+                    id="org-name"
+                    type="text"
+                    formControlName="organization_name"
+                    placeholder="Acme Corp"
+                    (input)="updateSlug()"
+                    [class.input-error]="fieldHasError('organization_name')"
+                  />
+                  <div class="slug-preview" *ngIf="slugPreview()">
+                    <span class="slug-label">Slug</span>
+                    <code class="slug-value">{{ slugPreview() }}</code>
+                  </div>
+                  <div class="field-error" *ngIf="requestForm.get('organization_name')?.hasError('required') && requestForm.get('organization_name')?.touched">
+                    Organization name is required.
+                  </div>
+                  <div class="field-error" *ngIf="requestForm.get('organization_name')?.hasError('minlength') && requestForm.get('organization_name')?.touched">
+                    Must be at least 3 characters.
+                  </div>
+                  <div class="field-error" *ngIf="requestForm.get('organization_name')?.hasError('maxlength') && requestForm.get('organization_name')?.touched">
+                    Must be at most 80 characters.
+                  </div>
                 </div>
-                <div class="field-error" *ngIf="requestForm.get('requester_email')?.hasError('email') && requestForm.get('requester_email')?.touched">
-                  Enter a valid email address.
+
+                <div class="form-group">
+                  <label for="org-description">
+                    Description
+                    <span class="optional-tag">optional</span>
+                  </label>
+                  <textarea
+                    id="org-description"
+                    formControlName="organization_description"
+                    placeholder="Briefly describe what your organization does"
+                    rows="3"
+                    (input)="updateCharCount()"
+                  ></textarea>
+                  <div class="char-counter" [class.char-counter-over]="charCount() > 500">
+                    {{ charCount() }}/500
+                  </div>
+                  <div class="field-error" *ngIf="requestForm.get('organization_description')?.hasError('maxlength') && requestForm.get('organization_description')?.touched">
+                    Description must be at most 500 characters.
+                  </div>
+                </div>
+
+                <div class="step-nav">
+                  <button type="button" class="btn-secondary" (click)="prevStep()">Back</button>
+                  <button type="submit" class="btn-primary">Continue</button>
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="org-name">Organization name</label>
-                <input
-                  id="org-name"
-                  type="text"
-                  formControlName="organization_name"
-                  placeholder="Acme Corp"
-                  (input)="updateSlug()"
-                  [class.input-error]="fieldHasError('organization_name')"
-                />
-                <div class="field-error" *ngIf="requestForm.get('organization_name')?.hasError('required') && requestForm.get('organization_name')?.touched">
-                  Organization name is required.
+              <!-- Step 3 — Review -->
+              <div class="step-block" *ngIf="currentStep() === 3">
+                <h2 class="card-title">Review &amp; submit</h2>
+                <p class="card-subtitle">Confirm the details before sending your request.</p>
+
+                <div class="alert-error" *ngIf="errorMessage()">
+                  <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
+                    <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                  </svg>
+                  <span>{{ errorMessage() }}</span>
                 </div>
-                <div class="field-error" *ngIf="requestForm.get('organization_name')?.hasError('minlength') && requestForm.get('organization_name')?.touched">
-                  Organization name must be at least 3 characters.
+
+                <div class="review-block">
+                  <div class="review-row">
+                    <span class="review-key">Full name</span>
+                    <span class="review-val">{{ requestForm.get('requester_name')?.value }}</span>
+                  </div>
+                  <div class="review-row">
+                    <span class="review-key">Work email</span>
+                    <span class="review-val">{{ requestForm.get('requester_email')?.value }}</span>
+                  </div>
+                  <div class="review-row">
+                    <span class="review-key">Organization</span>
+                    <span class="review-val">{{ requestForm.get('organization_name')?.value }}</span>
+                  </div>
+                  <div class="review-row" *ngIf="requestForm.get('organization_description')?.value">
+                    <span class="review-key">Description</span>
+                    <span class="review-val review-val-desc">{{ requestForm.get('organization_description')?.value }}</span>
+                  </div>
                 </div>
-                <div class="field-error" *ngIf="requestForm.get('organization_name')?.hasError('maxlength') && requestForm.get('organization_name')?.touched">
-                  Organization name must be at most 80 characters.
-                </div>
-                <div class="slug-preview" *ngIf="slugPreview()">
-                  <span class="slug-label">Slug preview</span>
-                  <code class="slug-value">{{ slugPreview() }}</code>
+
+                <div class="step-nav">
+                  <button type="button" class="btn-secondary" (click)="prevStep()" [disabled]="loading()">Back</button>
+                  <button
+                    type="submit"
+                    class="btn-primary btn-submit"
+                    [disabled]="loading()"
+                    [class.btn-loading]="loading()"
+                  >
+                    <span *ngIf="!loading()">Submit request</span>
+                    <span *ngIf="loading()">Submitting&hellip;</span>
+                  </button>
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="org-description">Organization description</label>
-                <textarea
-                  id="org-description"
-                  formControlName="organization_description"
-                  placeholder="Briefly describe what your organization does (optional)"
-                  rows="3"
-                  (input)="updateCharCount()"
-                ></textarea>
-                <div class="char-counter" [class.char-counter-over]="charCount() > 500">
-                  {{ charCount() }}/500
-                </div>
-                <div class="field-error" *ngIf="requestForm.get('organization_description')?.hasError('maxlength') && requestForm.get('organization_description')?.touched">
-                  Description must be at most 500 characters.
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                class="btn-primary full-width btn-submit"
-                [disabled]="requestForm.invalid || loading()"
-                [class.btn-loading]="loading()"
-              >
-                <span *ngIf="!loading()">Submit request</span>
-                <span *ngIf="loading()">Submitting&hellip;</span>
-              </button>
             </form>
           </ng-template>
 
@@ -174,15 +257,21 @@ function generateSlug(name: string): string {
   `,
   styles: [
     `
+      @keyframes stepIn {
+        from { opacity: 0; transform: translateX(12px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
+
       :host {
         display: block;
       }
 
       .request-page {
-        min-height: 100vh;
+        height: 100vh;
         display: flex;
         flex-direction: column;
         background: var(--paper);
+        overflow: hidden;
       }
 
       .request-back {
@@ -214,7 +303,8 @@ function generateSlug(name: string): string {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: var(--spacing-xl);
+        padding: 0 var(--spacing-xl);
+        min-height: 0;
       }
 
       .request-card {
@@ -223,7 +313,77 @@ function generateSlug(name: string): string {
         border-radius: var(--rounded-lg);
         padding: var(--spacing-xl);
         width: 100%;
-        max-width: 400px;
+        max-width: 440px;
+      }
+
+      /* ── Stepper ──────────────────────────────────────────────────── */
+
+      .stepper {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .stepper-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .stepper-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1.5px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-mono);
+        font-size: 0.6875rem;
+        color: var(--muted);
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      }
+
+      .stepper-item.active .stepper-dot,
+      .stepper-item.done .stepper-dot {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: var(--paper);
+      }
+
+      .stepper-label {
+        font-family: var(--font-sans);
+        font-size: 0.625rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        white-space: nowrap;
+        transition: color 0.2s ease;
+      }
+
+      .stepper-item.active .stepper-label,
+      .stepper-item.done .stepper-label {
+        color: var(--ink);
+      }
+
+      .stepper-connector {
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+        margin-top: 14px;
+        transition: background 0.2s ease;
+      }
+
+      .stepper-connector.active {
+        background: var(--ink);
+      }
+
+      /* ── Step block ───────────────────────────────────────────────── */
+
+      .step-block {
+        animation: stepIn 0.22s ease both;
       }
 
       .card-title {
@@ -233,7 +393,7 @@ function generateSlug(name: string): string {
         line-height: 1.2;
         letter-spacing: -0.01em;
         color: var(--ink);
-        margin: 0 0 var(--spacing-sm);
+        margin: 0 0 var(--spacing-xs);
       }
 
       .card-subtitle {
@@ -241,7 +401,7 @@ function generateSlug(name: string): string {
         font-size: 0.8125rem;
         color: var(--muted);
         line-height: 1.5;
-        margin: 0 0 var(--spacing-lg);
+        margin: 0 0 var(--spacing-md);
       }
 
       .card-desc {
@@ -249,19 +409,10 @@ function generateSlug(name: string): string {
         font-size: 0.9375rem;
         color: var(--muted);
         line-height: 1.65;
-        margin: 0;
+        margin: 0 0 var(--spacing-md);
       }
 
-      .success-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 48px;
-        height: 48px;
-        border-radius: var(--rounded-full);
-        background: var(--verdict-valid-bg);
-        margin-bottom: var(--spacing-md);
-      }
+      /* ── Form groups ──────────────────────────────────────────────── */
 
       .form-group {
         margin-bottom: var(--spacing-md);
@@ -278,6 +429,16 @@ function generateSlug(name: string): string {
         margin-bottom: var(--spacing-xs);
       }
 
+      .optional-tag {
+        font-size: 0.6875rem;
+        font-weight: 400;
+        letter-spacing: 0;
+        text-transform: none;
+        color: var(--muted);
+        opacity: 0.8;
+        margin-left: 4px;
+      }
+
       .form-group input,
       .form-group textarea {
         width: 100%;
@@ -290,11 +451,12 @@ function generateSlug(name: string): string {
         font-size: 0.9375rem;
         line-height: 1.5;
         outline: none;
+        box-sizing: border-box;
         transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
       }
 
       .form-group textarea {
-        resize: vertical;
+        resize: none;
         min-height: 72px;
       }
 
@@ -358,17 +520,68 @@ function generateSlug(name: string): string {
         color: var(--verdict-invalid);
       }
 
-      .btn-submit {
-        margin-top: var(--spacing-sm);
-        width: 100%;
-        height: 40px;
-        transition: opacity 0.2s ease;
+      /* ── Step navigation ──────────────────────────────────────────── */
+
+      .step-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: var(--spacing-md);
+        gap: var(--spacing-sm);
       }
 
-      .btn-submit.btn-loading {
-        opacity: 0.7;
-        cursor: wait;
+      .step-nav-end {
+        justify-content: flex-end;
       }
+
+      /* ── Review block ─────────────────────────────────────────────── */
+
+      .review-block {
+        background: var(--paper);
+        border: 1px solid var(--border);
+        border-radius: var(--rounded-md);
+        overflow: hidden;
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .review-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--spacing-md);
+        padding: 10px var(--spacing-md);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .review-row:last-child {
+        border-bottom: none;
+      }
+
+      .review-key {
+        font-family: var(--font-sans);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+
+      .review-val {
+        font-family: var(--font-sans);
+        font-size: 0.8125rem;
+        color: var(--ink);
+        text-align: right;
+        word-break: break-word;
+      }
+
+      .review-val-desc {
+        font-size: 0.75rem;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+
+      /* ── Alert ────────────────────────────────────────────────────── */
 
       .alert-error {
         display: flex;
@@ -390,6 +603,38 @@ function generateSlug(name: string): string {
         margin-top: 2px;
       }
 
+      /* ── Submit button ────────────────────────────────────────────── */
+
+      .btn-submit.btn-loading {
+        opacity: 0.7;
+        cursor: wait;
+      }
+
+      /* ── Success state ────────────────────────────────────────────── */
+
+      .success-state {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .success-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: var(--rounded-full);
+        background: var(--verdict-valid-bg);
+        margin-bottom: var(--spacing-md);
+      }
+
+      .success-back {
+        margin-top: var(--spacing-sm);
+      }
+
+      /* ── Footer ───────────────────────────────────────────────────── */
+
       .request-footer {
         display: flex;
         align-items: center;
@@ -399,6 +644,7 @@ function generateSlug(name: string): string {
         background: var(--paper);
         font-size: 0.75rem;
         color: var(--muted);
+        flex-shrink: 0;
       }
 
       .footer-links {
@@ -416,9 +662,11 @@ function generateSlug(name: string): string {
         color: var(--ink);
       }
 
+      /* ── Responsive ───────────────────────────────────────────────── */
+
       @media (max-width: 480px) {
         .request-main {
-          padding: var(--spacing-lg);
+          padding: 0 var(--spacing-md);
         }
 
         .request-card {
@@ -428,6 +676,20 @@ function generateSlug(name: string): string {
         .request-back {
           top: var(--spacing-md);
           left: var(--spacing-md);
+        }
+      }
+
+      @media (max-height: 640px) {
+        .request-card {
+          padding: var(--spacing-lg);
+        }
+
+        .form-group {
+          margin-bottom: var(--spacing-sm);
+        }
+
+        .stepper {
+          margin-bottom: var(--spacing-md);
         }
       }
     `,
@@ -449,6 +711,17 @@ export class AccessRequestFormComponent {
   readonly submitted = signal(false);
   readonly slugPreview = signal('');
   readonly charCount = signal(0);
+  readonly currentStep = signal(1);
+
+  get step1Valid(): boolean {
+    return (this.requestForm.get('requester_name')?.valid ?? false) &&
+           (this.requestForm.get('requester_email')?.valid ?? false);
+  }
+
+  get step2Valid(): boolean {
+    return (this.requestForm.get('organization_name')?.valid ?? false) &&
+           (this.requestForm.get('organization_description')?.valid ?? false);
+  }
 
   fieldHasError(name: string): boolean {
     const ctrl = this.requestForm.get(name);
@@ -463,6 +736,30 @@ export class AccessRequestFormComponent {
   updateCharCount(): void {
     const desc = this.requestForm.get('organization_description')?.value ?? '';
     this.charCount.set(desc.length);
+  }
+
+  prevStep(): void {
+    if (this.currentStep() > 1) {
+      this.currentStep.update(s => s - 1);
+    }
+  }
+
+  handleFormSubmit(): void {
+    if (this.currentStep() === 1) {
+      this.requestForm.get('requester_name')?.markAsTouched();
+      this.requestForm.get('requester_email')?.markAsTouched();
+      if (this.step1Valid) {
+        this.currentStep.set(2);
+      }
+    } else if (this.currentStep() === 2) {
+      this.requestForm.get('organization_name')?.markAsTouched();
+      this.requestForm.get('organization_description')?.markAsTouched();
+      if (this.step2Valid) {
+        this.currentStep.set(3);
+      }
+    } else if (this.currentStep() === 3) {
+      this.onSubmit();
+    }
   }
 
   onSubmit(): void {

@@ -19,6 +19,8 @@ class User:
     organization_ids: List[UUID] = field(default_factory=list)
     terms_accepted_at: Optional[datetime] = None
     privacy_accepted_at: Optional[datetime] = None
+    activation_token: Optional[str] = None
+    activation_token_expiry: Optional[datetime] = None
 
     @property
     def organization_id(self) -> Optional[UUID]:

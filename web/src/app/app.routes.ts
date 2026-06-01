@@ -57,6 +57,22 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'releases/new',
+        canActivate: [businessRouteGuard],
+        loadComponent: () =>
+          import('./features/releases/release-new/release-new.component').then(
+            (m) => m.ReleaseNewComponent,
+          ),
+      },
+      {
+        path: 'releases/:id',
+        canActivate: [businessRouteGuard],
+        loadComponent: () =>
+          import('./features/releases/release-detail/release-detail.component').then(
+            (m) => m.ReleaseDetailComponent,
+          ),
+      },
+      {
         path: 'connectors',
         canActivate: [businessRouteGuard],
         loadComponent: () =>
@@ -106,6 +122,13 @@ export const routes: Routes = [
             (m) => m.ProfileComponent,
           ),
       },
+      {
+        path: '403',
+        loadComponent: () =>
+          import('./features/errors/forbidden.component').then(
+            (m) => m.ForbiddenComponent,
+          ),
+      },
     ],
   },
   {
@@ -129,5 +152,11 @@ export const routes: Routes = [
         (m) => m.PrivacidadComponent,
       ),
   },
-  { path: '**', redirectTo: '' },
+  {
+    path: '**',
+    loadComponent: () =>
+      import('./features/errors/not-found.component').then(
+        (m) => m.NotFoundComponent,
+      ),
+  },
 ];

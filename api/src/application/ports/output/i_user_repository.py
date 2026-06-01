@@ -25,5 +25,9 @@ class IUserRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_by_activation_token(self, token: str) -> Optional[User]:
+        pass
+
+    @abstractmethod
     async def delete(self, user_id: uuid.UUID) -> None:
         pass

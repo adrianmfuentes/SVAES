@@ -34,11 +34,11 @@
 .skeleton-rows {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.125rem;
 }
 
 .row-skeleton {
-  height: 44px;
+  height: 2.75rem;
   border-radius: var(--rounded-md);
 }
 
@@ -99,7 +99,7 @@
     color: var(--ink);
     padding: 0 var(--spacing-md) 0 0;
     border-bottom: 1px solid var(--border);
-    height: 44px;
+    height: 2.75rem;
     vertical-align: middle;
 
     &:last-child {
@@ -146,7 +146,7 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   border-radius: var(--rounded-sm);
-  padding: 2px 8px;
+  padding: 0.125rem 0.5rem;
   border: 1px solid;
   white-space: nowrap;
 

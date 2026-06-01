@@ -9,9 +9,17 @@
 }
 
 .page-header {
-  h1 {
-    margin: 0;
-  }
+  margin-bottom: 0;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
 }
 
 /* ─── Filter bar ─────────────────────────────────────────────────────────── */
@@ -31,7 +39,7 @@
 }
 
 .period-btn {
-  padding: 7px 14px;
+  padding: 0.4375rem 0.875rem;
   font-family: var(--font-sans);
   font-size: 0.6875rem;
   font-weight: 600;
@@ -62,13 +70,13 @@
 .project-select {
   font-family: var(--font-sans);
   font-size: 0.8125rem;
-  padding: 7px 12px;
+  padding: 0.4375rem 0.75rem;
   background: var(--paper);
   color: var(--ink);
   border: 1px solid var(--border-strong);
   border-radius: var(--rounded-md);
   cursor: pointer;
-  min-width: 160px;
+  min-width: 10rem;
 }
 
 .record-count {
@@ -118,7 +126,7 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   border-radius: var(--rounded-sm);
-  padding: 2px 8px;
+  padding: 0.125rem 0.5rem;
   border: 1px solid;
 
   &.dist-badge--valid {
@@ -137,6 +145,12 @@
     color: var(--verdict-invalid);
     background: var(--verdict-invalid-bg);
     border-color: var(--verdict-invalid-border);
+  }
+
+  &.dist-badge--pending {
+    color: var(--verdict-unevaluated);
+    background: var(--verdict-unevaluated-bg);
+    border-color: var(--verdict-unevaluated-border);
   }
 }
 

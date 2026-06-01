@@ -30,6 +30,15 @@ services:
     networks:
       - svaes-network
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: svaes-mailhog
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    networks:
+      - svaes-network
+
   engine:
     build:
       context: ./engine
@@ -68,6 +77,10 @@ services:
       ENGINE_API_KEY: ${ENGINE_API_KEY}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@svaes.local
+      APP_BASE_URL: http://localhost:4200
     ports:
       - "8000:8000"
     depends_on:
@@ -75,6 +88,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     networks:
       - svaes-network
 

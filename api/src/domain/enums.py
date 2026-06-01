@@ -154,6 +154,12 @@ class Permission(str, Enum):
     MANAGE_ORGANIZATIONS = "MANAGE_ORGANIZATIONS"
     MANAGE_ALL_USERS = "MANAGE_ALL_USERS"
 
+class AccessRequestStatus(str, Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
 class ArtifactType(str, Enum):
     TAREA = "TAREA"
     CODIGO = "CODIGO"

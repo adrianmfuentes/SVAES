@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     admin_email: str
     admin_password: str
 
+    # SMTP / email
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "noreply@svaes.local"
+    app_base_url: str = "http://localhost:4200"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     @field_validator("allowed_origins", mode="before")

@@ -5,8 +5,8 @@
 }
 
 .sidebar {
-  width: 220px;
-  min-width: 220px;
+  width: 13.75rem;
+  min-width: 13.75rem;
   background: var(--ink);
   color: var(--paper);
   display: flex;
@@ -49,14 +49,14 @@
 
 .nav-item {
   display: block;
-  padding: 7px 12px;
+  padding: 0.4375rem 0.75rem;
   border-radius: var(--rounded-md);
   font-size: 0.8125rem;
   color: rgba(246, 244, 240, 0.55);
   text-decoration: none;
-  margin-bottom: 2px;
-  height: 36px;
-  line-height: 22px;
+  margin-bottom: 0.125rem;
+  height: 2.25rem;
+  line-height: 1.375rem;
   transition: background-color 0.12s ease, color 0.12s ease;
 }
 
@@ -69,7 +69,7 @@
   background: rgba(246, 244, 240, 0.10);
   color: var(--paper);
   border-left: 2px solid var(--accent);
-  padding-left: 10px;
+  padding-left: 0.625rem;
 }
 
 .sidebar-footer {
@@ -102,13 +102,13 @@
   background: rgba(232, 213, 163, 0.12);
   border: 1px solid rgba(232, 213, 163, 0.25);
   border-radius: var(--rounded-sm);
-  padding: 1px 5px;
+  padding: 0.0625rem 0.3125rem;
 }
 
 .sidebar-logout {
   display: block;
   width: 100%;
-  padding: 7px 12px;
+  padding: 0.4375rem 0.75rem;
   border-radius: var(--rounded-md);
   font-size: 0.6875rem;
   font-weight: 600;

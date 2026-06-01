@@ -52,10 +52,10 @@ async def list_organizations(
 @router.post("/api/v1/organizations", status_code=status.HTTP_201_CREATED)
 async def create_organization(
     payload: OrganizationCreateRequest,
-    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3))],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
-    """ Endpoint para crear una nueva organización. Solo los usuarios con rol ADMIN pueden crear organizaciones.
+    """ Endpoint para crear una nueva organización. Cualquier usuario autenticado puede crear una organización.
 
     Atributos:
         - payload: OrganizationCreateRequest - El cuerpo de la solicitud con los datos de la organización a crear.
@@ -64,10 +64,14 @@ async def create_organization(
 
     Retorna:
         - Un diccionario con la información de la organización creada (id, name, slug).
-        - Lanza HTTPException con status 403 si el usuario no tiene rol ADMIN.
         - Lanza HTTPException con status 409 si hay un error de validación (e.g., slug ya existe).
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
+    if current_user.role == UserRole.U3:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El administrador global no puede crear ni pertenecer a una organización.",
+        )
     try:
         org = await service.create_organization(
             name=payload.name,

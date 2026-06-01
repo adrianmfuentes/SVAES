@@ -9,6 +9,7 @@ from infrastructure.secondary.database.models.rule_model import VerificationRule
 from infrastructure.secondary.database.models.artifact_model import ArtifactModel
 from infrastructure.secondary.database.models.result_model import VerificationResultModel
 from infrastructure.secondary.database.models.audit_log_model import AuditLogModel
+from infrastructure.secondary.database.models.access_request_model import AccessRequestModel
 
 __all__ = [
     "ReleaseModel",
@@ -21,4 +22,5 @@ __all__ = [
     "ArtifactModel",
     "VerificationResultModel",
     "AuditLogModel",
+    "AccessRequestModel",
 ]

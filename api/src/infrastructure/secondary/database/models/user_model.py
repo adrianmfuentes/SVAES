@@ -21,3 +21,5 @@ class UserModel(Base):
     updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     terms_accepted_at = Column(DateTime(timezone=True), nullable=True)
     privacy_accepted_at = Column(DateTime(timezone=True), nullable=True)
+    activation_token = Column(String(255), nullable=True, index=True)
+    activation_token_expiry = Column(DateTime(timezone=True), nullable=True)

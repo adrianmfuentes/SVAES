@@ -6,6 +6,7 @@ from application.ports.output.i_project_repository import IProjectRepository
 from application.ports.output.i_user_repository import IUserRepository
 from domain.entities.organization import Organization
 from domain.entities.project import Project
+from domain.enums import UserRole
 from domain.exceptions import DuplicateEntityError, EntityNotFoundError, ValidationError
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from core.logger import get_logger
@@ -34,6 +35,11 @@ class OrganizationService(IOrganizationService):
         existing = await self._org_repo.get_by_slug(slug)
         if existing:
             raise DuplicateEntityError(f"Ya existe una organización con slug: {slug}")
+
+        if owner_id and self._user_repo:
+            owner = await self._user_repo.get_by_id(owner_id)
+            if owner and owner.role == UserRole.U3:
+                raise ValidationError("El administrador global no puede ser propietario de una organización.")
 
         org = Organization(name=name, slug=slug, owner_id=owner_id)
         created_org = await self._org_repo.create(org)
@@ -124,6 +130,11 @@ class OrganizationService(IOrganizationService):
         org = await self._org_repo.get_by_id(organization_id)
         if not org:
             raise EntityNotFoundError(f"Organización no encontrada: {organization_id}")
+
+        if self._user_repo:
+            new_owner = await self._user_repo.get_by_id(new_owner_id)
+            if new_owner and new_owner.role == UserRole.U3:
+                raise ValidationError("El administrador global no puede ser propietario de una organización.")
 
         old_owner = org.owner_id
         org.owner_id = new_owner_id

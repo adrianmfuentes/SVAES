@@ -27,7 +27,7 @@ interface Release {
           <h1 class="page-title">Entregas</h1>
           <span *ngIf="isAdmin" class="global-badge">Vista global</span>
         </div>
-        <button *ngIf="!isAdmin" class="btn-primary">Nueva entrega</button>
+        <a *ngIf="!isAdmin" routerLink="/app/releases/new" class="btn-primary">Nueva entrega</a>
       </div>
 
       <div class="filters-bar">

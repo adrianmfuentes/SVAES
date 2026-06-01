@@ -7,6 +7,8 @@
 #   JWT_SECRET_KEY, ENCRYPTION_KEY, ENGINE_API_KEY
 #   DATABASE_URL (full connection URL)
 #   ALLOWED_ORIGINS (production domain, e.g. https://app.yourdomain.com)
+#   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM (transactional email provider)
+#   APP_BASE_URL (production frontend URL, e.g. https://app.yourdomain.com)
 #
 # For Docker Secrets, mount secrets into containers and read from /run/secrets/<name>
 
@@ -28,6 +30,12 @@ services:
       ENGINE_API_KEY: ${ENGINE_API_KEY}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      APP_BASE_URL: ${APP_BASE_URL}
 
   celery-worker:
     restart: always

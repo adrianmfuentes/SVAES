@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -9,13 +9,8 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { setAccessToken } from '../../../core/services/auth.service';
-import { Subscription } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 
 interface ActivateResponse {
   access_token: string;
@@ -31,16 +26,14 @@ interface PasswordChecks {
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const password = control.get('password');
   const confirm = control.get('password_confirm');
-  if (!password || !confirm) {
-    return null;
-  }
+  if (!password || !confirm) return null;
   return password.value === confirm.value ? null : { mismatch: true };
 }
 
 function passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
   const value: string = control.value || '';
   const valid =
-    value.length >= 12 &&
+    value.length >= 8 &&
     /[A-Z]/.test(value) &&
     /\d/.test(value) &&
     /[^a-zA-Z0-9]/.test(value);
@@ -50,302 +43,611 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
 @Component({
   selector: 'app-activate-account',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
-  ],
+  imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <div class="activate-view">
-      <div *ngIf="tokenMissing" class="activate-error-page">
-        <p class="activate-error-title">
-          Enlace de activación inválido o expirado
-        </p>
-        <p class="activate-error-sub">
-          <a href="mailto:soporte@svaes.local">Contacta con soporte</a>
-        </p>
-      </div>
+    <div class="activate-page">
+      <header class="activate-header">
+        <span class="activate-logo">SVAES</span>
+      </header>
 
-      <mat-card *ngIf="tokenExpired" class="activate-card">
-        <mat-card-content>
-          <p class="activate-expired-message">
-            Este enlace ya fue utilizado o ha expirado. Contacta con tu
-            administrador.
-          </p>
-        </mat-card-content>
-      </mat-card>
+      <main class="activate-main">
+        <div class="activate-card">
 
-      <mat-card
-        *ngIf="!tokenMissing && !tokenExpired"
-        class="activate-card"
-      >
-        <mat-card-header>
-          <mat-card-title>Activar cuenta</mat-card-title>
-        </mat-card-header>
+          <!-- ── Token expired / invalid ─────────────── -->
+          <div *ngIf="tokenExpired" class="state-card">
+            <div class="state-icon state-icon--error">✕</div>
+            <h1 class="state-title">Enlace expirado</h1>
+            <p class="state-desc">
+              Este código ya fue utilizado o ha expirado.<br>
+              Contacta con tu administrador para obtener uno nuevo.
+            </p>
+          </div>
 
-        <mat-card-content>
-          <form
-            [formGroup]="activateForm"
-            (ngSubmit)="onSubmit()"
-            novalidate
-            class="activate-form"
-          >
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Nueva contraseña</mat-label>
-              <input
-                matInput
-                type="password"
-                formControlName="password"
-                autocomplete="new-password"
-              />
-            </mat-form-field>
+          <!-- ── Success ─────────────────────────────── -->
+          <div *ngIf="activationSuccess" class="state-card">
+            <div class="state-icon state-icon--success">✓</div>
+            <h1 class="state-title">Cuenta activada</h1>
+            <p class="state-desc">Redirigiendo a tu espacio de trabajo&hellip;</p>
+          </div>
 
-            <div class="password-checklist">
-              <div
-                class="checklist-item"
-                [class.checklist-item--met]="passwordChecks.minLength"
-              >
-                <span class="checklist-icon">{{
-                  passwordChecks.minLength ? '\u2713' : '\u2717'
-                }}</span>
-                <span>Mínimo 12 caracteres</span>
+          <!-- ── Step form ───────────────────────────── -->
+          <ng-container *ngIf="!tokenExpired && !activationSuccess">
+
+            <!-- Step indicator -->
+            <div class="stepper">
+              <div class="step" [class.step--active]="step() === 1" [class.step--done]="step() > 1">
+                <div class="step-circle">
+                  <span *ngIf="step() <= 1">1</span>
+                  <span *ngIf="step() > 1">✓</span>
+                </div>
+                <span class="step-label">C&oacute;digo</span>
               </div>
-              <div
-                class="checklist-item"
-                [class.checklist-item--met]="passwordChecks.uppercase"
-              >
-                <span class="checklist-icon">{{
-                  passwordChecks.uppercase ? '\u2713' : '\u2717'
-                }}</span>
-                <span>Al menos una mayúscula</span>
-              </div>
-              <div
-                class="checklist-item"
-                [class.checklist-item--met]="passwordChecks.number"
-              >
-                <span class="checklist-icon">{{
-                  passwordChecks.number ? '\u2713' : '\u2717'
-                }}</span>
-                <span>Al menos un número</span>
-              </div>
-              <div
-                class="checklist-item"
-                [class.checklist-item--met]="passwordChecks.specialChar"
-              >
-                <span class="checklist-icon">{{
-                  passwordChecks.specialChar ? '\u2713' : '\u2717'
-                }}</span>
-                <span>Al menos un carácter especial</span>
+              <div class="step-line" [class.step-line--done]="step() > 1"></div>
+              <div class="step" [class.step--active]="step() === 2">
+                <div class="step-circle">2</div>
+                <span class="step-label">Contrase&ntilde;a</span>
               </div>
             </div>
 
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Confirmar contraseña</mat-label>
-              <input
-                matInput
-                type="password"
-                formControlName="password_confirm"
-                autocomplete="new-password"
-              />
-              <mat-error
-                *ngIf="
-                  activateForm.hasError('mismatch') &&
-                  activateForm.get('password_confirm')?.touched
-                "
-              >
-                Las contraseñas no coinciden
-              </mat-error>
-            </mat-form-field>
+            <form [formGroup]="activateForm" (ngSubmit)="onSubmit()" novalidate>
 
-            <div class="activate-error" *ngIf="submitError">
-              {{ submitError }}
-            </div>
+              <!-- ── Step 1: activation code ─────────── -->
+              <div *ngIf="step() === 1" class="step-body">
+                <h1 class="step-title">C&oacute;digo de activaci&oacute;n</h1>
+                <p class="step-desc">
+                  Pega el c&oacute;digo que recibiste en tu correo electr&oacute;nico.
+                </p>
 
-            <button
-              mat-flat-button
-              type="submit"
-              class="full-width activate-submit"
-              [disabled]="activateForm.invalid || loading"
-            >
-              <mat-spinner
-                *ngIf="loading"
-                diameter="20"
-                class="button-spinner"
-              ></mat-spinner>
-              <span *ngIf="!loading">Activar cuenta</span>
-            </button>
-          </form>
-        </mat-card-content>
-      </mat-card>
+                <div class="form-group">
+                  <label for="activationCode">C&oacute;digo</label>
+                  <input
+                    id="activationCode"
+                    type="text"
+                    formControlName="activation_code"
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    autocomplete="off"
+                    spellcheck="false"
+                    class="input-mono"
+                  />
+                  <div
+                    *ngIf="activateForm.get('activation_code')?.invalid && activateForm.get('activation_code')?.touched"
+                    class="field-error"
+                  >
+                    El c&oacute;digo de activaci&oacute;n es obligatorio.
+                  </div>
+                </div>
+
+                <div class="step-footer">
+                  <button
+                    type="button"
+                    class="btn-primary btn-full"
+                    [disabled]="activateForm.get('activation_code')?.invalid"
+                    (click)="nextStep()"
+                  >
+                    Continuar
+                  </button>
+                </div>
+              </div>
+
+              <!-- ── Step 2: password ────────────────── -->
+              <div *ngIf="step() === 2" class="step-body">
+                <h1 class="step-title">Elige tu contrase&ntilde;a</h1>
+                <p class="step-desc">
+                  Debe cumplir los requisitos indicados a continuaci&oacute;n.
+                </p>
+
+                <div class="form-group">
+                  <label for="password">Nueva contrase&ntilde;a</label>
+                  <div class="input-wrap">
+                    <input
+                      id="password"
+                      [type]="showPassword() ? 'text' : 'password'"
+                      formControlName="password"
+                      autocomplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      class="btn-reveal"
+                      (click)="showPassword.set(!showPassword())"
+                      [attr.aria-label]="showPassword() ? 'Ocultar' : 'Mostrar'"
+                    >
+                      {{ showPassword() ? '🙈' : '👁' }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="password-checklist">
+                  <div class="checklist-item" [class.checklist-item--met]="passwordChecks.minLength">
+                    <span class="checklist-icon">{{ passwordChecks.minLength ? '✓' : '○' }}</span>
+                    <span>M&iacute;nimo 8 caracteres</span>
+                  </div>
+                  <div class="checklist-item" [class.checklist-item--met]="passwordChecks.uppercase">
+                    <span class="checklist-icon">{{ passwordChecks.uppercase ? '✓' : '○' }}</span>
+                    <span>Al menos una may&uacute;scula</span>
+                  </div>
+                  <div class="checklist-item" [class.checklist-item--met]="passwordChecks.number">
+                    <span class="checklist-icon">{{ passwordChecks.number ? '✓' : '○' }}</span>
+                    <span>Al menos un n&uacute;mero</span>
+                  </div>
+                  <div class="checklist-item" [class.checklist-item--met]="passwordChecks.specialChar">
+                    <span class="checklist-icon">{{ passwordChecks.specialChar ? '✓' : '○' }}</span>
+                    <span>Al menos un car&aacute;cter especial</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="passwordConfirm">Confirmar contrase&ntilde;a</label>
+                  <div class="input-wrap">
+                    <input
+                      id="passwordConfirm"
+                      [type]="showConfirm() ? 'text' : 'password'"
+                      formControlName="password_confirm"
+                      autocomplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      class="btn-reveal"
+                      (click)="showConfirm.set(!showConfirm())"
+                      [attr.aria-label]="showConfirm() ? 'Ocultar' : 'Mostrar'"
+                    >
+                      {{ showConfirm() ? '🙈' : '👁' }}
+                    </button>
+                  </div>
+                  <div
+                    *ngIf="activateForm.hasError('mismatch') && activateForm.get('password_confirm')?.touched"
+                    class="field-error"
+                  >
+                    Las contrase&ntilde;as no coinciden.
+                  </div>
+                </div>
+
+                <div *ngIf="submitError" class="alert-error">{{ submitError }}</div>
+
+                <div class="step-footer step-footer--two">
+                  <button type="button" class="btn-secondary" (click)="prevStep()">
+                    &larr; Atr&aacute;s
+                  </button>
+                  <button
+                    type="submit"
+                    class="btn-primary"
+                    [disabled]="activateForm.get('password')?.invalid ||
+                                activateForm.get('password_confirm')?.invalid ||
+                                activateForm.hasError('mismatch') ||
+                                loading"
+                  >
+                    <span *ngIf="loading" class="spinner"></span>
+                    <span *ngIf="!loading">Activar cuenta</span>
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          </ng-container>
+
+        </div>
+      </main>
+
+      <footer class="activate-footer">
+        <span>&copy; 2026 SVAES</span>
+      </footer>
     </div>
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-      }
+  styles: [`
+    :host { display: block; }
 
-      .activate-view {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--paper);
-        padding: var(--spacing-lg);
-      }
+    /* ── Page shell ─────────────────────────────────── */
 
-      .activate-card {
-        width: 100%;
-        max-width: 420px;
-        background: var(--surface-raised);
-        border: 1px solid var(--border);
-        border-radius: var(--rounded-lg);
-      }
+    .activate-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--paper);
+    }
 
-      mat-card-header {
-        justify-content: center;
-        padding-bottom: var(--spacing-md);
-      }
+    .activate-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-lg) var(--spacing-xxl);
+      border-bottom: 1px solid var(--border);
+    }
 
-      mat-card-title {
-        font-family: var(--font-display);
-        font-size: 1.5rem;
-        letter-spacing: 0.04em;
-        color: var(--ink);
-      }
+    .activate-logo {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+    }
 
-      mat-card-content {
-        padding: 0 var(--spacing-lg) var(--spacing-lg);
-      }
+    .activate-main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-xl) var(--spacing-lg);
+    }
 
-      .activate-form {
-        display: flex;
-        flex-direction: column;
-      }
+    .activate-card {
+      width: 100%;
+      max-width: 35rem;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--rounded-lg);
+      padding: var(--spacing-xl);
+    }
 
-      .full-width {
-        width: 100%;
-      }
+    .activate-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-md);
+      border-top: 1px solid var(--border);
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
 
-      .password-checklist {
-        margin: 0 0 var(--spacing-md) 0;
-      }
+    /* ── Stepper ─────────────────────────────────────── */
 
-      .checklist-item {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        font-family: var(--font-sans);
-        font-size: 0.8125rem;
-        color: var(--muted);
-        padding: 2px 0;
-      }
+    .stepper {
+      display: flex;
+      align-items: center;
+      margin-bottom: var(--spacing-xl);
+    }
 
-      .checklist-item--met {
-        color: var(--verdict-valid);
-      }
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-xs);
+    }
 
-      .checklist-icon {
-        width: 16px;
-        text-align: center;
-        font-weight: 600;
-      }
+    .step-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid var(--border-strong);
+      color: var(--muted);
+      background: transparent;
+      transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
 
-      .activate-submit {
-        margin-top: var(--spacing-sm);
-        height: 40px;
-      }
+    .step--active .step-circle {
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
+    }
 
-      button[mat-flat-button] {
-        background-color: var(--ink);
-        color: var(--paper);
-        border: 1px solid var(--ink);
-        border-radius: var(--rounded-md);
-        font-family: var(--font-sans);
-        font-size: 0.6875rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
+    .step--done .step-circle {
+      background: var(--accent);
+      color: var(--ink);
+      border-color: var(--accent-dark);
+    }
 
-      button[mat-flat-button]:disabled {
-        background-color: var(--paper-secondary);
-        color: var(--muted);
-        border-color: var(--border);
-      }
+    .step-label {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color 0.2s ease;
+    }
 
-      button[mat-flat-button]:not(:disabled):hover {
-        background-color: var(--ink-secondary);
-      }
+    .step--active .step-label,
+    .step--done .step-label {
+      color: var(--ink);
+    }
 
-      .button-spinner {
-        display: inline-block;
-      }
+    .step-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      margin: 0 var(--spacing-sm);
+      margin-bottom: 20px;
+      transition: background-color 0.2s ease;
+    }
 
-      .activate-error {
-        font-family: var(--font-sans);
-        font-size: 0.8125rem;
-        color: var(--verdict-invalid);
-        background: var(--verdict-invalid-bg);
-        border: 1px solid var(--verdict-invalid-border);
-        border-radius: var(--rounded-sm);
-        padding: var(--spacing-sm) var(--spacing-md);
-        margin-bottom: var(--spacing-md);
-      }
+    .step-line--done {
+      background: var(--accent-dark);
+    }
 
-      .activate-error-page {
-        text-align: center;
-      }
+    /* ── Step body ───────────────────────────────────── */
 
-      .activate-error-title {
-        font-family: var(--font-display);
-        font-size: 1.5rem;
-        color: var(--ink);
-        margin: 0 0 var(--spacing-md) 0;
-      }
+    .step-body {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
 
-      .activate-error-sub {
-        font-family: var(--font-sans);
-        font-size: 0.9375rem;
-        color: var(--muted);
-        margin: 0;
-      }
+    .step-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin: 0;
+    }
 
-      .activate-error-sub a {
-        color: var(--ink);
-        text-decoration: underline;
-      }
+    .step-desc {
+      font-family: var(--font-sans);
+      font-size: 0.8125rem;
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 0;
+    }
 
-      .activate-expired-message {
-        font-family: var(--font-sans);
-        font-size: 0.9375rem;
-        color: var(--ink);
-        margin: 0;
-        text-align: center;
-      }
-    `,
-  ],
+    /* ── Form elements ───────────────────────────────── */
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .form-group label {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+    }
+
+    .input-wrap input {
+      flex: 1;
+      padding-right: 2.5rem;
+    }
+
+    .form-group input {
+      font-family: var(--font-sans);
+      font-size: 0.9375rem;
+      background: var(--paper);
+      color: var(--ink);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--rounded-md);
+      padding: 0.5625rem 0.75rem;
+      outline: none;
+      width: 100%;
+      box-sizing: border-box;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .input-mono {
+      font-family: var(--font-mono) !important;
+      font-size: 0.8125rem !important;
+      letter-spacing: 0.02em;
+    }
+
+    .form-group input:focus {
+      border-color: var(--ink);
+      background: var(--surface-raised);
+      outline: 3px solid rgba(232, 213, 163, 0.4);
+    }
+
+    .btn-reveal {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      color: var(--muted);
+      border-radius: 0 var(--rounded-md) var(--rounded-md) 0;
+      transition: color 0.12s ease;
+    }
+
+    .btn-reveal:hover { color: var(--ink); }
+
+    .field-error {
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      color: var(--verdict-invalid);
+    }
+
+    /* ── Password checklist ──────────────────────────── */
+
+    .password-checklist {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.25rem 0;
+      background: var(--paper-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-md);
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-family: var(--font-sans);
+      font-size: 0.8125rem;
+      color: var(--muted);
+      transition: color 0.15s ease;
+    }
+
+    .checklist-item--met { color: var(--verdict-valid); }
+
+    .checklist-icon {
+      width: 1rem;
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    /* ── Buttons ─────────────────────────────────────── */
+
+    .step-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: var(--spacing-sm);
+      border-top: 1px solid var(--border);
+      margin-top: var(--spacing-xs);
+    }
+
+    .step-footer--two {
+      justify-content: space-between;
+    }
+
+    .btn-full { width: 100%; }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+      background: var(--ink);
+      color: var(--paper);
+      border: 1px solid var(--ink);
+      border-radius: var(--rounded-md);
+      padding: 0.5625rem 1.125rem;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: var(--ink-secondary); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--rounded-md);
+      padding: 0.5625rem 1.125rem;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-secondary:hover { background: var(--paper-secondary); }
+
+    /* ── Spinner ─────────────────────────────────────── */
+
+    .spinner {
+      display: inline-block;
+      width: 0.875rem;
+      height: 0.875rem;
+      border: 2px solid var(--paper);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error / success states ──────────────────────── */
+
+    .alert-error {
+      font-family: var(--font-sans);
+      font-size: 0.8125rem;
+      color: var(--verdict-invalid);
+      background: var(--verdict-invalid-bg);
+      border: 1px solid var(--verdict-invalid-border);
+      border-radius: var(--rounded-sm);
+      padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .state-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: var(--spacing-lg) 0;
+      gap: var(--spacing-md);
+    }
+
+    .state-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .state-icon--success {
+      background: var(--verdict-valid-bg);
+      color: var(--verdict-valid);
+      border: 1px solid var(--verdict-valid-border);
+    }
+
+    .state-icon--error {
+      background: var(--verdict-invalid-bg);
+      color: var(--verdict-invalid);
+      border: 1px solid var(--verdict-invalid-border);
+    }
+
+    .state-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--ink);
+      margin: 0;
+    }
+
+    .state-desc {
+      font-family: var(--font-sans);
+      font-size: 0.9375rem;
+      line-height: 1.65;
+      color: var(--muted);
+      margin: 0;
+    }
+  `],
 })
 export class ActivateAccountComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
-  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly activateForm = this.fb.group(
     {
+      activation_code: ['', [Validators.required]],
       password: ['', [Validators.required, passwordStrengthValidator]],
       password_confirm: ['', [Validators.required]],
     },
     { validators: passwordMatchValidator },
   );
 
-  activationToken: string | null = null;
-  tokenMissing = false;
+  step = signal<1 | 2>(1);
+  showPassword = signal(false);
+  showConfirm = signal(false);
+
+  activationSuccess = false;
   tokenExpired = false;
   loading = false;
   submitError: string | null = null;
@@ -369,60 +671,62 @@ export class ActivateAccountComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const token = this.route.snapshot.queryParamMap.get('token');
-    if (!token || !this.isValidUuid(token)) {
-      this.tokenMissing = true;
-      return;
+    if (token) {
+      this.activateForm.patchValue({ activation_code: token });
+      this.step.set(2);
     }
-    this.activationToken = token;
   }
 
   ngOnDestroy(): void {
     this.passwordSub.unsubscribe();
   }
 
+  nextStep(): void {
+    this.activateForm.get('activation_code')?.markAsTouched();
+    if (this.activateForm.get('activation_code')?.invalid) return;
+    this.step.set(2);
+  }
+
+  prevStep(): void {
+    this.step.set(1);
+    this.submitError = null;
+  }
+
   onSubmit(): void {
-    if (this.activateForm.invalid || this.loading || !this.activationToken) {
-      return;
-    }
+    if (this.activateForm.invalid || this.loading) return;
 
     this.loading = true;
     this.submitError = null;
 
-    const { password, password_confirm } = this.activateForm.value;
+    const { activation_code, password, password_confirm } = this.activateForm.value;
 
     this.http
       .post<ActivateResponse>('/api/v1/auth/activate', {
-        activation_token: this.activationToken,
+        activation_token: activation_code,
         password,
         password_confirm,
       })
+      .pipe(finalize(() => { this.loading = false; }))
       .subscribe({
         next: (response) => {
+          this.activationSuccess = true;
           setAccessToken(response.access_token);
-          this.router.navigate(['/app/dashboard']);
+          setTimeout(() => this.router.navigate(['/app/dashboard']), 1200);
         },
         error: (err: HttpErrorResponse) => {
-          this.loading = false;
           if (err.status === 400 || err.status === 410) {
             this.tokenExpired = true;
           } else {
-            this.submitError =
-              'Error al activar la cuenta. Inténtalo de nuevo.';
+            this.submitError = 'Error al activar la cuenta. Inténtalo de nuevo.';
           }
         },
       });
   }
 
   private updatePasswordChecks(value: string): void {
-    this.passwordChecks.minLength = value.length >= 12;
+    this.passwordChecks.minLength = value.length >= 8;
     this.passwordChecks.uppercase = /[A-Z]/.test(value);
     this.passwordChecks.number = /\d/.test(value);
     this.passwordChecks.specialChar = /[^a-zA-Z0-9]/.test(value);
-  }
-
-  private isValidUuid(value: string): boolean {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      value,
-    );
   }
 }

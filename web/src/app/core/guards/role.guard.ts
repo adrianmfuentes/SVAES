@@ -18,5 +18,5 @@ export const roleGuard: CanActivateFn = (route) => {
     return true;
   }
 
-  return router.parseUrl('/app/dashboard');
+  return router.parseUrl('/app/403');
 };

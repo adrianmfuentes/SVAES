@@ -23,7 +23,15 @@ async def seed_admin_user(settings: Settings) -> None:
         existing_admin = result.scalar_one_or_none()
 
         if existing_admin is not None:
-            _log.info("Admin user already exists (id=%s). Skipping seed.", existing_admin.id)
+            if existing_admin.organization_id is not None:
+                existing_admin.organization_id = None
+                await session.commit()
+                _log.warning(
+                    "Admin user (id=%s) had organization_id set — stripped to enforce invariant.",
+                    existing_admin.id,
+                )
+            else:
+                _log.info("Admin user already exists (id=%s). Skipping seed.", existing_admin.id)
             return
 
         email_check = await session.execute(

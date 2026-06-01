@@ -1,0 +1,377 @@
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { catchError, of } from 'rxjs';
+
+interface Project {
+  id: string;
+  name: string;
+}
+
+@Component({
+  selector: 'app-release-new',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  template: `
+    <div class="new-release-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <a routerLink="/app/releases" class="back-link">&larr; Entregas</a>
+          <h1 class="page-title">Nueva entrega</h1>
+        </div>
+      </div>
+
+      <div class="form-layout">
+        <div class="card">
+          <h2 class="card-title">Datos de la entrega</h2>
+
+          @if (projectsLoading()) {
+            <div class="skeleton-list">
+              <div class="skeleton sk-input"></div>
+              <div class="skeleton sk-input"></div>
+              <div class="skeleton sk-input"></div>
+            </div>
+          }
+
+          @if (!projectsLoading()) {
+            @if (projects().length === 0) {
+              <div class="empty-notice">
+                No hay proyectos disponibles. Crea un proyecto antes de registrar una entrega.
+              </div>
+            }
+
+            @if (projects().length > 0) {
+              <form [formGroup]="form" (ngSubmit)="submit()">
+                <div class="form-group">
+                  <label for="project-id">Proyecto</label>
+                  <select id="project-id" formControlName="project_id">
+                    <option value="">Selecciona un proyecto&hellip;</option>
+                    @for (p of projects(); track p.id) {
+                      <option [value]="p.id">{{ p.name }}</option>
+                    }
+                  </select>
+                  @if (form.get('project_id')?.hasError('required') && form.get('project_id')?.touched) {
+                    <div class="field-error">El proyecto es obligatorio.</div>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label for="name">Nombre de la entrega</label>
+                  <input
+                    id="name"
+                    type="text"
+                    formControlName="name"
+                    placeholder="p.ej. Release 2024-Q3"
+                    autocomplete="off"
+                  />
+                  @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
+                    <div class="field-error">El nombre es obligatorio.</div>
+                  }
+                  @if (form.get('name')?.hasError('maxlength') && form.get('name')?.touched) {
+                    <div class="field-error">M&aacute;ximo 100 caracteres.</div>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label for="version">Versi&oacute;n</label>
+                  <input
+                    id="version"
+                    type="text"
+                    formControlName="version"
+                    placeholder="p.ej. 1.4.2"
+                    autocomplete="off"
+                  />
+                  @if (form.get('version')?.hasError('required') && form.get('version')?.touched) {
+                    <div class="field-error">La versi&oacute;n es obligatoria.</div>
+                  }
+                </div>
+
+                <div class="form-group">
+                  <label for="description">Descripci&oacute;n <span class="optional">(opcional)</span></label>
+                  <textarea
+                    id="description"
+                    formControlName="description"
+                    rows="3"
+                    placeholder="Contexto, cambios incluidos, notas para el equipo&hellip;"
+                  ></textarea>
+                  @if (form.get('description')?.hasError('maxlength') && form.get('description')?.touched) {
+                    <div class="field-error">M&aacute;ximo 1000 caracteres.</div>
+                  }
+                </div>
+
+                @if (submitError()) {
+                  <div class="alert-error">{{ submitError() }}</div>
+                }
+
+                <div class="form-footer">
+                  <a routerLink="/app/releases" class="btn-secondary">Cancelar</a>
+                  <button
+                    type="submit"
+                    class="btn-primary"
+                    [disabled]="form.invalid || submitting()">
+                    {{ submitting() ? 'Creando&hellip;' : 'Crear entrega' }}
+                  </button>
+                </div>
+              </form>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [`
+    :host { display: block; }
+    .new-release-page { padding: 0; }
+
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .page-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .back-link {
+      font-family: var(--font-sans);
+      font-size: 0.8125rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.12s ease;
+    }
+
+    .back-link:hover { color: var(--ink); }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 2.25rem;
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin: 0;
+      color: var(--ink);
+    }
+
+    .form-layout {
+      max-width: 640px;
+    }
+
+    .card {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--rounded-lg);
+      padding: var(--spacing-lg);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin: 0 0 var(--spacing-lg);
+      color: var(--ink);
+    }
+
+    .form-group {
+      margin-bottom: var(--spacing-md);
+    }
+
+    .form-group label {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .optional {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      background: var(--paper);
+      color: var(--ink);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--rounded-md);
+      padding: 9px 12px;
+      font-family: var(--font-sans);
+      font-size: 0.9375rem;
+      outline: none;
+      transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+      box-sizing: border-box;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.65;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--ink);
+      background: var(--surface-raised);
+      box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
+    }
+
+    .field-error {
+      font-size: 0.75rem;
+      color: var(--verdict-invalid);
+      margin-top: var(--spacing-xs);
+    }
+
+    .alert-error {
+      background: var(--verdict-invalid-bg);
+      color: var(--verdict-invalid);
+      border: 1px solid var(--verdict-invalid-border);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: 0.8125rem;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .form-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--spacing-sm);
+      padding-top: var(--spacing-md);
+      border-top: 1px solid var(--border);
+      margin-top: var(--spacing-md);
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      background: var(--ink);
+      color: var(--paper);
+      border: 1px solid var(--ink);
+      border-radius: var(--rounded-md);
+      padding: 9px 18px;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: var(--ink-secondary); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--rounded-md);
+      padding: 9px 18px;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      text-decoration: none;
+    }
+
+    .btn-secondary:hover { background: var(--paper-secondary); }
+
+    .skeleton-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
+    .skeleton {
+      border-radius: var(--rounded-md);
+      background: linear-gradient(90deg, var(--paper-secondary) 25%, #e5e2db 50%, var(--paper-secondary) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s linear infinite;
+    }
+
+    .sk-input { height: 40px; }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .empty-notice {
+      font-size: 0.9375rem;
+      color: var(--muted);
+      line-height: 1.65;
+      padding: var(--spacing-lg) 0;
+    }
+  `],
+})
+export class ReleaseNewComponent implements OnInit {
+  private readonly http = inject(HttpClient);
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+
+  projects = signal<Project[]>([]);
+  projectsLoading = signal(true);
+  submitting = signal(false);
+  submitError = signal<string | null>(null);
+
+  form = this.fb.group({
+    project_id: ['', [Validators.required]],
+    name: ['', [Validators.required, Validators.maxLength(100)]],
+    version: ['', [Validators.required]],
+    description: ['', [Validators.maxLength(1000)]],
+  });
+
+  ngOnInit(): void {
+    this.http.get<Project[]>('/api/v1/projects')
+      .pipe(catchError(() => of([] as Project[])))
+      .subscribe(data => {
+        this.projects.set(data);
+        this.projectsLoading.set(false);
+      });
+  }
+
+  submit(): void {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    this.submitting.set(true);
+    this.submitError.set(null);
+
+    const { project_id, name, version, description } = this.form.value;
+    const body: Record<string, unknown> = { name, version, description: description || '' };
+
+    this.http.post<{ id: string; status: string }>(
+      `/api/v1/projects/${project_id}/releases`, body
+    ).pipe(
+      catchError((err: HttpErrorResponse) => {
+        this.submitError.set(err.error?.detail ?? 'Error al crear la entrega');
+        this.submitting.set(false);
+        return of(null);
+      })
+    ).subscribe(res => {
+      if (res) {
+        this.router.navigate(['/app/releases', res.id]);
+      }
+    });
+  }
+}
