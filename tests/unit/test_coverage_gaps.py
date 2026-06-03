@@ -634,10 +634,7 @@ class TestManageApiKeysGap:
     def svc(self):
         from application.use_cases.others.manage_api_keys import ManageApiKeysUseCase
         api_key_repo = AsyncMock()
-        user_repo = AsyncMock()
-        from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
-        password_hasher = BcryptPasswordHasher()
-        return ManageApiKeysUseCase(api_key_repo, user_repo, password_hasher), api_key_repo
+        return ManageApiKeysUseCase(api_key_repository=api_key_repo), api_key_repo
 
     async def test_revoke_api_key_not_found(self, svc):
         """Branch: revoke_api_key not found raises EntityNotFoundError"""

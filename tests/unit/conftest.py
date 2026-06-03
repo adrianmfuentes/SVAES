@@ -24,9 +24,17 @@ def pytest_configure(config):
     import sqlalchemy.ext.asyncio
 
     mock_engine = MagicMock()
+    mock_connection = MagicMock()
+    mock_result = MagicMock()
+    mock_result._is_cursor = False
+    mock_result.raw = None
+    mock_connection.execute = MagicMock(return_value=mock_result)
+    mock_connection.__enter__ = MagicMock(return_value=mock_connection)
+    mock_connection.__exit__ = MagicMock(return_value=None)
     mock_engine.sync_engine = MagicMock()
     mock_engine.sync_engine.dialect = MagicMock()
     mock_engine.sync_engine.dialect.is_async = True
-    mock_engine.begin = MagicMock()
+    mock_engine.sync_engine.connect = MagicMock(return_value=mock_connection)
+    mock_engine.begin = MagicMock(return_value=MagicMock())
 
     sqlalchemy.ext.asyncio.create_async_engine = lambda *args, **kwargs: mock_engine

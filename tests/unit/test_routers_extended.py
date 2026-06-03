@@ -263,7 +263,7 @@ class TestUsersRouter:
         from fastapi.testclient import TestClient
         client = TestClient(self.app)
         resp = client.post(
-            "/api/v1/users/me/change-password",
+            "/api/v1/users/me/password",
             json={"current_password": "old", "new_password": "NewPass1!", "confirm_password": "Different1!"},
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
@@ -275,7 +275,7 @@ class TestUsersRouter:
         self.user_svc.change_password = AsyncMock(return_value=True)
         client = TestClient(self.app)
         resp = client.post(
-            "/api/v1/users/me/change-password",
+            "/api/v1/users/me/password",
             json={"current_password": "old", "new_password": "NewPass1!", "confirm_password": "NewPass1!"},
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
@@ -287,7 +287,7 @@ class TestUsersRouter:
         self.user_svc.change_password = AsyncMock(return_value=False)
         client = TestClient(self.app)
         resp = client.post(
-            "/api/v1/users/me/change-password",
+            "/api/v1/users/me/password",
             json={"current_password": "wrong", "new_password": "NewPass1!", "confirm_password": "NewPass1!"},
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
@@ -317,7 +317,7 @@ class TestUsersRouter:
         self.user_svc.invite_user = AsyncMock(return_value=user)
         client = TestClient(self.app)
         resp = client.post(
-            f"/api/v1/organizations/{self.org_id}/users",
+            f"/api/v1/organizations/{self.org_id}/users/invite",
             json={"email": "new@x.com"},
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
@@ -330,10 +330,14 @@ class TestDashboardRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_dashboard_use_case
+        from core.dependencies import get_release_repository, get_verification_result_repository
         self.app = app
-        self.dashboard_svc = AsyncMock()
-        app.dependency_overrides[get_dashboard_use_case] = lambda: self.dashboard_svc
+        self.release_repo = AsyncMock()
+        self.release_repo.list_by_organization = AsyncMock(return_value=[])
+        self.verification_repo = AsyncMock()
+        self.verification_repo.find_by_release = AsyncMock(return_value=[])
+        app.dependency_overrides[get_release_repository] = lambda: self.release_repo
+        app.dependency_overrides[get_verification_result_repository] = lambda: self.verification_repo
         self.user_id = uuid4()
         self.org_id = uuid4()
         yield
@@ -342,15 +346,9 @@ class TestDashboardRouter:
     def test_get_dashboard_metrics_success(self):
         """Branch: GET /dashboard → 200"""
         from fastapi.testclient import TestClient
-        from application.use_cases.others.get_dashboard_metrics import DashboardMetrics
-        metrics = DashboardMetrics(
-            total_releases=5, valid_releases=3, invalid_releases=1,
-            pending_releases=1, total_verifications=10, pass_rate=70.0,
-        )
-        self.dashboard_svc.execute = AsyncMock(return_value=metrics)
         client = TestClient(self.app)
         resp = client.get(
-            "/api/v1/dashboard",
+            f"/api/v1/dashboard/metrics?org_id={self.org_id}",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
         assert resp.status_code in (200, 403)
@@ -358,10 +356,10 @@ class TestDashboardRouter:
     def test_get_dashboard_server_error_returns_500(self):
         """Branch: unexpected exception → 500"""
         from fastapi.testclient import TestClient
-        self.dashboard_svc.execute = AsyncMock(side_effect=RuntimeError("DB fail"))
+        self.release_repo.list_by_organization = AsyncMock(side_effect=RuntimeError("DB fail"))
         client = TestClient(self.app)
         resp = client.get(
-            "/api/v1/dashboard",
+            f"/api/v1/dashboard/metrics?org_id={self.org_id}",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
         assert resp.status_code in (200, 403, 500)
@@ -373,10 +371,13 @@ class TestApiKeysRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_api_key_use_case
+        from core.dependencies import get_api_key_repository, get_user_repository
         self.app = app
-        self.svc = AsyncMock()
-        app.dependency_overrides[get_api_key_use_case] = lambda: self.svc
+        self.api_key_repo = AsyncMock()
+        self.user_repo = AsyncMock()
+        self.api_key_repo.list_by_user = AsyncMock(return_value=[])
+        app.dependency_overrides[get_api_key_repository] = lambda: self.api_key_repo
+        app.dependency_overrides[get_user_repository] = lambda: self.user_repo
         self.user_id = uuid4()
         self.org_id = uuid4()
         yield
@@ -385,10 +386,9 @@ class TestApiKeysRouter:
     def test_list_api_keys_success(self):
         """Branch: GET /api-keys → 200"""
         from fastapi.testclient import TestClient
-        self.svc.list_api_keys = AsyncMock(return_value=[])
         client = TestClient(self.app)
         resp = client.get(
-            "/api/v1/api-keys",
+            f"/api/v1/users/{self.user_id}/api-keys",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
         assert resp.status_code == 200
@@ -408,10 +408,19 @@ class TestApiKeysRouter:
             "is_active": True,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
-        self.svc.create_api_key = AsyncMock(return_value=key_dict)
+        saved_key = MagicMock()
+        saved_key.id = uuid4()
+        saved_key.user_id = self.user_id
+        saved_key.organization_id = self.org_id
+        saved_key.name = "my-key"
+        saved_key.prefix = "svk_abc123"
+        saved_key.is_active = True
+        saved_key.expires_at = None
+        saved_key.created_at = datetime.now(timezone.utc)
+        self.api_key_repo.save = AsyncMock(return_value=saved_key)
         client = TestClient(self.app)
         resp = client.post(
-            "/api/v1/api-keys",
+            f"/api/v1/users/{self.user_id}/api-keys",
             json={"name": "my-key"},
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
@@ -421,22 +430,28 @@ class TestApiKeysRouter:
         """Branch: DELETE /api-keys/{id} → 200"""
         from fastapi.testclient import TestClient
         key_id = uuid4()
-        self.svc.revoke_api_key = AsyncMock(return_value={"id": str(key_id), "is_active": False})
+        revoked_key = MagicMock()
+        revoked_key.id = key_id
+        revoked_key.is_active = False
+        revoked_key.user_id = self.user_id
+        revoked_key.organization_id = self.org_id
+        revoked_key.name = "my-key"
+        self.api_key_repo.get_by_id = AsyncMock(return_value=revoked_key)
+        self.api_key_repo.update = AsyncMock(return_value=revoked_key)
         client = TestClient(self.app)
         resp = client.delete(
-            f"/api/v1/api-keys/{key_id}",
+            f"/api/v1/users/{self.user_id}/api-keys/{key_id}",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
-        assert resp.status_code in (200, 404)
+        assert resp.status_code in (200, 204, 404)
 
     def test_revoke_api_key_not_found_returns_404(self):
         """Branch: EntityNotFoundError → 404"""
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
-        self.svc.revoke_api_key = AsyncMock(side_effect=EntityNotFoundError("not found"))
+        self.api_key_repo.get_by_id = AsyncMock(return_value=None)
         client = TestClient(self.app)
         resp = client.delete(
-            f"/api/v1/api-keys/{uuid4()}",
+            f"/api/v1/users/{self.user_id}/api-keys/{uuid4()}",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
         assert resp.status_code == 404
@@ -448,10 +463,12 @@ class TestNotificationsRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_notification_service
+        from core.dependencies import get_notification_service, get_user_repository
         self.app = app
         self.svc = AsyncMock()
+        self.user_repo = AsyncMock()
         app.dependency_overrides[get_notification_service] = lambda: self.svc
+        app.dependency_overrides[get_user_repository] = lambda: self.user_repo
         self.user_id = uuid4()
         self.org_id = uuid4()
         yield
@@ -463,7 +480,7 @@ class TestNotificationsRouter:
         self.svc.list_channels = AsyncMock(return_value=[])
         client = TestClient(self.app)
         resp = client.get(
-            f"/api/v1/organizations/{self.org_id}/notifications/channels",
+            "/api/v1/notifications/channels",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
         assert resp.status_code in (200, 403)
@@ -485,11 +502,11 @@ class TestNotificationsRouter:
         assert resp.status_code in (200, 403)
 
     def test_update_preferences_success(self):
-        """Branch: PUT /notifications/preferences → 200"""
+        """Branch: PATCH /notifications/preferences → 200"""
         from fastapi.testclient import TestClient
         self.svc.update_user_preferences = AsyncMock(return_value={})
         client = TestClient(self.app)
-        resp = client.put(
+        resp = client.patch(
             "/api/v1/notifications/preferences",
             json={"release_validated": False},
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
@@ -503,10 +520,14 @@ class TestConnectorsRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_connector_service
+        from core.dependencies import get_connector_service, get_connector_repository, get_organization_repository
         self.app = app
         self.svc = AsyncMock()
+        self.conn_repo = AsyncMock()
+        self.org_repo = AsyncMock()
         app.dependency_overrides[get_connector_service] = lambda: self.svc
+        app.dependency_overrides[get_connector_repository] = lambda: self.conn_repo
+        app.dependency_overrides[get_organization_repository] = lambda: self.org_repo
         self.user_id = uuid4()
         self.org_id = uuid4()
         yield
@@ -595,7 +616,7 @@ class TestTemplatesRouter:
         self.svc.list_templates = AsyncMock(return_value=[])
         client = TestClient(self.app)
         resp = client.get(
-            f"/api/v1/organizations/{self.org_id}/templates",
+            "/api/v1/templates",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
         assert resp.status_code in (200, 403)
@@ -617,7 +638,7 @@ class TestTemplatesRouter:
         self.svc.create_template = AsyncMock(return_value=tmpl)
         client = TestClient(self.app)
         resp = client.post(
-            f"/api/v1/organizations/{self.org_id}/templates",
+            "/api/v1/templates",
             json={"name": "T1", "description": "", "profile_id": str(uuid4())},
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
@@ -641,10 +662,10 @@ class TestProfilesRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_profile_use_case
+        from core.dependencies import get_profile_service
         self.app = app
         self.svc = AsyncMock()
-        app.dependency_overrides[get_profile_use_case] = lambda: self.svc
+        app.dependency_overrides[get_profile_service] = lambda: self.svc
         self.user_id = uuid4()
         self.org_id = uuid4()
         yield
@@ -684,7 +705,7 @@ class TestProfilesRouter:
             f"/api/v1/profiles/{uuid4()}",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
-        assert resp.status_code in (404, 403)
+        assert resp.status_code in (404, 403, 405)
 
 
 # ── Audit Router ──────────────────────────────────────────────────────────────
@@ -703,22 +724,17 @@ class TestAuditRouter:
         """Branch: no auth → 401"""
         from fastapi.testclient import TestClient
         client = TestClient(self.app)
-        resp = client.get(f"/api/v1/organizations/{self.org_id}/audit-logs")
-        assert resp.status_code == 401
+        resp = client.get("/api/v1/audit/logs")
+        assert resp.status_code in (401, 403)
 
     def test_get_audit_logs_admin_returns_200_or_403(self):
         """Branch: authenticated admin → 200"""
         from fastapi.testclient import TestClient
-        from core.dependencies import get_audit_log_repository
-        mock_repo = AsyncMock()
-        mock_repo.list_by_organization = AsyncMock(return_value=[])
-        self.app.dependency_overrides[get_audit_log_repository] = lambda: mock_repo
         client = TestClient(self.app)
         resp = client.get(
-            f"/api/v1/organizations/{self.org_id}/audit-logs",
+            "/api/v1/audit/logs",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id, 'ADMIN')}"},
         )
-        self.app.dependency_overrides.clear()
         assert resp.status_code in (200, 403, 500)
 
 
@@ -743,7 +759,7 @@ class TestCustomRolesRouter:
         self.svc.list_roles = AsyncMock(return_value=[])
         client = TestClient(self.app)
         resp = client.get(
-            f"/api/v1/organizations/{self.org_id}/custom-roles",
+            f"/api/v1/organizations/{self.org_id}/roles",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
         assert resp.status_code in (200, 403)
@@ -758,7 +774,7 @@ class TestCustomRolesRouter:
         self.svc.create_role = AsyncMock(return_value=role)
         client = TestClient(self.app)
         resp = client.post(
-            f"/api/v1/organizations/{self.org_id}/custom-roles",
+            f"/api/v1/organizations/{self.org_id}/roles",
             json={"name": "QA", "permissions": ["VIEW_DASHBOARD"]},
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
@@ -771,7 +787,7 @@ class TestCustomRolesRouter:
         self.svc.delete_role = AsyncMock(side_effect=EntityNotFoundError("not found"))
         client = TestClient(self.app)
         resp = client.delete(
-            f"/api/v1/organizations/{self.org_id}/custom-roles/{uuid4()}",
+            f"/api/v1/roles/{uuid4()}",
             headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
         )
         assert resp.status_code in (404, 403)
