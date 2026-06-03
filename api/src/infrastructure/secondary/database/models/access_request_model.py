@@ -15,7 +15,7 @@ class AccessRequestModel(Base):
     organization_description = Column(String(500), nullable=True)
     slug_preview = Column(String(100), nullable=True)
     status = Column(
-        Enum(AccessRequestStatus, name="access_request_status", create_type=False, values_callable=lambda x: [e.value for e in x]),
+        Enum(AccessRequestStatus, name="access_request_status", values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=AccessRequestStatus.PENDING,
     )

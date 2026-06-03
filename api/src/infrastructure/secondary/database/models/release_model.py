@@ -11,7 +11,7 @@ class ReleaseModel(Base):
     project_id = Column(PG_UUID(as_uuid=True), ForeignKey("project.id"), nullable=False)
     profile_id = Column(PG_UUID(as_uuid=True), ForeignKey("verification_profile.id"), nullable=True)
     version = Column(String(50), nullable=False)
-    status = Column(SAEnum(ReleaseStatus, name='release_status', create_type=False, values_callable=lambda enums: [e.value for e in enums]), nullable=False, default=ReleaseStatus.BORRADOR)
+    status = Column(SAEnum(ReleaseStatus, name='release_status', values_callable=lambda enums: [e.value for e in enums]), nullable=False, default=ReleaseStatus.BORRADOR)
     description = Column(String(1000), nullable=True, default="")
     name = Column(String(100), nullable=False)
     created_by = Column(PG_UUID(as_uuid=True), nullable=True)
