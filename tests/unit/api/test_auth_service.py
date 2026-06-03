@@ -4,7 +4,7 @@ from uuid import uuid4
 from datetime import datetime, timedelta, timezone
 
 from application.use_cases.main.auth_service import AuthService
-from application.ports.input.i_auth_service import AuthTokens
+from application.ports.input.i_auth_service import AuthTokens, LoginResult
 from domain.entities.user import User
 from domain.enums import UserRole
 from domain.exceptions import ValidationError
@@ -75,14 +75,15 @@ class TestAuthenticateSuccess:
         """Verifica la autenticación exitosa y retorno de tokens."""
         user_repo.get_by_email.return_value = sample_user
 
-        tokens, user_id, role = await service.authenticate("test@example.com", "password")
+        result = await service.authenticate("test@example.com", "password")
 
-        assert isinstance(tokens, AuthTokens)
-        assert tokens.access_token == "access-token"
-        assert tokens.refresh_token == "refresh-token"
-        assert tokens.token_type == "bearer"
-        assert user_id == sample_user.id
-        assert role == UserRole.U2
+        assert isinstance(result, LoginResult)
+        assert result.tokens is not None
+        assert result.tokens.access_token == "access-token"
+        assert result.tokens.refresh_token == "refresh-token"
+        assert result.tokens.token_type == "bearer"
+        assert result.user_id == sample_user.id
+        assert result.role == UserRole.U2.value
 
     async def test_authenticate_resets_failed_attempts(self, service, user_repo, sample_user):
         """Verifica que se reseteen los intentos fallidos tras un login exitoso."""

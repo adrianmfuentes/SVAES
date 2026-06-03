@@ -9,6 +9,32 @@ on:
 jobs:
   sonarcloud:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: svaes
+          POSTGRES_PASSWORD: svaes
+          POSTGRES_DB: svaes_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v6
         with:
@@ -24,7 +50,7 @@ jobs:
 
       - name: Run tests with coverage
         env:
-          DATABASE_URL: postgresql+psycopg://test:test@localhost:5432/testdb
+          DATABASE_URL: postgresql+asyncpg://svaes:svaes@localhost:5432/svaes_test
           JWT_SECRET_KEY: ci-test-secret-key-not-used-in-production
           JWT_ALGORITHM: HS256
           JWT_EXPIRE_MINUTES: "30"
@@ -37,6 +63,12 @@ jobs:
           ENGINE_API_KEY: ci-test-key
           ADMIN_EMAIL: admin@test.local
           ADMIN_PASSWORD: test-password-not-for-production
+          TEST_POSTGRES_USER: svaes
+          TEST_POSTGRES_PASSWORD: svaes
+          TEST_POSTGRES_HOST: localhost
+          TEST_POSTGRES_PORT: "5432"
+          TEST_POSTGRES_DB: svaes_test
+          POSTGRES_PASSWORD: svaes
         run: uv run --frozen --no-build --project api --extra dev pytest --cov=api/src --cov-report=xml
 
       - name: SonarCloud Scan
