@@ -161,17 +161,14 @@ def require_org_access():
         current_user: CurrentUser = Depends(get_current_user),
         org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
     ) -> CurrentUser:
-        if current_user.role == UserRole.U3:
-            return current_user
-        if current_user.organization_id == org_id:
-            return current_user
-        org = await org_repo.get_by_id(org_id)
-        if org and org.owner_id == current_user.user_id:
-            return current_user
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes acceso a esta organización",
-        )
+        if current_user.role != UserRole.U3 and current_user.organization_id != org_id:
+            org = await org_repo.get_by_id(org_id)
+            if not org or org.owner_id != current_user.user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="No tienes acceso a esta organización",
+                )
+        return current_user
     return dependency  # NOSONAR
 
 

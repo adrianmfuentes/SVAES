@@ -44,10 +44,9 @@ class OrganizationService(IOrganizationService):
         org = Organization(name=name, slug=slug, owner_id=owner_id)
         created_org = await self._org_repo.create(org)
 
-        if owner_id and self._user_repo:
-            if owner:
-                owner.organization_id = created_org.id
-                await self._user_repo.update(owner)
+        if owner_id and self._user_repo and owner:
+            owner.organization_id = created_org.id
+            await self._user_repo.update(owner)
 
         return created_org
 

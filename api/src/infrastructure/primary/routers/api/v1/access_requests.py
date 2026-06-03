@@ -107,7 +107,7 @@ async def create_access_request(
         )
         created_user = await user_repo.create(user)
 
-        org = await org_service.create_organization(
+        await org_service.create_organization(
             name=payload.organization_name,
             slug=slug,
             owner_id=created_user.id,
@@ -133,11 +133,7 @@ async def create_access_request(
                 token=activation_token,
             )
         except Exception:
-            _log.warning(
-                "Activation email failed for user %s (org: %s)",
-                created_user.email,
-                payload.organization_name,
-            )
+            _log.warning("Activation email failed for new user")
 
         return {"id": str(created_ar.id), "status": created_ar.status.value}
     except HTTPException:
@@ -154,7 +150,7 @@ async def create_access_request(
 async def list_access_requests(
     current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3))],
     repo: Annotated[IAccessRequestRepository, Depends(_get_access_request_repository)],
-    status_param: str = Query("PENDING", alias="status"),
+    status_param: Annotated[str, Query(alias="status")] = "PENDING",
 ):
     try:
         ar_status = AccessRequestStatus(status_param)
