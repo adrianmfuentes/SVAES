@@ -59,7 +59,7 @@ def _test_env():
 @pytest_asyncio.fixture(scope="session")
 async def _test_db(_test_env):
     from sqlalchemy.ext.asyncio import create_async_engine
-    from api.src.infrastructure.secondary.database.models import Base
+    from infrastructure.secondary.database.models import Base
 
     test_engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
 
@@ -89,9 +89,9 @@ async def client(_test_db):
     if not _test_db:
         pytest.skip("PostgreSQL test database not available — start PostgreSQL and create 'svaes_test' database")
 
-    from api.src.main import app
-    from api.src.infrastructure.secondary.database.models import Base
-    from api.src.infrastructure.secondary.database.get_async_session import engine
+    from main import app
+    from infrastructure.secondary.database.models import Base
+    from infrastructure.secondary.database.get_async_session import engine
     from httpx import AsyncClient, ASGITransport
 
     @asynccontextmanager
@@ -109,17 +109,16 @@ async def client(_test_db):
     except Exception:
         pass
 
-    try:
-        from infrastructure.secondary.database.get_async_session import engine as _app_engine
-        await _app_engine.dispose()
-    except Exception:
-        pass
-
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test", # NOSONAR
     ) as ac:
         yield ac
+
+    try:
+        await engine.dispose()
+    except Exception:
+        pass
 
 
 @pytest_asyncio.fixture
@@ -134,8 +133,8 @@ async def db(_test_db):
 # ---------------------------------------------------------------------------
 
 def _make_token(user_id, email, role, organization_id=None):
-    from api.src.domain.enums import UserRole
-    from api.src.infrastructure.primary.middleware.jwt_handler import JwtHandler
+    from domain.enums import UserRole
+    from infrastructure.primary.middleware.jwt_handler import JwtHandler
 
     handler = JwtHandler(
         secret=os.environ["JWT_SECRET_KEY"],
@@ -164,7 +163,7 @@ def test_org_id():
 
 @pytest.fixture
 def admin_token(test_user_id, test_org_id):
-    from api.src.domain.enums import UserRole
+    from domain.enums import UserRole
     return _make_token(test_user_id, "admin@integration.test", UserRole.U3, test_org_id)
 
 
@@ -175,7 +174,7 @@ def admin_headers(admin_token):
 
 @pytest.fixture
 def manager_token(test_user_id, test_org_id):
-    from api.src.domain.enums import UserRole
+    from domain.enums import UserRole
     return _make_token(test_user_id, "manager@integration.test", UserRole.U4, test_org_id)
 
 
@@ -186,7 +185,7 @@ def manager_headers(manager_token):
 
 @pytest.fixture
 def operator_token(test_user_id, test_org_id):
-    from api.src.domain.enums import UserRole
+    from domain.enums import UserRole
     return _make_token(test_user_id, "operator@integration.test", UserRole.U2, test_org_id)
 
 
@@ -197,7 +196,7 @@ def operator_headers(operator_token):
 
 @pytest.fixture
 def viewer_token(test_user_id, test_org_id):
-    from api.src.domain.enums import UserRole
+    from domain.enums import UserRole
     return _make_token(test_user_id, "viewer@integration.test", UserRole.U1, test_org_id)
 
 

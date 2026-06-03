@@ -52,7 +52,7 @@ def _test_env():
 @pytest_asyncio.fixture(scope="session")
 async def _test_db(_test_env):
     from sqlalchemy.ext.asyncio import create_async_engine
-    from api.src.infrastructure.secondary.database.models import Base
+    from infrastructure.secondary.database.models import Base
 
     engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
 
@@ -79,7 +79,7 @@ async def _test_db(_test_env):
 
 @pytest_asyncio.fixture
 async def client(_test_db):
-    from api.src.main import app
+    from main import app
     from httpx import AsyncClient, ASGITransport
 
     @asynccontextmanager
@@ -89,8 +89,8 @@ async def client(_test_db):
     app.router.lifespan_context = _test_lifespan
 
     if _test_db:
-        from api.src.infrastructure.secondary.database.models import Base
-        from api.src.infrastructure.secondary.database.get_async_session import engine
+        from infrastructure.secondary.database.models import Base
+        from infrastructure.secondary.database.get_async_session import engine
 
         try:
             async with engine.begin() as conn:
@@ -113,6 +113,13 @@ async def client(_test_db):
     ) as ac:
         yield ac
 
+    if _test_db:
+        from infrastructure.secondary.database.get_async_session import engine
+        try:
+            await engine.dispose()
+        except Exception:
+            pass
+
     if db_patch is not None:
         db_patch.stop()
 
@@ -124,8 +131,8 @@ def test_user_id():
 
 @pytest.fixture
 def auth_token():
-    from api.src.domain.enums import UserRole
-    from api.src.infrastructure.primary.middleware.jwt_handler import JwtHandler
+    from domain.enums import UserRole
+    from infrastructure.primary.middleware.jwt_handler import JwtHandler
 
     handler = JwtHandler(
         secret=os.environ["JWT_SECRET_KEY"],
@@ -155,8 +162,8 @@ def unauth_headers():
 
 @pytest.fixture
 def basic_user_token():
-    from api.src.domain.enums import UserRole
-    from api.src.infrastructure.primary.middleware.jwt_handler import JwtHandler
+    from domain.enums import UserRole
+    from infrastructure.primary.middleware.jwt_handler import JwtHandler
 
     handler = JwtHandler(
         secret=os.environ["JWT_SECRET_KEY"],
