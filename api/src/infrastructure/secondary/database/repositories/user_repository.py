@@ -28,6 +28,8 @@ class SqlUserRepository(IUserRepository):
             privacy_accepted_at=cast(datetime | None, row.privacy_accepted_at),
             activation_token=cast(str | None, row.activation_token),
             activation_token_expiry=cast(datetime | None, row.activation_token_expiry),
+            totp_secret=cast(str | None, row.totp_secret),
+            totp_enabled=cast(bool, row.totp_enabled) if row.totp_enabled is not None else False,
         )
 
     async def create(self, user: User) -> User:
@@ -97,6 +99,8 @@ class SqlUserRepository(IUserRepository):
             user_model.locked_until = user.locked_until  # pyright: ignore[reportAttributeAccessIssue]
             user_model.activation_token = user.activation_token  # pyright: ignore[reportAttributeAccessIssue]
             user_model.activation_token_expiry = user.activation_token_expiry  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.totp_secret = user.totp_secret  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.totp_enabled = user.totp_enabled  # pyright: ignore[reportAttributeAccessIssue]
             user_model.updated_at = datetime.now(timezone.utc)
             await session.commit()
             await session.refresh(user_model)

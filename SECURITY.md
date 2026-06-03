@@ -92,17 +92,21 @@ shift during examination periods.
 
 | Mechanism | Status | Location |
 |-----------|--------|----------|
-| JWT Authentication (HS256) | Implemented | `api/src/infrastructure/security/jwt_handler.py` |
-| RBAC on API endpoints | Implemented | `api/src/api/dependencies.py` |
-| Multi-tenant isolation (domain layer) | Implemented | `api/src/domain/` |
-| AES-256-GCM credential encryption | Implemented | `api/src/infrastructure/security/credential_encryptor.py` |
-| Input validation with Pydantic | Implemented | `api/src/api/schemas/` |
+| JWT Authentication (HS256) | Implemented | `api/src/infrastructure/primary/middleware/jwt_handler.py` |
+| TOTP Two-Factor Authentication (2FA) | Implemented | `api/src/application/use_cases/main/auth_service.py` |
+| RBAC on API endpoints | Implemented | `api/src/core/dependencies.py` |
+| Multi-tenant isolation (domain layer) | Implemented | `api/src/domain/`, `api/src/core/dependencies.py` |
+| Fernet (AES-128-CBC) credential encryption | Implemented | `api/src/core/credential_encryptor.py` |
+| Input validation with Pydantic | Implemented | All router schemas |
+| Account lockout (5 attempts → 15 min) | Implemented | `api/src/application/use_cases/main/auth_service.py` |
+| Rate limiting (slowapi) | Implemented | `api/src/core/rate_limit.py` |
+| Audit log persisted to DB (GDPR) | Implemented | `api/src/core/audit.py` + `audit_log` table |
+| PII pseudonymisation in verification | Implemented | `api/src/core/pseudonymizer.py` |
+| Redis password authentication | Implemented | `docker-compose.yml` (requirepass) |
+| Engine API key authentication | Implemented | `engine/src/main.rs` |
 | Static analysis (CodeQL) | Active | `.github/workflows/codeql.yml` |
 | Dependency updates (Dependabot) | Active | `.github/dependabot.yml` |
 | Secrets via environment variables | Active | `.env` (not versioned) |
-| Row-Level Security in PostgreSQL | Planned | Migraciones Alembic |
-| Rate limiting (Redis sliding window) | Planned | Pending worker integration |
-| Rust engine sandboxing | Planned | Pending engine implementation |
 
 ---
 
@@ -122,4 +126,4 @@ anonymity.
 
 ---
 
-*Policy in effect as of May 2026. Maintained by [@adrianmfuentes](https://github.com/adrianmfuentes).*
+*Policy in effect as of June 2026. Maintained by [@adrianmfuentes](https://github.com/adrianmfuentes).*

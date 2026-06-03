@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, JSON
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -15,4 +15,4 @@ class VerificationResultModel(Base):
     summary = Column(JSON, nullable=True, default=dict)
     rule_results = Column(JSON, nullable=True, default=list)
     profile_snapshot = Column(JSON, nullable=True, default=dict)
-    executed_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    executed_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))

@@ -85,6 +85,27 @@ def test_app(mock_org_service, admin_user):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture
+def test_app_non_admin(mock_org_service, manager_user):
+    app.dependency_overrides[get_organization_service] = lambda: mock_org_service
+    app.dependency_overrides[get_current_user] = lambda: manager_user
+    app.dependency_overrides[require_permission(Permission.VIEW_ORG_PROJECTS)] = lambda: manager_user
+    app.dependency_overrides[require_permission(Permission.CREATE_PROJECT)] = lambda: manager_user
+    app.dependency_overrides[require_permission(Permission.ARCHIVE_PROJECT)] = lambda: manager_user
+    app.dependency_overrides[require_permission(Permission.TRANSFER_OWNERSHIP)] = lambda: manager_user
+
+    @asynccontextmanager
+    async def _test_lifespan(app):
+        yield
+
+    app.router.lifespan_context = _test_lifespan
+
+    with TestClient(app) as client:
+        yield client
+
+    app.dependency_overrides.clear()
+
+
 class TestListOrganizations:
     def test_list_organizations_success(self, test_app, mock_org_service):
         """Verifica que se listen las organizaciones correctamente."""
@@ -112,7 +133,7 @@ class TestListOrganizations:
 
 
 class TestCreateOrganization:
-    def test_create_organization_success(self, test_app, mock_org_service):
+    def test_create_organization_success(self, test_app_non_admin, mock_org_service):
         """Verifica la creación exitosa de una organización."""
         org = Organization(
             id=uuid4(),
@@ -123,7 +144,7 @@ class TestCreateOrganization:
         )
         mock_org_service.create_organization.return_value = org
 
-        response = test_app.post(
+        response = test_app_non_admin.post(
             "/api/v1/organizations",
             json={"name": "New Org", "slug": "new-org"},
         )
@@ -132,21 +153,21 @@ class TestCreateOrganization:
         assert data["name"] == "New Org"
         assert "id" in data
 
-    def test_create_organization_validation_error(self, test_app, mock_org_service):
+    def test_create_organization_validation_error(self, test_app_non_admin, mock_org_service):
         """Verifica que se retorne 409 ante error de validación."""
         mock_org_service.create_organization.side_effect = ValidationError("slug ya existe")
 
-        response = test_app.post(
+        response = test_app_non_admin.post(
             "/api/v1/organizations",
             json={"name": "New Org", "slug": "existing-slug"},
         )
         assert response.status_code == 409
 
-    def test_create_organization_internal_error(self, test_app, mock_org_service):
+    def test_create_organization_internal_error(self, test_app_non_admin, mock_org_service):
         """Verifica que se retorne 500 ante error inesperado."""
         mock_org_service.create_organization.side_effect = Exception("Boom")
 
-        response = test_app.post(
+        response = test_app_non_admin.post(
             "/api/v1/organizations",
             json={"name": "New Org", "slug": "new-org"},
         )

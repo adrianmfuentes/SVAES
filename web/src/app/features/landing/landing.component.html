@@ -4,9 +4,10 @@
       SVAES
       <span class="landing-logo-badge">beta</span>
     </div>
-    <nav class="landing-nav" aria-label="Navegación principal">
-      <span class="landing-nav-tagline">Sistema de Verificación Automática de Entregas</span>
-      <a routerLink="/auth/login" class="btn-primary">Acceder</a>
+    <nav class="landing-nav" aria-label="{{ 'landing.aria_nav_main' | t }}">
+      <span class="landing-nav-tagline">{{ 'landing.tagline' | t }}</span>
+      <app-lang-toggle theme="light" />
+      <a routerLink="/auth/login" class="btn-primary">{{ 'landing.login_button' | t }}</a>
     </nav>
   </header>
 
@@ -14,35 +15,31 @@
     <div class="landing-hero-inner">
 
       <div class="landing-left">
-        <span class="landing-eyebrow">Infraestructura operacional</span>
+        <span class="landing-eyebrow">{{ 'landing.eyebrow_hero' | t }}</span>
         <h1 class="landing-heading">
-          Verificación<br>
-          automática<br>
-          de entregas
+          {{ 'landing.heading_line1' | t }}<br>
+          {{ 'landing.heading_line2' | t }}<br>
+          {{ 'landing.heading_line3' | t }}
         </h1>
-        <p class="landing-subtitle">
-          Conecte sus herramientas de desarrollo, defina reglas de
-          verificación y obtenga trazabilidad completa de cada release.
-          Infraestructura honesta para equipos que operan con exigencia.
-        </p>
+        <p class="landing-subtitle">{{ 'landing.subtitle' | t }}</p>
         <div class="landing-actions">
-          <a routerLink="/request-access" class="btn-accent">Crear cuenta</a>
-          <a routerLink="/auth/login" class="btn-secondary">Acceder al sistema</a>
+          <a class="btn-accent" (click)="navigateToRequestAccess()">{{ 'landing.register_button' | t }}</a>
+          <a routerLink="/auth/login" class="btn-secondary">{{ 'landing.login_system_button' | t }}</a>
         </div>
         <div class="landing-stats">
           <div class="landing-stat">
             <span class="landing-stat-value">10</span>
-            <span class="landing-stat-label">Reglas</span>
+            <span class="landing-stat-label">{{ 'landing.stat_rules' | t }}</span>
           </div>
           <span class="landing-stat-sep"></span>
           <div class="landing-stat">
             <span class="landing-stat-value">5+</span>
-            <span class="landing-stat-label">Conectores</span>
+            <span class="landing-stat-label">{{ 'landing.stat_connectors' | t }}</span>
           </div>
           <span class="landing-stat-sep"></span>
           <div class="landing-stat">
             <span class="landing-stat-value">100%</span>
-            <span class="landing-stat-label">Trazabilidad</span>
+            <span class="landing-stat-label">{{ 'landing.stat_traceability' | t }}</span>
           </div>
         </div>
       </div>
@@ -50,7 +47,7 @@
       <div class="landing-right">
         <div class="mock-window">
           <div class="mock-window-bar">
-            <span class="mock-window-title">Verificación · release/2024-Q3-hotfix</span>
+            <span class="mock-window-title">{{ 'landing.mock_verification' | t }} · release/2024-Q3-hotfix</span>
             <span class="mock-window-id">a3f2c1d9</span>
           </div>
 
@@ -104,8 +101,8 @@
           </table>
 
           <div class="mock-footer">
-            <span>5 reglas · 3 conectores activos</span>
-            <span>27 mayo 2026, 14:32</span>
+            <span>{{ 'landing.mock_footer' | t }}</span>
+            <span>{{ 'landing.mock_footer_date' | t }}</span>
           </div>
 
         </div>
@@ -118,35 +115,32 @@
     <div class="landing-access-inner">
 
       <div class="landing-access-text">
-        <span class="landing-eyebrow">Registro</span>
-        <h2 class="landing-access-title">Empieza en minutos</h2>
-        <p class="landing-access-desc">
-          Regístrate con tus datos y los de tu organización.
-          Sin aprobación de administrador — acceso inmediato.
-        </p>
-        <a routerLink="/request-access" class="btn-primary">Crear cuenta</a>
+        <span class="landing-eyebrow">{{ 'landing.eyebrow_register' | t }}</span>
+        <h2 class="landing-access-title">{{ 'landing.register_title' | t }}</h2>
+        <p class="landing-access-desc">{{ 'landing.register_desc' | t }}</p>
+        <a routerLink="/request-access" class="btn-primary">{{ 'landing.register_button' | t }}</a>
       </div>
 
       <div class="landing-access-steps">
         <div class="access-step">
           <span class="access-step-num">01</span>
           <div class="access-step-body">
-            <strong class="access-step-title">Rellena el formulario</strong>
-            <span class="access-step-desc">Nombre, email y datos de tu organización. Menos de 2 minutos.</span>
+            <strong class="access-step-title">{{ 'landing.step1_title' | t }}</strong>
+            <span class="access-step-desc">{{ 'landing.step1_desc' | t }}</span>
           </div>
         </div>
         <div class="access-step">
           <span class="access-step-num">02</span>
           <div class="access-step-body">
-            <strong class="access-step-title">Activa tu cuenta</strong>
-            <span class="access-step-desc">Recibirás un enlace de activación en tu correo electrónico.</span>
+            <strong class="access-step-title">{{ 'landing.step2_title' | t }}</strong>
+            <span class="access-step-desc">{{ 'landing.step2_desc' | t }}</span>
           </div>
         </div>
         <div class="access-step">
           <span class="access-step-num">03</span>
           <div class="access-step-body">
-            <strong class="access-step-title">Accede y opera</strong>
-            <span class="access-step-desc">Crea tu organización directamente desde tu perfil y empieza a verificar.</span>
+            <strong class="access-step-title">{{ 'landing.step3_title' | t }}</strong>
+            <span class="access-step-desc">{{ 'landing.step3_desc' | t }}</span>
           </div>
         </div>
       </div>
@@ -155,11 +149,11 @@
   </section>
 
   <footer class="landing-footer">
-    <span class="landing-footer-copy">© 2026 Adrián Martínez. Todos los derechos reservados.</span>
-    <nav class="landing-footer-nav" aria-label="Navegación del pie de página">
-      <a routerLink="/legal/privacidad">Política de privacidad</a>
+    <span class="landing-footer-copy">{{ 'landing.footer_copy' | t }}</span>
+    <nav class="landing-footer-nav" aria-label="{{ 'landing.aria_nav_footer' | t }}">
+      <a routerLink="/legal/privacidad">{{ 'landing.footer_privacy' | t }}</a>
       <span aria-hidden="true">·</span>
-      <a routerLink="/legal/aviso-legal">Aviso legal</a>
+      <a routerLink="/legal/aviso-legal">{{ 'landing.footer_legal' | t }}</a>
     </nav>
   </footer>
 </div>

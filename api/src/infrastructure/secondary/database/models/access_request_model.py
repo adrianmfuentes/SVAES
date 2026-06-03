@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from sqlalchemy import Column, String, DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -22,5 +22,5 @@ class AccessRequestModel(Base):
     rejection_reason = Column(String(500), nullable=True)
     reviewed_by = Column(PG_UUID(as_uuid=True), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

@@ -47,6 +47,12 @@
   text-decoration: none;
 }
 
+.legal-header-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
 // ── Two-column body ───────────────────────────────────────────────────────────
 
 .legal-body {

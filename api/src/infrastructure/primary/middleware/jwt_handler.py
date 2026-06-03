@@ -77,6 +77,9 @@ class JwtHandler(ITokenService):
         try:
             decoded = jwt.decode(token, self._secret, algorithms=[self._algorithm])
 
+            if decoded.get("type") == "refresh":
+                raise ValueError("Token de refresco no válido como token de acceso")
+
             return TokenPayload(
                 user_id=UUID(decoded["sub"]),
                 role=decoded["role"],
@@ -145,3 +148,22 @@ class JwtHandler(ITokenService):
             except Exception:
                 pass
         return token in self._blacklisted_tokens
+
+    def create_totp_pending_token(self, user_id: UUID) -> str:
+        now = datetime.now(timezone.utc)
+        payload = {
+            "sub": str(user_id),
+            "type": "totp_pending",
+            "iat": now,
+            "exp": now + timedelta(minutes=5),
+        }
+        return jwt.encode(payload, self._secret, algorithm=self._algorithm)
+
+    def verify_totp_pending_token(self, token: str) -> Optional[UUID]:
+        try:
+            decoded = jwt.decode(token, self._secret, algorithms=[self._algorithm])
+            if decoded.get("type") != "totp_pending":
+                return None
+            return UUID(decoded["sub"])
+        except InvalidTokenError:
+            return None

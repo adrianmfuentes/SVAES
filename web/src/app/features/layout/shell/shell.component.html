@@ -5,8 +5,8 @@
     </div>
 
     <!-- ADMIN (U3) navigation -->
-    <nav class="sidebar-nav" *ngIf="isAdmin" aria-label="Navegación de administrador">
-      <div class="nav-section">Sistema</div>
+    <nav class="sidebar-nav" *ngIf="isAdmin" [attr.aria-label]="'shell.nav_admin_label' | t">
+      <div class="nav-section">{{ 'shell.nav_system' | t }}</div>
 
       <a
         routerLink="/app/system"
@@ -14,10 +14,10 @@
         [routerLinkActiveOptions]="{ exact: false }"
         class="nav-item"
       >
-        Visi&oacute;n general
+        {{ 'shell.nav_overview' | t }}
       </a>
 
-      <div class="nav-section">Gesti&oacute;n</div>
+      <div class="nav-section">{{ 'shell.nav_management' | t }}</div>
 
       <a
         routerLink="/app/admin"
@@ -25,7 +25,7 @@
         [routerLinkActiveOptions]="{ exact: false }"
         class="nav-item"
       >
-        Administraci&oacute;n
+        {{ 'shell.nav_administration' | t }}
       </a>
 
       <a
@@ -34,10 +34,10 @@
         [routerLinkActiveOptions]="{ exact: false }"
         class="nav-item"
       >
-        Registros
+        {{ 'shell.nav_logs' | t }}
       </a>
 
-      <div class="nav-section">Cuenta</div>
+      <div class="nav-section">{{ 'shell.nav_account' | t }}</div>
 
       <a
         routerLink="/app/profile"
@@ -45,13 +45,13 @@
         [routerLinkActiveOptions]="{ exact: false }"
         class="nav-item"
       >
-        Mi perfil
+        {{ 'shell.nav_my_profile' | t }}
       </a>
     </nav>
 
     <!-- REGULAR USER (U2/U4) navigation -->
-    <nav class="sidebar-nav" *ngIf="!isAdmin" aria-label="Navegación de usuario">
-      <div class="nav-section">Principal</div>
+    <nav class="sidebar-nav" *ngIf="!isAdmin" [attr.aria-label]="'shell.nav_user_label' | t">
+      <div class="nav-section">{{ 'shell.nav_main' | t }}</div>
 
       <a
         routerLink="/app/dashboard"
@@ -59,7 +59,7 @@
         [routerLinkActiveOptions]="{ exact: false }"
         class="nav-item"
       >
-        Dashboard
+        {{ 'shell.nav_dashboard' | t }}
       </a>
 
       <a
@@ -68,10 +68,10 @@
         [routerLinkActiveOptions]="{ exact: false }"
         class="nav-item"
       >
-        Entregas
+        {{ 'shell.nav_releases' | t }}
       </a>
 
-      <div class="nav-section">Configuraci&oacute;n</div>
+      <div class="nav-section">{{ 'shell.nav_configuration' | t }}</div>
 
       <a
         routerLink="/app/connectors"
@@ -79,7 +79,7 @@
         [routerLinkActiveOptions]="{ exact: false }"
         class="nav-item"
       >
-        Conectores
+        {{ 'shell.nav_connectors' | t }}
       </a>
 
       <a
@@ -88,10 +88,10 @@
         [routerLinkActiveOptions]="{ exact: false }"
         class="nav-item"
       >
-        Perfiles
+        {{ 'shell.nav_profiles' | t }}
       </a>
 
-      <div class="nav-section">Cuenta</div>
+      <div class="nav-section">{{ 'shell.nav_account' | t }}</div>
 
       <a
         routerLink="/app/profile"
@@ -99,17 +99,20 @@
         [routerLinkActiveOptions]="{ exact: false }"
         class="nav-item"
       >
-        Mi perfil
+        {{ 'shell.nav_my_profile' | t }}
       </a>
     </nav>
 
     <div class="sidebar-footer">
+      <div class="lang-switcher">
+        <app-lang-toggle theme="dark" />
+      </div>
       <div class="sidebar-role-indicator" *ngIf="isAdmin">
-        <span class="role-label">Admin global</span>
+        <span class="role-label">{{ 'shell.role_admin_global' | t }}</span>
         <span class="role-badge">U3</span>
       </div>
       <button class="sidebar-logout" (click)="logout()">
-        Cerrar sesi&oacute;n
+        {{ 'shell.logout' | t }}
       </button>
     </div>
   </aside>

@@ -21,6 +21,8 @@ class User:
     privacy_accepted_at: Optional[datetime] = None
     activation_token: Optional[str] = None
     activation_token_expiry: Optional[datetime] = None
+    totp_secret: Optional[str] = None
+    totp_enabled: bool = False
 
     @property
     def organization_id(self) -> Optional[UUID]:

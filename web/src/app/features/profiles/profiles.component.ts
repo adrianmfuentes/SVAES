@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
+import { TranslationService } from '../../core/i18n/translation.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { catchError, of } from 'rxjs';
 
 interface Profile {
@@ -19,15 +21,14 @@ interface Profile {
 @Component({
   selector: 'app-profiles',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe],
   template: `
     <div class="profiles-page">
       <div class="page-header">
         <div class="page-header-left">
-          <h1 class="page-title">Perfiles de verificación</h1>
-          <span *ngIf="isAdmin" class="global-badge">Vista global</span>
+          <h1 class="page-title">{{ 'profiles.title' | t }}</h1>
         </div>
-        <button *ngIf="isAdmin" class="btn-primary" (click)="openCreate()">Nueva plantilla</button>
+        <button *ngIf="canManage" class="btn-primary" (click)="openCreate()">{{ 'profiles.create_button' | t }}</button>
       </div>
 
       <div *ngIf="loading()" class="skeleton-list">
@@ -37,67 +38,38 @@ interface Profile {
       <div *ngIf="error() && !loading()" class="error-banner">{{ error() }}</div>
 
       <div *ngIf="!loading() && !error()">
-        <!-- Templates (admin CRUD) -->
-        <ng-container *ngIf="isAdmin">
-          <div class="section-label">Plantillas globales</div>
-          <div class="data-table-wrap" style="margin-bottom: var(--spacing-lg)">
-            <table class="data-table" *ngIf="templates().length > 0; else templatesEmpty">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Descripción</th>
-                  <th>Reglas</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let p of templates()">
-                  <td class="cell-primary">{{ p.name }}</td>
-                  <td class="cell-muted">{{ p.description ?? '—' }}</td>
-                  <td>{{ p.rules_count ?? '—' }}</td>
-                  <td class="cell-actions">
-                    <button class="btn-ghost" (click)="openEdit(p)">Editar</button>
-                    <button
-                      class="btn-ghost btn-danger-ghost"
-                      [disabled]="deletingId() === p.id"
-                      (click)="deleteProfile(p)"
-                    >
-                      {{ deletingId() === p.id ? 'Eliminando…' : 'Eliminar' }}
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <ng-template #templatesEmpty>
-              <div class="empty-state">No hay plantillas globales. Cree la primera con el botón superior.</div>
-            </ng-template>
-          </div>
-
-          <div class="section-label section-label-muted">Perfiles de organizaciones (solo lectura)</div>
-        </ng-container>
-
-        <!-- All profiles / org profiles -->
+        <!-- Org profiles -->
+        <div class="section-label">{{ 'profiles.org_profiles' | t }}</div>
         <div class="data-table-wrap">
           <table class="data-table" *ngIf="orgProfiles().length > 0; else profilesEmpty">
             <thead>
               <tr>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th *ngIf="isAdmin">Organización</th>
-                <th>Reglas</th>
+                <th>{{ 'profiles.table_name' | t }}</th>
+                <th>{{ 'common.description' | t }}</th>
+                <th>{{ 'profiles.table_rules' | t }}</th>
+                <th *ngIf="canManage"></th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let p of orgProfiles()">
                 <td class="cell-primary">{{ p.name }}</td>
                 <td class="cell-muted">{{ p.description ?? '—' }}</td>
-                <td *ngIf="isAdmin" class="cell-muted">{{ p.organization_name ?? '—' }}</td>
                 <td>{{ p.rules_count ?? '—' }}</td>
+                <td *ngIf="canManage" class="cell-actions">
+                  <button class="btn-ghost" (click)="openEdit(p)">{{ 'common.edit' | t }}</button>
+                  <button
+                    class="btn-ghost btn-danger-ghost"
+                    [disabled]="deletingId() === p.id"
+                    (click)="deleteProfile(p)"
+                  >
+                    {{ deletingId() === p.id ? ('profiles.deleting' | t) : ('common.delete' | t) }}
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
           <ng-template #profilesEmpty>
-            <div class="empty-state">No hay perfiles de verificación registrados.</div>
+            <div class="empty-state">{{ 'profiles.no_profiles' | t }}</div>
           </ng-template>
         </div>
       </div>
@@ -107,23 +79,23 @@ interface Profile {
     <div class="modal-overlay" *ngIf="showModal()" (click)="showModal.set(false)">
       <div class="modal-panel" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3 class="modal-title">{{ editingProfile() ? 'Editar plantilla' : 'Nueva plantilla global' }}</h3>
+          <h3 class="modal-title">{{ editingProfile() ? ('profiles.edit_title' | t) : ('profiles.create_title' | t) }}</h3>
           <button class="modal-close" (click)="showModal.set(false)">&times;</button>
         </div>
         <form [formGroup]="profileForm" (ngSubmit)="submitProfile()">
           <div class="form-group">
-            <label for="prof-name">Nombre</label>
-            <input id="prof-name" type="text" formControlName="name" placeholder="Verificación estándar" />
+            <label for="prof-name">{{ 'profiles.name_label' | t }}</label>
+            <input id="prof-name" type="text" formControlName="name" [placeholder]="'profiles.template_placeholder' | t" />
           </div>
           <div class="form-group">
-            <label for="prof-desc">Descripción</label>
-            <input id="prof-desc" type="text" formControlName="description" placeholder="Descripción opcional" />
+            <label for="prof-desc">{{ 'common.description' | t }}</label>
+            <input id="prof-desc" type="text" formControlName="description" [placeholder]="'profiles.desc_placeholder' | t" />
           </div>
           <div *ngIf="modalError()" class="error-banner error-banner-sm">{{ modalError() }}</div>
           <div class="modal-footer">
-            <button type="button" class="btn-secondary" (click)="showModal.set(false)">Cancelar</button>
+            <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.cancel' | t }}</button>
             <button type="submit" class="btn-primary" [disabled]="saving()">
-              {{ saving() ? 'Guardando…' : (editingProfile() ? 'Guardar cambios' : 'Crear plantilla') }}
+              {{ saving() ? ('profiles.saving' | t) : (editingProfile() ? ('profiles.save_changes' | t) : ('profiles.create_button' | t)) }}
             </button>
           </div>
         </form>
@@ -422,8 +394,12 @@ export class ProfilesComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
+  private readonly ts = inject(TranslationService);
 
-  readonly isAdmin = this.authService.isAdmin();
+  private orgId: string | null = null;
+  readonly canManage = this.authService.getUserRole() === 'MANAGER';
+  /** @deprecated keep for template compat — always false on this route */
+  readonly isAdmin = false;
 
   allProfiles = signal<Profile[]>([]);
   templates = signal<Profile[]>([]);
@@ -443,13 +419,19 @@ export class ProfilesComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    const url = this.isAdmin ? '/api/v1/profiles?include_all=true' : '/api/v1/profiles';
-    this.http.get<Profile[]>(url)
-      .pipe(catchError(() => { this.error.set('Error al cargar perfiles'); return of([]); }))
+    const user = this.authService.getUser();
+    this.orgId = user?.organization_id ?? null;
+    if (!this.orgId) {
+      this.error.set(this.ts.translateInstant('profiles.loading_error'));
+      this.loading.set(false);
+      return;
+    }
+    this.http.get<Profile[]>(`/api/v1/organizations/${this.orgId}/profiles`)
+      .pipe(catchError(() => { this.error.set(this.ts.translateInstant('profiles.loading_error')); return of([]); }))
       .subscribe(data => {
         this.allProfiles.set(data);
-        this.templates.set(data.filter(p => p.is_template));
-        this.orgProfiles.set(data.filter(p => !p.is_template));
+        this.templates.set([]);
+        this.orgProfiles.set(data);
         this.loading.set(false);
       });
   }
@@ -473,12 +455,12 @@ export class ProfilesComponent implements OnInit {
     this.saving.set(true);
     this.modalError.set(null);
     const editing = this.editingProfile();
-    const body = { ...this.profileForm.value, is_template: true };
+    const body = { ...this.profileForm.value, is_default: false };
     const req = editing
-      ? this.http.put<Profile>(`/api/v1/templates/${editing.id}`, body)
-      : this.http.post<Profile>('/api/v1/templates', body);
+      ? this.http.patch<Profile>(`/api/v1/profiles/${editing.id}`, body)
+      : this.http.post<Profile>(`/api/v1/organizations/${this.orgId}/profiles`, body);
     req.pipe(catchError((err: HttpErrorResponse) => {
-      this.modalError.set(err.error?.detail ?? 'Error al guardar plantilla');
+      this.modalError.set(err.error?.detail ?? this.ts.translateInstant('profiles.saving_error'));
       this.saving.set(false);
       return of(null);
     })).subscribe(p => {
@@ -496,10 +478,10 @@ export class ProfilesComponent implements OnInit {
 
   deleteProfile(p: Profile): void {
     this.deletingId.set(p.id);
-    this.http.delete(`/api/v1/templates/${p.id}`)
+    this.http.delete(`/api/v1/profiles/${p.id}`)
       .pipe(catchError(() => { this.deletingId.set(null); return of(null); }))
       .subscribe(() => {
-        this.templates.update(list => list.filter(x => x.id !== p.id));
+        this.orgProfiles.update(list => list.filter(x => x.id !== p.id));
         this.deletingId.set(null);
       });
   }

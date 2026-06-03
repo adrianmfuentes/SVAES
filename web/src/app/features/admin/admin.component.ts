@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
+import { TranslationService } from '../../core/i18n/translation.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 type AdminTab = 'organizations' | 'users' | 'access-requests';
 type AccessRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -37,12 +39,12 @@ interface AccessRequest {
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   template: `
     <div class="admin-page">
       <div class="page-header">
-        <h1 class="page-title">Administraci&oacute;n</h1>
-        <span class="page-badge">Global &middot; U3</span>
+        <h1 class="page-title">{{ 'admin.title' | t }}</h1>
+        <span class="page-badge">{{ 'admin.global_badge' | t }}</span>
       </div>
 
       <div class="info-panel" style="margin-bottom: var(--spacing-lg)">
@@ -53,12 +55,8 @@ interface AccessRequest {
           </svg>
         </span>
         <div class="info-body">
-          <div class="info-title">Datos anonimizados</div>
-          <p class="info-desc">
-            Por cumplimiento normativo y protecci&oacute;n de datos, la informaci&oacute;n de organizaciones,
-            usuarios y solicitudes se muestra de forma anonimizada. La administraci&oacute;n de estas
-            entidades se gestiona exclusivamente a trav&eacute;s de los flujos operativos del sistema.
-          </p>
+          <div class="info-title">{{ 'admin.anonymized_title' | t }}</div>
+          <p class="info-desc">{{ 'admin.anonymized_desc' | t }}</p>
         </div>
       </div>
 
@@ -74,8 +72,8 @@ interface AccessRequest {
       <!-- ORGANIZATIONS TAB -->
       <div *ngIf="activeTab() === 'organizations'" class="tab-content">
         <div class="tab-toolbar">
-          <h2 class="tab-title">Organizaciones</h2>
-          <span class="tab-meta">Solo lectura</span>
+          <h2 class="tab-title">{{ 'admin.orgs_title' | t }}</h2>
+          <span class="tab-meta">{{ 'admin.read_only_badge' | t }}</span>
         </div>
 
         <div *ngIf="orgsLoading()" class="skeleton-list">
@@ -88,8 +86,8 @@ interface AccessRequest {
           <table class="data-table" *ngIf="orgs().length > 0; else orgsEmpty">
             <thead>
               <tr>
-                <th>Identificador</th>
-                <th>Nombre anonimizado</th>
+                <th>{{ 'admin.org_id_col' | t }}</th>
+                <th>{{ 'admin.org_anon_name' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -100,7 +98,7 @@ interface AccessRequest {
             </tbody>
           </table>
           <ng-template #orgsEmpty>
-            <div class="empty-state">No hay organizaciones registradas.</div>
+            <div class="empty-state">{{ 'admin.no_organizations' | t }}</div>
           </ng-template>
         </div>
       </div>
@@ -108,8 +106,8 @@ interface AccessRequest {
       <!-- USERS TAB -->
       <div *ngIf="activeTab() === 'users'" class="tab-content">
         <div class="tab-toolbar">
-          <h2 class="tab-title">Usuarios globales</h2>
-          <span class="tab-meta">Solo lectura</span>
+          <h2 class="tab-title">{{ 'admin.global_users_title' | t }}</h2>
+          <span class="tab-meta">{{ 'admin.read_only_badge' | t }}</span>
         </div>
 
         <div *ngIf="usersLoading()" class="skeleton-list">
@@ -122,10 +120,10 @@ interface AccessRequest {
           <table class="data-table" *ngIf="users().length > 0; else usersEmpty">
             <thead>
               <tr>
-                <th>Identificador</th>
-                <th>Nombre anonimizado</th>
-                <th>Rol</th>
-                <th>Estado</th>
+                <th>{{ 'admin.org_id_col' | t }}</th>
+                <th>{{ 'admin.org_anon_name' | t }}</th>
+                <th>{{ 'common.role' | t }}</th>
+                <th>{{ 'admin.user_status_col' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -133,22 +131,22 @@ interface AccessRequest {
                 <td><code class="mono-cell">{{ user.id }}</code></td>
                 <td class="cell-primary">
                   {{ user.display_name }}
-                  <span class="self-tag" *ngIf="user.id === currentUserId">T&uacute;</span>
+                  <span class="self-tag" *ngIf="user.id === currentUserId">{{ 'admin.self_tag' | t }}</span>
                 </td>
                 <td>
-                  <span *ngIf="user.role === 'ADMIN'" class="role-fixed">Admin global</span>
+                  <span *ngIf="user.role === 'ADMIN'" class="role-fixed">{{ 'admin.global_admin_role' | t }}</span>
                   <span *ngIf="user.role !== 'ADMIN'" class="role-text">{{ user.role }}</span>
                 </td>
                 <td>
                   <span class="badge" [class.badge-active]="user.is_active" [class.badge-inactive]="!user.is_active">
-                    {{ user.is_active ? 'Activo' : 'Inactivo' }}
+                    {{ user.is_active ? ('admin.active_badge' | t) : ('admin.inactive_badge' | t) }}
                   </span>
                 </td>
               </tr>
             </tbody>
           </table>
           <ng-template #usersEmpty>
-            <div class="empty-state">No hay usuarios registrados.</div>
+            <div class="empty-state">{{ 'admin.no_users' | t }}</div>
           </ng-template>
         </div>
       </div>
@@ -156,8 +154,8 @@ interface AccessRequest {
       <!-- ACCESS REQUESTS TAB -->
       <div *ngIf="activeTab() === 'access-requests'" class="tab-content">
         <div class="tab-toolbar">
-          <h2 class="tab-title">Access Requests</h2>
-          <span class="tab-meta">Solo lectura</span>
+          <h2 class="tab-title">{{ 'admin.access_requests_title' | t }}</h2>
+          <span class="tab-meta">{{ 'admin.read_only_badge' | t }}</span>
         </div>
 
         <div class="ar-status-tabs">
@@ -206,7 +204,7 @@ interface AccessRequest {
             </tbody>
           </table>
           <ng-template #arEmpty>
-            <div class="empty-state">No {{ arStatus().toLowerCase() }} access requests.</div>
+            <div class="empty-state">{{ 'admin.no_ar' | t }}</div>
           </ng-template>
         </div>
       </div>
@@ -697,14 +695,17 @@ interface AccessRequest {
 export class AdminComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
+  private readonly ts = inject(TranslationService);
 
   readonly currentUserId = this.authService.getUser()?.id ?? '';
 
-  readonly tabs: { id: AdminTab; label: string }[] = [
-    { id: 'organizations', label: 'Organizaciones' },
-    { id: 'users', label: 'Usuarios' },
-    { id: 'access-requests', label: 'Access Requests' },
-  ];
+  get tabs(): { id: AdminTab; label: string }[] {
+    return [
+      { id: 'organizations', label: this.ts.translateInstant('admin.tab_organizations') },
+      { id: 'users', label: this.ts.translateInstant('admin.tab_users') },
+      { id: 'access-requests', label: this.ts.translateInstant('admin.access_requests_title') },
+    ];
+  }
 
   activeTab = signal<AdminTab>('organizations');
 
@@ -724,11 +725,13 @@ export class AdminComponent implements OnInit {
   arError = signal<string | null>(null);
   arSuccess = signal<string | null>(null);
   arStatus = signal<AccessRequestStatus>('PENDING');
-  accessRequestStatuses: { value: AccessRequestStatus; label: string }[] = [
-    { value: 'PENDING', label: 'Pending' },
-    { value: 'APPROVED', label: 'Approved' },
-    { value: 'REJECTED', label: 'Rejected' },
-  ];
+  get accessRequestStatuses(): { value: AccessRequestStatus; label: string }[] {
+    return [
+      { value: 'PENDING', label: this.ts.translateInstant('admin.tab_pending') },
+      { value: 'APPROVED', label: this.ts.translateInstant('admin.tab_approved') },
+      { value: 'REJECTED', label: this.ts.translateInstant('admin.tab_rejected') },
+    ];
+  }
 
   private simpleHash(input: string): string {
     let hash = 0;
@@ -746,13 +749,13 @@ export class AdminComponent implements OnInit {
     const now = Date.now();
     const diff = now - d.getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1) return this.ts.translateInstant('releases.relative_just_now');
+    if (mins < 60) return this.ts.translateInstant('releases.relative_minutes', { n: mins });
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return this.ts.translateInstant('releases.relative_hours', { n: hours });
     const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}d ago`;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (days < 30) return this.ts.translateInstant('releases.relative_days', { n: days });
+    return d.toLocaleDateString(this.ts.currentLang === 'en' ? 'en-GB' : 'es-ES', { month: 'short', day: 'numeric' });
   }
 
 
@@ -782,7 +785,7 @@ export class AdminComponent implements OnInit {
   private loadOrgs(): void {
     this.orgsLoading.set(true);
     this.http.get<Org[]>('/api/v1/organizations')
-      .pipe(catchError(() => { this.orgsError.set('Error al cargar organizaciones'); return of([]); }))
+      .pipe(catchError(() => { this.orgsError.set(this.ts.translateInstant('admin.loading_orgs_error')); return of([]); }))
       .subscribe(data => {
         const anonymized = data.map(org => ({
           ...org,
@@ -798,7 +801,7 @@ export class AdminComponent implements OnInit {
   private loadUsers(): void {
     this.usersLoading.set(true);
     this.http.get<GlobalUser[]>('/api/v1/admin/users?limit=200')
-      .pipe(catchError(() => { this.usersError.set('Error al cargar usuarios'); return of([]); }))
+      .pipe(catchError(() => { this.usersError.set(this.ts.translateInstant('admin.loading_users_error')); return of([]); }))
       .subscribe(data => {
         const anonymized = data.map(user => ({
           ...user,

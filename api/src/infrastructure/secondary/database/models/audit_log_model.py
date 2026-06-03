@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime, JSON
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from infrastructure.secondary.database.models.base import Base
@@ -15,4 +15,4 @@ class AuditLogModel(Base):
     resource_id = Column(PG_UUID(as_uuid=True), nullable=True)
     details = Column(JSON, nullable=True)
     ip_address = Column(String(45), nullable=True)
-    timestamp = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True)

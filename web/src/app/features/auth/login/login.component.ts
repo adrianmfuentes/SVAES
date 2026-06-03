@@ -8,55 +8,58 @@ import { Router, RouterModule } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { TranslationService } from '../../../core/i18n/translation.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { LangToggleComponent } from '../../../core/components/lang-toggle/lang-toggle.component';
 import { catchError, of } from 'rxjs';
 
-function parseLoginError(err: HttpErrorResponse): string {
+function parseLoginErrorKey(err: HttpErrorResponse): string {
   if (err.status === 0 || !err.status) {
-    return 'No se pudo conectar con el servidor. Compruebe su conexión a Internet.';
+    return 'login.error.no_connection';
   }
   if (err.status === 401) {
     const detail = err.error?.detail ?? '';
     if (typeof detail === 'string' && detail.length > 0 && detail.length < 200) {
       return detail;
     }
-    return 'El correo electrónico o la contraseña no son correctos.';
+    return 'login.error.wrong_credentials';
   }
   if (err.status === 403) {
-    return 'Su cuenta está pendiente de activación. Revise su correo electrónico.';
+    return 'login.error.pending_activation';
   }
   if (err.status === 429) {
-    return 'Demasiados intentos. Espere un momento antes de volver a intentarlo.';
+    return 'login.error.too_many';
   }
   if (err.status === 502 || err.status === 504) {
-    return 'El servidor no responde. Puede estar reiniciándose. Inténtelo en unos segundos.';
+    return 'login.error.server_unreachable';
   }
   if (err.status >= 500) {
-    return 'Error interno del servidor. Inténtelo de nuevo más tarde.';
+    return 'login.error.internal';
   }
   if (err.status === 400) {
     const detail = err.error?.detail ?? err.error?.message ?? '';
     if (typeof detail === 'string' && detail.length > 0 && detail.length < 200) {
       return detail;
     }
-    return 'Los datos introducidos no son válidos. Revise los campos.';
+    return 'login.error.invalid_data';
   }
   if (err.status === 404) {
-    return 'El servicio de autenticación no está disponible. Inténtelo de nuevo más tarde.';
+    return 'login.error.auth_unavailable';
   }
-  return 'Ha ocurrido un error inesperado. Inténtelo de nuevo.';
+  return 'login.error.unexpected';
 }
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, LangToggleComponent],
   template: `
     <div class="login-page">
       <a routerLink="/" class="login-back">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
           <path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Volver al inicio
+        {{ 'login.back_home' | t }}
       </a>
 
       <main class="login-main">
@@ -64,70 +67,69 @@ function parseLoginError(err: HttpErrorResponse): string {
           <div class="login-context">
             <div class="context-brand">
               SVAES
-              <span class="brand-badge">beta</span>
+              <span class="brand-badge">{{ 'common.beta' | t }}</span>
             </div>
             <h1 class="context-title">
-              Verificación<br />automática<br />de entregas
+              {{ 'login.context_title_line1' | t }}<br />{{ 'login.context_title_line2' | t }}<br />{{ 'login.context_title_line3' | t }}
             </h1>
             <p class="context-desc">
-              Sistema de trazabilidad operacional para equipos de
-              desarrollo. Conecte sus herramientas, defina reglas
-              de verificación y controle cada release.
+              {{ 'login.context_desc' | t }}
             </p>
             <div class="context-features">
               <div class="context-feature">
                 <span class="feature-num">10</span>
-                <span class="feature-label">Reglas de verificación</span>
+                <span class="feature-label">{{ 'login.feature_rules' | t }}</span>
               </div>
               <div class="context-feature">
                 <span class="feature-num">5+</span>
-                <span class="feature-label">Conectores disponibles</span>
+                <span class="feature-label">{{ 'login.feature_connectors' | t }}</span>
               </div>
             </div>
           </div>
 
-          <div class="login-form">
+          <!-- Step 1: email + password -->
+          <div class="login-form" *ngIf="!totpRequired">
             <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
-              <h2 class="form-title">Iniciar sesión</h2>
+              <h2 class="form-title">{{ 'login.title' | t }}</h2>
 
-              <div class="alert-error" *ngIf="errorMessage">
+              <div class="alert-error" *ngIf="errorKey">
                 <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                   <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
-                <span>{{ errorMessage }}</span>
+                <span>{{ errorKey | t }}</span>
               </div>
 
               <div class="form-group">
-                <label for="email">Correo electrónico</label>
+                <label for="email">{{ 'login.email_label' | t }}</label>
                 <input
                   id="email"
                   type="email"
                   formControlName="email"
                   autocomplete="email"
-                  placeholder="nombre@ejemplo.com"
+                  [placeholder]="'login.email_placeholder' | t"
                   [class.input-error]="fieldHasError('email')"
                 />
                 <div class="field-error" *ngIf="loginForm.get('email')?.hasError('required') && loginForm.get('email')?.touched">
-                  El correo electrónico es obligatorio.
+                  {{ 'login.email_required' | t }}
                 </div>
                 <div class="field-error" *ngIf="loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched">
-                  Ingrese un correo electrónico válido.
+                  {{ 'login.email_invalid' | t }}
                 </div>
               </div>
 
               <div class="form-group">
-                <label for="password">Contraseña</label>
+                <label for="password">{{ 'login.password_label' | t }}</label>
                 <input
                   id="password"
                   type="password"
                   formControlName="password"
                   autocomplete="current-password"
-                  placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+                  [placeholder]="'login.password_placeholder' | t"
                   [class.input-error]="fieldHasError('password')"
                 />
                 <div class="field-error" *ngIf="loginForm.get('password')?.hasError('required') && loginForm.get('password')?.touched">
-                  La contraseña es obligatoria.
+                  {{ 'login.password_required' | t }}
                 </div>
               </div>
 
@@ -137,13 +139,64 @@ function parseLoginError(err: HttpErrorResponse): string {
                 [disabled]="loginForm.invalid || loading"
                 [class.btn-loading]="loading"
               >
-                <span *ngIf="!loading">Iniciar sesión</span>
-                <span *ngIf="loading">Verificando&hellip;</span>
+                <span *ngIf="!loading">{{ 'login.submit' | t }}</span>
+                <span *ngIf="loading">{{ 'login.verifying' | t }}</span>
               </button>
             </form>
             <p class="form-footer-link">
-              Don't have an account?
-              <a routerLink="/request-access">Request access</a>
+              {{ 'login.no_account' | t }}
+              <a routerLink="/request-access">{{ 'login.request_access' | t }}</a>
+            </p>
+          </div>
+
+          <!-- Step 2: TOTP code -->
+          <div class="login-form" *ngIf="totpRequired">
+            <form [formGroup]="totpForm" (ngSubmit)="onSubmitTotp()" novalidate>
+              <h2 class="form-title">{{ 'login.2fa_title' | t }}</h2>
+              <p class="totp-hint">{{ 'login.2fa_hint' | t }}</p>
+
+              <div class="alert-error" *ngIf="errorKey">
+                <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
+                  <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+                <span>{{ errorKey | t }}</span>
+              </div>
+
+              <div class="form-group">
+                <label for="totp-code">{{ 'login.2fa_code_label' | t }}</label>
+                <input
+                  id="totp-code"
+                  type="text"
+                  inputmode="numeric"
+                  formControlName="code"
+                  autocomplete="one-time-code"
+                  [placeholder]="'login.2fa_code_placeholder' | t"
+                  [class.input-error]="totpForm.get('code')?.invalid && totpForm.get('code')?.touched"
+                  maxlength="6"
+                />
+                <div class="field-error" *ngIf="totpForm.get('code')?.hasError('required') && totpForm.get('code')?.touched">
+                  {{ 'login.2fa_code_required' | t }}
+                </div>
+                <div class="field-error" *ngIf="totpForm.get('code')?.hasError('pattern') && totpForm.get('code')?.touched">
+                  {{ 'login.2fa_code_invalid' | t }}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                class="btn-primary full-width btn-submit"
+                [disabled]="totpForm.invalid || loading"
+                [class.btn-loading]="loading"
+              >
+                <span *ngIf="!loading">{{ 'login.2fa_verify' | t }}</span>
+                <span *ngIf="loading">{{ 'login.verifying' | t }}</span>
+              </button>
+            </form>
+            <p class="form-footer-link">
+              <button type="button" class="btn-link" (click)="backToLogin()">
+                {{ 'login.2fa_back' | t }}
+              </button>
             </p>
           </div>
         </div>
@@ -152,9 +205,11 @@ function parseLoginError(err: HttpErrorResponse): string {
       <footer class="login-footer">
         <span>&copy; 2026 SVAES</span>
         <nav class="footer-links">
-          <a routerLink="/legal/privacidad">Privacidad</a>
+          <app-lang-toggle theme="light" />
           <span aria-hidden="true">&middot;</span>
-          <a routerLink="/legal/aviso-legal">Aviso legal</a>
+          <a routerLink="/legal/privacidad">{{ 'login.footer_privacy' | t }}</a>
+          <span aria-hidden="true">&middot;</span>
+          <a routerLink="/legal/aviso-legal">{{ 'login.footer_legal' | t }}</a>
         </nav>
       </footer>
     </div>
@@ -311,6 +366,14 @@ function parseLoginError(err: HttpErrorResponse): string {
         margin: 0 0 var(--spacing-lg);
       }
 
+      .totp-hint {
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        color: var(--muted);
+        margin: 0 0 var(--spacing-lg);
+        line-height: 1.5;
+      }
+
       .form-group {
         margin-bottom: var(--spacing-md);
       }
@@ -413,6 +476,22 @@ function parseLoginError(err: HttpErrorResponse): string {
         color: var(--accent-dark);
       }
 
+      .btn-link {
+        background: none;
+        border: none;
+        padding: 0;
+        font-family: var(--font-sans);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--ink);
+        cursor: pointer;
+        transition: color 0.15s ease;
+      }
+
+      .btn-link:hover {
+        color: var(--accent-dark);
+      }
+
       .login-footer {
         display: flex;
         align-items: center;
@@ -484,8 +563,15 @@ export class LoginComponent implements OnInit {
     password: ['', [Validators.required]],
   });
 
+  readonly totpForm = this.fb.group({
+    code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
+  });
+
   loading = false;
-  errorMessage: string | null = null;
+  errorKey: string | null = null;
+  totpRequired = false;
+  private pendingTotpToken: string | null = null;
+  private pendingEmail = '';
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
@@ -505,35 +591,89 @@ export class LoginComponent implements OnInit {
     }
 
     this.loading = true;
-    this.errorMessage = null;
+    this.errorKey = null;
 
     const { email, password } = this.loginForm.value;
+    this.pendingEmail = email!;
 
     this.authService
       .login(email!, password!)
       .pipe(
-        catchError((err: HttpErrorResponse) => {
-          this.errorMessage = parseLoginError(err);
+        catchError((err) => {
+          this.errorKey = parseLoginErrorKey(err);
           this.loading = false;
           return of(null);
         }),
       )
       .subscribe({
         next: (response) => {
-          if (!response?.access_token) {
-            this.errorMessage =
-              'El servidor devolvió una respuesta inesperada. Inténtelo de nuevo.';
-            this.loading = false;
+          this.loading = false;
+          if (!response) return;
+
+          if (response.requires_2fa) {
+            this.pendingTotpToken = response.totp_token ?? null;
+            this.totpRequired = true;
             return;
           }
+
+          if (!response.access_token) {
+            this.errorKey = 'login.error.unexpected_response';
+            return;
+          }
+
+          this.authService.storeTokens(response, this.pendingEmail);
           const destination = this.authService.isAdmin() ? '/app/system' : '/app/dashboard';
           this.router.navigate([destination]);
         },
         error: () => {
-          this.errorMessage =
-            'Ha ocurrido un error inesperado. Inténtelo de nuevo.';
+          this.errorKey = 'login.error.unexpected';
           this.loading = false;
         },
       });
+  }
+
+  onSubmitTotp(): void {
+    if (this.totpForm.invalid || this.loading || !this.pendingTotpToken) {
+      this.totpForm.markAllAsTouched();
+      return;
+    }
+
+    this.loading = true;
+    this.errorKey = null;
+
+    const { code } = this.totpForm.value;
+
+    this.authService
+      .verify2fa(this.pendingTotpToken, code!)
+      .pipe(
+        catchError((err) => {
+          this.errorKey = parseLoginErrorKey(err);
+          this.loading = false;
+          return of(null);
+        }),
+      )
+      .subscribe({
+        next: (response) => {
+          this.loading = false;
+          if (!response?.access_token) {
+            this.errorKey = 'login.error.unexpected_response';
+            return;
+          }
+          this.authService.storeTokens(response, this.pendingEmail);
+          const destination = this.authService.isAdmin() ? '/app/system' : '/app/dashboard';
+          this.router.navigate([destination]);
+        },
+        error: () => {
+          this.errorKey = 'login.error.unexpected';
+          this.loading = false;
+        },
+      });
+  }
+
+  backToLogin(): void {
+    this.totpRequired = false;
+    this.pendingTotpToken = null;
+    this.errorKey = null;
+    this.totpForm.reset();
   }
 }

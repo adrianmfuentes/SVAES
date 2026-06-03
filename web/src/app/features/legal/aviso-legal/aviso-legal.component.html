@@ -1,23 +1,26 @@
-<a href="#contenido-principal" class="skip-link">Ir al contenido principal</a>
+<a href="#contenido-principal" class="skip-link">{{ 'legal.common.skip_link' | t }}</a>
 
-<div class="legal-page" lang="es">
+<div class="legal-page">
   <header class="legal-header" role="banner">
     <a routerLink="/" class="legal-logo">SVAES</a>
-    <a routerLink="/" class="btn-secondary">← Volver al inicio</a>
+    <div class="legal-header-nav">
+      <app-lang-toggle theme="light" />
+      <a routerLink="/" class="btn-secondary">{{ 'legal.common.back_start' | t }}</a>
+    </div>
   </header>
 
   <div class="legal-body">
     <aside class="legal-sidebar">
-      <nav aria-label="Tabla de contenidos del aviso legal">
-        <p class="legal-toc-heading" aria-hidden="true">Índice</p>
+      <nav [attr.aria-label]="'legal.notice.nav_label' | t">
+        <p class="legal-toc-heading" aria-hidden="true">{{ 'legal.common.toc_heading' | t }}</p>
         <ol class="legal-toc-list">
-          <li class="legal-toc-item"><a href="#datos-titular"           class="legal-toc-link">Datos del titular</a></li>
-          <li class="legal-toc-item"><a href="#objeto-aceptacion"       class="legal-toc-link">Objeto y aceptación</a></li>
-          <li class="legal-toc-item"><a href="#acceso-uso"              class="legal-toc-link">Acceso y uso</a></li>
-          <li class="legal-toc-item"><a href="#propiedad-intelectual"   class="legal-toc-link">Propiedad intelectual</a></li>
-          <li class="legal-toc-item"><a href="#exclusion-responsabilidad" class="legal-toc-link">Exclusión de responsabilidad</a></li>
-          <li class="legal-toc-item"><a href="#proteccion-datos"        class="legal-toc-link">Protección de datos</a></li>
-          <li class="legal-toc-item"><a href="#ley-aplicable"           class="legal-toc-link">Ley aplicable y jurisdicción</a></li>
+          <li class="legal-toc-item"><a href="#datos-titular"             class="legal-toc-link">{{ 'legal.notice.toc.1' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#objeto-aceptacion"         class="legal-toc-link">{{ 'legal.notice.toc.2' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#acceso-uso"                class="legal-toc-link">{{ 'legal.notice.toc.3' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#propiedad-intelectual"     class="legal-toc-link">{{ 'legal.notice.toc.4' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#exclusion-responsabilidad" class="legal-toc-link">{{ 'legal.notice.toc.5' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#proteccion-datos"          class="legal-toc-link">{{ 'legal.notice.toc.6' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#ley-aplicable"             class="legal-toc-link">{{ 'legal.notice.toc.7' | t }}</a></li>
         </ol>
       </nav>
     </aside>
@@ -27,117 +30,90 @@
 
         <header class="legal-doc-header">
           <div class="legal-doc-meta">
-            <span class="legal-doc-type">Documento legal</span>
+            <span class="legal-doc-type">{{ 'legal.common.doc_type' | t }}</span>
             <span class="legal-doc-sep" aria-hidden="true">·</span>
-            <span class="legal-doc-jurisdiction">España y Unión Europea</span>
+            <span class="legal-doc-jurisdiction">{{ 'legal.common.jurisdiction' | t }}</span>
           </div>
-          <h1 id="legal-title" class="legal-title">Aviso legal</h1>
-          <p class="legal-intro">
-            El presente sitio web corresponde al Trabajo Fin de Grado titulado
-            "Diseño y desarrollo de un Sistema de Verificación Automática de Entregas" (SVAES),
-            desarrollado por Adrián Martínez como estudiante de la Escuela de Ingeniería
-            Informática de la Universidad de Oviedo. La plataforma tiene carácter exclusivamente
-            académico y no constituye un servicio comercial.
-          </p>
-          <p class="legal-updated">
-            Última actualización: <time datetime="2026-05">mayo de 2026</time>
-          </p>
+          <h1 id="legal-title" class="legal-title">{{ 'legal.legal_notice.title' | t }}</h1>
+          <p class="legal-intro">{{ 'legal.notice.intro' | t }}</p>
+          <p class="legal-updated">{{ 'legal.legal_notice.last_updated' | t }}</p>
         </header>
 
         <section id="datos-titular" class="legal-section" aria-labelledby="h-datos-titular">
           <h2 id="h-datos-titular">
-            <span class="legal-section-num" aria-hidden="true">1</span>Datos del titular
+            <span class="legal-section-num" aria-hidden="true">1</span>{{ 'legal.notice.s1.title' | t }}
           </h2>
-          <p>
-            En cumplimiento del artículo&nbsp;10 de la Ley 34/2002, de 11 de julio, de Servicios
-            de la Sociedad de la Información y de Comercio Electrónico
-            (<abbr title="Ley de Servicios de la Sociedad de la Información y de Comercio Electrónico">LSSI-CE</abbr>),
-            se informa que el presente sitio web es titularidad de:
-          </p>
+          <p [innerHTML]="'legal.notice.s1.intro' | t"></p>
           <dl class="legal-dl">
             <div class="legal-dl-row">
-              <dt>Denominación social</dt>
+              <dt>{{ 'legal.notice.s1.name' | t }}</dt>
               <dd><span class="legal-placeholder">Adrián Martínez</span></dd>
             </div>
             <div class="legal-dl-row">
-              <dt>NIF</dt>
+              <dt>{{ 'legal.notice.s1.nif' | t }}</dt>
               <dd><span class="legal-placeholder">71743428B</span></dd>
             </div>
             <div class="legal-dl-row">
-              <dt>Domicilio</dt>
+              <dt>{{ 'legal.notice.s1.address' | t }}</dt>
               <dd><span class="legal-placeholder">Campus de Los Catalanes, C/&nbsp;Valdés Salas, 33007 Oviedo</span></dd>
             </div>
             <div class="legal-dl-row">
-              <dt>Correo electrónico</dt>
+              <dt>{{ 'legal.notice.s1.email' | t }}</dt>
               <dd><a href="mailto:UO295454@uniovi.es" class="legal-link">UO295454&#64;uniovi.es</a></dd>
             </div>
             <div class="legal-dl-row">
-              <dt>Inscripción registral</dt>
-              <dd><span class="legal-placeholder">No aplicable — proyecto académico sin actividad mercantil registrada</span></dd>
+              <dt>{{ 'legal.notice.s1.registration' | t }}</dt>
+              <dd><span class="legal-placeholder">{{ 'legal.notice.s1.registration_value' | t }}</span></dd>
             </div>
           </dl>
         </section>
 
         <section id="objeto-aceptacion" class="legal-section" aria-labelledby="h-objeto">
           <h2 id="h-objeto">
-            <span class="legal-section-num" aria-hidden="true">2</span>Objeto y aceptación
+            <span class="legal-section-num" aria-hidden="true">2</span>{{ 'legal.notice.s2.title' | t }}
           </h2>
-          <p>SVAES es una plataforma de verificación automática de entregas de software destinada a equipos de ingeniería. El acceso y uso de esta plataforma implica la aceptación plena y sin reservas de las presentes condiciones legales.</p>
-          <p>El titular se reserva el derecho a modificar, en cualquier momento y sin previo aviso, las presentes condiciones, así como los contenidos del sitio web.</p>
+          <p>{{ 'legal.notice.s2.p1' | t }}</p>
+          <p>{{ 'legal.notice.s2.p2' | t }}</p>
         </section>
 
         <section id="acceso-uso" class="legal-section" aria-labelledby="h-acceso">
           <h2 id="h-acceso">
-            <span class="legal-section-num" aria-hidden="true">3</span>Acceso y uso de la plataforma
+            <span class="legal-section-num" aria-hidden="true">3</span>{{ 'legal.notice.s3.title' | t }}
           </h2>
-          <p>El acceso a la plataforma requiere autenticación previa mediante credenciales corporativas. El uso está restringido a personas autorizadas por la organización contratante del servicio. Queda prohibido el acceso no autorizado, la reproducción no consentida de los contenidos y cualquier uso que contravenga la legislación vigente.</p>
-          <p>El usuario se compromete a hacer un uso correcto de la plataforma, de conformidad con las leyes, la buena fe, el orden público y el presente aviso legal. El titular no será responsable de los daños y perjuicios que pudieran derivarse de un uso inadecuado.</p>
+          <p>{{ 'legal.notice.s3.p1' | t }}</p>
+          <p>{{ 'legal.notice.s3.p2' | t }}</p>
         </section>
 
         <section id="propiedad-intelectual" class="legal-section" aria-labelledby="h-propiedad">
           <h2 id="h-propiedad">
-            <span class="legal-section-num" aria-hidden="true">4</span>Propiedad intelectual e industrial
+            <span class="legal-section-num" aria-hidden="true">4</span>{{ 'legal.notice.s4.title' | t }}
           </h2>
-          <p>Todos los contenidos de la plataforma (código fuente, diseño, textos, logotipos, marcas e imágenes) son propiedad del titular o de terceros que han autorizado su uso, y están protegidos por la legislación española e internacional sobre propiedad intelectual e industrial. Queda expresamente prohibida su reproducción, distribución, comunicación pública o transformación sin autorización escrita del titular.</p>
+          <p>{{ 'legal.notice.s4.p1' | t }}</p>
         </section>
 
         <section id="exclusion-responsabilidad" class="legal-section" aria-labelledby="h-responsabilidad">
           <h2 id="h-responsabilidad">
-            <span class="legal-section-num" aria-hidden="true">5</span>Exclusión de responsabilidad
+            <span class="legal-section-num" aria-hidden="true">5</span>{{ 'legal.notice.s5.title' | t }}
           </h2>
-          <p>El titular no garantiza la disponibilidad continua e ininterrumpida del servicio, ni se responsabiliza de los daños que pudieran derivarse de interrupciones técnicas, fallos de conectividad o causas de fuerza mayor. Los resultados de verificación generados por la plataforma tienen carácter informativo y no constituyen asesoramiento técnico o legal.</p>
+          <p>{{ 'legal.notice.s5.p1' | t }}</p>
         </section>
 
         <section id="proteccion-datos" class="legal-section" aria-labelledby="h-datos">
           <h2 id="h-datos">
-            <span class="legal-section-num" aria-hidden="true">6</span>Protección de datos personales
+            <span class="legal-section-num" aria-hidden="true">6</span>{{ 'legal.notice.s6.title' | t }}
           </h2>
-          <p>
-            El tratamiento de los datos personales de los usuarios se rige por el
-            <strong>Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo</strong>
-            (<abbr title="Reglamento General de Protección de Datos">RGPD</abbr>),
-            la <strong>Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales
-            y garantía de los derechos digitales</strong>
-            (<abbr title="Ley Orgánica de Protección de Datos Personales y garantía de los derechos digitales">LOPDGDD</abbr>),
-            y la <a routerLink="/legal/privacidad" class="legal-link">Política de privacidad</a>
-            disponible en todo momento en esta plataforma.
-          </p>
+          <p [innerHTML]="'legal.notice.s6.p1' | t"></p>
         </section>
 
         <section id="ley-aplicable" class="legal-section" aria-labelledby="h-ley">
           <h2 id="h-ley">
-            <span class="legal-section-num" aria-hidden="true">7</span>Ley aplicable y jurisdicción
+            <span class="legal-section-num" aria-hidden="true">7</span>{{ 'legal.notice.s7.title' | t }}
           </h2>
-          <p>Las presentes condiciones legales se rigen por la legislación española. Para la resolución de cualquier controversia derivada del uso de esta plataforma, las partes se someten a los Juzgados y Tribunales de <span class="legal-placeholder">Oviedo</span>, con renuncia expresa a cualquier otro fuero que pudiera corresponderles.</p>
+          <p [innerHTML]="'legal.notice.s7.p1' | t"></p>
         </section>
 
         <footer class="legal-doc-footer">
-          <p>
-            Documento redactado conforme a la
-            <abbr title="Ley de Servicios de la Sociedad de la Información y de Comercio Electrónico">LSSI-CE</abbr>,
-            el <abbr title="Reglamento General de Protección de Datos (UE) 2016/679">RGPD</abbr>
-            y la <abbr title="Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales">LOPDGDD</abbr>.
-          </p>
+          <p [innerHTML]="'legal.notice.footer' | t"></p>
         </footer>
 
       </article>

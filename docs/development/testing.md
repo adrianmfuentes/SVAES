@@ -9,30 +9,61 @@ Overview of the test infrastructure, conventions, and execution procedures for t
 ```
 tests/
 ├── conftest.py                     # Python path, DATABASE_URL dummy
-├── unit/                           # Unit tests (API + engine)
-│   ├── core/                       # Config, DI, audit
-│   ├── connectors/                 # Connector implementations
-│   ├── api/                        # HTTP router tests
-│   │   └── test_routers.py
-│   ├── application/use_cases/      # Use case tests
-│   │   ├── test_auth_use_cases.py
-│   │   ├── test_configure_connector.py
-│   │   ├── test_create_release.py
-│   │   ├── test_get_verification_history.py
-│   │   ├── test_launch_verification.py
-│   │   ├── test_manage_profile.py
-│   │   ├── test_organization_use_cases.py
-│   │   └── test_project_use_cases.py
-│   ├── domain/                     # Entity and enum tests
-│   │   ├── test_entities.py
-│   │   └── test_ports.py
-│   └── infrastructure/             # Adapter tests (mocked)
-│       ├── test_repositories.py
-│       └── test_security.py
-├── integration/                    # Integration tests
-│   ├── conftest.py
-│   ├── test_testclient.py
-│   └── test_complete.py
+├── unit/                           # Unit tests (59 files, isolated, mocked)
+│   ├── core/                       # Credential encryptor, pseudonymizer
+│   │   ├── test_credential_encryptor.py
+│   │   └── test_pseudonymizer.py
+│   ├── connectors/                 # 8 connector implementations (GitLab, Jira, Trello, etc.)
+│   │   ├── conftest.py
+│   │   ├── test_gitlab.py
+│   │   ├── test_jira.py
+│   │   ├── test_trello.py
+│   │   ├── test_plane.py
+│   │   ├── test_linear.py
+│   │   ├── test_jira_sm.py
+│   │   ├── test_redmine.py
+│   │   ├── test_gitea.py
+│   │   └── test_wikijs.py
+│   ├── api/                        # Use cases, services, routers, workers (34 files)
+│   │   ├── conftest.py             # 14 mock repos, task queue, connector registry
+│   │   ├── test_authenticate_user.py
+│   │   ├── test_auth_service.py
+│   │   ├── test_releases.py
+│   │   ├── test_releases_router.py
+│   │   ├── test_user_service.py
+│   │   ├── test_users_router.py
+│   │   ├── test_organization_service.py
+│   │   ├── test_organizations_router.py
+│   │   ├── test_connector_service.py
+│   │   ├── test_profile_service.py
+│   │   ├── test_verification_service.py
+│   │   ├── test_verification_worker.py
+│   │   ├── ...                     # (+21 more files)
+│   └── repositories/               # 15 SQL repository tests (in-memory SQLite)
+│       ├── conftest.py
+│       ├── test_base_sql_repository.py
+│       ├── test_user_repository.py
+│       ├── test_release_repository.py
+│       ├── test_project_repository.py
+│       ├── test_organization_repository.py
+│       ├── test_connector_repository.py
+│       ├── test_profile_repository.py
+│       ├── test_rule_repository.py
+│       ├── test_artifact_repository.py
+│       ├── test_verification_result_repository.py
+│       ├── test_template_repository.py
+│       ├── test_api_key_repository.py
+│       ├── test_notification_repository.py
+│       ├── test_custom_role_repository.py
+│       └── test_verification_engine_interface.py
+├── integration/                    # Integration tests (real DB + Redis)
+│   ├── conftest.py                 # Test DB, httpx client, role-based auth tokens
+│   ├── engine/
+│   │   └── http_pipeline.rs        # 8 HTTP tests against the Rust engine
+│   ├── test_flow.py                # Full verification flow (17 classes, ~35 tests)
+│   ├── test_release_lifecycle.py   # Release lifecycle (6 classes, ~20 tests)
+│   ├── test_resilience.py          # Fault tolerance & error handling (8 classes, ~28 tests)
+│   └── test_rate_limit.py          # Rate limiting (4 classes, ~8 tests)
 ├── performance/                    # Performance benchmarks
 ├── security/                       # Security vulnerability tests
 │   ├── test_auth.py
@@ -65,7 +96,7 @@ engine/src/
 pytest tests/unit/
 
 # Specific module
-pytest tests/unit/application/use_cases/test_create_release.py
+pytest tests/unit/api/test_releases.py
 
 # With coverage
 pytest tests/unit/ --cov=api/src --cov-report=term --cov-report=xml
@@ -76,10 +107,27 @@ pytest tests/unit/ -v
 
 ### Python Integration Tests
 
+```powershell
+# Recommended: one-command script (Windows PowerShell 7+)
+.\scripts\run_integration_tests.ps1
+```
+
+The script automatically:
+1. Spins up ephemeral PostgreSQL (port 5433) and Redis (port 6380) via `docker-compose.test.yml`
+2. Runs all Python integration tests with `pytest tests/integration/ -v --tb=short`
+3. Tears down containers on completion (always, even on failure)
+
+Manual alternative:
+
 ```bash
-# Requires a running database
-docker compose up postgres -d
-pytest tests/integration/
+# Start test infrastructure
+docker compose -f docker-compose.test.yml up -d --wait
+
+# Run tests
+pytest tests/integration/ -v
+
+# Tear down
+docker compose -f docker-compose.test.yml down --volumes
 ```
 
 ### Security Tests
@@ -147,10 +195,10 @@ cd engine && cargo test
 
 | Layer | Target |
 |---|---|
-| `api/src/domain/` | ≥ 80% |
-| `api/src/application/` | ≥ 80% |
+| `api/src/domain/` | >= 80% |
+| `api/src/application/` | >= 80% |
 | `api/src/infrastructure/` | Best effort |
-| `engine/src/` | ≥ 80% |
+| `engine/src/` | >= 80% |
 
 Coverage reports are generated in `coverage.xml` (Python) and consumed by SonarCloud via the CI pipeline.
 
@@ -162,7 +210,7 @@ Tests run automatically via GitHub Actions:
 
 | Workflow | Trigger | What Runs |
 |---|---|---|
-| `sonar.yml` | push/PR on main | pytest with coverage → SonarCloud Quality Gate |
+| `sonar.yml` | push/PR on main | pytest with coverage -> SonarCloud Quality Gate |
 | `codeql.yml` | push/PR on main, cron weekly | CodeQL security analysis (Python) |
 
 ---
@@ -177,4 +225,4 @@ Tests run automatically via GitHub Actions:
 
 ---
 
-*Last updated: May 2026 — Adrian Martinez Fuentes*
+*Last updated: June 2026 — Adrian Martinez Fuentes*

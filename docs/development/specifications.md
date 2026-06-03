@@ -160,10 +160,10 @@ can be found in section 4.8 of the SRS.
 | Angular Frontend | Partial | `web/` — partial content in development |
 | Shared Packages | Pending | `packages/` — directory created, empty |
 | Unit Tests | Implemented | `tests/unit/` — domain, application, infrastructure coverage |
-| Integration Tests | Pending | `tests/integration/` — empty |
+| Integration Tests | Implemented | `tests/integration/` — 4 Python files (~90 tests) + 8 Rust HTTP tests |
 | E2E Tests | Pending | `tests/e2e/` — empty |
-| Performance Tests | Pending | `tests/performance/` — empty |
-| Security Tests | Pending | `tests/security/` — empty |
+| Performance Tests | Implemented | `tests/performance/` — Rust benchmarks + Locust stub |
+| Security Tests | Implemented | `tests/security/` — auth, injection, OWASP vectors |
 
 **Connected Routers (14 total):**
 - auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin
@@ -172,4 +172,4 @@ can be found in section 4.8 of the SRS.
 
 ---
 
-*Last updated: May 2026 — Adrian Martinez Fuentes (UO295454)*
+*Last updated: June 2026 — Adrian Martinez Fuentes (UO295454)*

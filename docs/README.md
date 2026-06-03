@@ -25,7 +25,7 @@ SVAES is an extensible, decoupled **Quality Gate platform** that automates the v
 | **Verification Engine** | Rust (Actix-web + Rayon) | Parallel rule evaluation and verdict computation  |
 | **Task Queue**          | Celery + Redis           | Async dispatch of verification jobs               |
 | **Database**            | PostgreSQL 16            | Persistent storage with UUIDs and JSONB support   |
-| **Frontend**            | Angular 21               | Web UI (in development)                           |
+| **Frontend**            | Angular 21               | Web UI (implemented — auth, dashboard, releases, connectors, i18n, 2FA) |
 | **Infrastructure**      | Docker + Docker Compose  | Containerized multi-service deployment            |
 
 The system follows a **Hexagonal (Ports & Adapters)** and **Clean Architecture** approach, ensuring the domain core has zero external dependencies.
@@ -105,11 +105,14 @@ DRAFT → PENDING → IN_VERIFICATION → VALID
 | Layer                 | Mechanism                   | Details                                               |
 | --------------------- | --------------------------- | ----------------------------------------------------- |
 | Authentication        | JWT (HS256)                 | Signed tokens with `sub`, `role`, `iat`, `exp` claims |
+| Two-Factor Auth (2FA) | TOTP (pyotp + segno)        | Optional per-user; QR code provisioning in profile    |
 | Passwords             | bcrypt (cost 12)            | Constant-time comparison via passlib                  |
 | Connector Credentials | Fernet (AES-128-CBC)        | Authenticated encryption at rest                      |
 | Multi-tenancy         | `organization_id` filtering | 403 on cross-tenant access                            |
-| Rate Limiting         | slowapi                     | 100 req/min reads, 20 req/min writes                  |
+| Rate Limiting         | slowapi                     | 30 req/min on auth, 100 req/min reads, 20 req/min writes |
 | Brute Force           | Account lockout             | 5 failed attempts → 15 min block                      |
+| GDPR Audit Trail      | `audit_log` table           | All sensitive operations persisted with timestamps    |
+| Pseudonymisation      | SHA-256 PII hashing         | Applied to artifact metadata before engine dispatch   |
 | API Keys              | Up to 5 per user            | Programmatic CI/CD access                             |
 
 ---
@@ -205,7 +208,11 @@ SVAES/
 ├── engine/                      # Verification engine (Rust)
 │   ├── src/                     # Main, models, evaluator, rules
 │   └── Dockerfile
-├── web/                         # Frontend (Angular)
+├── web/                         # Frontend (Angular — implemented)
+│   ├── src/app/
+│   │   ├── features/            # auth, dashboard, releases, connectors, admin, profile, logs, …
+│   │   └── core/                # services, guards, interceptors, i18n
+│   ├── src/assets/i18n/         # en.json, es.json
 │   └── Dockerfile
 ├── tests/                       # Unit, integration, performance, acceptance
 ├── docs/                        # Project documentation
@@ -254,7 +261,7 @@ Custom roles with granular permissions are also supported.
 | HTTP Client | httpx (async)                        | Integrated  |
 | Task Queue  | Celery + Redis 7                     | Implemented |
 | Engine      | Rust (Actix-web + Rayon)             | Implemented |
-| Frontend    | Angular 21                           | In development |
+| Frontend    | Angular 21                           | Implemented    |
 | Containers  | Docker + Docker Compose              | Configured  |
 | CI          | GitHub Actions, SonarCloud, CodeQL   | Active      |
 | Testing     | pytest + pytest-asyncio + pytest-cov | Configured  |
@@ -292,4 +299,4 @@ Custom roles with granular permissions are also supported.
 
 ---
 
-*Last updated: May 2026 — Adrian Martinez*
+*Last updated: June 2026 — Adrian Martinez*

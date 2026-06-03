@@ -8,6 +8,8 @@ import { RouterModule } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { catchError, of } from 'rxjs';
+import { TranslationService } from '../../core/i18n/translation.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 interface AccessRequestResponse {
   id: string;
@@ -27,14 +29,14 @@ function generateSlug(name: string): string {
 @Component({
   selector: 'app-access-request-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="request-page">
       <a routerLink="/" class="request-back">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
           <path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Back to home
+        {{ 'login.back_home' | t }}
       </a>
 
       <main class="request-main">
@@ -49,9 +51,9 @@ function generateSlug(name: string): string {
                   <path d="M8 12l3 3 5-5" stroke="var(--verdict-valid)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
-              <h2 class="card-title">Request submitted</h2>
-              <p class="card-desc">Check your email for an activation link to get started.</p>
-              <a routerLink="/" class="btn-secondary success-back">Back to home</a>
+              <h2 class="card-title">{{ 'access_request.success_title' | t }}</h2>
+              <p class="card-desc">{{ 'access_request.success_desc' | t }}</p>
+              <a routerLink="/" class="btn-secondary success-back">{{ 'login.back_home' | t }}</a>
             </div>
           </ng-container>
 
@@ -67,7 +69,7 @@ function generateSlug(name: string): string {
                   </svg>
                   <span *ngIf="currentStep() <= 1">1</span>
                 </div>
-                <span class="stepper-label">You</span>
+                <span class="stepper-label">{{ 'access_request.step1' | t }}</span>
               </div>
               <div class="stepper-connector" [class.active]="currentStep() > 1"></div>
               <div class="stepper-item" [class.done]="currentStep() > 2" [class.active]="currentStep() === 2">
@@ -77,12 +79,12 @@ function generateSlug(name: string): string {
                   </svg>
                   <span *ngIf="currentStep() <= 2">2</span>
                 </div>
-                <span class="stepper-label">Organization</span>
+                <span class="stepper-label">{{ 'access_request.step2' | t }}</span>
               </div>
               <div class="stepper-connector" [class.active]="currentStep() > 2"></div>
               <div class="stepper-item" [class.active]="currentStep() === 3">
                 <div class="stepper-dot"><span>3</span></div>
-                <span class="stepper-label">Review</span>
+                <span class="stepper-label">{{ 'access_request.step3' | t }}</span>
               </div>
             </div>
 
@@ -90,11 +92,10 @@ function generateSlug(name: string): string {
 
               <!-- Step 1 — You -->
               <div class="step-block" *ngIf="currentStep() === 1">
-                <h2 class="card-title">About you</h2>
-                <p class="card-subtitle">Your contact information for the access request.</p>
+                <h2 class="card-title">{{ 'access_request.step1' | t }}</h2>
 
                 <div class="form-group">
-                  <label for="requester-name">Full name</label>
+                  <label for="requester-name">{{ 'access_request.first_name' | t }}</label>
                   <input
                     id="requester-name"
                     type="text"
@@ -104,46 +105,39 @@ function generateSlug(name: string): string {
                     [class.input-error]="fieldHasError('requester_name')"
                   />
                   <div class="field-error" *ngIf="requestForm.get('requester_name')?.hasError('required') && requestForm.get('requester_name')?.touched">
-                    Full name is required.
-                  </div>
-                  <div class="field-error" *ngIf="requestForm.get('requester_name')?.hasError('minlength') && requestForm.get('requester_name')?.touched">
-                    Name must be at least 2 characters.
-                  </div>
-                  <div class="field-error" *ngIf="requestForm.get('requester_name')?.hasError('maxlength') && requestForm.get('requester_name')?.touched">
-                    Name must be at most 80 characters.
+                    {{ 'access_request.first_name_required' | t }}
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label for="requester-email">Work email</label>
+                  <label for="requester-email">{{ 'access_request.email' | t }}</label>
                   <input
                     id="requester-email"
                     type="email"
                     formControlName="requester_email"
                     autocomplete="email"
-                    placeholder="jane@example.com"
+                    [placeholder]="'login.email_placeholder' | t"
                     [class.input-error]="fieldHasError('requester_email')"
                   />
                   <div class="field-error" *ngIf="requestForm.get('requester_email')?.hasError('required') && requestForm.get('requester_email')?.touched">
-                    Work email is required.
+                    {{ 'access_request.email_required' | t }}
                   </div>
                   <div class="field-error" *ngIf="requestForm.get('requester_email')?.hasError('email') && requestForm.get('requester_email')?.touched">
-                    Enter a valid email address.
+                    {{ 'access_request.email_invalid' | t }}
                   </div>
                 </div>
 
                 <div class="step-nav step-nav-end">
-                  <button type="submit" class="btn-primary">Continue</button>
+                  <button type="submit" class="btn-primary">{{ 'access_request.next' | t }}</button>
                 </div>
               </div>
 
               <!-- Step 2 — Organization -->
               <div class="step-block" *ngIf="currentStep() === 2">
-                <h2 class="card-title">Your organization</h2>
-                <p class="card-subtitle">Tell us about the organization requesting access.</p>
+                <h2 class="card-title">{{ 'access_request.step2' | t }}</h2>
 
                 <div class="form-group">
-                  <label for="org-name">Organization name</label>
+                  <label for="org-name">{{ 'access_request.org_name' | t }}</label>
                   <input
                     id="org-name"
                     type="text"
@@ -157,46 +151,36 @@ function generateSlug(name: string): string {
                     <code class="slug-value">{{ slugPreview() }}</code>
                   </div>
                   <div class="field-error" *ngIf="requestForm.get('organization_name')?.hasError('required') && requestForm.get('organization_name')?.touched">
-                    Organization name is required.
-                  </div>
-                  <div class="field-error" *ngIf="requestForm.get('organization_name')?.hasError('minlength') && requestForm.get('organization_name')?.touched">
-                    Must be at least 3 characters.
-                  </div>
-                  <div class="field-error" *ngIf="requestForm.get('organization_name')?.hasError('maxlength') && requestForm.get('organization_name')?.touched">
-                    Must be at most 80 characters.
+                    {{ 'access_request.org_name_required' | t }}
                   </div>
                 </div>
 
                 <div class="form-group">
                   <label for="org-description">
-                    Description
-                    <span class="optional-tag">optional</span>
+                    {{ 'common.description' | t }}
+                    <span class="optional-tag">{{ 'common.optional' | t }}</span>
                   </label>
                   <textarea
                     id="org-description"
                     formControlName="organization_description"
-                    placeholder="Briefly describe what your organization does"
+                    [placeholder]="'access_request.step2' | t"
                     rows="3"
                     (input)="updateCharCount()"
                   ></textarea>
                   <div class="char-counter" [class.char-counter-over]="charCount() > 500">
                     {{ charCount() }}/500
                   </div>
-                  <div class="field-error" *ngIf="requestForm.get('organization_description')?.hasError('maxlength') && requestForm.get('organization_description')?.touched">
-                    Description must be at most 500 characters.
-                  </div>
                 </div>
 
                 <div class="step-nav">
-                  <button type="button" class="btn-secondary" (click)="prevStep()">Back</button>
-                  <button type="submit" class="btn-primary">Continue</button>
+                  <button type="button" class="btn-secondary" (click)="prevStep()">{{ 'access_request.back' | t }}</button>
+                  <button type="submit" class="btn-primary">{{ 'access_request.next' | t }}</button>
                 </div>
               </div>
 
               <!-- Step 3 — Review -->
               <div class="step-block" *ngIf="currentStep() === 3">
-                <h2 class="card-title">Review &amp; submit</h2>
-                <p class="card-subtitle">Confirm the details before sending your request.</p>
+                <h2 class="card-title">{{ 'access_request.review_title' | t }}</h2>
 
                 <div class="alert-error" *ngIf="errorMessage()">
                   <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -208,33 +192,33 @@ function generateSlug(name: string): string {
 
                 <div class="review-block">
                   <div class="review-row">
-                    <span class="review-key">Full name</span>
+                    <span class="review-key">{{ 'access_request.review_name' | t }}</span>
                     <span class="review-val">{{ requestForm.get('requester_name')?.value }}</span>
                   </div>
                   <div class="review-row">
-                    <span class="review-key">Work email</span>
+                    <span class="review-key">{{ 'access_request.review_email' | t }}</span>
                     <span class="review-val">{{ requestForm.get('requester_email')?.value }}</span>
                   </div>
                   <div class="review-row">
-                    <span class="review-key">Organization</span>
+                    <span class="review-key">{{ 'access_request.review_org' | t }}</span>
                     <span class="review-val">{{ requestForm.get('organization_name')?.value }}</span>
                   </div>
                   <div class="review-row" *ngIf="requestForm.get('organization_description')?.value">
-                    <span class="review-key">Description</span>
+                    <span class="review-key">{{ 'common.description' | t }}</span>
                     <span class="review-val review-val-desc">{{ requestForm.get('organization_description')?.value }}</span>
                   </div>
                 </div>
 
                 <div class="step-nav">
-                  <button type="button" class="btn-secondary" (click)="prevStep()" [disabled]="loading()">Back</button>
+                  <button type="button" class="btn-secondary" (click)="prevStep()" [disabled]="loading()">{{ 'access_request.back' | t }}</button>
                   <button
                     type="submit"
                     class="btn-primary btn-submit"
                     [disabled]="loading()"
                     [class.btn-loading]="loading()"
                   >
-                    <span *ngIf="!loading()">Submit request</span>
-                    <span *ngIf="loading()">Submitting&hellip;</span>
+                    <span *ngIf="!loading()">{{ 'access_request.submit' | t }}</span>
+                    <span *ngIf="loading()">{{ 'access_request.submitting' | t }}</span>
                   </button>
                 </div>
               </div>
@@ -248,9 +232,9 @@ function generateSlug(name: string): string {
       <footer class="request-footer">
         <span>&copy; 2026 SVAES</span>
         <nav class="footer-links">
-          <a routerLink="/legal/privacidad">Privacidad</a>
+          <a routerLink="/legal/privacidad">{{ 'login.footer_privacy' | t }}</a>
           <span aria-hidden="true">&middot;</span>
-          <a routerLink="/legal/aviso-legal">Aviso legal</a>
+          <a routerLink="/legal/aviso-legal">{{ 'login.footer_legal' | t }}</a>
         </nav>
       </footer>
     </div>
@@ -698,6 +682,7 @@ function generateSlug(name: string): string {
 export class AccessRequestFormComponent {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
+  private readonly ts = inject(TranslationService);
 
   readonly requestForm = this.fb.group({
     requester_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
@@ -778,17 +763,11 @@ export class AccessRequestFormComponent {
       .pipe(
         catchError((err: HttpErrorResponse) => {
           if (err.status === 409) {
-            this.errorMessage.set(
-              'An account or pending request already exists for this email.',
-            );
+            this.errorMessage.set(this.ts.translateInstant('access_request.error.conflict'));
           } else if (err.status === 0 || !err.status) {
-            this.errorMessage.set(
-              'Could not connect to the server. Check your internet connection.',
-            );
+            this.errorMessage.set(this.ts.translateInstant('login.error.no_connection'));
           } else {
-            this.errorMessage.set(
-              'An unexpected error occurred. Please try again.',
-            );
+            this.errorMessage.set(this.ts.translateInstant('access_request.error.submission'));
           }
           this.loading.set(false);
           return of(null);

@@ -1,5 +1,4 @@
 from application.ports.output.i_release_repository import IReleaseRepository
-from domain.entities.artifact import Artifact
 from domain.entities.release import Release
 from domain.enums import ReleaseStatus
 from domain.exceptions import EntityNotFoundError
@@ -7,8 +6,8 @@ from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
 from infrastructure.secondary.database.models import ArtifactModel, ReleaseModel
 from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
+from infrastructure.secondary.database.repositories.artifact_repository import _artifact_from_row
 import uuid
-from datetime import datetime
 from typing import Optional, cast
 from infrastructure.secondary.database.models.project_model import ProjectModel
 
@@ -22,8 +21,9 @@ class SqlReleaseRepository(IReleaseRepository):
             version=str(row.version),
             project_id=uuid.UUID(str(row.project_id)),
             status=ReleaseStatus(row.status),
-            profile_id=uuid.UUID(str(row.profile_id)),
-            created_by=uuid.UUID(str(row.created_by))
+            profile_id=uuid.UUID(str(row.profile_id)) if row.profile_id else None,
+            created_by=uuid.UUID(str(row.created_by)) if row.created_by else None,
+            created_at=row.created_at,
         )
 
     async def create(self, release: Release) -> None:
@@ -52,19 +52,7 @@ class SqlReleaseRepository(IReleaseRepository):
             artifact_result = await session.execute(
                 select(ArtifactModel).where(ArtifactModel.release_id == release_id)
             )
-            release.artifacts = [
-                Artifact(
-                    id=cast(uuid.UUID, row.id),
-                    release_id=cast(uuid.UUID, row.release_id),
-                    connector_instance_id=cast(uuid.UUID, row.connector_instance_id),
-                    connector_implementation=cast(str, row.connector_implementation),
-                    artifact_type=cast(str, row.artifact_type),
-                    external_ref=cast(str, row.external_ref),
-                    metadata=cast(dict, row.artifact_metadata) or {},
-                    created_at=cast(datetime, row.created_at),
-                )
-                for row in artifact_result.scalars().all()
-            ]
+            release.artifacts = [_artifact_from_row(row) for row in artifact_result.scalars().all()]
             return release
 
 
@@ -83,18 +71,18 @@ class SqlReleaseRepository(IReleaseRepository):
 
 
     async def list_by_organization(
-        self, organization_id: uuid.UUID, skip: int = 0, limit: int = 50
+        self, organization_id: Optional[uuid.UUID] = None, skip: int = 0, limit: int = 200
     ) -> list[Release]:
         async with AsyncSessionLocal() as session:
-            result = await session.execute(
+            stmt = (
                 select(ReleaseModel)
                 .join(ProjectModel, ReleaseModel.project_id == ProjectModel.id)
-                .where(ProjectModel.organization_id == organization_id)
-                .offset(skip)
-                .limit(limit)
             )
-            release_rows = result.scalars().all()
-            return [self._release_from_row(row) for row in release_rows]
+            if organization_id is not None:
+                stmt = stmt.where(ProjectModel.organization_id == organization_id)
+            stmt = stmt.order_by(ReleaseModel.created_at.desc()).offset(skip).limit(limit)
+            result = await session.execute(stmt)
+            return [self._release_from_row(row) for row in result.scalars().all()]
 
 
     async def update(self, release: Release) -> Release:

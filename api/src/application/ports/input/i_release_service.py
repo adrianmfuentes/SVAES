@@ -74,3 +74,9 @@ class IReleaseService(ABC):
     @abstractmethod
     async def restore_release(self, release_id: UUID) -> None:
         pass
+
+    @abstractmethod
+    async def list_org_releases(
+        self, organization_id: Optional[UUID] = None
+    ) -> List[Release]:
+        pass

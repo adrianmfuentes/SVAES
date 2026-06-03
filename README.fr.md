@@ -46,7 +46,7 @@ Concevoir et implémenter un système extensible et découplé capable de vérif
 | Composant        | État           | Description                                                   |
 | ---------------- | -------------- | ------------------------------------------------------------- |
 | Backend FastAPI  | ✅ Complet     | API REST complète avec tous les endpoints                     |
-| Frontend Angular | ⏳ En attente  | SPA vide, en attente d'implémentation                         |
+| Frontend Angular | ✅ Implémenté  | SPA avec auth, dashboard, releases, connecteurs, profil, admin, i18n ES/EN, 2FA |
 | Moteur Rust      | ✅ Implémenté  | Moteur complet dans engine/, évaluateur parallèle + 10 règles |
 | Worker Celery    | ✅ Implémenté  | worker réel dans verification_worker.py                       |
 | Connecteurs      | ✅ Implémentés | 20 connecteurs en 5 catégories fonctionnelles                 |
@@ -90,7 +90,7 @@ Principe clé:
 
 Le système est divisé en les composants suivants:
 
-- Frontend (Angular SPA) — ⏳ En attente
+- Frontend (Angular SPA) — ✅ Implémenté
 - Backend (FastAPI) — ✅ Complet
 - Moteur de vérification (Rust) — ✅ Implémenté (complet)
 - File de tâches (Celery + Redis) — ✅ Implémentée
@@ -286,12 +286,14 @@ Base de données PostgreSQL:
 | Couche                  | Mécanisme                    | Détail                                             |
 | ----------------------- | ---------------------------- | -------------------------------------------------- |
 | Authentification        | JWT (HS256)                  | Tokens signés. Claims: `sub`, `role`, `iat`, `exp` |
+| Double facteur (2FA)    | TOTP (pyotp + segno)         | Authentification à deux étapes optionnelle         |
 | Mots de passe           | bcrypt (passlib)             | Facteur de coût 12. Comparaison en temps constant  |
 | Credentials connecteurs | Fernet (AES-128-CBC)         | Chiffrement authentifié                            |
 | Endpoints protégés      | Bearer token                 | `Authorization: Bearer <jwt>` requis               |
 | Isolation multi-tenant  | Filtre par `organization_id` | 403 sur accès croisé                               |
-| Rate limiting           | slowapi                      | 100 req/min lectures, 20 req/min écritures         |
+| Rate limiting           | slowapi                      | 30 req/min auth, 100 req/min lectures, 20 req/min écritures |
 | Force brute             | Verrouillage de compte       | 5 tentatives échouées → 15 min de blocage          |
+| Audit RGPD              | audit_log (PostgreSQL)       | Traçabilité complète; pseudonymisation dans les vérifications |
 
 ---
 
@@ -305,7 +307,7 @@ Base de données PostgreSQL:
 | Migrations             | Alembic                  | ✅ Opérationnel                 |
 | Authentification       | JWT (PyJWT)              | ✅ Complet                      |
 | Client HTTP            | httpx (async)            | ✅ Intégré dans les connecteurs |
-| Frontend               | Angular 21               | ⏳ En attente                   |
+| Frontend               | Angular 21               | ✅ Implémenté                   |
 | Moteur de vérification | Rust (Actix-web + Rayon) | ✅ Implémenté                   |
 | File de tâches         | Celery + Redis           | ✅ Implémenté                   |
 | Conteneurs             | Docker + Docker Compose  | ✅ Configuré                    |
@@ -339,10 +341,12 @@ Documentation interactive: `http://localhost:8000/docs`
 
 ### Authentification
 
-| Méthode | Chemin          | Auth | Description          |
-| ------- | --------------- | ---- | -------------------- |
-| `POST`  | `/auth/login`   | Non  | Login → retourne JWT |
-| `POST`  | `/auth/refresh` | Non  | Rafraîchir token     |
+| Méthode | Chemin                 | Auth | Description                                |
+| ------- | ---------------------- | ---- | ------------------------------------------ |
+| `POST`  | `/auth/login`          | Non  | Login → retourne JWT (étape 1 si 2FA actif) |
+| `POST`  | `/auth/2fa/verify`     | Non  | Vérifier code TOTP (étape 2)               |
+| `POST`  | `/auth/refresh`        | Non  | Rafraîchir token                           |
+| `POST`  | `/auth/register`       | Non  | Inscription avec acceptation des conditions |
 
 ### Organisations
 
@@ -407,15 +411,14 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 Le système fournit une solution découplée, extensible et robuste pour la vérification automatique des livraisons de logiciels.
 
-Le backend FastAPI est pleinement opérationnel avec:
+Le système est pleinement opérationnel avec:
 
 - 20 implémentations de connecteurs à travers 5 types fonctionnels
-- Système de configuration par UI pour les managers
-- Isolation multi-tenant complète
+- Frontend Angular avec authentification 2FA, dashboard, gestion des releases et connecteurs
+- Internationalisation ES/EN dans tous les modules frontend
+- Isolation multi-tenant complète avec piste d'audit RGPD
 - RBAC avec rôles prédéfinis et personnalisés
-
-En attente: frontend Angular.
 
 ---
 
-_Dernière mise à jour: Mai 2026 — Adrián Martínez (UO295454)_
+_Dernière mise à jour: Juin 2026 — Adrián Martínez (UO295454)_

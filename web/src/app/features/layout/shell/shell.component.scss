@@ -77,6 +77,12 @@
   border-top: 1px solid rgba(246, 244, 240, 0.08);
 }
 
+.lang-switcher {
+  display: flex;
+  margin-bottom: var(--spacing-sm);
+  padding: 0 var(--spacing-sm);
+}
+
 .sidebar-role-indicator {
   display: flex;
   align-items: center;

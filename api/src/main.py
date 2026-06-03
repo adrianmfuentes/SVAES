@@ -38,6 +38,9 @@ from domain.exceptions import (
     DomainException,
     ReleaseInvalidStateError,
     ConnectorConnectionFailedError,
+    DuplicateEntityError,
+    ValidationError,
+    AuthenticationError,
 )
 
 API_V1_PREFIX = "/api/v1"
@@ -99,6 +102,14 @@ async def _connector_handler(request: Request, exc: ConnectorConnectionFailedErr
 @app.exception_handler(DomainException)
 async def _domain_handler(request: Request, exc: DomainException) -> JSONResponse:
     return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+@app.exception_handler(DuplicateEntityError)
+async def _duplicate_handler(request: Request, exc: DuplicateEntityError) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+@app.exception_handler(AuthenticationError)
+async def _auth_error_handler(request: Request, exc: AuthenticationError) -> JSONResponse:
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
 
 @app.exception_handler(Exception)
 async def _unhandled_handler(request: Request, exc: Exception) -> JSONResponse:

@@ -1,8 +1,8 @@
 from typing import Any, Dict, List
-from infrastructure.secondary.connectors.base_http_connector import BaseHttpConnector
+from infrastructure.secondary.connectors.base_graphql_connector import BaseGraphQLConnector
 
 
-class LinearConnector(BaseHttpConnector):
+class LinearConnector(BaseGraphQLConnector):
     BASE_URL = "https://api.linear.app/graphql"
     CONNECTOR_TYPE = "GESTOR_TAREAS"
     CONNECTOR_IMPLEMENTATION = "LINEAR"
@@ -15,31 +15,6 @@ class LinearConnector(BaseHttpConnector):
             "Content-Type": "application/json",
             "Authorization": f"Bearer {config.get('api_key')}",
         }
-
-    def _get_health_url(self, config: Dict[str, Any]) -> str:
-        return self.BASE_URL
-
-    def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        return self.BASE_URL
-
-    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
-        return None
-
-    def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
-        return self.BASE_URL
-
-    def _get_list_params(
-        self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> Dict[str, Any] | None:
-        return None
-
-    def _get_list_json(
-        self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> Dict[str, Any] | None:
-        return None
-
-    def _get_results_key(self) -> str:
-        return ""
 
     async def test_connection(self, config: Dict[str, Any]) -> bool:
         query = {"query": "{ viewer { id } }"}

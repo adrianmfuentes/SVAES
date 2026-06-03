@@ -61,3 +61,11 @@ class ITokenService(ABC):
     @abstractmethod
     def is_token_blacklisted(self, token: str) -> bool:
         pass
+
+    @abstractmethod
+    def create_totp_pending_token(self, user_id: UUID) -> str:
+        pass
+
+    @abstractmethod
+    def verify_totp_pending_token(self, token: str) -> Optional[UUID]:
+        pass

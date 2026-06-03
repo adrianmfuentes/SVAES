@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -15,5 +15,5 @@ class TemplateModel(Base):
     created_by = Column(PG_UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
     project_name_template = Column(String(200), nullable=True)
     is_archived = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

@@ -31,7 +31,7 @@ dependencies of the core.
 | ORM / migrations | SQLAlchemy + Alembic | 2.x / 1.x |
 | Verification engine | Rust (Actix-web + Rayon) | 1.77 (Implemented — full engine with parallel rule evaluation) |
 | Task queue | Celery + Redis | 5.x / 7.x (worker implemented) |
-| Frontend | Angular + TypeScript | Angular 21 (in development) |
+| Frontend | Angular + TypeScript | Angular 21 (implemented) |
 | Containers | Docker + Docker Compose | 25 / 2.x |
 
 ---
@@ -53,8 +53,10 @@ svaes/
 │   └── pyproject.toml
 ├── engine/                    # Rust verification engine (full with parallel evaluator and 10 rules)
 │   └── src/
-├── web/                       # Angular SPA (in development)
-│   └── src/
+├── web/                       # Angular SPA (implemented)
+│   ├── src/app/features/      # auth, dashboard, releases, connectors, admin, profile, logs, …
+│   ├── src/app/core/          # services, guards, interceptors, i18n
+│   └── src/assets/i18n/       # en.json, es.json
 ├── docs/
 │   ├── api/                   # API documentation
 │   ├── engine/                # Engine documentation
@@ -63,17 +65,22 @@ svaes/
 ├── scripts/                   # Auxiliary scripts
 ├── docker-compose.yml         # Services: api, postgres, redis
 └── tests/                     # Full test suite
-    ├── unit/                  # Implemented — domain, application, infrastructure
-    └── ...
+    ├── unit/                  # Implemented — 59 files (core, connectors, api, repositories)
+    ├── integration/           # Implemented — ~90 tests (flow, lifecycle, resilience, rate limit)
+    ├── performance/           # Implemented — Rust benchmarks + Locust stub
+    ├── security/              # Implemented — auth, injection, OWASP vectors
+    └── acceptance/            # Pending — Cypress E2E
 ```
 
 **Current status:**
 - FastAPI backend complete in `api/src/`
 - Celery worker implemented (`api/src/infrastructure/workers/verification_worker.py`)
 - Rust verification engine complete (`engine/src/` — evaluator, aggregator, 10 rules RV-01 to RV-10)
-- Angular frontend in development (`web/` with partial content)
+- Angular frontend implemented (`web/`) — features: auth (login + 2FA + activate), dashboard, releases, connectors, profiles, admin, logs, profile, landing, legal, access-request, system
+- i18n: ES/EN via `TranslationService` + `TranslatePipe`; JSON files in `web/src/assets/i18n/`
+- TOTP 2FA: pyotp + segno; migration `m1n2o3p4q5r6`; two-step login flow in frontend
+- GDPR compliance: audit_log table, consent fields, pseudonymiser in verification worker
 - Routers registered: auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin
-- Shared packages pending (`packages/` empty)
 
 ---
 
@@ -172,25 +179,38 @@ svaes/
 ### Unit tests (`tests/unit/`)
 
 ```
-tests/
-├── conftest.py              # PYTHONPATH, DATABASE_URL dummy
-├── api/
-│   └── test_routers.py     # HTTP handlers
-├── application/use_cases/
-│   ├── test_auth_use_cases.py
-│   ├── test_configure_connector.py
-│   ├── test_create_release.py
-│   ├── test_get_verification_history.py
-│   ├── test_launch_verification.py
-│   ├── test_manage_profile.py
-│   ├── test_organization_use_cases.py
-│   └── test_project_use_cases.py
-├── domain/
-│   ├── test_entities.py    # entities and enums
-│   └── test_ports.py       # ports (if applicable)
-└── infrastructure/
-    ├── test_repositories.py # SQLAlchemy repositories (mocked)
-    └── test_security.py    # JWT, Fernet, MockTaskQueue
+tests/unit/
+├── core/                           # Credential encryptor, pseudonymizer
+│   ├── test_credential_encryptor.py
+│   └── test_pseudonymizer.py
+├── connectors/                     # 8 connector implementations
+│   ├── conftest.py
+│   ├── test_gitlab.py
+│   ├── test_jira.py
+│   ├── test_trello.py
+│   ├── test_plane.py
+│   ├── test_linear.py
+│   ├── test_jira_sm.py
+│   ├── test_redmine.py
+│   ├── test_gitea.py
+│   └── test_wikijs.py
+├── api/                            # Use cases, services, routers (34 files)
+│   ├── conftest.py                 # 14 mock repos, task queue, connector registry
+│   ├── test_authenticate_user.py
+│   ├── test_auth_service.py
+│   ├── test_releases.py
+│   ├── test_releases_router.py
+│   ├── test_user_service.py
+│   ├── test_verification_service.py
+│   ├── test_verification_worker.py
+│   └── ...                         # (+26 more files)
+└── repositories/                   # 15 SQL repository tests (in-memory SQLite)
+    ├── conftest.py
+    ├── test_user_repository.py
+    ├── test_release_repository.py
+    ├── test_project_repository.py
+    ├── test_organization_repository.py
+    └── ...                         # (+10 more files)
 ```
 
 - One file per module: `test_<module_name>.py`
@@ -198,9 +218,24 @@ tests/
 - Methods: `test_<condition>_<expected_result>`
 - Domain entities and application commands are **never** mocked.
 
-### Pending levels (`tests/integration/`, `tests/e2e/`, etc.)
+### Integration tests (`tests/integration/`)
 
-Pending implementation according to `tests/README.md`.
+4 Python test files (~90 tests) + 8 Rust HTTP pipeline tests. Real PostgreSQL + Redis via ephemeral Docker containers.
+
+```powershell
+# One-command script (spins up infra, runs tests, tears down)
+.\scripts\run_integration_tests.ps1
+```
+
+### Rust tests
+
+Unit tests are inline under `#[cfg(test)]`. Integration and performance tests live in `engine/tests/`.
+
+```bash
+cargo test                              # All unit tests
+cargo test --test http_pipeline          # HTTP integration tests
+cargo test --test performance            # Performance benchmarks
+```
 
 ---
 
@@ -226,4 +261,4 @@ The following routers are connected in `api/src/main.py`:
 
 ---
 
-*Last updated: May 2026 — Adrian Martinez Fuentes (UO295454)*
+*Last updated: June 2026 — Adrian Martinez Fuentes (UO295454)*

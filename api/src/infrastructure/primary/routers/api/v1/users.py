@@ -9,7 +9,7 @@ from application.ports.output.i_token_service import ITokenService
 from core.dependencies import get_user_service, get_current_user, CurrentUser, require_permission, require_role, get_jwt_handler
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from domain.enums import UserRole, Permission
-from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError, AuthenticationError
+from domain.exceptions import ValidationError
 from . import ERROR_INTERNO
 
 _log = logging.getLogger(__name__)
@@ -81,22 +81,17 @@ async def get_current_user_profile(
         - 401 Unauthorized si el token es inválido.
         - 500 Internal Server Error para cualquier otro error inesperado.
     """
-    try:
-        user = await service.get_user_by_id(current_user.user_id)
-        if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-        return {
-            "id": str(user.id),
-            "email": user.email,
-            "display_name": user.display_name,
-            "role": user.role.value,
-            "organization_id": str(user.organization_ids[0]) if user.organization_ids else None,
-        }
-    except HTTPException:
-        raise
-    except Exception:
-        _log.exception("Error fetching profile for user_id=%s", current_user.user_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    user = await service.get_user_by_id(current_user.user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "display_name": user.display_name,
+        "role": user.role.value,
+        "organization_id": str(user.organization_ids[0]) if user.organization_ids else None,
+        "totp_enabled": user.totp_enabled,
+    }
 
 
 @router.patch("/api/v1/users/me")
@@ -118,21 +113,16 @@ async def update_current_user_profile(
         - 401 Unauthorized si el token es inválido.
         - 500 Internal Server Error para cualquier otro error inesperado.
     """
-    try:
-        user = await service.update_profile(
-            user_id=current_user.user_id,
-            display_name=payload.display_name,
-        )
-        return {
-            "id": str(user.id),
-            "email": user.email,
-            "display_name": user.display_name,
-            "role": user.role.value,
-        }
-    except ValidationError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    user = await service.update_profile(
+        user_id=current_user.user_id,
+        display_name=payload.display_name,
+    )
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "display_name": user.display_name,
+        "role": user.role.value,
+    }
 
 
 @router.post("/api/v1/users/me/password")
@@ -154,21 +144,14 @@ async def change_password(
         - 401 Unauthorized si el token es inválido.
         - 500 Internal Server Error para cualquier otro error inesperado.
     """
-    try:
-        success = await service.change_password(
-            user_id=current_user.user_id,
-            current_password=payload.current_password,
-            new_password=payload.new_password,
-        )
-        if not success:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Contraseña actual incorrecta")
-        return {"message": "Contraseña cambiada correctamente"}
-    except ValidationError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    success = await service.change_password(
+        user_id=current_user.user_id,
+        current_password=payload.current_password,
+        new_password=payload.new_password,
+    )
+    if not success:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Contraseña actual incorrecta")
+    return {"message": "Contraseña cambiada correctamente"}
 
 
 @router.delete("/api/v1/users/me/account", status_code=status.HTTP_204_NO_CONTENT)
@@ -186,14 +169,8 @@ async def delete_user_account(
             password=body.password,
         )
         token_service.blacklist_token(credentials.credentials, 0)
-    except EntityNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except AuthenticationError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.get("/api/v1/users/me/export")
@@ -202,41 +179,35 @@ async def export_user_data(
     service: Annotated[IUserService, Depends(get_user_service)],
 ):
     """GDPR Art.20 — Export all personal data for the authenticated user."""
-    try:
-        user = await service.get_user_by_id(current_user.user_id)
-        if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    user = await service.get_user_by_id(current_user.user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
-        audit = get_audit_logger()
-        audit.log(AuditEntry(
-            event=AuditEvent.DATA_EXPORT_REQUESTED,
-            user_id=user.id,
-            organization_id=user.organization_id,
-            resource_type="user",
-            resource_id=user.id,
-        ))
+    audit = get_audit_logger()
+    audit.log(AuditEntry(
+        event=AuditEvent.DATA_EXPORT_REQUESTED,
+        user_id=user.id,
+        organization_id=user.organization_id,
+        resource_type="user",
+        resource_id=user.id,
+    ))
 
-        return {
-            "schema_version": "1.0",
-            "export_format": "GDPR Art.20 Data Portability",
-            "user": {
-                "id": str(user.id),
-                "email": user.email,
-                "display_name": user.display_name,
-                "role": user.role.value,
-                "is_active": user.is_active,
-                "created_at": user.created_at.isoformat() if user.created_at else None,
-                "updated_at": user.updated_at.isoformat() if user.updated_at else None,
-                "terms_accepted_at": user.terms_accepted_at.isoformat() if user.terms_accepted_at else None,
-                "privacy_accepted_at": user.privacy_accepted_at.isoformat() if user.privacy_accepted_at else None,
-                "organization_ids": [str(oid) for oid in user.organization_ids],
-            },
-        }
-    except HTTPException:
-        raise
-    except Exception:
-        _log.exception("Error exporting data for user_id=%s", current_user.user_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    return {
+        "schema_version": "1.0",
+        "export_format": "GDPR Art.20 Data Portability",
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "display_name": user.display_name,
+            "role": user.role.value,
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+            "terms_accepted_at": user.terms_accepted_at.isoformat() if user.terms_accepted_at else None,
+            "privacy_accepted_at": user.privacy_accepted_at.isoformat() if user.privacy_accepted_at else None,
+            "organization_ids": [str(oid) for oid in user.organization_ids],
+        },
+    }
 
 
 @router.get("/api/v1/organizations/{org_id}/users")
@@ -263,19 +234,16 @@ async def list_organization_users(
         - 403 Forbidden si el usuario no tiene acceso a la organización.
         - 500 Internal Server Error para cualquier otro error inesperado.
     """
-    try:
-        users = await service.list_organization_users(organization_id=org_id, skip=skip, limit=limit)
-        return [
-            {
-                "id": str(u.id),
-                "email": u.email,
-                "display_name": u.display_name,
-                "role": u.role.value,
-            }
-            for u in users
-        ]
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    users = await service.list_organization_users(organization_id=org_id, skip=skip, limit=limit)
+    return [
+        {
+            "id": str(u.id),
+            "email": u.email,
+            "display_name": u.display_name,
+            "role": u.role.value,
+        }
+        for u in users
+    ]
 
 
 @router.post("/api/v1/organizations/{org_id}/users/invite", status_code=status.HTTP_201_CREATED)
@@ -309,18 +277,14 @@ async def invite_user(
             role=payload.role,
             requested_by=current_user.user_id,
         )
-        return {
-            "id": str(user.id),
-            "email": user.email,
-            "role": user.role.value,
-            "message": "Usuario invitado correctamente a la organización",
-        }
-    except DuplicateEntityError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "role": user.role.value,
+        "message": "Usuario invitado correctamente a la organización",
+    }
 
 
 @router.patch("/api/v1/organizations/{org_id}/users/{user_id}/role")
@@ -355,17 +319,13 @@ async def update_user_role(
             new_role=payload.role,
             requested_by=current_user.user_id,
         )
-        return {
-            "id": str(user.id),
-            "email": user.email,
-            "role": user.role.value,
-        }
-    except EntityNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "role": user.role.value,
+    }
 
 
 @router.delete("/api/v1/organizations/{org_id}/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -398,12 +358,8 @@ async def remove_user_from_org(
             organization_id=org_id,
             requested_by=current_user.user_id,
         )
-    except EntityNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.post("/api/v1/admin/users", status_code=status.HTTP_201_CREATED)
@@ -432,18 +388,14 @@ async def admin_create_user(
             password=payload.password,
             role=payload.role,
         )
-        return {
-            "id": str(user.id),
-            "email": user.email,
-            "display_name": user.display_name,
-            "role": user.role.value,
-        }
-    except DuplicateEntityError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "display_name": user.display_name,
+        "role": user.role.value,
+    }
 
 
 @router.patch("/api/v1/admin/users/{user_id}/activate")
@@ -465,17 +417,12 @@ async def admin_activate_user(
         - 404 Not Found si el usuario no existe.
         - 500 Internal Server Error para cualquier error inesperado.
     """
-    try:
-        user = await service.activate_user(user_id=user_id)
-        return {
-            "id": str(user.id),
-            "email": user.email,
-            "is_active": user.is_active,
-        }
-    except EntityNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    user = await service.activate_user(user_id=user_id)
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "is_active": user.is_active,
+    }
 
 
 @router.patch("/api/v1/admin/users/{user_id}/deactivate")
@@ -499,17 +446,13 @@ async def admin_deactivate_user(
     """
     try:
         user = await service.deactivate_user(user_id=user_id, requested_by=current_user.user_id)
-        return {
-            "id": str(user.id),
-            "email": user.email,
-            "is_active": user.is_active,
-        }
-    except EntityNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "is_active": user.is_active,
+    }
 
 
 @router.patch("/api/v1/admin/users/{user_id}/role")
@@ -539,17 +482,13 @@ async def admin_update_global_role(
             new_role=payload.role,
             requested_by=current_user.user_id,
         )
-        return {
-            "id": str(user.id),
-            "email": user.email,
-            "role": user.role.value,
-        }
-    except EntityNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "role": user.role.value,
+    }
 
 
 @router.get("/api/v1/admin/users")
@@ -576,22 +515,19 @@ async def admin_list_users(
         - 403 Forbidden si el usuario no es U3.
         - 500 Internal Server Error para cualquier error inesperado.
     """
-    try:
-        users = await service.list_all_users(
-            skip=skip,
-            limit=limit,
-            is_active=is_active,
-            role=role,
-        )
-        return [
-            {
-                "id": str(u.id),
-                "email": u.email,
-                "display_name": u.display_name,
-                "role": u.role.value,
-                "is_active": u.is_active,
-            }
-            for u in users
-        ]
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    users = await service.list_all_users(
+        skip=skip,
+        limit=limit,
+        is_active=is_active,
+        role=role,
+    )
+    return [
+        {
+            "id": str(u.id),
+            "email": u.email,
+            "display_name": u.display_name,
+            "role": u.role.value,
+            "is_active": u.is_active,
+        }
+        for u in users
+    ]

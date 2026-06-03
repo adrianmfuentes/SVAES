@@ -1,25 +1,28 @@
-<a href="#contenido-principal" class="skip-link">Ir al contenido principal</a>
+<a href="#contenido-principal" class="skip-link">{{ 'legal.common.skip_link' | t }}</a>
 
-<div class="legal-page" lang="es">
+<div class="legal-page">
   <header class="legal-header" role="banner">
     <a routerLink="/" class="legal-logo">SVAES</a>
-    <a routerLink="/" class="btn-secondary">← Inicio</a>
+    <div class="legal-header-nav">
+      <app-lang-toggle theme="light" />
+      <a routerLink="/" class="btn-secondary">{{ 'legal.common.back_home' | t }}</a>
+    </div>
   </header>
 
   <div class="legal-body">
     <aside class="legal-sidebar">
-      <nav aria-label="Tabla de contenidos de la política de privacidad">
-        <p class="legal-toc-heading" aria-hidden="true">Índice</p>
+      <nav [attr.aria-label]="'legal.privacy.nav_label' | t">
+        <p class="legal-toc-heading" aria-hidden="true">{{ 'legal.common.toc_heading' | t }}</p>
         <ol class="legal-toc-list">
-          <li class="legal-toc-item"><a href="#responsable"          class="legal-toc-link">Responsable del tratamiento</a></li>
-          <li class="legal-toc-item"><a href="#datos-finalidades"    class="legal-toc-link">Datos tratados y finalidades</a></li>
-          <li class="legal-toc-item"><a href="#base-juridica"        class="legal-toc-link">Base jurídica</a></li>
-          <li class="legal-toc-item"><a href="#plazo-conservacion"   class="legal-toc-link">Plazo de conservación</a></li>
-          <li class="legal-toc-item"><a href="#destinatarios"        class="legal-toc-link">Destinatarios</a></li>
-          <li class="legal-toc-item"><a href="#transferencias"       class="legal-toc-link">Transferencias internacionales</a></li>
-          <li class="legal-toc-item"><a href="#derechos"             class="legal-toc-link">Derechos del interesado</a></li>
-          <li class="legal-toc-item"><a href="#almacenamiento-local" class="legal-toc-link">Almacenamiento local</a></li>
-          <li class="legal-toc-item"><a href="#cambios"              class="legal-toc-link">Cambios en esta política</a></li>
+          <li class="legal-toc-item"><a href="#responsable"          class="legal-toc-link">{{ 'legal.privacy.toc.1' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#datos-finalidades"    class="legal-toc-link">{{ 'legal.privacy.toc.2' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#base-juridica"        class="legal-toc-link">{{ 'legal.privacy.toc.3' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#plazo-conservacion"   class="legal-toc-link">{{ 'legal.privacy.toc.4' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#destinatarios"        class="legal-toc-link">{{ 'legal.privacy.toc.5' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#transferencias"       class="legal-toc-link">{{ 'legal.privacy.toc.6' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#derechos"             class="legal-toc-link">{{ 'legal.privacy.toc.7' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#almacenamiento-local" class="legal-toc-link">{{ 'legal.privacy.toc.8' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#cambios"              class="legal-toc-link">{{ 'legal.privacy.toc.9' | t }}</a></li>
         </ol>
       </nav>
     </aside>
@@ -29,41 +32,34 @@
 
         <header class="legal-doc-header">
           <div class="legal-doc-meta">
-            <span class="legal-doc-type">Documento legal</span>
+            <span class="legal-doc-type">{{ 'legal.common.doc_type' | t }}</span>
             <span class="legal-doc-sep" aria-hidden="true">·</span>
-            <span class="legal-doc-jurisdiction">España y Unión Europea</span>
+            <span class="legal-doc-jurisdiction">{{ 'legal.common.jurisdiction' | t }}</span>
           </div>
-          <h1 id="legal-title" class="legal-title">Política de privacidad</h1>
-          <p class="legal-intro">
-            Esta política describe cómo se recogen, utilizan y protegen los datos personales de
-            los usuarios de la plataforma SVAES, de conformidad con el
-            <abbr title="Reglamento General de Protección de Datos (UE) 2016/679">RGPD</abbr>
-            y la <abbr title="Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales">LOPDGDD</abbr>.
-          </p>
-          <p class="legal-updated">
-            Última actualización: <time datetime="2026-05">mayo de 2026</time>
-          </p>
+          <h1 id="legal-title" class="legal-title">{{ 'legal.privacy.title' | t }}</h1>
+          <p class="legal-intro" [innerHTML]="'legal.privacy.intro' | t"></p>
+          <p class="legal-updated">{{ 'legal.privacy.last_updated' | t }}</p>
         </header>
 
         <section id="responsable" class="legal-section" aria-labelledby="h-responsable">
           <h2 id="h-responsable">
-            <span class="legal-section-num" aria-hidden="true">1</span>Responsable del tratamiento
+            <span class="legal-section-num" aria-hidden="true">1</span>{{ 'legal.privacy.s1.title' | t }}
           </h2>
           <dl class="legal-dl">
             <div class="legal-dl-row">
-              <dt>Identidad</dt>
+              <dt>{{ 'legal.privacy.s1.identity' | t }}</dt>
               <dd><span class="legal-placeholder">Adrián Martínez</span></dd>
             </div>
             <div class="legal-dl-row">
-              <dt>NIF</dt>
+              <dt>{{ 'legal.privacy.s1.nif' | t }}</dt>
               <dd><span class="legal-placeholder">71743428B</span></dd>
             </div>
             <div class="legal-dl-row">
-              <dt>Domicilio</dt>
+              <dt>{{ 'legal.privacy.s1.address' | t }}</dt>
               <dd><span class="legal-placeholder">Campus de Los Catalanes, C/&nbsp;Valdés Salas, 33007 Oviedo</span></dd>
             </div>
             <div class="legal-dl-row">
-              <dt>Contacto</dt>
+              <dt>{{ 'legal.privacy.s1.contact' | t }}</dt>
               <dd><a href="mailto:UO295454@uniovi.es" class="legal-link">UO295454&#64;uniovi.es</a></dd>
             </div>
           </dl>
@@ -71,129 +67,92 @@
 
         <section id="datos-finalidades" class="legal-section" aria-labelledby="h-datos-finalidades">
           <h2 id="h-datos-finalidades">
-            <span class="legal-section-num" aria-hidden="true">2</span>Datos tratados y finalidades
+            <span class="legal-section-num" aria-hidden="true">2</span>{{ 'legal.privacy.s2.title' | t }}
           </h2>
-          <p>En el marco del servicio SVAES, tratamos los siguientes datos personales:</p>
+          <p>{{ 'legal.privacy.s2.intro' | t }}</p>
           <ul>
-            <li>
-              <strong>Datos de identificación y acceso:</strong> dirección de correo electrónico,
-              nombre de usuario y rol en la organización. Finalidad: gestión de la cuenta de usuario
-              y control de acceso a la plataforma.
-            </li>
-            <li>
-              <strong>Datos de sesión:</strong> tokens de autenticación (JWT) almacenados en el
-              almacenamiento local del navegador (<em>localStorage</em>). Finalidad: mantenimiento
-              de la sesión activa durante el uso de la plataforma. Se eliminan al cerrar sesión.
-            </li>
-            <li>
-              <strong>Datos de actividad:</strong> registros de acceso y operaciones realizadas en
-              la plataforma (logs de auditoría). Finalidad: seguridad, trazabilidad y cumplimiento
-              normativo.
-            </li>
+            <li [innerHTML]="'legal.privacy.s2.item1' | t"></li>
+            <li [innerHTML]="'legal.privacy.s2.item2' | t"></li>
+            <li [innerHTML]="'legal.privacy.s2.item3' | t"></li>
           </ul>
-          <p>No se recogen datos especialmente protegidos (salud, origen racial, creencias, etc.).</p>
+          <p>{{ 'legal.privacy.s2.footer' | t }}</p>
         </section>
 
         <section id="base-juridica" class="legal-section" aria-labelledby="h-base-juridica">
           <h2 id="h-base-juridica">
-            <span class="legal-section-num" aria-hidden="true">3</span>Base jurídica del tratamiento
+            <span class="legal-section-num" aria-hidden="true">3</span>{{ 'legal.privacy.s3.title' | t }}
           </h2>
-          <p>El tratamiento se fundamenta en:</p>
+          <p>{{ 'legal.privacy.s3.intro' | t }}</p>
           <ul>
-            <li>
-              <strong>Ejecución de un contrato</strong> (art.&nbsp;6.1.b <abbr title="Reglamento General de Protección de Datos">RGPD</abbr>):
-              necesario para la prestación del servicio contratado por la organización del usuario.
-            </li>
-            <li>
-              <strong>Interés legítimo</strong> (art.&nbsp;6.1.f <abbr title="Reglamento General de Protección de Datos">RGPD</abbr>):
-              registro de actividad para garantizar la seguridad e integridad de la plataforma.
-            </li>
-            <li>
-              <strong>Cumplimiento de obligaciones legales</strong> (art.&nbsp;6.1.c <abbr title="Reglamento General de Protección de Datos">RGPD</abbr>):
-              conservación de registros de auditoría conforme a la normativa aplicable.
-            </li>
+            <li [innerHTML]="'legal.privacy.s3.item1' | t"></li>
+            <li [innerHTML]="'legal.privacy.s3.item2' | t"></li>
+            <li [innerHTML]="'legal.privacy.s3.item3' | t"></li>
           </ul>
         </section>
 
         <section id="plazo-conservacion" class="legal-section" aria-labelledby="h-plazo">
           <h2 id="h-plazo">
-            <span class="legal-section-num" aria-hidden="true">4</span>Plazo de conservación
+            <span class="legal-section-num" aria-hidden="true">4</span>{{ 'legal.privacy.s4.title' | t }}
           </h2>
-          <p>Los datos de identificación se conservarán mientras la cuenta de usuario esté activa. Una vez desactivada, se procederá a su supresión o anonimización en un plazo máximo de <span class="legal-placeholder">12 meses</span>, salvo que exista obligación legal de conservación.</p>
-          <p>Los tokens de sesión almacenados en <em>localStorage</em> se eliminan automáticamente al cerrar sesión o al expirar su vigencia.</p>
-          <p>Los registros de auditoría se conservarán durante <span class="legal-placeholder">6 meses</span> conforme a los requisitos legales aplicables.</p>
+          <p [innerHTML]="'legal.privacy.s4.p1' | t"></p>
+          <p [innerHTML]="'legal.privacy.s4.p2' | t"></p>
+          <p [innerHTML]="'legal.privacy.s4.p3' | t"></p>
         </section>
 
         <section id="destinatarios" class="legal-section" aria-labelledby="h-destinatarios">
           <h2 id="h-destinatarios">
-            <span class="legal-section-num" aria-hidden="true">5</span>Destinatarios y encargados del tratamiento
+            <span class="legal-section-num" aria-hidden="true">5</span>{{ 'legal.privacy.s5.title' | t }}
           </h2>
-          <p>Los datos no se ceden a terceros salvo obligación legal. Para la prestación del servicio podemos contar con encargados del tratamiento (proveedores de infraestructura, alojamiento, etc.) que actúan bajo instrucciones del responsable y han suscrito los contratos de encargo de tratamiento requeridos por el <abbr title="Reglamento General de Protección de Datos">RGPD</abbr>.</p>
-          <p>Los proveedores actuales de infraestructura son: <span class="legal-placeholder">[PROVEEDOR/ES DE HOSTING]</span>.</p>
+          <p [innerHTML]="'legal.privacy.s5.p1' | t"></p>
+          <p [innerHTML]="'legal.privacy.s5.p2' | t"></p>
         </section>
 
         <section id="transferencias" class="legal-section" aria-labelledby="h-transferencias">
           <h2 id="h-transferencias">
-            <span class="legal-section-num" aria-hidden="true">6</span>Transferencias internacionales
+            <span class="legal-section-num" aria-hidden="true">6</span>{{ 'legal.privacy.s6.title' | t }}
           </h2>
-          <p><span class="legal-placeholder">No se realizan transferencias internacionales de datos fuera del Espacio Económico Europeo.</span></p>
+          <p [innerHTML]="'legal.privacy.s6.p1' | t"></p>
         </section>
 
         <section id="derechos" class="legal-section" aria-labelledby="h-derechos">
           <h2 id="h-derechos">
-            <span class="legal-section-num" aria-hidden="true">7</span>Derechos del interesado
+            <span class="legal-section-num" aria-hidden="true">7</span>{{ 'legal.privacy.s7.title' | t }}
           </h2>
-          <p>
-            Conforme al <abbr title="Reglamento General de Protección de Datos">RGPD</abbr>
-            y a la <abbr title="Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales">LOPDGDD</abbr>,
-            el usuario puede ejercer los siguientes derechos:
-          </p>
+          <p [innerHTML]="'legal.privacy.s7.intro' | t"></p>
           <ul>
-            <li><strong>Acceso:</strong> conocer qué datos personales se tratan.</li>
-            <li><strong>Rectificación:</strong> corregir datos inexactos o incompletos.</li>
-            <li><strong>Supresión:</strong> solicitar la eliminación de sus datos cuando no sean necesarios para los fines que motivaron su recogida.</li>
-            <li><strong>Limitación del tratamiento:</strong> solicitar la restricción del tratamiento en los supuestos previstos legalmente.</li>
-            <li><strong>Portabilidad:</strong> recibir sus datos en un formato estructurado, de uso común y legible por máquina.</li>
-            <li><strong>Oposición:</strong> oponerse al tratamiento de sus datos por motivos relacionados con su situación particular.</li>
+            <li [innerHTML]="'legal.privacy.s7.item1' | t"></li>
+            <li [innerHTML]="'legal.privacy.s7.item2' | t"></li>
+            <li [innerHTML]="'legal.privacy.s7.item3' | t"></li>
+            <li [innerHTML]="'legal.privacy.s7.item4' | t"></li>
+            <li [innerHTML]="'legal.privacy.s7.item5' | t"></li>
+            <li [innerHTML]="'legal.privacy.s7.item6' | t"></li>
           </ul>
-          <p>Para ejercer estos derechos, diríjase por escrito a <a href="mailto:UO295454@uniovi.es" class="legal-link">UO295454&#64;uniovi.es</a>, indicando el derecho que desea ejercer y adjuntando copia de documento acreditativo de identidad.</p>
-          <p>
-            Tiene derecho a presentar una reclamación ante la
-            <strong>Agencia Española de Protección de Datos</strong>
-            (<abbr title="Agencia Española de Protección de Datos">AEPD</abbr>) —
-            <a href="https://www.aepd.es" target="_blank" rel="external noopener noreferrer" class="legal-link">www.aepd.es</a> —
-            si considera que el tratamiento de sus datos no es conforme a la normativa vigente.
-          </p>
+          <p [innerHTML]="'legal.privacy.s7.contact' | t"></p>
+          <p [innerHTML]="'legal.privacy.s7.authority' | t"></p>
         </section>
 
         <section id="almacenamiento-local" class="legal-section" aria-labelledby="h-localstorage">
           <h2 id="h-localstorage">
-            <span class="legal-section-num" aria-hidden="true">8</span>Almacenamiento local (<em>localStorage</em>)
+            <span class="legal-section-num" aria-hidden="true">8</span>{{ 'legal.privacy.s8.title' | t }}
           </h2>
-          <p>Esta plataforma utiliza el mecanismo de almacenamiento local del navegador (<em>localStorage</em>) con la única finalidad de mantener la sesión del usuario autenticado. Los elementos almacenados son:</p>
+          <p [innerHTML]="'legal.privacy.s8.intro' | t"></p>
           <ul>
-            <li><strong>access_token:</strong> token JWT de acceso a la API. Duración: hasta la expiración del token o el cierre de sesión.</li>
-            <li><strong>refresh_token:</strong> token de renovación de sesión. Duración: hasta el cierre de sesión.</li>
-            <li><strong>user:</strong> información básica del perfil (correo, nombre, rol). Duración: hasta el cierre de sesión.</li>
+            <li [innerHTML]="'legal.privacy.s8.item1' | t"></li>
+            <li [innerHTML]="'legal.privacy.s8.item2' | t"></li>
+            <li [innerHTML]="'legal.privacy.s8.item3' | t"></li>
           </ul>
-          <p>Estos datos son técnicamente necesarios para el funcionamiento del servicio y no se utilizan con fines de seguimiento, publicidad ni análisis del comportamiento. No se instalan cookies de seguimiento ni de publicidad.</p>
+          <p>{{ 'legal.privacy.s8.footer' | t }}</p>
         </section>
 
         <section id="cambios" class="legal-section" aria-labelledby="h-cambios">
           <h2 id="h-cambios">
-            <span class="legal-section-num" aria-hidden="true">9</span>Cambios en esta política
+            <span class="legal-section-num" aria-hidden="true">9</span>{{ 'legal.privacy.s9.title' | t }}
           </h2>
-          <p>El responsable del tratamiento se reserva el derecho a modificar la presente política de privacidad para adaptarla a novedades legislativas o jurisprudenciales. Los cambios entrarán en vigor desde su publicación en la plataforma. Se recomienda revisar periódicamente esta página.</p>
+          <p>{{ 'legal.privacy.s9.p1' | t }}</p>
         </section>
 
         <footer class="legal-doc-footer">
-          <p>
-            Documento redactado conforme al
-            <abbr title="Reglamento General de Protección de Datos (UE) 2016/679">RGPD</abbr>
-            y la <abbr title="Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales">LOPDGDD</abbr>.
-            Autoridad de control competente:
-            <abbr title="Agencia Española de Protección de Datos">AEPD</abbr>.
-          </p>
+          <p [innerHTML]="'legal.privacy.footer' | t"></p>
         </footer>
 
       </article>

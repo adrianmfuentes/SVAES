@@ -1,5 +1,5 @@
 <div class="card rules-card">
-  <h2>Top failed rules</h2>
+  <h2>{{ 'dashboard.top_failed_rules' | t }}</h2>
 
   @if (loading) {
     @for (item of [1,2,3,4,5]; track item) {
@@ -8,7 +8,7 @@
   } @else if (error) {
     <div class="error-banner">{{ error }}</div>
   } @else if (rules.length === 0) {
-    <p class="empty">No failed rules in this period.</p>
+    <p class="empty">{{ 'dashboard.no_failed_rules' | t }}</p>
   } @else {
     @for (rule of rules.slice(0, 5); track rule.rule_id) {
       <a class="rule-row"

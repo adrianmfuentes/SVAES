@@ -9,6 +9,19 @@ from infrastructure.secondary.database.models.artifact_model import ArtifactMode
 from infrastructure.secondary.database.repositories.base_sql_repository import _session_scope
 
 
+def _artifact_from_row(row: ArtifactModel) -> Artifact:
+    return Artifact(
+        id=cast(uuid.UUID, row.id),
+        release_id=cast(uuid.UUID, row.release_id),
+        connector_instance_id=cast(uuid.UUID, row.connector_instance_id),
+        connector_implementation=cast(str, row.connector_implementation),
+        artifact_type=cast(str, row.artifact_type),
+        external_ref=cast(str, row.external_ref),
+        metadata=cast(dict, row.artifact_metadata) or {},
+        created_at=cast(datetime, row.created_at),
+    )
+
+
 class SqlArtifactRepository(IArtifactRepository):
     async def save(self, artifact: Artifact) -> Artifact:
         async with _session_scope() as session:
@@ -25,16 +38,7 @@ class SqlArtifactRepository(IArtifactRepository):
             session.add(artifact_model)
             await session.commit()
             await session.refresh(artifact_model)
-            return Artifact(
-                id=cast(uuid.UUID, artifact_model.id),
-                release_id=cast(uuid.UUID, artifact_model.release_id),
-                connector_instance_id=cast(uuid.UUID, artifact_model.connector_instance_id),
-                connector_implementation=cast(str, artifact_model.connector_implementation),
-                artifact_type=cast(str, artifact_model.artifact_type),
-                external_ref=cast(str, artifact_model.external_ref),
-                metadata=cast(dict, artifact_model.artifact_metadata) or {},
-                created_at=cast(datetime, artifact_model.created_at),
-            )
+            return _artifact_from_row(artifact_model)
 
     async def find_by_id(self, artifact_id: uuid.UUID) -> Optional[Artifact]:
         async with _session_scope() as session:
@@ -42,16 +46,7 @@ class SqlArtifactRepository(IArtifactRepository):
             artifact_row = result.scalar_one_or_none()
             if not artifact_row:
                 return None
-            return Artifact(
-                id=cast(uuid.UUID, artifact_row.id),
-                release_id=cast(uuid.UUID, artifact_row.release_id),
-                connector_instance_id=cast(uuid.UUID, artifact_row.connector_instance_id),
-                connector_implementation=cast(str, artifact_row.connector_implementation),
-                artifact_type=cast(str, artifact_row.artifact_type),
-                external_ref=cast(str, artifact_row.external_ref),
-                metadata=cast(dict, artifact_row.artifact_metadata) or {},
-                created_at=cast(datetime, artifact_row.created_at),
-            )
+            return _artifact_from_row(artifact_row)
 
     async def find_by_release(self, release_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[Artifact]:
         async with _session_scope() as session:
@@ -62,19 +57,7 @@ class SqlArtifactRepository(IArtifactRepository):
                 .limit(limit)
             )
             artifact_rows = result.scalars().all()
-            return [
-                Artifact(
-                    id=cast(uuid.UUID, row.id),
-                    release_id=cast(uuid.UUID, row.release_id),
-                    connector_instance_id=cast(uuid.UUID, row.connector_instance_id),
-                    connector_implementation=cast(str, row.connector_implementation),
-                    artifact_type=cast(str, row.artifact_type),
-                    external_ref=cast(str, row.external_ref),
-                    metadata=cast(dict, row.artifact_metadata) or {},
-                    created_at=cast(datetime, row.created_at),
-                )
-                for row in artifact_rows
-            ]
+            return [_artifact_from_row(row) for row in artifact_rows]
 
     async def delete(self, artifact_id: uuid.UUID) -> None:
         async with _session_scope() as session:

@@ -17,6 +17,12 @@ from . import ERROR_INTERNO
 
 # Constantes de mensajes de error
 RELEASE_NOT_FOUND = "Release no encontrada"
+
+_STATUS_TO_VERDICT = {
+    ReleaseStatus.VALIDA: "VALID",
+    ReleaseStatus.CON_ADVERTENCIAS: "WITH_WARNINGS",
+    ReleaseStatus.NO_VALIDA: "INVALID",
+}
 RELEASE_OR_VERIFICATION_NOT_FOUND = "Release o verificación no encontradas"
 
 # Quitamos el prefix global para poder manejar tanto rutas de proyectos como de releases directas
@@ -119,6 +125,28 @@ async def list_releases(
 # ===================================
 # BLOQUE 2: OPERACIONES SOBRE LA RELEASE
 # ===================================
+@router.get("/api/v1/releases")
+async def list_global_releases(
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_OWN_PROJECTS))],
+    service: Annotated[IReleaseService, Depends(get_release_service)],
+):
+    try:
+        org_id = None if current_user.role == UserRole.U3 else current_user.organization_id
+        releases = await service.list_org_releases(organization_id=org_id)
+        return [
+            {
+                "id": str(r.id),
+                "name": r.name,
+                "verdict": _STATUS_TO_VERDICT.get(r.status, "NOT_EVALUATED"),
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "created_by": str(r.created_by) if r.created_by else None,
+            }
+            for r in releases
+        ]
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
 @router.get("/api/v1/releases/{id}")
 async def get_release(
     id: UUID,

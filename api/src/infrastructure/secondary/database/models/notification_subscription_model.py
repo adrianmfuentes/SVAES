@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -14,5 +14,5 @@ class NotificationSubscriptionModel(Base):
     user_id = Column(PG_UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
     event_type = Column(String(50), nullable=False)
     enabled = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

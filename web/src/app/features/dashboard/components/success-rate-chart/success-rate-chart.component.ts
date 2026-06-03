@@ -2,11 +2,12 @@ import { Component, Input, OnChanges } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartData, ChartOptions } from 'chart.js';
 import { TemporalPoint } from '../../services/dashboard.service';
+import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-success-rate-chart',
   standalone: true,
-  imports: [BaseChartDirective],
+  imports: [BaseChartDirective, TranslatePipe],
   templateUrl: './success-rate-chart.component.html',
   styleUrls: ['./success-rate-chart.component.scss'],
 })

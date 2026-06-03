@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Table, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, ARRAY
@@ -37,5 +37,5 @@ class CustomRoleModel(Base):
     name = Column(String(100), nullable=False)
     permissions = Column(ARRAY(String), nullable=False)
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

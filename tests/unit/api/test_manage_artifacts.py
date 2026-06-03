@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
-from application.use_cases.others.manage_artifacts import ManageArtifactsUseCase
+from application.use_cases.main.artifact_service import ArtifactService
 from domain.entities.artifact import Artifact
 from domain.enums import ArtifactType
 from domain.exceptions import ValidationError
@@ -28,7 +28,7 @@ def release_repo():
 
 @pytest.fixture
 def use_case(artifact_repo, release_repo):
-    return ManageArtifactsUseCase(artifact_repo, release_repo)
+    return ArtifactService(artifact_repo, release_repo)
 
 
 @pytest.fixture

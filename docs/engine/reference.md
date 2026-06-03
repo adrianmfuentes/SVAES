@@ -206,7 +206,16 @@ Unit tests are embedded in each source file under `#[cfg(test)]`:
 | `tests/http_pipeline.rs` | 8 tests | HTTP integration (Rust) |
 | `tests/performance.rs` | 3 tests | Performance benchmarks |
 
-### Run Commands
+### Python Integration Tests
+
+The project also includes extensive Python-level integration tests in `tests/integration/` covering the full verification flow, release lifecycle, fault tolerance, and rate limiting. These are run against the FastAPI app via ASGI transport with ephemeral PostgreSQL + Redis containers.
+
+```powershell
+# Windows (PowerShell 7+) — full automation
+.\scripts\run_integration_tests.ps1
+```
+
+### Run Commands (Rust)
 
 ```bash
 cargo test                              # All unit tests
@@ -217,4 +226,4 @@ cargo test -- --nocapture                # With stdout/stderr output
 
 ---
 
-*Last updated: May 2026 — Adrian Martinez Fuentes*
+*Last updated: June 2026 — Adrian Martinez Fuentes*

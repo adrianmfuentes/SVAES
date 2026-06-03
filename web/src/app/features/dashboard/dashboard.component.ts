@@ -1,5 +1,6 @@
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { TranslationService } from '../../core/i18n/translation.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
@@ -12,12 +13,14 @@ import { KpiCardComponent } from './components/kpi-card/kpi-card.component';
 import { SuccessRateChartComponent } from './components/success-rate-chart/success-rate-chart.component';
 import { TopFailedRulesComponent } from './components/top-failed-rules/top-failed-rules.component';
 import { RecentReleasesTableComponent } from './components/recent-releases-table/recent-releases-table.component';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
     DecimalPipe,
+    TranslatePipe,
     KpiCardComponent,
     SuccessRateChartComponent,
     TopFailedRulesComponent,
@@ -30,6 +33,7 @@ import { RecentReleasesTableComponent } from './components/recent-releases-table
 export class DashboardComponent implements OnInit {
   private readonly svc = inject(DashboardService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly ts = inject(TranslationService);
 
   metricsLoading = signal(true);
   metricsError = signal<string | null>(null);
@@ -61,7 +65,7 @@ export class DashboardComponent implements OnInit {
       )
       .subscribe({
         next: (data) => this.metrics.set(data),
-        error: () => this.metricsError.set('Error al cargar métricas'),
+        error: () => this.metricsError.set(this.ts.translateInstant('system.error.loading_metrics')),
       });
   }
 
@@ -76,7 +80,7 @@ export class DashboardComponent implements OnInit {
       )
       .subscribe({
         next: (data) => this.recentReleases.set(data),
-        error: () => this.releasesError.set('Error al cargar entregas'),
+        error: () => this.releasesError.set(this.ts.translateInstant('releases.loading_error')),
       });
   }
 }

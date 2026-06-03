@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
+import { TranslationService } from '../../core/i18n/translation.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { catchError, of } from 'rxjs';
 
 interface Connector {
@@ -16,18 +18,25 @@ interface Connector {
   last_tested_at?: string;
 }
 
+interface ConnectorApiItem {
+  id: string;
+  name: string;
+  connector_type: string;
+  status: string;
+  created_at: string;
+}
+
 @Component({
   selector: 'app-connectors',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe],
   template: `
     <div class="connectors-page">
       <div class="page-header">
         <div class="page-header-left">
-          <h1 class="page-title">Conectores</h1>
-          <span *ngIf="isAdmin" class="global-badge">Ámbito global</span>
+          <h1 class="page-title">{{ 'connectors.title' | t }}</h1>
         </div>
-        <button *ngIf="isAdmin" class="btn-primary" (click)="openCreate()">Nuevo conector global</button>
+        <button *ngIf="canManage" class="btn-primary" (click)="openCreate()">{{ 'connectors.new_connector' | t }}</button>
       </div>
 
       <div *ngIf="loading()" class="skeleton-list">
@@ -37,17 +46,17 @@ interface Connector {
       <div *ngIf="error() && !loading()" class="error-banner">{{ error() }}</div>
 
       <div *ngIf="!loading() && !error()">
-        <!-- Global connectors -->
-        <div class="section-label">Conectores globales del sistema</div>
+        <!-- Org connectors -->
+        <div class="section-label">{{ 'connectors.org' | t }}</div>
         <div class="data-table-wrap" [class.empty-wrap]="globalConnectors().length === 0">
-          <table class="data-table" *ngIf="globalConnectors().length > 0; else globalEmpty">
+          <table class="data-table" *ngIf="globalConnectors().length > 0; else orgEmpty">
             <thead>
               <tr>
-                <th>Nombre</th>
-                <th>Tipo</th>
-                <th>Estado</th>
-                <th>Última prueba</th>
-                <th *ngIf="isAdmin"></th>
+                <th>{{ 'connectors.table_name' | t }}</th>
+                <th>{{ 'connectors.table_type' | t }}</th>
+                <th>{{ 'connectors.table_status' | t }}</th>
+                <th>{{ 'connectors.last_tested' | t }}</th>
+                <th *ngIf="canManage"></th>
               </tr>
             </thead>
             <tbody>
@@ -59,52 +68,22 @@ interface Connector {
                   <span class="status-label">{{ statusLabel(c.status) }}</span>
                 </td>
                 <td class="cell-muted">{{ c.last_tested_at ? (c.last_tested_at | date:'dd MMM yyyy') : '—' }}</td>
-                <td *ngIf="isAdmin" class="cell-actions">
-                  <button class="btn-ghost" (click)="openEdit(c)">Editar</button>
+                <td *ngIf="canManage" class="cell-actions">
+                  <button class="btn-ghost" (click)="openEdit(c)">{{ 'connectors.edit_label' | t }}</button>
                   <button class="btn-ghost" (click)="testConnector(c)" [disabled]="testingId() === c.id">
-                    {{ testingId() === c.id ? 'Probando…' : 'Probar' }}
+                    {{ testingId() === c.id ? ('connectors.testing_label' | t) : ('connectors.test_label' | t) }}
                   </button>
                   <button class="btn-ghost" (click)="toggleConnector(c)">
-                    {{ c.status === 'inactive' ? 'Activar' : 'Desactivar' }}
+                    {{ c.status === 'inactive' ? ('connectors.activate' | t) : ('connectors.deactivate' | t) }}
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
-          <ng-template #globalEmpty>
-            <div class="empty-state">No hay conectores globales configurados.</div>
+          <ng-template #orgEmpty>
+            <div class="empty-state">{{ 'connectors.no_org' | t }}</div>
           </ng-template>
         </div>
-
-        <!-- Org connectors (read-only for admin) -->
-        <ng-container *ngIf="isAdmin && orgConnectors().length > 0">
-          <div class="section-label section-label-muted" style="margin-top: var(--spacing-lg)">
-            Conectores de organización (solo lectura)
-          </div>
-          <div class="data-table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Tipo</th>
-                  <th>Organización</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let c of orgConnectors()">
-                  <td class="cell-primary">{{ c.name }}</td>
-                  <td><span class="type-chip">{{ c.type }}</span></td>
-                  <td class="cell-muted">{{ c.organization_name ?? '—' }}</td>
-                  <td>
-                    <span class="status-dot" [ngClass]="'status-' + c.status"></span>
-                    <span class="status-label">{{ statusLabel(c.status) }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </ng-container>
       </div>
     </div>
 
@@ -112,16 +91,16 @@ interface Connector {
     <div class="modal-overlay" *ngIf="showModal()" (click)="showModal.set(false)">
       <div class="modal-panel" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3 class="modal-title">{{ editingConnector() ? 'Editar conector' : 'Nuevo conector global' }}</h3>
+          <h3 class="modal-title">{{ editingConnector() ? ('connectors.edit_title' | t) : ('connectors.new_global' | t) }}</h3>
           <button class="modal-close" (click)="showModal.set(false)">&times;</button>
         </div>
         <form [formGroup]="connectorForm" (ngSubmit)="submitConnector()">
           <div class="form-group">
-            <label for="conn-name">Nombre</label>
+            <label for="conn-name">{{ 'connectors.name_label' | t }}</label>
             <input id="conn-name" type="text" formControlName="name" placeholder="GitLab CI" />
           </div>
           <div class="form-group">
-            <label for="conn-type">Tipo</label>
+            <label for="conn-type">{{ 'connectors.type_label' | t }}</label>
             <select id="conn-type" formControlName="type">
               <option value="gitlab">GitLab</option>
               <option value="github">GitHub</option>
@@ -132,18 +111,18 @@ interface Connector {
             </select>
           </div>
           <div class="form-group">
-            <label for="conn-url">URL base</label>
+            <label for="conn-url">{{ 'connectors.base_url_label' | t }}</label>
             <input id="conn-url" type="text" formControlName="base_url" placeholder="https://gitlab.example.com" />
           </div>
           <div class="form-group">
-            <label for="conn-token">Token de acceso</label>
+            <label for="conn-token">{{ 'connectors.token_label' | t }}</label>
             <input id="conn-token" type="password" formControlName="token" placeholder="glpat-…" />
           </div>
           <div *ngIf="modalError()" class="error-banner error-banner-sm">{{ modalError() }}</div>
           <div class="modal-footer">
-            <button type="button" class="btn-secondary" (click)="showModal.set(false)">Cancelar</button>
+            <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.cancel' | t }}</button>
             <button type="submit" class="btn-primary" [disabled]="saving()">
-              {{ saving() ? 'Guardando…' : (editingConnector() ? 'Guardar cambios' : 'Crear conector') }}
+              {{ saving() ? ('connectors.saving' | t) : (editingConnector() ? ('connectors.save_changes' | t) : ('connectors.create' | t)) }}
             </button>
           </div>
         </form>
@@ -470,8 +449,12 @@ export class ConnectorsComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
+  private readonly ts = inject(TranslationService);
 
-  readonly isAdmin = this.authService.isAdmin();
+  private orgId: string | null = null;
+  readonly canManage = this.authService.getUserRole() === 'MANAGER';
+  /** @deprecated keep for template compat — always false on this route */
+  readonly isAdmin = false;
 
   connectors = signal<Connector[]>([]);
   loading = signal(true);
@@ -494,15 +477,41 @@ export class ConnectorsComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    const url = this.isAdmin ? '/api/v1/connectors?scope=global' : '/api/v1/connectors';
-    this.http.get<Connector[]>(url)
-      .pipe(catchError(() => { this.error.set('Error al cargar conectores'); return of([]); }))
+    const user = this.authService.getUser();
+    this.orgId = user?.organization_id ?? null;
+    if (!this.orgId) {
+      this.error.set(this.ts.translateInstant('connectors.loading_error'));
+      this.loading.set(false);
+      return;
+    }
+    this.http.get<ConnectorApiItem[]>(`/api/v1/organizations/${this.orgId}/connectors`)
+      .pipe(catchError(() => { this.error.set(this.ts.translateInstant('connectors.loading_error')); return of([]); }))
       .subscribe(data => {
-        this.connectors.set(data);
-        this.globalConnectors.set(data.filter(c => c.global));
-        this.orgConnectors.set(data.filter(c => !c.global));
+        const mapped = data.map(c => this.mapApiConnector(c));
+        this.connectors.set(mapped);
+        this.globalConnectors.set(mapped);
+        this.orgConnectors.set([]);
         this.loading.set(false);
       });
+  }
+
+  private mapApiConnector(c: ConnectorApiItem): Connector {
+    return {
+      id: c.id,
+      name: c.name,
+      type: c.connector_type,
+      status: this.normalizeStatus(c.status),
+      global: false,
+      organization_id: this.orgId ?? undefined,
+    };
+  }
+
+  private normalizeStatus(s: string): 'active' | 'inactive' | 'error' {
+    switch (s.toUpperCase()) {
+      case 'ACTIVO': return 'active';
+      case 'INACTIVO': return 'inactive';
+      default: return 'error';
+    }
   }
 
   openCreate(): void {
@@ -524,20 +533,31 @@ export class ConnectorsComponent implements OnInit {
     this.saving.set(true);
     this.modalError.set(null);
     const editing = this.editingConnector();
-    const body = { ...this.connectorForm.value, global: true };
+    const body = editing
+      ? { name: this.connectorForm.value.name }
+      : {
+          connector_type: this.implementationToType(this.connectorForm.value.type ?? ''),
+          connector_implementation: (this.connectorForm.value.type ?? '').toUpperCase(),
+          name: this.connectorForm.value.name,
+          credentials: {
+            token: this.connectorForm.value.token,
+            base_url: this.connectorForm.value.base_url,
+          },
+        };
     const req = editing
-      ? this.http.put<Connector>(`/api/v1/connectors/${editing.id}`, body)
-      : this.http.post<Connector>('/api/v1/connectors', body);
+      ? this.http.patch<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors/${editing.id}`, body)
+      : this.http.post<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors`, body);
     req.pipe(catchError((err: HttpErrorResponse) => {
-      this.modalError.set(err.error?.detail ?? 'Error al guardar conector');
+      this.modalError.set(err.error?.detail ?? this.ts.translateInstant('connectors.saving_error'));
       this.saving.set(false);
       return of(null);
-    })).subscribe(c => {
-      if (c) {
+    })).subscribe(raw => {
+      if (raw) {
+        const mapped = this.mapApiConnector(raw);
         if (editing) {
-          this.globalConnectors.update(list => list.map(x => x.id === c.id ? c : x));
+          this.globalConnectors.update(list => list.map(x => x.id === mapped.id ? mapped : x));
         } else {
-          this.globalConnectors.update(list => [...list, c]);
+          this.globalConnectors.update(list => [...list, mapped]);
         }
         this.showModal.set(false);
       }
@@ -546,23 +566,46 @@ export class ConnectorsComponent implements OnInit {
   }
 
   toggleConnector(c: Connector): void {
-    const newStatus = c.status === 'inactive' ? 'active' : 'inactive';
-    this.http.patch<Connector>(`/api/v1/connectors/${c.id}`, { status: newStatus })
+    const newApiStatus = c.status === 'inactive' ? 'ACTIVO' : 'INACTIVO';
+    this.http.patch<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors/${c.id}`, { status: newApiStatus })
       .pipe(catchError(() => of(null)))
-      .subscribe(updated => {
-        if (updated) this.globalConnectors.update(list => list.map(x => x.id === updated.id ? updated : x));
+      .subscribe(raw => {
+        if (raw) {
+          const mapped = this.mapApiConnector(raw);
+          this.globalConnectors.update(list => list.map(x => x.id === mapped.id ? mapped : x));
+        }
       });
   }
 
   testConnector(c: Connector): void {
     this.testingId.set(c.id);
-    this.http.post(`/api/v1/connectors/${c.id}/test`, {})
+    this.http.post(`/api/v1/organizations/${this.orgId}/connectors/${c.id}/test`, {})
       .pipe(catchError(() => of(null)))
       .subscribe(() => this.testingId.set(null));
   }
 
+  private implementationToType(impl: string): string {
+    const map: Record<string, string> = {
+      gitlab: 'REPO_CODIGO', github: 'REPO_CODIGO',
+      bitbucket: 'REPO_CODIGO', gitea: 'REPO_CODIGO',
+      jira: 'GESTOR_TAREAS', linear: 'GESTOR_TAREAS',
+      trello: 'GESTOR_TAREAS', asana: 'GESTOR_TAREAS',
+      confluence: 'SISTEMA_DOCUMENTAL', notion: 'SISTEMA_DOCUMENTAL',
+      wikijs: 'SISTEMA_DOCUMENTAL', bookstack: 'SISTEMA_DOCUMENTAL',
+      clickup: 'HERRAMIENTA_PLANIFICACION', taiga: 'HERRAMIENTA_PLANIFICACION',
+      plane: 'HERRAMIENTA_PLANIFICACION', miro: 'HERRAMIENTA_PLANIFICACION',
+      jira_sm: 'GESTION_CAMBIOS', glpi: 'GESTION_CAMBIOS',
+      zammad: 'GESTION_CAMBIOS', redmine: 'GESTION_CAMBIOS',
+    };
+    return map[impl.toLowerCase()] ?? 'REPO_CODIGO';
+  }
+
   statusLabel(status: string): string {
-    const map: Record<string, string> = { active: 'Activo', inactive: 'Inactivo', error: 'Error' };
+    const map: Record<string, string> = {
+      active: this.ts.translateInstant('connectors.status_active'),
+      inactive: this.ts.translateInstant('connectors.status_inactive'),
+      error: this.ts.translateInstant('connectors.status_error'),
+    };
     return map[status] ?? status;
   }
 }

@@ -1,8 +1,8 @@
 from typing import Any, Dict, List
-from infrastructure.secondary.connectors.base_http_connector import BaseHttpConnector
+from infrastructure.secondary.connectors.base_graphql_connector import BaseGraphQLConnector
 
 
-class WikiJsConnector(BaseHttpConnector):
+class WikiJsConnector(BaseGraphQLConnector):
     BASE_URL = "http://localhost:3000"
     CONNECTOR_TYPE = "SISTEMA_DOCUMENTAL"
     CONNECTOR_IMPLEMENTATION = "WIKIJS"
@@ -16,33 +16,14 @@ class WikiJsConnector(BaseHttpConnector):
             "Authorization": f"Bearer {config.get('token')}",
         }
 
-    def _get_base_url(self, config: Dict[str, Any]) -> str:
-        return config.get("base_url", self.BASE_URL)
-
     def _get_health_url(self, config: Dict[str, Any]) -> str:
-        return f"{self._get_base_url(config)}/graphql"
+        return f"{config.get('base_url', self.BASE_URL)}/graphql"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        return f"{self._get_base_url(config)}/graphql"
-
-    def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
-        return None
+        return f"{config.get('base_url', self.BASE_URL)}/graphql"
 
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
-        return f"{self._get_base_url(config)}/graphql"
-
-    def _get_list_params(
-        self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> Dict[str, Any] | None:
-        return None
-
-    def _get_list_json(
-        self, filter_params: Dict[str, Any], config: Dict[str, Any]
-    ) -> Dict[str, Any] | None:
-        return None
-
-    def _get_results_key(self) -> str:
-        return ""
+        return f"{config.get('base_url', self.BASE_URL)}/graphql"
 
     async def test_connection(self, config: Dict[str, Any]) -> bool:
         query = {"query": "{ users { total } }"}

@@ -26,12 +26,15 @@ docs(domain): clarify VerificationResult immutability
 git clone https://github.com/UO295454/SVAES.git
 cd SVAES
 
-# Install backend dependencies
+# Backend
 cd api
 uv sync
+uvicorn src.main:app --reload --port 8000
 
-# Run tests
-pytest tests/unit/ -v
+# Frontend
+cd ../web
+pnpm install
+pnpm start          # dev server at http://localhost:4200
 ```
 
 ## Code Conventions
@@ -42,6 +45,13 @@ pytest tests/unit/ -v
 - All functions must have type annotations
 - Use **Pydantic v2** for data models
 - Follow Clean Architecture: `domain/` has no external dependencies
+
+### TypeScript (frontend)
+
+- Format: **Prettier** + **ESLint** (angular-eslint)
+- Standalone components (Angular 17+ style)
+- i18n strings via `TranslatePipe` with keys in `web/src/assets/i18n/`
+- Guards in `core/guards/`; API calls in `core/services/`
 
 ### Tests
 

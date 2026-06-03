@@ -9,6 +9,19 @@ import pytest_asyncio
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
+def _read_env_password():
+    env_path = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
+    try:
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("POSTGRES_PASSWORD="):
+                    return line.split("=", 1)[1]
+    except FileNotFoundError:
+        pass
+    return "svaes"
+
+
 @pytest.fixture(scope="session")
 def anyio_backend():
     return "asyncio"
@@ -16,8 +29,9 @@ def anyio_backend():
 
 @pytest.fixture(scope="session")
 def _test_env():
+    postgres_password = os.environ.get("POSTGRES_PASSWORD", _read_env_password())
     os.environ.update({
-        "DATABASE_URL": "postgresql+asyncpg://svaes:svaes@localhost:5432/svaes_test",
+        "DATABASE_URL": f"postgresql+asyncpg://svaes:{postgres_password}@localhost:5432/svaes_test",
         "ENVIRONMENT": "test",
         "JWT_SECRET_KEY": "security-test-secret-key-not-for-production",
         "JWT_ALGORITHM": "HS256",
@@ -25,6 +39,9 @@ def _test_env():
         "ALLOWED_ORIGINS": "*",
         "ENCRYPTION_KEY": "HnVk8Q2xLm9pR4sT6wYzA1bC3dF5gJ7kN=",
         "REDIS_URL": "redis://localhost:6379/0",
+        "CELERY_BROKER_URL": "redis://localhost:6379/0",
+        "CELERY_RESULT_BACKEND": "redis://localhost:6379/0",
+        "ENGINE_URL": "http://localhost:8081",
     })
     import core.config as _cfg
     _cfg.get_settings.cache_clear()
@@ -91,7 +108,7 @@ async def client(_test_db):
         db_patch.start()
 
     async with AsyncClient(
-        transport=ASGITransport(app=app),
+        transport=ASGITransport(app=app, raise_app_exceptions=bool(_test_db)),
         base_url="http://test",
     ) as ac:
         yield ac

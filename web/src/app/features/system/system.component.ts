@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { catchError, forkJoin, map, of, interval, Subscription, Observable } from 'rxjs';
+import { TranslationService } from '../../core/i18n/translation.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 interface HealthResponse {
   status: string;
@@ -46,28 +48,28 @@ interface ProbeResult<T> {
 @Component({
   selector: 'app-system',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TranslatePipe],
   template: `
     <div class="system-page">
       <div class="page-header">
         <div class="page-header-left">
-          <h1 class="page-title">Visi&oacute;n general</h1>
-          <span class="system-badge">Sistema</span>
+          <h1 class="page-title">{{ 'system.title' | t }}</h1>
+          <span class="system-badge">{{ 'system.system_badge' | t }}</span>
         </div>
         <div class="refresh-controls">
-          <span class="refresh-label" *ngIf="!loading()">Actualizado hace {{ secondsSince() }}s</span>
+          <span class="refresh-label" *ngIf="!loading()">{{ 'system.updated_ago' | t : { n: secondsSince() } }}</span>
           <button class="btn-refresh" (click)="loadAll()" [disabled]="loading()">
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none" [class.spinning]="loading()">
               <path d="M10.5 6A4.5 4.5 0 1 1 6 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
               <path d="M6.5 1L9 3.5 6.5 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            {{ loading() ? 'Cargando…' : 'Actualizar' }}
+            {{ loading() ? ('common.loading' | t) : ('system.refresh_btn' | t) }}
           </button>
         </div>
       </div>
 
       <!-- Service status -->
-      <div class="section-label">Estado de servicios</div>
+      <div class="section-label">{{ 'system.service_status_section' | t }}</div>
       <div class="service-grid" *ngIf="!loading(); else servicesSkeleton">
         <div
           *ngFor="let svc of services()"
@@ -94,27 +96,27 @@ interface ProbeResult<T> {
       </ng-template>
 
       <!-- Metrics -->
-      <div class="section-label" style="margin-top:var(--spacing-lg)">M&eacute;tricas del sistema</div>
+      <div class="section-label" style="margin-top:var(--spacing-lg)">{{ 'system.metrics_section' | t }}</div>
       <div class="metrics-grid" *ngIf="!loading(); else metricsSkeleton">
         <div class="metric-card">
-          <div class="metric-label">Organizaciones</div>
+          <div class="metric-label">{{ 'system.org_count_label' | t }}</div>
           <div class="metric-value">{{ orgs().length }}</div>
-          <div class="metric-sub">activas en el sistema</div>
+          <div class="metric-sub">{{ 'system.active_in_system' | t }}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Usuarios totales</div>
+          <div class="metric-label">{{ 'system.total_users_label' | t }}</div>
           <div class="metric-value">{{ users().length }}</div>
-          <div class="metric-sub">{{ activeUserCount() }} activos</div>
+          <div class="metric-sub">{{ 'system.active_count' | t : { n: activeUserCount() } }}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Usuarios inactivos</div>
+          <div class="metric-label">{{ 'system.inactive_users_label' | t }}</div>
           <div class="metric-value">{{ users().length - activeUserCount() }}</div>
-          <div class="metric-sub">cuentas desactivadas</div>
+          <div class="metric-sub">{{ 'system.deactivated_label' | t }}</div>
         </div>
         <div class="metric-card" *ngIf="apiVersion()">
-          <div class="metric-label">Versi&oacute;n API</div>
+          <div class="metric-label">{{ 'system.api_version_label' | t }}</div>
           <div class="metric-value metric-mono">{{ apiVersion() }}</div>
-          <div class="metric-sub">en producci&oacute;n</div>
+          <div class="metric-sub">{{ 'system.in_production' | t }}</div>
         </div>
       </div>
       <ng-template #metricsSkeleton>
@@ -127,41 +129,38 @@ interface ProbeResult<T> {
       </ng-template>
 
       <!-- Rules reload action -->
-      <div class="section-label" style="margin-top:var(--spacing-lg)">Acciones del sistema</div>
+      <div class="section-label" style="margin-top:var(--spacing-lg)">{{ 'system.actions_section' | t }}</div>
       <div class="action-card">
         <div class="action-info">
-          <div class="action-title">Recarga de reglas</div>
-          <p class="action-desc">
-            Recarga en caliente las reglas de verificaci&oacute;n personalizadas sin reiniciar el sistema.
-            Usa esta acci&oacute;n tras modificar reglas en el c&oacute;digo fuente.
-          </p>
+          <div class="action-title">{{ 'system.rules_reload_title' | t }}</div>
+          <p class="action-desc">{{ 'system.rules_reload_desc' | t }}</p>
           <div *ngIf="reloadResult()" class="reload-result" [class.reload-ok]="reloadResult()!.success" [class.reload-fail]="!reloadResult()!.success">
             <span class="result-icon">{{ reloadResult()!.success ? '✓' : '✕' }}</span>
             <span>{{ reloadResult()!.message }}</span>
-            <span class="result-count" *ngIf="reloadResult()!.success">&nbsp;&mdash;&nbsp;{{ reloadResult()!.rules_loaded }} reglas cargadas</span>
+            <span class="result-count" *ngIf="reloadResult()!.success">&nbsp;&mdash;&nbsp;{{ 'system.rules_loaded_count' | t : { n: reloadResult()!.rules_loaded } }}</span>
           </div>
           <div *ngIf="reloadError()" class="reload-error">{{ reloadError() }}</div>
         </div>
         <div class="action-controls">
           <ng-container *ngIf="!confirmingReload()">
             <button class="btn-secondary" (click)="confirmingReload.set(true)" [disabled]="reloading()">
-              Recargar reglas
+              {{ 'system.reload_btn' | t }}
             </button>
           </ng-container>
           <ng-container *ngIf="confirmingReload()">
-            <span class="confirm-label">¿Confirmar recarga?</span>
+            <span class="confirm-label">{{ 'system.confirm_reload_label' | t }}</span>
             <button class="btn-primary" (click)="executeReload()" [disabled]="reloading()">
-              {{ reloading() ? 'Recargando…' : 'Confirmar' }}
+              {{ reloading() ? ('system.reloading_label' | t) : ('system.confirm_btn' | t) }}
             </button>
             <button class="btn-ghost-sm" (click)="confirmingReload.set(false)" [disabled]="reloading()">
-              Cancelar
+              {{ 'system.cancel_btn' | t }}
             </button>
           </ng-container>
         </div>
       </div>
 
       <!-- Organizations overview -->
-      <div class="section-label" style="margin-top:var(--spacing-lg)">Organizaciones registradas</div>
+      <div class="section-label" style="margin-top:var(--spacing-lg)">{{ 'system.registered_orgs' | t }}</div>
       <div *ngIf="loading()" class="skeleton-list">
         <div class="skeleton sk-row" *ngFor="let i of [1,2,3]"></div>
       </div>
@@ -169,8 +168,8 @@ interface ProbeResult<T> {
         <table class="data-table" *ngIf="orgs().length > 0; else orgsEmpty">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Identificador</th>
+              <th>{{ 'system.org_name_col' | t }}</th>
+              <th>{{ 'system.org_id_col' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -181,14 +180,14 @@ interface ProbeResult<T> {
           </tbody>
         </table>
         <ng-template #orgsEmpty>
-          <div class="empty-state">No hay organizaciones en el sistema.</div>
+          <div class="empty-state">{{ 'system.no_system_orgs' | t }}</div>
         </ng-template>
       </div>
 
       <!-- Users overview (anonymized) -->
       <div class="section-label" style="margin-top:var(--spacing-lg)">
-        Usuarios del sistema
-        <span class="anon-note">— identificadores enmascarados</span>
+        {{ 'system.system_users_section' | t }}
+        <span class="anon-note">{{ 'system.masked_ids_note' | t }}</span>
       </div>
       <div *ngIf="loading()" class="skeleton-list">
         <div class="skeleton sk-row" *ngFor="let i of [1,2,3,4]"></div>
@@ -197,9 +196,9 @@ interface ProbeResult<T> {
         <table class="data-table" *ngIf="users().length > 0; else usersEmpty">
           <thead>
             <tr>
-              <th>ID (parcial)</th>
-              <th>Rol</th>
-              <th>Estado</th>
+              <th>{{ 'system.user_id_partial_col' | t }}</th>
+              <th>{{ 'system.user_role_col' | t }}</th>
+              <th>{{ 'system.user_status_col' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -208,14 +207,14 @@ interface ProbeResult<T> {
               <td class="cell-muted">{{ u.role }}</td>
               <td>
                 <span class="status-badge" [class.badge-active]="u.is_active" [class.badge-inactive]="!u.is_active">
-                  {{ u.is_active ? 'Activo' : 'Inactivo' }}
+                  {{ u.is_active ? ('system.status_active' | t) : ('system.status_inactive' | t) }}
                 </span>
               </td>
             </tr>
           </tbody>
         </table>
         <ng-template #usersEmpty>
-          <div class="empty-state">No hay usuarios en el sistema.</div>
+          <div class="empty-state">{{ 'system.no_system_users' | t }}</div>
         </ng-template>
       </div>
     </div>
@@ -600,6 +599,7 @@ interface ProbeResult<T> {
 })
 export class SystemComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
+  private readonly ts = inject(TranslationService);
 
   loading = signal(true);
   apiVersion = signal<string | null>(null);
@@ -685,28 +685,30 @@ export class SystemComponent implements OnInit, OnDestroy {
     const redisStatus: Status = apiUp ? 'up' : 'unknown';
 
     return [
-      { name: 'API REST', status: apiStatus, detail: this.apiDetail(health, dataOk) },
-      { name: 'Base de datos', status: dbStatus, detail: this.dbDetail(dbUp, apiUp) },
-      { name: 'Motor de verificaci\u00f3n', status: engStatus, detail: this.engineDetail(engUp, apiUp, connTypes) },
-      { name: 'Cola / Redis', status: redisStatus, detail: apiUp ? 'Inferido de API' : 'No verificable' },
+      { name: this.ts.translateInstant('system.service_api'), status: apiStatus, detail: this.apiDetail(health, dataOk) },
+      { name: this.ts.translateInstant('system.service_db'), status: dbStatus, detail: this.dbDetail(dbUp, apiUp) },
+      { name: this.ts.translateInstant('system.service_engine'), status: engStatus, detail: this.engineDetail(engUp, apiUp, connTypes) },
+      { name: this.ts.translateInstant('system.service_redis'), status: redisStatus, detail: apiUp ? this.ts.translateInstant('system.detail_inferred') : this.ts.translateInstant('system.detail_not_verifiable') },
     ];
   }
 
   private apiDetail(health: ProbeResult<HealthResponse>, dataOk: boolean): string {
-    if (health.ok) return `${health.data?.service ?? 'Servicio'} v${health.data?.version ?? 'desconocida'}`;
-    return dataOk ? 'Respondiendo' : 'Sin respuesta';
+    if (health.ok) return `${health.data?.service ?? 'API'} v${health.data?.version ?? '?'}`;
+    return dataOk ? this.ts.translateInstant('system.detail_responding') : this.ts.translateInstant('system.detail_no_response');
   }
 
   private dbDetail(dbUp: boolean, apiUp: boolean): string {
-    if (dbUp) return 'Accesible';
-    return apiUp ? 'Sin datos' : 'Inaccesible';
+    if (dbUp) return this.ts.translateInstant('system.detail_accessible');
+    return apiUp ? this.ts.translateInstant('system.detail_no_data') : this.ts.translateInstant('system.detail_inaccessible');
   }
 
   private engineDetail(engUp: boolean, apiUp: boolean, connTypes: ProbeResult<unknown[]>): string {
     if (engUp) {
-      return Array.isArray(connTypes.data) ? `${connTypes.data.length} tipos cargados` : 'Respondiendo';
+      return Array.isArray(connTypes.data)
+        ? this.ts.translateInstant('system.detail_types_loaded', { n: connTypes.data.length })
+        : this.ts.translateInstant('system.detail_responding');
     }
-    return apiUp ? 'Sin datos' : 'Inaccesible';
+    return apiUp ? this.ts.translateInstant('system.detail_no_data') : this.ts.translateInstant('system.detail_inaccessible');
   }
 
   executeReload(): void {
@@ -715,7 +717,7 @@ export class SystemComponent implements OnInit, OnDestroy {
     this.reloadError.set(null);
     this.http.post<RulesReloadResult>('/api/v1/admin/rules/reload', {})
       .pipe(catchError((err: import('@angular/common/http').HttpErrorResponse) => {
-        this.reloadError.set(err.error?.detail ?? 'Error al recargar reglas');
+        this.reloadError.set(err.error?.detail ?? this.ts.translateInstant('system.reload_error'));
         this.reloading.set(false);
         this.confirmingReload.set(false);
         return of(null);
@@ -731,9 +733,9 @@ export class SystemComponent implements OnInit, OnDestroy {
 
   statusLabel(status: ServiceStatus): string {
     const map: Record<ServiceStatus, string> = {
-      up: 'Operativo',
-      down: 'Caído',
-      unknown: 'Desconocido',
+      up: this.ts.translateInstant('system.status_healthy'),
+      down: this.ts.translateInstant('system.status_unhealthy'),
+      unknown: this.ts.translateInstant('system.status_unknown'),
     };
     return map[status] ?? status;
   }

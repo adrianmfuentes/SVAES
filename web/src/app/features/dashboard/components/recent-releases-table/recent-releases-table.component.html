@@ -1,7 +1,7 @@
 <div class="card releases-card">
   <div class="card-header">
-    <h2>Recent releases</h2>
-    <a class="view-all" [routerLink]="['/app/releases']">View all</a>
+    <h2>{{ 'dashboard.recent_releases' | t }}</h2>
+    <a class="view-all" [routerLink]="['/app/releases']">{{ 'common.view_all' | t }}</a>
   </div>
 
   @if (loading) {
@@ -13,16 +13,16 @@
   } @else if (error) {
     <div class="error-banner">{{ error }}</div>
   } @else if (releases.length === 0) {
-    <p class="empty">No releases found.</p>
+    <p class="empty">{{ 'dashboard.no_data' | t }}</p>
   } @else {
     <table class="releases-table">
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Project</th>
-          <th>Verdict</th>
-          <th>Date</th>
+          <th>{{ 'common.id' | t }}</th>
+          <th>{{ 'common.name' | t }}</th>
+          <th>{{ 'common.project' | t }}</th>
+          <th>{{ 'common.verdict' | t }}</th>
+          <th>{{ 'common.date' | t }}</th>
         </tr>
       </thead>
       <tbody>

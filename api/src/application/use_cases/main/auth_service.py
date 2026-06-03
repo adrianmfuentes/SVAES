@@ -1,10 +1,12 @@
+import io
+import base64
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
-from application.ports.input.i_auth_service import IAuthService, AuthTokens
+from application.ports.input.i_auth_service import IAuthService, AuthTokens, LoginResult, TotpSetupResult
 from application.ports.output.i_user_repository import IUserRepository
-from application.ports.output.i_token_service import ITokenService, TokenPayload
+from application.ports.output.i_token_service import ITokenService
 from application.ports.output.i_password_hasher import IPasswordHasher
 from domain.entities.user import User
 from domain.enums import UserRole
@@ -33,7 +35,7 @@ class AuthService(IAuthService):
         self,
         email: str,
         password: str,
-    ) -> Tuple[AuthTokens, UUID, UserRole]:
+    ) -> LoginResult:
         user = await self._user_repo.get_by_email(email)
         if not user:
             raise ValidationError("Credenciales inválidas")
@@ -94,32 +96,114 @@ class AuthService(IAuthService):
             user.locked_until = None
             await self._user_repo.update(user)
 
-        access_token = self._token_service.create_access_token(
-            user_id=user.id,
-            role=user.role.value,
-            email=user.email,
-            organization_id=user.organization_id,
-            expires_in=3600,
-        )
-        refresh_token = self._token_service.create_refresh_token(
-            user_id=user.id,
-            role=user.role.value,
-            email=user.email,
-            organization_id=user.organization_id,
-        )
+        if user.totp_enabled:
+            totp_token = self._token_service.create_totp_pending_token(user.id)
+            return LoginResult(requires_2fa=True, totp_token=totp_token)
 
-        tokens = AuthTokens(access_token=access_token, refresh_token=refresh_token)
+        return self._issue_tokens(user)
+
+    async def verify_totp(self, totp_token: str, code: str) -> LoginResult:
+        import pyotp  # noqa: PLC0415
+
+        user_id = self._token_service.verify_totp_pending_token(totp_token)
+        if not user_id:
+            raise ValidationError("Token 2FA inválido o expirado")
+
+        user = await self._user_repo.get_by_id(user_id)
+        if not user or not user.totp_enabled or not user.totp_secret:
+            raise ValidationError("Autenticación 2FA fallida")
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(code, valid_window=1):
+            user.failed_login_attempts = user.failed_login_attempts + 1
+            await self._user_repo.update(user)
+            audit = get_audit_logger()
+            audit.log(AuditEntry(
+                event=AuditEvent.LOGIN_FAILED,
+                user_id=user.id,
+                organization_id=user.organization_id,
+                resource_type="user",
+                resource_id=user.id,
+                details={"reason": "invalid_totp_code"},
+            ))
+            raise ValidationError("Código 2FA inválido")
+
+        if user.failed_login_attempts > 0:
+            user.failed_login_attempts = 0
+            await self._user_repo.update(user)
+
+        return self._issue_tokens(user)
+
+    async def setup_totp(self, user_id: UUID) -> TotpSetupResult:
+        import pyotp  # noqa: PLC0415
+        import segno  # noqa: PLC0415
+
+        user = await self._user_repo.get_by_id(user_id)
+        if not user:
+            raise ValidationError("Usuario no encontrado")
+
+        secret = user.totp_secret if (user.totp_secret and not user.totp_enabled) else pyotp.random_base32()
+        totp = pyotp.TOTP(secret)
+        uri = totp.provisioning_uri(name=user.email, issuer_name="SVAES")
+
+        buf = io.StringIO()
+        segno.make_qr(uri).save(buf, kind="svg", scale=4, border=1)
+        qr_data_url = "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue().encode()).decode()
+
+        user.totp_secret = secret
+        await self._user_repo.update(user)
+
+        return TotpSetupResult(totp_uri=uri, secret=secret, qr_data_url=qr_data_url)
+
+    async def enable_totp(self, user_id: UUID, code: str) -> None:
+        import pyotp  # noqa: PLC0415
+
+        user = await self._user_repo.get_by_id(user_id)
+        if not user or not user.totp_secret:
+            raise ValidationError("Inicia la configuración 2FA primero")
+
+        if user.totp_enabled:
+            raise ValidationError("El 2FA ya está activado")
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(code, valid_window=1):
+            raise ValidationError("Código inválido. Verifica que tu aplicación esté sincronizada.")
+
+        user.totp_enabled = True
+        await self._user_repo.update(user)
 
         audit = get_audit_logger()
         audit.log(AuditEntry(
-            event=AuditEvent.LOGIN_SUCCESS,
+            event=AuditEvent.TOTP_ENABLED,
             user_id=user.id,
             organization_id=user.organization_id,
             resource_type="user",
             resource_id=user.id,
         ))
 
-        return tokens, user.id, user.role.value
+    async def disable_totp(self, user_id: UUID, code: str) -> None:
+        import pyotp  # noqa: PLC0415
+
+        user = await self._user_repo.get_by_id(user_id)
+        if not user or not user.totp_enabled or not user.totp_secret:
+            raise ValidationError("El 2FA no está activado")
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(code, valid_window=1):
+            raise ValidationError("Código inválido")
+
+        user.totp_enabled = False
+        user.totp_secret = None
+        await self._user_repo.update(user)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.TOTP_DISABLED,
+            user_id=user.id,
+            organization_id=user.organization_id,
+            resource_type="user",
+            resource_id=user.id,
+        ))
 
     async def refresh_access_token(self, refresh_token: str) -> Optional[AuthTokens]:
         if not self._token_service.is_refresh_token(refresh_token):
@@ -160,3 +244,28 @@ class AuthService(IAuthService):
             resource_id=user_id,
         ))
         _log.info("User logged out: user=%s", user_id)
+
+    def _issue_tokens(self, user: User) -> LoginResult:
+        access_token = self._token_service.create_access_token(
+            user_id=user.id,
+            role=user.role.value,
+            email=user.email,
+            organization_id=user.organization_id,
+            expires_in=3600,
+        )
+        refresh_token = self._token_service.create_refresh_token(
+            user_id=user.id,
+            role=user.role.value,
+            email=user.email,
+            organization_id=user.organization_id,
+        )
+        tokens = AuthTokens(access_token=access_token, refresh_token=refresh_token)
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.LOGIN_SUCCESS,
+            user_id=user.id,
+            organization_id=user.organization_id,
+            resource_type="user",
+            resource_id=user.id,
+        ))
+        return LoginResult(tokens=tokens, user_id=user.id, role=user.role.value)

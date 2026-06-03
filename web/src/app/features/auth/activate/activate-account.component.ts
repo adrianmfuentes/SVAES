@@ -11,6 +11,8 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { setAccessToken } from '../../../core/services/auth.service';
 import { finalize, Subscription } from 'rxjs';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../core/i18n/translation.service';
 
 interface ActivateResponse {
   access_token: string;
@@ -43,7 +45,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
 @Component({
   selector: 'app-activate-account',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe],
   template: `
     <div class="activate-page">
       <header class="activate-header">
@@ -56,18 +58,15 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
           <!-- ── Token expired / invalid ─────────────── -->
           <div *ngIf="tokenExpired" class="state-card">
             <div class="state-icon state-icon--error">✕</div>
-            <h1 class="state-title">Enlace expirado</h1>
-            <p class="state-desc">
-              Este código ya fue utilizado o ha expirado.<br>
-              Contacta con tu administrador para obtener uno nuevo.
-            </p>
+            <h1 class="state-title">{{ 'activate.error.invalid_code' | t }}</h1>
+            <p class="state-desc">{{ 'activate.error.generic' | t }}</p>
           </div>
 
           <!-- ── Success ─────────────────────────────── -->
           <div *ngIf="activationSuccess" class="state-card">
             <div class="state-icon state-icon--success">✓</div>
-            <h1 class="state-title">Cuenta activada</h1>
-            <p class="state-desc">Redirigiendo a tu espacio de trabajo&hellip;</p>
+            <h1 class="state-title">{{ 'activate.success_title' | t }}</h1>
+            <p class="state-desc">{{ 'activate.success_desc' | t }}</p>
           </div>
 
           <!-- ── Step form ───────────────────────────── -->
@@ -80,12 +79,12 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                   <span *ngIf="step() <= 1">1</span>
                   <span *ngIf="step() > 1">✓</span>
                 </div>
-                <span class="step-label">C&oacute;digo</span>
+                <span class="step-label">{{ 'activate.step1_title' | t }}</span>
               </div>
               <div class="step-line" [class.step-line--done]="step() > 1"></div>
               <div class="step" [class.step--active]="step() === 2">
                 <div class="step-circle">2</div>
-                <span class="step-label">Contrase&ntilde;a</span>
+                <span class="step-label">{{ 'activate.step2_title' | t }}</span>
               </div>
             </div>
 
@@ -93,18 +92,16 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
 
               <!-- ── Step 1: activation code ─────────── -->
               <div *ngIf="step() === 1" class="step-body">
-                <h1 class="step-title">C&oacute;digo de activaci&oacute;n</h1>
-                <p class="step-desc">
-                  Pega el c&oacute;digo que recibiste en tu correo electr&oacute;nico.
-                </p>
+                <h1 class="step-title">{{ 'activate.step1_title' | t }}</h1>
+                <p class="step-desc">{{ 'activate.step1_desc' | t }}</p>
 
                 <div class="form-group">
-                  <label for="activationCode">C&oacute;digo</label>
+                  <label for="activationCode">{{ 'activate.code_label' | t }}</label>
                   <input
                     id="activationCode"
                     type="text"
                     formControlName="activation_code"
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    [placeholder]="'activate.code_placeholder' | t"
                     autocomplete="off"
                     spellcheck="false"
                     class="input-mono"
@@ -113,7 +110,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                     *ngIf="activateForm.get('activation_code')?.invalid && activateForm.get('activation_code')?.touched"
                     class="field-error"
                   >
-                    El c&oacute;digo de activaci&oacute;n es obligatorio.
+                    {{ 'activate.code_required' | t }}
                   </div>
                 </div>
 
@@ -124,20 +121,18 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                     [disabled]="activateForm.get('activation_code')?.invalid"
                     (click)="nextStep()"
                   >
-                    Continuar
+                    {{ 'common.continue' | t }}
                   </button>
                 </div>
               </div>
 
               <!-- ── Step 2: password ────────────────── -->
               <div *ngIf="step() === 2" class="step-body">
-                <h1 class="step-title">Elige tu contrase&ntilde;a</h1>
-                <p class="step-desc">
-                  Debe cumplir los requisitos indicados a continuaci&oacute;n.
-                </p>
+                <h1 class="step-title">{{ 'activate.step2_title' | t }}</h1>
+                <p class="step-desc">{{ 'activate.step2_desc' | t }}</p>
 
                 <div class="form-group">
-                  <label for="password">Nueva contrase&ntilde;a</label>
+                  <label for="password">{{ 'activate.password_label' | t }}</label>
                   <div class="input-wrap">
                     <input
                       id="password"
@@ -159,24 +154,24 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                 <div class="password-checklist">
                   <div class="checklist-item" [class.checklist-item--met]="passwordChecks.minLength">
                     <span class="checklist-icon">{{ passwordChecks.minLength ? '✓' : '○' }}</span>
-                    <span>M&iacute;nimo 8 caracteres</span>
+                    <span>{{ 'activate.password_min_length' | t }}</span>
                   </div>
                   <div class="checklist-item" [class.checklist-item--met]="passwordChecks.uppercase">
                     <span class="checklist-icon">{{ passwordChecks.uppercase ? '✓' : '○' }}</span>
-                    <span>Al menos una may&uacute;scula</span>
+                    <span>{{ 'activate.password_strength_good' | t }}</span>
                   </div>
                   <div class="checklist-item" [class.checklist-item--met]="passwordChecks.number">
                     <span class="checklist-icon">{{ passwordChecks.number ? '✓' : '○' }}</span>
-                    <span>Al menos un n&uacute;mero</span>
+                    <span>{{ 'activate.password_strength_fair' | t }}</span>
                   </div>
                   <div class="checklist-item" [class.checklist-item--met]="passwordChecks.specialChar">
                     <span class="checklist-icon">{{ passwordChecks.specialChar ? '✓' : '○' }}</span>
-                    <span>Al menos un car&aacute;cter especial</span>
+                    <span>{{ 'activate.password_strength_strong' | t }}</span>
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label for="passwordConfirm">Confirmar contrase&ntilde;a</label>
+                  <label for="passwordConfirm">{{ 'activate.confirm_label' | t }}</label>
                   <div class="input-wrap">
                     <input
                       id="passwordConfirm"
@@ -197,7 +192,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                     *ngIf="activateForm.hasError('mismatch') && activateForm.get('password_confirm')?.touched"
                     class="field-error"
                   >
-                    Las contrase&ntilde;as no coinciden.
+                    {{ 'activate.confirm_mismatch' | t }}
                   </div>
                 </div>
 
@@ -205,7 +200,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
 
                 <div class="step-footer step-footer--two">
                   <button type="button" class="btn-secondary" (click)="prevStep()">
-                    &larr; Atr&aacute;s
+                    {{ 'activate.back_login' | t }}
                   </button>
                   <button
                     type="submit"
@@ -216,7 +211,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                                 loading"
                   >
                     <span *ngIf="loading" class="spinner"></span>
-                    <span *ngIf="!loading">Activar cuenta</span>
+                    <span *ngIf="!loading">{{ 'activate.step2_button' | t }}</span>
                   </button>
                 </div>
               </div>
@@ -633,6 +628,7 @@ export class ActivateAccountComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly ts = inject(TranslationService);
 
   readonly activateForm = this.fb.group(
     {
@@ -711,13 +707,13 @@ export class ActivateAccountComponent implements OnInit, OnDestroy {
         next: (response) => {
           this.activationSuccess = true;
           setAccessToken(response.access_token);
-          setTimeout(() => this.router.navigate(['/app/dashboard']), 1200);
+          setTimeout(() => this.router.navigate(['/app/dashboard']), 300);
         },
         error: (err: HttpErrorResponse) => {
           if (err.status === 400 || err.status === 410) {
             this.tokenExpired = true;
           } else {
-            this.submitError = 'Error al activar la cuenta. Inténtalo de nuevo.';
+            this.submitError = this.ts.translateInstant('activate.error.generic');
           }
         },
       });

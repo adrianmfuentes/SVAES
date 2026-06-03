@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_organization_service import IOrganizationService
 from core.dependencies import get_organization_service, get_current_user, CurrentUser, require_permission, require_role
 from domain.enums import UserRole, Permission
-from domain.exceptions import ValidationError, EntityNotFoundError
+from domain.exceptions import ValidationError, EntityNotFoundError, DuplicateEntityError
 from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Organizations"])
@@ -79,6 +79,8 @@ async def create_organization(
             owner_id=current_user.user_id,
         )
         return {"id": str(org.id), "name": org.name, "slug": org.slug}
+    except DuplicateEntityError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception:
@@ -108,7 +110,7 @@ async def get_organization(
         org = await service.get_organization(organization_id=org_id)
         if not org:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organización no encontrada")
-        if current_user.role != UserRole.U3 and current_user.organization_id != org_id:
+        if current_user.role != UserRole.U3 and current_user.organization_id != org_id and org.owner_id != current_user.user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta organización")
         return {
             "id": str(org.id),

@@ -2,6 +2,8 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { TranslationService } from '../../../core/i18n/translation.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { catchError, forkJoin, of, switchMap } from 'rxjs';
 
 interface ReleaseDetail {
@@ -55,23 +57,23 @@ interface VerificationResult {
 @Component({
   selector: 'app-release-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TranslatePipe],
   template: `
     <div class="detail-page">
       <div class="page-header">
         <div class="page-header-left">
-          <a routerLink="/app/releases" class="back-link">&larr; Entregas</a>
-          <h1 class="page-title">{{ release()?.name || 'Cargando…' }}</h1>
+          <a routerLink="/app/releases" class="back-link">{{ 'release_detail.back_releases' | t }}</a>
+          <h1 class="page-title">{{ release()?.name || ('common.loading' | t) }}</h1>
         </div>
         <div class="page-header-actions">
           <button
             class="btn-accent"
             [disabled]="verifying()"
             (click)="launchVerification()">
-            @if (verifying()) { Verificando… } @else { Verificar }
+            @if (verifying()) { {{ 'release_detail.verifying_label' | t }} } @else { {{ 'release_detail.verify_label' | t }} }
           </button>
           <button class="btn-secondary" (click)="exportPdf()">
-            Exportar PDF
+            {{ 'release_detail.export_pdf' | t }}
           </button>
         </div>
       </div>
@@ -105,27 +107,27 @@ interface VerificationResult {
           <h2 class="card-title">{{ release()!.name }}</h2>
           <div class="info-grid">
             <div class="info-field">
-              <span class="info-label">Versi&oacute;n</span>
+              <span class="info-label">{{ 'release_detail.field_version' | t }}</span>
               <span class="info-value">{{ release()!.version }}</span>
             </div>
             <div class="info-field">
-              <span class="info-label">Estado</span>
+              <span class="info-label">{{ 'release_detail.field_status' | t }}</span>
               <span class="verdict-badge-sm" [ngClass]="statusBadgeClass()">{{ release()!.status }}</span>
             </div>
             <div class="info-field">
-              <span class="info-label">Proyecto</span>
+              <span class="info-label">{{ 'release_detail.project' | t }}</span>
               <span class="info-value">{{ release()!.project_name || release()!.project_id | slice:0:8 }}</span>
             </div>
             <div class="info-field">
-              <span class="info-label">Organizaci&oacute;n</span>
+              <span class="info-label">{{ 'release_detail.field_org' | t }}</span>
               <span class="info-value text-muted">{{ release()!.organization_name || '—' }}</span>
             </div>
             <div class="info-field">
-              <span class="info-label">Creado</span>
+              <span class="info-label">{{ 'release_detail.field_created' | t }}</span>
               <span class="info-value text-muted">{{ release()!.created_at | date:'dd MMM yyyy, HH:mm' }}</span>
             </div>
             <div class="info-field">
-              <span class="info-label">Actualizado</span>
+              <span class="info-label">{{ 'release_detail.field_updated' | t }}</span>
               <span class="info-value text-muted">{{ release()!.updated_at | date:'dd MMM yyyy, HH:mm' }}</span>
             </div>
           </div>
@@ -140,16 +142,16 @@ interface VerificationResult {
         <!-- Verification rule results table -->
         @if (latestResult(); as result) {
           <div class="card rules-section">
-            <h2 class="card-title">Resultados de verificaci&oacute;n</h2>
+            <h2 class="card-title">{{ 'release_detail.verification_title' | t }}</h2>
             <div class="data-table-wrap">
               <table class="data-table rules-table">
                 <thead>
                   <tr>
-                    <th class="col-id">ID</th>
-                    <th class="col-name">Regla</th>
-                    <th class="col-connector">Conector</th>
-                    <th class="col-result">Resultado</th>
-                    <th class="col-evidence">Evidencia</th>
+                    <th class="col-id">{{ 'release_detail.rule_id' | t }}</th>
+                    <th class="col-name">{{ 'release_detail.rule_name' | t }}</th>
+                    <th class="col-connector">{{ 'release_detail.rule_connector' | t }}</th>
+                    <th class="col-result">{{ 'release_detail.rule_result' | t }}</th>
+                    <th class="col-evidence">{{ 'release_detail.rule_evidence' | t }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -169,7 +171,7 @@ interface VerificationResult {
                         @if (rule.evidence) {
                           <span>{{ rule.evidence | slice:0:100 }}{{ rule.evidence.length > 100 ? '…' : '' }}</span>
                           @if (rule.evidence.length > 100) {
-                            <button class="btn-expand" (click)="toggleEvidence(i)">Ver m&aacute;s</button>
+                            <button class="btn-expand" (click)="toggleEvidence(i)">{{ 'release_detail.see_more_btn' | t }}</button>
                           }
                         } @else {
                           <span class="cell-muted">—</span>
@@ -189,7 +191,7 @@ interface VerificationResult {
             </div>
             @if (result.summary) {
               <div class="summary-bar">
-                <span class="summary-label">Resumen:</span>
+                <span class="summary-label">{{ 'release_detail.summary_label' | t }}</span>
                 @for (item of summaryItems(result.summary); track item[0]) {
                   <span class="summary-chip" [ngClass]="ruleResultClass(item[0])">
                     {{ item[1] }} {{ item[0] }}
@@ -204,15 +206,15 @@ interface VerificationResult {
         <!-- Artifacts section -->
         @if (artifacts().length > 0) {
           <div class="card artifacts-section">
-            <h2 class="card-title">Artefactos ({{ artifacts().length }})</h2>
+            <h2 class="card-title">{{ 'release_detail.artifacts_title' | t : { n: artifacts().length } }}</h2>
             <div class="data-table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Tipo</th>
-                    <th>Conector</th>
-                    <th>Ref. externa</th>
-                    <th>Descripci&oacute;n</th>
+                    <th>{{ 'release_detail.col_type' | t }}</th>
+                    <th>{{ 'release_detail.rule_connector' | t }}</th>
+                    <th>{{ 'release_detail.col_ext_ref' | t }}</th>
+                    <th>{{ 'common.description' | t }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -235,14 +237,14 @@ interface VerificationResult {
         <!-- Verification history -->
         @if (verificationHistory().length > 1) {
           <div class="card history-section">
-            <h2 class="card-title">Historial de verificaciones</h2>
+            <h2 class="card-title">{{ 'release_detail.history' | t }}</h2>
             <div class="data-table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Veredicto</th>
-                    <th>Duraci&oacute;n</th>
-                    <th>Ejecutada</th>
+                    <th>{{ 'release_detail.history_verdict' | t }}</th>
+                    <th>{{ 'release_detail.col_duration' | t }}</th>
+                    <th>{{ 'release_detail.col_executed' | t }}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -257,7 +259,7 @@ interface VerificationResult {
                       <td class="cell-muted">{{ h.duration_ms }}ms</td>
                       <td class="cell-muted">{{ h.executed_at | date:'dd MMM yyyy, HH:mm' }}</td>
                       <td class="cell-action">
-                        <button class="btn-ghost" (click)="loadResultDetail(h.id)">Ver</button>
+                        <button class="btn-ghost" (click)="loadResultDetail(h.id)">{{ 'release_detail.see_btn' | t }}</button>
                       </td>
                     </tr>
                   }
@@ -269,9 +271,9 @@ interface VerificationResult {
 
         @if (!latestResult() && artifacts().length === 0) {
           <div class="card empty-card">
-            <p class="empty-text">Esta entrega a&uacute;n no tiene artefactos ni verificaciones.</p>
+            <p class="empty-text">{{ 'release_detail.empty_desc' | t }}</p>
             <button class="btn-accent" [disabled]="verifying()" (click)="launchVerification()">
-              @if (verifying()) { Verificando… } @else { Iniciar verificaci&oacute;n }
+              @if (verifying()) { {{ 'release_detail.verifying_label' | t }} } @else { {{ 'release_detail.start_verification_btn' | t }} }
             </button>
           </div>
         }
@@ -703,6 +705,7 @@ interface VerificationResult {
 export class ReleaseDetailComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly ts = inject(TranslationService);
 
   release = signal<ReleaseDetail | null>(null);
   artifacts = signal<Artifact[]>([]);
@@ -722,13 +725,13 @@ export class ReleaseDetailComponent implements OnInit {
           const id = params.get('id');
           if (!id) {
             this.loading.set(false);
-            this.error.set('ID de entrega no encontrado en la ruta.');
+            this.error.set(this.ts.translateInstant('release_detail.no_id_error'));
             return of(null);
           }
           this.releaseId = id;
           return forkJoin({
             release: this.http.get<ReleaseDetail>(`/api/v1/releases/${id}`).pipe(
-              catchError(() => { this.error.set('Error al cargar la entrega'); return of(null); }),
+              catchError(() => { this.error.set(this.ts.translateInstant('release_detail.loading_error')); return of(null); }),
             ),
             artifacts: this.http.get<Artifact[]>(`/api/v1/releases/${id}/artifacts`).pipe(
               catchError(() => of([] as Artifact[])),
@@ -759,7 +762,7 @@ export class ReleaseDetailComponent implements OnInit {
       .post<{ task_id: string; status: string }>(`/api/v1/releases/${this.releaseId}/verify`, {})
       .pipe(
         catchError(() => {
-          this.error.set('Error al lanzar la verificación');
+          this.error.set(this.ts.translateInstant('release_detail.verification_error'));
           this.verifying.set(false);
           return of(null);
         }),

@@ -1,22 +1,24 @@
 import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { TranslationService } from '../../core/i18n/translation.service';
 
 @Component({
   selector: 'app-forbidden',
   standalone: true,
-  imports: [RouterModule],
+  imports: [RouterModule, TranslatePipe],
   template: `
     <div class="error-page">
-      <code class="error-code">403</code>
-      <h1 class="error-title">Sin permisos</h1>
+      <code class="error-code">{{ 'errors.403.title' | t }}</code>
+      <h1 class="error-title">{{ 'errors.403.heading' | t }}</h1>
       <p class="error-text">
-        No dispones de los permisos necesarios para acceder a esta secci&oacute;n.
+        {{ 'errors.403.message' | t }}
       </p>
       @if (isAdmin) {
-        <a routerLink="/app/system" class="btn-primary">Ir a sistema</a>
+        <a routerLink="/app/system" class="btn-primary">{{ 'errors.403.system' | t }}</a>
       } @else {
-        <a routerLink="/app/dashboard" class="btn-primary">Ir al dashboard</a>
+        <a routerLink="/app/dashboard" class="btn-primary">{{ 'errors.403.dashboard' | t }}</a>
       }
     </div>
   `,
@@ -85,6 +87,7 @@ import { AuthService } from '../../core/services/auth.service';
   `],
 })
 export class ForbiddenComponent {
+  private readonly ts = inject(TranslationService);
   private readonly authService = inject(AuthService);
   readonly isAdmin = this.authService.isAdmin();
 }

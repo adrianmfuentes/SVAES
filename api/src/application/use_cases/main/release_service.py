@@ -170,6 +170,9 @@ class CreateReleaseUseCase(IReleaseService):
             raise ValidationError("No se encontró el release para eliminar.")
         await self.release_repository.delete(release_id)
 
+    async def list_org_releases(self, organization_id: Optional[UUID] = None) -> list[Release]:
+        return await self.release_repository.list_by_organization(organization_id)
+
     async def restore_release(self, release_id: UUID) -> None:
         release = await self.release_repository.get_by_id(release_id)
         if not release:

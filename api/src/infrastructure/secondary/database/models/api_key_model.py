@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -15,5 +15,5 @@ class APIKeyModel(Base):
     prefix = Column(String(20), nullable=False)
     is_active = Column(Boolean, nullable=False, default=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     last_used_at = Column(DateTime(timezone=True), nullable=True)

@@ -4,6 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
+import { TranslationService } from '../../../core/i18n/translation.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 interface Project {
   id: string;
@@ -13,19 +15,19 @@ interface Project {
 @Component({
   selector: 'app-release-new',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="new-release-page">
       <div class="page-header">
         <div class="page-header-left">
-          <a routerLink="/app/releases" class="back-link">&larr; Entregas</a>
-          <h1 class="page-title">Nueva entrega</h1>
+          <a routerLink="/app/releases" class="back-link">{{ 'release_new.back_link' | t }}</a>
+          <h1 class="page-title">{{ 'release_new.title' | t }}</h1>
         </div>
       </div>
 
       <div class="form-layout">
         <div class="card">
-          <h2 class="card-title">Datos de la entrega</h2>
+          <h2 class="card-title">{{ 'release_new.form_title' | t }}</h2>
 
           @if (projectsLoading()) {
             <div class="skeleton-list">
@@ -37,67 +39,65 @@ interface Project {
 
           @if (!projectsLoading()) {
             @if (projects().length === 0) {
-              <div class="empty-notice">
-                No hay proyectos disponibles. Crea un proyecto antes de registrar una entrega.
-              </div>
+              <div class="empty-notice">{{ 'release_new.no_projects' | t }}</div>
             }
 
             @if (projects().length > 0) {
               <form [formGroup]="form" (ngSubmit)="submit()">
                 <div class="form-group">
-                  <label for="project-id">Proyecto</label>
+                  <label for="project-id">{{ 'release_new.project_label' | t }}</label>
                   <select id="project-id" formControlName="project_id">
-                    <option value="">Selecciona un proyecto&hellip;</option>
+                    <option value="">{{ 'release_new.project_placeholder' | t }}</option>
                     @for (p of projects(); track p.id) {
                       <option [value]="p.id">{{ p.name }}</option>
                     }
                   </select>
                   @if (form.get('project_id')?.hasError('required') && form.get('project_id')?.touched) {
-                    <div class="field-error">El proyecto es obligatorio.</div>
+                    <div class="field-error">{{ 'release_new.project_required' | t }}</div>
                   }
                 </div>
 
                 <div class="form-group">
-                  <label for="name">Nombre de la entrega</label>
+                  <label for="name">{{ 'release_new.name_label' | t }}</label>
                   <input
                     id="name"
                     type="text"
                     formControlName="name"
-                    placeholder="p.ej. Release 2024-Q3"
+                    [placeholder]="'release_new.name_placeholder' | t"
                     autocomplete="off"
                   />
                   @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
-                    <div class="field-error">El nombre es obligatorio.</div>
+                    <div class="field-error">{{ 'release_new.name_required' | t }}</div>
                   }
                   @if (form.get('name')?.hasError('maxlength') && form.get('name')?.touched) {
-                    <div class="field-error">M&aacute;ximo 100 caracteres.</div>
+                    <div class="field-error">{{ 'common.max_chars' | t : { max: 100 } }}</div>
                   }
                 </div>
 
                 <div class="form-group">
-                  <label for="version">Versi&oacute;n</label>
+                  <label for="version">{{ 'release_new.version_label' | t }}</label>
                   <input
                     id="version"
                     type="text"
                     formControlName="version"
-                    placeholder="p.ej. 1.4.2"
+                    placeholder="1.4.2"
                     autocomplete="off"
                   />
                   @if (form.get('version')?.hasError('required') && form.get('version')?.touched) {
-                    <div class="field-error">La versi&oacute;n es obligatoria.</div>
+                    <div class="field-error">{{ 'release_new.version_required' | t }}</div>
                   }
                 </div>
 
                 <div class="form-group">
-                  <label for="description">Descripci&oacute;n <span class="optional">(opcional)</span></label>
+                  <label for="description">{{ 'release_new.description_label' | t }} <span class="optional">({{ 'common.optional' | t }})</span></label>
                   <textarea
                     id="description"
                     formControlName="description"
                     rows="3"
-                    placeholder="Contexto, cambios incluidos, notas para el equipo&hellip;"
+                    [placeholder]="'release_new.description_placeholder' | t"
                   ></textarea>
                   @if (form.get('description')?.hasError('maxlength') && form.get('description')?.touched) {
-                    <div class="field-error">M&aacute;ximo 1000 caracteres.</div>
+                    <div class="field-error">{{ 'common.max_chars' | t : { max: 1000 } }}</div>
                   }
                 </div>
 
@@ -106,12 +106,12 @@ interface Project {
                 }
 
                 <div class="form-footer">
-                  <a routerLink="/app/releases" class="btn-secondary">Cancelar</a>
+                  <a routerLink="/app/releases" class="btn-secondary">{{ 'common.cancel' | t }}</a>
                   <button
                     type="submit"
                     class="btn-primary"
                     [disabled]="form.invalid || submitting()">
-                    {{ submitting() ? 'Creando&hellip;' : 'Crear entrega' }}
+                    {{ submitting() ? ('release_new.submitting' | t) : ('release_new.submit' | t) }}
                   </button>
                 </div>
               </form>
@@ -330,6 +330,7 @@ export class ReleaseNewComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly ts = inject(TranslationService);
 
   projects = signal<Project[]>([]);
   projectsLoading = signal(true);
@@ -364,7 +365,7 @@ export class ReleaseNewComponent implements OnInit {
       `/api/v1/projects/${project_id}/releases`, body
     ).pipe(
       catchError((err: HttpErrorResponse) => {
-        this.submitError.set(err.error?.detail ?? 'Error al crear la entrega');
+        this.submitError.set(err.error?.detail ?? this.ts.translateInstant('release_new.error'));
         this.submitting.set(false);
         return of(null);
       })

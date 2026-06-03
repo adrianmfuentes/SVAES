@@ -21,7 +21,7 @@ class IReleaseRepository(ABC):
 
     @abstractmethod
     async def list_by_organization(
-        self, organization_id: uuid.UUID, skip: int = 0, limit: int = 50
+        self, organization_id: Optional[uuid.UUID] = None, skip: int = 0, limit: int = 200
     ) -> List[Release]:
         pass
 

@@ -23,6 +23,22 @@ export interface LoginResponse {
   token_type: string;
 }
 
+export interface LoginStep1Response {
+  requires_2fa: boolean;
+  totp_token?: string;
+  access_token?: string;
+  refresh_token?: string;
+  token_type?: string;
+  user_id?: string;
+  role?: string;
+}
+
+export interface TotpSetupResponse {
+  totp_uri: string;
+  secret: string;
+  qr_data_url: string;
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -70,25 +86,51 @@ export class AuthService {
     return this.decodeToken(token)?.role === 'ADMIN';
   }
 
-  login(email: string, password: string, orgId?: string): Observable<LoginResponse> {
-    return this.http
-      .post<LoginResponse>('/api/v1/auth/login', { email, password })
-      .pipe(
-        tap((response) => {
-          _accessToken = response.access_token;
-          localStorage.setItem(this.TOKEN_KEY, response.access_token);
-          localStorage.setItem(this.REFRESH_KEY, response.refresh_token);
-          const payload = this.decodeToken(response.access_token);
-          const user: UserInfo = {
-            id: payload?.sub ?? '',
-            email: payload?.email ?? email,
-            display_name: payload?.email ?? email,
-            role: payload?.role ?? 'USER',
-            organization_id: payload?.organization_id ?? orgId,
-          };
-          localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-        }),
-      );
+  login(email: string, password: string): Observable<LoginStep1Response> {
+    return this.http.post<LoginStep1Response>('/api/v1/auth/login', { email, password }).pipe(
+      tap((response) => {
+        if (!response.requires_2fa && response.access_token) {
+          this.storeTokens(response, email);
+        }
+      }),
+    );
+  }
+
+  storeTokens(response: LoginStep1Response, email: string): void {
+    if (!response.access_token) return;
+    _accessToken = response.access_token;
+    localStorage.setItem(this.TOKEN_KEY, response.access_token);
+    if (response.refresh_token) {
+      localStorage.setItem(this.REFRESH_KEY, response.refresh_token);
+    }
+    const payload = this.decodeToken(response.access_token);
+    const user: UserInfo = {
+      id: payload?.sub ?? response.user_id ?? '',
+      email: payload?.email ?? email,
+      display_name: payload?.email ?? email,
+      role: payload?.role ?? response.role ?? 'USER',
+      organization_id: payload?.organization_id,
+    };
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+  }
+
+  verify2fa(totpToken: string, code: string): Observable<LoginStep1Response> {
+    return this.http.post<LoginStep1Response>('/api/v1/auth/2fa/verify', {
+      totp_token: totpToken,
+      code,
+    });
+  }
+
+  setup2fa(): Observable<TotpSetupResponse> {
+    return this.http.get<TotpSetupResponse>('/api/v1/auth/2fa/setup');
+  }
+
+  enable2fa(code: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>('/api/v1/auth/2fa/enable', { code });
+  }
+
+  disable2fa(code: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>('/api/v1/auth/2fa/disable', { code });
   }
 
   logout(): void {

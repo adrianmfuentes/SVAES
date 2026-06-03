@@ -1,7 +1,7 @@
 # Security & Compliance Audit Report — SVAES
 
 **Scope:** Full application (`api/`, `engine/`, `web/`, `tests/`, `docs/`, CI/CD, configuration)  
-**Date:** 2026-05-18  
+**Date:** 2026-05-18 (updated 2026-06-02)  
 **Status:** Active  
 
 ---
@@ -41,7 +41,7 @@
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
 │  Angular 21 │────▶│  FastAPI 0.136│────▶│  PostgreSQL 16  │
 │  (web/)     │     │  (api/)       │     │  Redis 7        │
-│  ⏳ Skeleton │     │  ✅ Complete  │     │  ✅ Configured  │
+│  ✅ Complete │     │  ✅ Complete  │     │  ✅ Configured  │
 └─────────────┘     └──────┬───────┘     └─────────────────┘
                            │
                     ┌──────▼───────┐
@@ -55,7 +55,7 @@
 |-------|-----------|---------|--------|
 | API | FastAPI + SQLAlchemy + Celery | Python 3.12 | Production-ready |
 | Engine | Actix-web + Rayon | Rust 2021 | Production-ready |
-| Web | Angular | 21.2.0 | Skeleton — no feature modules |
+| Web | Angular | 21.2.0 | Implemented — auth/2FA, dashboard, releases, connectors, i18n |
 | DB | PostgreSQL | 16-alpine | Configured with auth |
 | Cache/Broker | Redis | 7-alpine | Configured with auth |
 | Proxy | Nginx | alpine | Configured |
@@ -168,18 +168,46 @@
 
 ## 4. WEB LAYER (Angular Frontend)
 
-### Status: ⏳ Skeleton — not yet implemented
+### Status: ✅ Implemented
 
 - Angular 21.2.0, TypeScript 5.9.2, pnpm 10.11.0
-- Testing: Vitest 4.0.8 (configured but no feature tests)
+- Testing: Vitest 4.0.8
 - Styling: SCSS
-
-### Current State
-- Empty routes (`web/src/app/app.routes.ts`)
-- Basic app component and config
-- No feature modules, services, or API integration
-- README states "Angular 17" but `package.json` has `@angular/core: ^21.2.0` — documentation discrepancy
 - Served via nginx:alpine from `./web/dist/web/browser` (requires pre-build)
+
+### Implemented Features
+
+| Module | Contents |
+|--------|----------|
+| `features/auth` | Login (2-step if 2FA enabled), account activation |
+| `features/dashboard` | Verification metrics and activity |
+| `features/releases` | Release list, detail view, new release form |
+| `features/connectors` | Connector configuration per organisation |
+| `features/profiles` | Verification profile management |
+| `features/admin` | User and organisation administration (U4) |
+| `features/profile` | User profile, password change, 2FA setup |
+| `features/logs` | Audit log viewer |
+| `features/landing` | Public landing page |
+| `features/legal` | Terms and privacy policy pages |
+| `features/access-request` | Access request flow |
+| `features/system` | System status panel |
+| `features/errors` | Error pages (404, 403, 500) |
+| `features/layout` | Shell layout with navigation |
+| `core/i18n` | `TranslationService` + `TranslatePipe`; `en.json` + `es.json` |
+| `core/guards` | Auth and role guards |
+| `core/interceptors` | JWT injection, error handling |
+| `core/services` | `AuthService` and other API clients |
+
+### Two-Factor Authentication (2FA)
+- TOTP implemented with **pyotp** (server) and **segno** (QR code generation)
+- Database migration: `m1n2o3p4q5r6_add_totp_to_user`
+- Login flow: step 1 returns `requires_2fa: true` → step 2 verifies TOTP code
+- Profile UI allows enabling/disabling 2FA and scanning QR code
+
+### Internationalisation (i18n)
+- Full ES/EN support across all 20+ components
+- `TranslationService` with observable language switching
+- JSON catalogs at `web/src/assets/i18n/{en,es}.json`
 
 ---
 
@@ -390,17 +418,15 @@ The following concerns were identified in the audit and resolved on 2026-05-18:
 
 ### 10.6 Documentation Discrepancy: Angular Version
 
-**Severity:** Info (open — cosmetic)  
+**Severity:** Info (resolved — 2026-06-02)  
 **Location:** README.md, README.en.md, README.fr.md  
-**Risk:** Documentation states "Angular 17" but `web/package.json` shows `@angular/core: ^21.2.0`.  
-**Recommended fix:** Update README files to reflect Angular 21.
+**Resolution:** All README files updated to Angular 21; frontend status changed from "Pending" to "Implemented".
 
 ### 10.7 Web Frontend Not Implemented
 
-**Severity:** Info (open — feature gap)  
+**Severity:** Info (resolved — 2026-06-02)  
 **Location:** `web/`  
-**Risk:** The Angular frontend is a minimal scaffold with no feature modules, services, or API integration.  
-**Recommended action:** Implement authentication UI, release management, verification results dashboard.
+**Resolution:** Angular frontend fully implemented with auth (2FA), dashboard, release management, connector configuration, profile with 2FA setup, admin panel, audit log viewer, and full ES/EN i18n.
 
 ---
 
@@ -423,7 +449,7 @@ The following concerns were identified in the audit and resolved on 2026-05-18:
 | Art. 34 GDPR — Communication to data subject | ⚠️ | Alerting infrastructure (email/SMS) not wired |
 | ISO 27001 A.9.1.2 — Network access | ✅ | DB port hidden in prod, engine internal |
 | ISO 27001 A.9.2.3 — Access privilege | ✅ | RBAC fixed, registration role locked |
-| ISO 27001 A.9.4.2 — Secure login | ✅ | Rate limiting, account lockout, token refresh |
+| ISO 27001 A.9.4.2 — Secure login | ✅ | Rate limiting, account lockout, token refresh, TOTP 2FA |
 | ISO 27001 A.10.1.2 — Key management | ✅ | Docker secrets pattern documented |
 | OWASP API Top 10 — Broken Auth | ✅ | Rate limiting + lockout on login/register |
 | OWASP ASVS V2.1 — Password security | ✅ | min_length=8, complexity validation |
@@ -431,5 +457,5 @@ The following concerns were identified in the audit and resolved on 2026-05-18:
 
 ---
 
-*Last updated: 2026-05-18*  
-*Next review due: 2026-08-18 (recommended quarterly review cycle)*
+*Last updated: 2026-06-02*  
+*Next review due: 2026-09-02 (recommended quarterly review cycle)*

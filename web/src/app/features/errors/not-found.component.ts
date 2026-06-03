@@ -1,18 +1,20 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { TranslationService } from '../../core/i18n/translation.service';
 
 @Component({
   selector: 'app-not-found',
   standalone: true,
-  imports: [RouterModule],
+  imports: [RouterModule, TranslatePipe],
   template: `
     <div class="error-page">
-      <code class="error-code">404</code>
-      <h1 class="error-title">P&aacute;gina no encontrada</h1>
+      <code class="error-code">{{ 'errors.404.title' | t }}</code>
+      <h1 class="error-title">{{ 'errors.404.heading' | t }}</h1>
       <p class="error-text">
-        La ruta solicitada no existe o ha sido movida.
+        {{ 'errors.404.message' | t }}
       </p>
-      <a routerLink="/" class="btn-primary">Volver al inicio</a>
+      <a routerLink="/" class="btn-primary">{{ 'errors.404.home' | t }}</a>
     </div>
   `,
   styles: [`
@@ -80,4 +82,6 @@ import { RouterModule } from '@angular/router';
     .btn-primary:hover { background: var(--ink-secondary); }
   `],
 })
-export class NotFoundComponent {}
+export class NotFoundComponent {
+  private readonly ts = inject(TranslationService);
+}

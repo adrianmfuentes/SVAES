@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { TranslationService } from '../../core/i18n/translation.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { catchError, of } from 'rxjs';
 
 interface Release {
@@ -19,31 +21,31 @@ interface Release {
 @Component({
   selector: 'app-releases',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="releases-page">
       <div class="page-header">
         <div class="page-header-left">
-          <h1 class="page-title">Entregas</h1>
-          <span *ngIf="isAdmin" class="global-badge">Vista global</span>
+          <h1 class="page-title">{{ 'releases.title' | t }}</h1>
+          <span *ngIf="isAdmin" class="global-badge">{{ 'releases.global_view' | t }}</span>
         </div>
-        <a *ngIf="!isAdmin" routerLink="/app/releases/new" class="btn-primary">Nueva entrega</a>
+        <a *ngIf="!isAdmin" routerLink="/app/releases/new" class="btn-primary">{{ 'releases.new_release' | t }}</a>
       </div>
 
       <div class="filters-bar">
         <input
           type="text"
           class="filter-input"
-          placeholder="Filtrar por nombre o ID…"
+          [placeholder]="'releases.filter_placeholder' | t"
           [(ngModel)]="filterText"
           (ngModelChange)="onFilterChange()"
         />
         <select class="filter-select" [(ngModel)]="filterVerdict" (ngModelChange)="onFilterChange()">
-          <option value="">Todos los veredictos</option>
-          <option value="VALID">Válidas</option>
-          <option value="WITH_WARNINGS">Con advertencias</option>
-          <option value="INVALID">Inválidas</option>
-          <option value="NOT_EVALUATED">Sin evaluar</option>
+          <option value="">{{ 'releases.filter_all' | t }}</option>
+          <option value="VALID">{{ 'releases.verdict_valid' | t }}</option>
+          <option value="WITH_WARNINGS">{{ 'releases.verdict_with_warnings' | t }}</option>
+          <option value="INVALID">{{ 'releases.verdict_invalid' | t }}</option>
+          <option value="NOT_EVALUATED">{{ 'releases.verdict_not_evaluated' | t }}</option>
         </select>
       </div>
 
@@ -57,11 +59,11 @@ interface Release {
         <table class="data-table" *ngIf="filtered().length > 0; else emptyState">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th *ngIf="isAdmin">Organización</th>
-              <th>Veredicto</th>
-              <th>Fecha</th>
+              <th>{{ 'releases.table_id' | t }}</th>
+              <th>{{ 'releases.table_name' | t }}</th>
+              <th *ngIf="isAdmin">{{ 'releases.col_org' | t }}</th>
+              <th>{{ 'releases.table_verdict' | t }}</th>
+              <th>{{ 'releases.table_date' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -83,15 +85,15 @@ interface Release {
           </tbody>
         </table>
         <ng-template #emptyState>
-          <div class="empty-state">No hay entregas que coincidan con el filtro.</div>
+          <div class="empty-state">{{ 'releases.no_releases_filter' | t }}</div>
         </ng-template>
 
         <div class="pagination" *ngIf="filtered().length > pageSize">
-          <button class="btn-ghost" [disabled]="page() === 0" (click)="prevPage()">Anterior</button>
+          <button class="btn-ghost" [disabled]="page() === 0" (click)="prevPage()">{{ 'common.previous' | t }}</button>
           <span class="page-info">
             {{ page() + 1 }} / {{ totalPages() }}
           </span>
-          <button class="btn-ghost" [disabled]="page() >= totalPages() - 1" (click)="nextPage()">Siguiente</button>
+          <button class="btn-ghost" [disabled]="page() >= totalPages() - 1" (click)="nextPage()">{{ 'common.next' | t }}</button>
         </div>
       </div>
     </div>
@@ -305,6 +307,7 @@ interface Release {
 export class ReleasesComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
+  private readonly ts = inject(TranslationService);
 
   readonly isAdmin = this.authService.isAdmin();
   readonly pageSize = 20;
@@ -321,7 +324,7 @@ export class ReleasesComponent implements OnInit {
   ngOnInit(): void {
     const url = '/api/v1/releases';
     this.http.get<Release[]>(url)
-      .pipe(catchError(() => { this.error.set('Error al cargar entregas'); return of([]); }))
+      .pipe(catchError(() => { this.error.set(this.ts.translateInstant('releases.loading_error')); return of([]); }))
       .subscribe(data => {
         this.releases.set(data);
         this.filtered.set(data);

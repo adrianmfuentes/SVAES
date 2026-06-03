@@ -1,11 +1,11 @@
 <div class="dashboard">
   <div class="page-header">
-    <h1 class="page-title">Dashboard</h1>
+    <h1 class="page-title">{{ 'dashboard.title' | t }}</h1>
   </div>
 
   <!-- KPI cards 2×2 -->
   <div class="kpi-grid">
-    <app-kpi-card label="Tasa de aprobación" [loading]="metricsLoading()" [error]="metricsError()">
+    <app-kpi-card [label]="'dashboard.pass_rate' | t" [loading]="metricsLoading()" [error]="metricsError()">
       @if (metrics(); as m) {
         <span [class]="passRateClass(m.pass_rate)">
           {{ m.pass_rate | number:'1.1-1' }}%
@@ -13,24 +13,24 @@
       }
     </app-kpi-card>
 
-    <app-kpi-card label="Entregas totales" [loading]="metricsLoading()" [error]="metricsError()">
+    <app-kpi-card [label]="'dashboard.total_releases' | t" [loading]="metricsLoading()" [error]="metricsError()">
       @if (metrics(); as m) {
         {{ m.total_releases | number }}
       }
     </app-kpi-card>
 
-    <app-kpi-card label="Verificaciones" [loading]="metricsLoading()" [error]="metricsError()">
+    <app-kpi-card [label]="'dashboard.verifications' | t" [loading]="metricsLoading()" [error]="metricsError()">
       @if (metrics(); as m) {
         {{ m.total_verifications | number }}
       }
     </app-kpi-card>
 
-    <app-kpi-card label="Estado de entregas" [loading]="metricsLoading()" [error]="metricsError()">
+    <app-kpi-card [label]="'dashboard.release_status' | t" [loading]="metricsLoading()" [error]="metricsError()">
       @if (metrics(); as m) {
         <div class="dist-badges">
-          <span class="dist-badge dist-badge--valid">{{ m.valid_releases }} válidas</span>
-          <span class="dist-badge dist-badge--invalid">{{ m.invalid_releases }} inválidas</span>
-          <span class="dist-badge dist-badge--pending">{{ m.pending_releases }} pendientes</span>
+          <span class="dist-badge dist-badge--valid">{{ m.valid_releases }} {{ 'dashboard.release_valid' | t }}</span>
+          <span class="dist-badge dist-badge--invalid">{{ m.invalid_releases }} {{ 'dashboard.release_invalid' | t }}</span>
+          <span class="dist-badge dist-badge--pending">{{ m.pending_releases }} {{ 'dashboard.release_pending' | t }}</span>
         </div>
       }
     </app-kpi-card>

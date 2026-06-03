@@ -46,7 +46,7 @@ Diseñar e implementar un sistema extensible y desacoplado capaz de verificar au
 | Componente       | Estado           | Descripción                                               |
 | ---------------- | ---------------- | --------------------------------------------------------- |
 | Backend FastAPI  | ✅ Completo      | API REST completa con todos los endpoints                 |
-| Frontend Angular | ⏳ Pendiente     | SPA vacía, pendiente de implementación                    |
+| Frontend Angular | ✅ Implementado  | SPA con autenticación, dashboard, releases, conectores, perfil, admin, i18n ES/EN, 2FA |
 | Motor Rust       | ✅ Implementado  | Motor completo en engine/, evaluador paralelo + 10 reglas |
 | Worker Celery    | ✅ Implementado  | worker real en verification_worker.py                     |
 | Conectores       | ✅ Implementados | 20 conectores en 5 categorías funcionales                 |
@@ -90,7 +90,7 @@ Principio clave:
 
 El sistema se divide en los siguientes componentes:
 
-- Frontend (Angular SPA) — ⏳ Pendiente
+- Frontend (Angular SPA) — ✅ Implementado
 - Backend (FastAPI) — ✅ Completo
 - Motor de verificación (Rust) — ✅ Implementado (completo)
 - Cola de tareas (Celery + Redis) — ✅ Implementada
@@ -286,12 +286,14 @@ Base de datos PostgreSQL:
 | Capa                     | Mecanismo                    | Detalle                                              |
 | ------------------------ | ---------------------------- | ---------------------------------------------------- |
 | Autenticación            | JWT (HS256)                  | Tokens firmados. Claims: `sub`, `role`, `iat`, `exp` |
+| Doble factor (2FA)       | TOTP (pyotp + segno)         | Autenticación de dos pasos opcional por usuario      |
 | Contraseñas              | bcrypt (passlib)             | Cost factor 12. Comparación en tiempo constante      |
 | Credenciales conectores  | Fernet (AES-128-CBC)         | Cifrado autenticado                                  |
 | Endpoints protegidos     | Bearer token                 | `Authorization: Bearer <jwt>` obligatorio            |
 | Aislamiento multi-tenant | Filtro por `organization_id` | 403 en acceso cruzado                                |
-| Rate limiting            | slowapi                      | 100 req/min reads, 20 req/min writes                 |
+| Rate limiting            | slowapi                      | 30 req/min en auth, 100 req/min reads, 20 req/min writes |
 | Fuerza bruta             | Bloqueo de cuenta            | 5 intentos fallidos → 15 min bloqueo                 |
+| Auditoría GDPR           | audit_log (PostgreSQL)       | Trazabilidad completa; pseudonimización en verificaciones |
 
 ---
 
@@ -305,7 +307,7 @@ Base de datos PostgreSQL:
 | Migraciones        | Alembic                  | ✅ Operativo               |
 | Autenticación      | JWT (PyJWT)              | ✅ Completo                |
 | HTTP Client        | httpx (async)            | ✅ Integrado en conectores |
-| Frontend           | Angular 21               | ⏳ Pendiente               |
+| Frontend           | Angular 21               | ✅ Implementado            |
 | Motor verificación | Rust (Actix-web + Rayon) | ✅ Implementado            |
 | Cola de tareas     | Celery + Redis           | ✅ Implementado            |
 | Contenedores       | Docker + Docker Compose  | ✅ Configurado             |
@@ -339,10 +341,12 @@ Documentación interactiva: `http://localhost:8000/docs`
 
 ### Autenticación
 
-| Método | Ruta            | Auth | Descripción          |
-| ------ | --------------- | ---- | -------------------- |
-| `POST` | `/auth/login`   | No   | Login → devuelve JWT |
-| `POST` | `/auth/refresh` | No   | Refrescar token      |
+| Método | Ruta                   | Auth | Descripción                     |
+| ------ | ---------------------- | ---- | ------------------------------- |
+| `POST` | `/auth/login`          | No   | Login → devuelve JWT (paso 1 si 2FA activo) |
+| `POST` | `/auth/2fa/verify`     | No   | Verificar código TOTP (paso 2)  |
+| `POST` | `/auth/refresh`        | No   | Refrescar token                 |
+| `POST` | `/auth/register`       | No   | Registro con aceptación de términos |
 
 ### Organizaciones
 
@@ -407,15 +411,14 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 El sistema proporciona una solución desacoplada, extensible y robusta para la verificación automática de entregas de software.
 
-El backend FastAPI está completamente operativo con:
+El sistema está completamente operativo con:
 
-- 20 implementaciones de conectores across 5 tipos funcionales
-- Sistema de configuración via UI para managers
-- Aislamiento multi-tenant completo
+- 20 implementaciones de conectores en 5 tipos funcionales
+- Frontend Angular con autenticación 2FA, dashboard, gestión de releases y conectores
+- Internacionalización ES/EN en todos los módulos del frontend
+- Aislamiento multi-tenant completo con auditoría GDPR
 - RBAC con roles predefinidos y personalizados
-
-Pendiente: frontend Angular, motor Rust y worker Celery.
 
 ---
 
-_Última actualización: Mayo 2026 — Adrián Martínez (UO295454)_
+_Última actualización: Junio 2026 — Adrián Martínez (UO295454)_

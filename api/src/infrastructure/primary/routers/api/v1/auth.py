@@ -9,7 +9,6 @@ from application.ports.input.i_auth_service import IAuthService
 from application.ports.input.i_user_service import IUserService
 from core.dependencies import get_auth_service, get_user_service, get_current_user, CurrentUser
 from core.rate_limit import rate_limit_auth
-from slowapi import Limiter
 from domain.exceptions import ValidationError, DuplicateEntityError
 from domain.enums import UserRole
 from . import ERROR_INTERNO
@@ -62,6 +61,17 @@ class RegisterRequest(BaseModel):
         return self
 
 
+class TotpVerifyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    totp_token: str = Field(..., min_length=1)
+    code: str = Field(..., min_length=6, max_length=8)
+
+
+class TotpCodeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: str = Field(..., min_length=6, max_length=8)
+
+
 @router.post("/api/v1/auth/login")
 @rate_limit_auth()
 async def login(
@@ -70,21 +80,97 @@ async def login(
     service: Annotated[IAuthService, Depends(get_auth_service)],
 ):
     try:
-        tokens, user_id, role = await service.authenticate(
+        result = await service.authenticate(
             email=payload.email,
             password=payload.password,
         )
+        if result.requires_2fa:
+            return {"requires_2fa": True, "totp_token": result.totp_token}
         return {
-            "access_token": str(tokens.access_token),
-            "refresh_token": str(tokens.refresh_token),
-            "token_type": str(tokens.token_type),
-            "user_id": str(user_id),
-            "role": str(role),
+            "access_token": str(result.tokens.access_token),
+            "refresh_token": str(result.tokens.refresh_token),
+            "token_type": str(result.tokens.token_type),
+            "user_id": str(result.user_id),
+            "role": str(result.role),
         }
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.message)
     except Exception as e:
         _log.exception("Login failed for user hash=%s", _hash_email(payload.email))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
+@router.post("/api/v1/auth/2fa/verify")
+@rate_limit_auth()
+async def verify_2fa(
+    request: Request,
+    payload: TotpVerifyRequest,
+    service: Annotated[IAuthService, Depends(get_auth_service)],
+):
+    try:
+        result = await service.verify_totp(payload.totp_token, payload.code)
+        return {
+            "access_token": str(result.tokens.access_token),
+            "refresh_token": str(result.tokens.refresh_token),
+            "token_type": str(result.tokens.token_type),
+            "user_id": str(result.user_id),
+            "role": str(result.role),
+        }
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.message)
+    except Exception:
+        _log.exception("2FA verify failed")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
+@router.get("/api/v1/auth/2fa/setup")
+async def setup_2fa(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IAuthService, Depends(get_auth_service)],
+):
+    try:
+        result = await service.setup_totp(current_user.user_id)
+        return {
+            "totp_uri": result.totp_uri,
+            "secret": result.secret,
+            "qr_data_url": result.qr_data_url,
+        }
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message)
+    except Exception:
+        _log.exception("2FA setup failed for user=%s", current_user.user_id)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
+@router.post("/api/v1/auth/2fa/enable")
+async def enable_2fa(
+    payload: TotpCodeRequest,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IAuthService, Depends(get_auth_service)],
+):
+    try:
+        await service.enable_totp(current_user.user_id, payload.code)
+        return {"message": "2FA activado correctamente"}
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message)
+    except Exception:
+        _log.exception("2FA enable failed for user=%s", current_user.user_id)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
+@router.post("/api/v1/auth/2fa/disable")
+async def disable_2fa(
+    payload: TotpCodeRequest,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IAuthService, Depends(get_auth_service)],
+):
+    try:
+        await service.disable_totp(current_user.user_id, payload.code)
+        return {"message": "2FA desactivado correctamente"}
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.message)
+    except Exception:
+        _log.exception("2FA disable failed for user=%s", current_user.user_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -199,11 +285,13 @@ async def activate_account(
     await user_repo.update(user)
 
     try:
-        tokens, user_id, role = await auth_service.authenticate(user.email, payload.password)
+        result = await auth_service.authenticate(user.email, payload.password)
+        if result.tokens is None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
         return {
-            "access_token": str(tokens.access_token),
-            "refresh_token": str(tokens.refresh_token),
-            "token_type": str(tokens.token_type),
+            "access_token": str(result.tokens.access_token),
+            "refresh_token": str(result.tokens.refresh_token),
+            "token_type": str(result.tokens.token_type),
         }
     except Exception:
         _log.exception("[activate] authenticate failed for %s", user.email)

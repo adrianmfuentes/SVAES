@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from sqlalchemy import Column, String, DateTime, ForeignKey, UniqueConstraint, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -14,9 +14,9 @@ class ReleaseModel(Base):
     status = Column(SAEnum(ReleaseStatus, name='release_status', create_type=False, values_callable=lambda enums: [e.value for e in enums]), nullable=False, default=ReleaseStatus.BORRADOR)
     description = Column(String(1000), nullable=True, default="")
     name = Column(String(100), nullable=False)
-    created_by = Column(PG_UUID(as_uuid=True), ForeignKey("user.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(PG_UUID(as_uuid=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         # Asegura que no haya dos releases con la misma versión dentro del mismo proyecto
