@@ -41,11 +41,14 @@ jobs:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           python-version: "3.13"
 
-      - name: Run tests with coverage
+      - name: Run unit tests
+        run: uv run --frozen --no-build --project api --extra dev pytest tests/unit --cov=api/src --cov-report=
+
+      - name: Run integration and security tests
         env:
           DATABASE_URL: postgresql+asyncpg://svaes:svaes@localhost:5432/svaes_test
           JWT_SECRET_KEY: ci-test-secret-key-not-used-in-production
@@ -67,7 +70,7 @@ jobs:
           TEST_POSTGRES_PORT: "5432"
           TEST_POSTGRES_DB: svaes_test
           POSTGRES_PASSWORD: svaes
-        run: uv run --frozen --no-build --project api --extra dev pytest --cov=api/src --cov-report=xml
+        run: uv run --frozen --no-build --project api --extra dev pytest tests/integration tests/security --cov=api/src --cov-append --cov-report=xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0

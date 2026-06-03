@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -7,6 +8,10 @@ import pytest
 import pytest_asyncio
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+_log = logging.getLogger(__name__)
+
+# Shared test Redis URL
+TEST_REDIS_URL = "redis://localhost:6379/0"
 
 
 def _read_env_password():
@@ -38,9 +43,9 @@ def _test_env():
         "JWT_EXPIRE_MINUTES": "60",
         "ALLOWED_ORIGINS": "*",
         "ENCRYPTION_KEY": "HnVk8Q2xLm9pR4sT6wYzA1bC3dF5gJ7kN=",
-        "REDIS_URL": "redis://localhost:6379/0",
-        "CELERY_BROKER_URL": "redis://localhost:6379/0",
-        "CELERY_RESULT_BACKEND": "redis://localhost:6379/0",
+        "REDIS_URL": TEST_REDIS_URL,
+        "CELERY_BROKER_URL": TEST_REDIS_URL,
+        "CELERY_RESULT_BACKEND": TEST_REDIS_URL,
         "ENGINE_URL": "http://localhost:8081",
     })
     import core.config as _cfg
@@ -61,6 +66,7 @@ async def _test_db(_test_env):
             await conn.run_sync(Base.metadata.create_all)
         _db_available = True
     except Exception:
+        _log.exception("Schema creation (Base.metadata.create_all) failed")
         _db_available = False
 
     yield _db_available
@@ -70,11 +76,11 @@ async def _test_db(_test_env):
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.drop_all)
         except Exception:
-            pass
+            _log.exception("Schema teardown (Base.metadata.drop_all) failed")
         try:
             await engine.dispose()
         except Exception:
-            pass
+            _log.exception("Test engine dispose failed")
 
 
 @pytest_asyncio.fixture
@@ -109,7 +115,7 @@ async def client(_test_db):
 
     async with AsyncClient(
         transport=ASGITransport(app=app, raise_app_exceptions=bool(_test_db)),
-        base_url="http://test",
+        base_url="http://test", # NOSONAR
     ) as ac:
         yield ac
 

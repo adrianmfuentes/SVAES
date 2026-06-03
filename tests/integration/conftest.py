@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -8,6 +9,7 @@ import pytest_asyncio
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 pytestmark = pytest.mark.integration
+_log = logging.getLogger(__name__)
 
 
 def _read_env_password():
@@ -68,6 +70,7 @@ async def _test_db(_test_env):
             await conn.run_sync(Base.metadata.create_all)
         _db_available = True
     except Exception:
+        _log.exception("Schema creation (Base.metadata.create_all) failed")
         _db_available = False
 
     yield _db_available
@@ -77,11 +80,11 @@ async def _test_db(_test_env):
             async with test_engine.begin() as conn:
                 await conn.run_sync(Base.metadata.drop_all)
         except Exception:
-            pass
+            _log.exception("Schema teardown (Base.metadata.drop_all) failed")
         try:
             await test_engine.dispose()
         except Exception:
-            pass
+            _log.exception("Test engine dispose failed")
 
 
 @pytest_asyncio.fixture
