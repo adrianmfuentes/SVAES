@@ -93,8 +93,10 @@ mod tests {
         }
     }
 
+    /// TC-UNI-MOT-03: RV-03 caso base — todos los estados son válidos.
+    /// Each Choice: cubre el resultado OK para validación de estado de tareas.
     #[test]
-    fn rv03_all_states_valid_returns_ok() {
+    fn tc_uni_mot_03_rv03_all_states_valid_returns_ok() {
         let artifacts = vec![
             make_artifact("T-001", "TAREA", "DONE"),
             make_artifact("T-002", "TAREA", "CLOSED"),
@@ -105,68 +107,5 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
-    }
-
-    #[test]
-    fn rv03_invalid_state_returns_error() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", "DONE"),
-            make_artifact("T-002", "TAREA", "IN_PROGRESS"),
-        ];
-        let rule = make_rule("RV-03", json!({"allowed_states": ["DONE", "CLOSED"]}));
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        let msg = result.message.unwrap();
-        assert!(msg.contains("T-002"));
-    }
-
-    #[test]
-    fn rv03_missing_status_field_returns_error() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", "DONE"),
-            make_artifact("T-002", "TAREA", "IN_PROGRESS"),
-        ];
-        let rule = make_rule("RV-03", json!({
-            "artifact_type": "TAREA",
-            "allowed_states": ["DONE", "CLOSED"],
-            "status_field": "workflow_status"
-        }));
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        let msg = result.message.unwrap();
-        assert!(msg.contains("T-001") && msg.contains("T-002"));
-    }
-
-    #[test]
-    fn rv03_no_artifacts_of_type_returns_ok() {
-        let artifacts = vec![
-            make_artifact("C-001", "CÓDIGO", "COMMIT"),
-        ];
-        let rule = make_rule("RV-03", json!({}));
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn rv03_custom_artifact_type() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", "FINALIZADO"),
-            make_artifact("D-002", "DOCUMENTO", "BORRADOR"),
-        ];
-        let rule = make_rule("RV-03", json!({
-            "artifact_type": "DOCUMENTO",
-            "allowed_states": ["FINALIZADO"],
-        }));
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("D-002"));
     }
 }

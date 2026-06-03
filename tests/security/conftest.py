@@ -2,8 +2,8 @@ import logging
 import os
 import sys
 from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from typing import Dict, List, Optional
+from uuid import UUID, uuid4
 import pytest
 import pytest_asyncio
 
@@ -47,6 +47,9 @@ def _test_env():
         "CELERY_BROKER_URL": TEST_REDIS_URL,
         "CELERY_RESULT_BACKEND": TEST_REDIS_URL,
         "ENGINE_URL": "http://localhost:8081",
+        "ENGINE_API_KEY": "test-engine-api-key",
+        "ADMIN_EMAIL": "admin@test.local",
+        "ADMIN_PASSWORD": "AdminPass1",
     })
     import core.config as _cfg
     _cfg.get_settings.cache_clear()
@@ -83,6 +86,53 @@ async def _test_db(_test_env):
             _log.exception("Test engine dispose failed")
 
 
+class InMemoryUserRepository:
+    """In-memory user repository used when PostgreSQL is unavailable."""
+
+    def __init__(self) -> None:
+        self._by_email: Dict[str, object] = {}
+        self._by_id: Dict[UUID, object] = {}
+        self._by_activation: Dict[str, object] = {}
+
+    async def create(self, user: object) -> object:
+        self._by_email[user.email] = user
+        self._by_id[user.id] = user
+        if user.activation_token:
+            self._by_activation[user.activation_token] = user
+        return user
+
+    async def get_by_id(self, user_id: UUID) -> Optional[object]:
+        return self._by_id.get(user_id)
+
+    async def get_by_email(self, email: str) -> Optional[object]:
+        return self._by_email.get(email)
+
+    async def list_all(
+        self,
+        organization_id: Optional[UUID] = None,
+        active_only: bool = True,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[object]:
+        users = list(self._by_email.values())
+        if active_only:
+            users = [u for u in users if u.is_active]
+        return users[skip : skip + limit]
+
+    async def update(self, user: object) -> object:
+        self._by_email[user.email] = user
+        self._by_id[user.id] = user
+        return user
+
+    async def get_by_activation_token(self, token: str) -> Optional[object]:
+        return self._by_activation.get(token)
+
+    async def delete(self, user_id: UUID) -> None:
+        user = self._by_id.pop(user_id, None)
+        if user and user.email in self._by_email:
+            del self._by_email[user.email]
+
+
 @pytest_asyncio.fixture
 async def client(_test_db):
     from main import app
@@ -105,16 +155,16 @@ async def client(_test_db):
         except Exception:
             pass
 
-    db_patch = None
+    db_overrides = []
     if not _test_db:
-        async def _instant_connect_fail(*args, **kwargs):
-            raise ConnectionRefusedError("DB not available in test environment")
+        from core.dependencies import get_user_repository
 
-        db_patch = patch("asyncpg.connect", new=_instant_connect_fail)
-        db_patch.start()
+        mock_repo = InMemoryUserRepository()
+        app.dependency_overrides[get_user_repository] = lambda: mock_repo
+        db_overrides.append(get_user_repository)
 
     async with AsyncClient(
-        transport=ASGITransport(app=app, raise_app_exceptions=bool(_test_db)),
+        transport=ASGITransport(app=app, raise_app_exceptions=True),
         base_url="http://test", # NOSONAR
     ) as ac:
         yield ac
@@ -126,8 +176,8 @@ async def client(_test_db):
         except Exception:
             pass
 
-    if db_patch is not None:
-        db_patch.stop()
+    for dep in db_overrides:
+        app.dependency_overrides.pop(dep, None)
 
 
 @pytest.fixture

@@ -157,13 +157,14 @@ can be found in section 4.8 of the SRS.
 | FastAPI Backend | Implemented | `api/src/` — domain, application, infrastructure complete |
 | Celery Worker | Implemented | `api/src/infrastructure/workers/verification_worker.py` — real worker |
 | Rust Engine | Implemented | `engine/src/` — evaluator, aggregator, 10 rules (RV-01…RV-10), parallel evaluation with Rayon |
-| Angular Frontend | Partial | `web/` — partial content in development |
-| Shared Packages | Pending | `packages/` — directory created, empty |
-| Unit Tests | Implemented | `tests/unit/` — domain, application, infrastructure coverage |
-| Integration Tests | Implemented | `tests/integration/` — 4 Python files (~90 tests) + 8 Rust HTTP tests |
-| E2E Tests | Pending | `tests/e2e/` — empty |
-| Performance Tests | Implemented | `tests/performance/` — Rust benchmarks + Locust stub |
-| Security Tests | Implemented | `tests/security/` — auth, injection, OWASP vectors |
+| Angular Frontend | Implemented | `web/` — auth (2FA), dashboard, releases, connectors, profiles, admin, i18n ES/EN |
+| Unit Tests | Implemented | `tests/unit/` — 150+ cases (12 files): services branch coverage, connectors CE+VL, endpoints Base Choice, DI factories, structural gaps. Cobertura total: 70% |
+| Integration Tests | Implemented | `tests/integration/` — 16 Python cases (TC-INT-*) + 8 Rust HTTP tests (tc_int_http_*) |
+| Acceptance Tests | Implemented | `tests/acceptance/` — 10 Cypress E2E cases (TC-ACP-CU/UI/FRM/USA) |
+| Performance Tests | Implemented | `tests/performance/` — 4 Locust cases (TC-PER-*) + 3 Rust benchmarks (tc_per_pf_*) |
+| Security Tests | Implemented | `tests/security/` — 5 cases (TC-SEC-AUT/INY/CIF): brute force, JWT, SQLi, XSS, encryption |
+
+All tests follow the **Plan de Pruebas** structured according to **ISO 29119-4** with unique test case identifiers. See `docs/development/testing.md` for the complete test case catalog.
 
 **Connected Routers (14 total):**
 - auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin

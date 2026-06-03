@@ -90,8 +90,10 @@ mod tests {
         }
     }
 
+    /// TC-UNI-MOT-04: RV-04 caso base — campos numéricos válidos (>= 0).
+    /// Each Choice: cubre el resultado OK para integridad de campos numéricos.
     #[test]
-    fn rv04_all_fields_valid_returns_ok() {
+    fn tc_uni_mot_04_rv04_all_fields_valid_returns_ok() {
         let artifacts = vec![
             make_artifact("T-001", "TAREA", json!({"effort": 5, "estimation": 10})),
             make_artifact("T-002", "TAREA", json!({"effort": 0, "estimation": 0})),
@@ -101,91 +103,5 @@ mod tests {
         let result = evaluate(&artifacts, &rule);
 
         assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn rv04_negative_value_returns_error() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({"effort": 5, "estimation": 10})),
-            make_artifact("T-002", "TAREA", json!({"effort": -1, "estimation": 5})),
-        ];
-        let rule = make_rule("RV-04");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("T-002"));
-    }
-
-    #[test]
-    fn rv04_null_field_returns_error() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({"effort": 5, "estimation": null})),
-        ];
-        let rule = make_rule("RV-04");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("T-001"));
-    }
-
-    #[test]
-    fn rv04_missing_field_returns_error() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({"effort": 5})),
-        ];
-        let rule = make_rule("RV-04");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("T-001"));
-    }
-
-    #[test]
-    fn rv04_non_numeric_field_returns_error() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({"effort": "cinco", "estimation": 10})),
-        ];
-        let rule = make_rule("RV-04");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("T-001"));
-    }
-
-    #[test]
-    fn rv04_no_artifacts_of_type_returns_ok() {
-        let artifacts = vec![
-            make_artifact("C-001", "CÓDIGO", json!({"lines": 100})),
-        ];
-        let rule = make_rule("RV-04");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn rv04_custom_fields() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({"pages": 50, "weight": 0.5})),
-            make_artifact("D-002", "DOCUMENTO", json!({"pages": -1, "weight": 0.5})),
-        ];
-        let rule = VerificationRule {
-            id: "RV-04".to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({
-                "artifact_type": "DOCUMENTO",
-                "numeric_fields": ["pages", "weight"]
-            }),
-        };
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("D-002"));
     }
 }

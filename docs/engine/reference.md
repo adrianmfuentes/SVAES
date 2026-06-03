@@ -197,18 +197,18 @@ The engine service is included in all compose files and communicates internally 
 
 ## Testing
 
-Unit tests are embedded in each source file under `#[cfg(test)]`:
+Unit tests are embedded in each source file under `#[cfg(test)]`, following the **Plan de Pruebas** (ISO 29119-4):
 
 | File | Test Count | Coverage |
 |---|---|---|
 | `src/aggregator.rs` | 7 tests | Verdict aggregation edge cases |
 | `src/rules/rv01.rs`–`rv10.rs` | 3–7 each | Per-rule logic validation |
-| `tests/http_pipeline.rs` | 8 tests | HTTP integration (Rust) |
-| `tests/performance.rs` | 3 tests | Performance benchmarks |
+
+HTTP integration tests (8 cases: `tc_int_http_01`–`tc_int_http_08`) and performance benchmarks (3 cases: `tc_per_pf_01`–`tc_per_pf_03`) live in `engine/tests/`.
 
 ### Python Integration Tests
 
-The project also includes extensive Python-level integration tests in `tests/integration/` covering the full verification flow, release lifecycle, fault tolerance, and rate limiting. These are run against the FastAPI app via ASGI transport with ephemeral PostgreSQL + Redis containers.
+Python-level integration tests in `tests/integration/` cover the full verification flow, release lifecycle, rate limiting, resilience, and release migration (16 cases: TC-INT-*). These run against the FastAPI app via ASGI transport with ephemeral PostgreSQL + Redis containers.
 
 ```powershell
 # Windows (PowerShell 7+) — full automation
@@ -219,8 +219,8 @@ The project also includes extensive Python-level integration tests in `tests/int
 
 ```bash
 cargo test                              # All unit tests
-cargo test --test http_pipeline          # HTTP integration tests
-cargo test --test performance            # Performance benchmarks
+cargo test --test http_pipeline          # 8 HTTP integration tests
+cargo test --test performance            # 3 performance benchmarks
 cargo test -- --nocapture                # With stdout/stderr output
 ```
 

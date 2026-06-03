@@ -50,19 +50,10 @@ mod tests {
         }
     }
 
+    /// TC-UNI-MOT-01: RV-01 caso base — artefactos presentes, connector ACTIVO implícito.
+    /// Each Choice: cubre el resultado OK para el catálogo de reglas.
     #[test]
-    fn rv01_empty_artifacts_returns_error() {
-        let artifacts: Vec<Artifact> = vec![];
-        let rule = make_rule("RV-01");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("vacía"));
-    }
-
-    #[test]
-    fn rv01_non_empty_artifacts_returns_ok() {
+    fn tc_uni_mot_01_rv01_artifacts_present_returns_ok() {
         let artifacts = vec![make_artifact("A1", "TAREA")];
         let rule = make_rule("RV-01");
 
@@ -72,13 +63,16 @@ mod tests {
         assert!(result.message.is_none());
     }
 
+    /// TC-UNI-MOT-11: RV-01 — lista vacía produce ERROR (NOT_FOUND path).
+    /// Each Choice: cubre el resultado ERROR para RV-01.
     #[test]
-    fn rv01_single_artifact_returns_ok() {
-        let artifacts = vec![make_artifact("A1", "CÓDIGO")];
+    fn tc_uni_mot_11_rv01_empty_artifacts_returns_error() {
+        let artifacts: Vec<Artifact> = vec![];
         let rule = make_rule("RV-01");
 
         let result = evaluate(&artifacts, &rule);
 
-        assert_eq!(result.status, RuleStatus::Ok);
+        assert_eq!(result.status, RuleStatus::Error);
+        assert!(result.message.unwrap().contains("vacía"));
     }
 }

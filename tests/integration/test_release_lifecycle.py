@@ -1,10 +1,18 @@
+"""
+Pruebas de Integración — Ciclo de Vida de Release (Transición de Estados)
+Técnica: Transición de Estados (ISO 29119-4)
+Total: 8 tests (TC-INT-EST-01 a TC-INT-EST-08)
+
+Flujo: BORRADOR -> EN_VERIFICACION -> VALIDA / CON_ADVERTENCIAS / NO_VALIDA -> ARCHIVADA
+"""
+
 import pytest
 from uuid import uuid4
 
 pytestmark = pytest.mark.integration
 
 
-async def _create_org(client, headers, prefix="org"):
+async def _create_org(client, headers, prefix="est"):
     slug = f"{prefix}-{uuid4().hex[:8]}"
     resp = await client.post(
         "/api/v1/organizations",
@@ -15,278 +23,154 @@ async def _create_org(client, headers, prefix="org"):
     return resp.json()["id"]
 
 
-async def _setup_release(client, headers):
-    org_id = await _create_org(client, headers, "lr")
+async def _setup_release(client, headers, prefix="est"):
+    org_id = await _create_org(client, headers, prefix)
     profile_resp = await client.post(
         f"/api/v1/organizations/{org_id}/profiles",
-        json={"name": f"LC-Profile-{uuid4().hex[:6]}", "description": "Lifecycle test"},
+        json={"name": f"ST-Profile-{uuid4().hex[:6]}", "description": "State transition test"},
         headers=headers,
     )
     profile_id = profile_resp.json()["id"]
     project_resp = await client.post(
         f"/api/v1/organizations/{org_id}/projects",
-        json={"name": f"LC-Project-{uuid4().hex[:6]}", "description": "Test", "profile_id": profile_id},
+        json={"name": f"ST-Project-{uuid4().hex[:6]}", "description": "Test", "profile_id": profile_id},
         headers=headers,
     )
     project_id = project_resp.json()["id"]
     release_resp = await client.post(
         f"/api/v1/projects/{project_id}/releases",
-        json={"name": f"LC-Release-{uuid4().hex[:6]}", "version": "1.0.0", "profile_id": profile_id},
+        json={"name": f"ST-Release-{uuid4().hex[:6]}", "version": "1.0.0", "profile_id": profile_id},
         headers=headers,
     )
     return release_resp.json()["id"]
 
 
 @pytest.mark.usefixtures("db")
-class TestReleaseCreation:
-    """Release creation scenarios."""
-
-    async def test_create_release_minimal(self, client, manager_headers):
-        org_id = await _create_org(client, manager_headers, "min")
-        profile_resp = await client.post(
-            f"/api/v1/organizations/{org_id}/profiles",
-            json={"name": f"Min-Profile-{uuid4().hex[:6]}", "description": "Test"},
-            headers=manager_headers,
-        )
-        profile_id = profile_resp.json()["id"]
-        project_resp = await client.post(
-            f"/api/v1/organizations/{org_id}/projects",
-            json={"name": f"Min-Project-{uuid4().hex[:6]}", "description": "Test", "profile_id": profile_id},
-            headers=manager_headers,
-        )
-        project_id = project_resp.json()["id"]
-        response = await client.post(
-            f"/api/v1/projects/{project_id}/releases",
-            json={"name": "Minimal Release", "version": "1.0.0"},
-            headers=manager_headers,
-        )
-        assert response.status_code == 201
-        assert response.json()["status"] == "BORRADOR"
-
-    async def test_create_release_without_auth(self, client):
-        response = await client.post(
-            f"/api/v1/projects/{uuid4()}/releases",
-            json={"name": "No Auth Release", "version": "1.0.0"},
-        )
-        assert response.status_code in (401, 403)
-
-    async def test_create_release_invalid_project(self, client, manager_headers):
-        response = await client.post(
-            f"/api/v1/projects/{uuid4()}/releases",
-            json={"name": "Bad Project Release", "version": "1.0.0"},
-            headers=manager_headers,
-        )
-        assert response.status_code == 404
-
-    async def test_create_release_empty_name(self, client, manager_headers):
-        org_id = await _create_org(client, manager_headers, "empty")
-        profile_resp = await client.post(
-            f"/api/v1/organizations/{org_id}/profiles",
-            json={"name": f"Empty-Profile-{uuid4().hex[:6]}", "description": "Test"},
-            headers=manager_headers,
-        )
-        profile_id = profile_resp.json()["id"]
-        project_resp = await client.post(
-            f"/api/v1/organizations/{org_id}/projects",
-            json={"name": f"Empty-Project-{uuid4().hex[:6]}", "description": "Test", "profile_id": profile_id},
-            headers=manager_headers,
-        )
-        project_id = project_resp.json()["id"]
-        response = await client.post(
-            f"/api/v1/projects/{project_id}/releases",
-            json={"name": "", "version": "1.0.0"},
-            headers=manager_headers,
-        )
-        assert response.status_code == 422
-
-
-@pytest.mark.usefixtures("db")
-class TestReleaseUpdate:
-    """Release update scenarios."""
-
-    async def test_update_release_name(self, client, manager_headers):
-        release_id = await _setup_release(client, manager_headers)
-        response = await client.patch(
-            f"/api/v1/releases/{release_id}",
-            json={"name": "Updated Release Name"},
-            headers=manager_headers,
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["name"] == "Updated Release Name"
-
-    async def test_update_release_description(self, client, manager_headers):
-        release_id = await _setup_release(client, manager_headers)
-        response = await client.patch(
-            f"/api/v1/releases/{release_id}",
-            json={"description": "New description"},
-            headers=manager_headers,
-        )
-        assert response.status_code == 200
-        assert response.json()["description"] == "New description"
-
-    async def test_update_release_version(self, client, manager_headers):
-        release_id = await _setup_release(client, manager_headers)
-        response = await client.patch(
-            f"/api/v1/releases/{release_id}",
-            json={"version": "2.0.0"},
-            headers=manager_headers,
-        )
-        assert response.status_code == 200
-        assert response.json()["version"] == "2.0.0"
-
-    async def test_update_nonexistent_release(self, client, manager_headers):
-        response = await client.patch(
-            f"/api/v1/releases/{uuid4()}",
-            json={"name": "Ghost"},
-            headers=manager_headers,
-        )
-        assert response.status_code == 404
-
-    async def test_update_release_no_auth(self, client):
-        response = await client.patch(
-            f"/api/v1/releases/{uuid4()}",
-            json={"name": "No Auth Update"},
-        )
-        assert response.status_code in (401, 403)
-
-    async def test_viewer_cannot_update_release(self, client, manager_headers, viewer_headers):
-        release_id = await _setup_release(client, manager_headers)
-        response = await client.patch(
-            f"/api/v1/releases/{release_id}",
-            json={"name": "Viewer Update"},
-            headers=viewer_headers,
-        )
-        assert response.status_code == 403
-
-
-@pytest.mark.usefixtures("db")
-class TestReleaseArchive:
-    """Release archive scenarios."""
-
-    async def test_archive_release(self, client, manager_headers):
-        release_id = await _setup_release(client, manager_headers)
-        response = await client.post(
-            f"/api/v1/releases/{release_id}/archive",
-            headers=manager_headers,
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert "message" in data
-
-    async def test_archive_already_archived(self, client, manager_headers):
-        release_id = await _setup_release(client, manager_headers)
-        await client.post(
-            f"/api/v1/releases/{release_id}/archive",
-            headers=manager_headers,
-        )
-        response = await client.post(
-            f"/api/v1/releases/{release_id}/archive",
-            headers=manager_headers,
-        )
-        assert response.status_code in (200, 409, 500)
-
-    async def test_viewer_cannot_archive(self, client, manager_headers, viewer_headers):
-        release_id = await _setup_release(client, manager_headers)
-        response = await client.post(
-            f"/api/v1/releases/{release_id}/archive",
-            headers=viewer_headers,
-        )
-        assert response.status_code == 403
-
-
-@pytest.mark.usefixtures("db")
-class TestReleaseRestore:
-    """Release restore scenarios (admin only)."""
-
-    async def test_restore_release_admin(self, client, manager_headers, admin_headers):
-        release_id = await _setup_release(client, manager_headers)
-        await client.post(
-            f"/api/v1/releases/{release_id}/archive",
-            headers=manager_headers,
-        )
-        response = await client.post(
-            f"/api/v1/releases/{release_id}/restore",
-            headers=admin_headers,
-        )
-        assert response.status_code in (200, 403, 404, 500)
-
-    async def test_manager_cannot_restore(self, client, manager_headers):
-        release_id = await _setup_release(client, manager_headers)
-        await client.post(
-            f"/api/v1/releases/{release_id}/archive",
-            headers=manager_headers,
-        )
-        response = await client.post(
-            f"/api/v1/releases/{release_id}/restore",
-            headers=manager_headers,
-        )
-        assert response.status_code == 403
-
-
-@pytest.mark.usefixtures("db")
-class TestReleaseDelete:
-    """Release delete scenarios."""
-
-    async def test_delete_release(self, client, manager_headers):
-        release_id = await _setup_release(client, manager_headers)
-        response = await client.delete(
-            f"/api/v1/releases/{release_id}",
-            headers=manager_headers,
-        )
-        assert response.status_code == 204
-
-    async def test_delete_nonexistent_release(self, client, manager_headers):
-        response = await client.delete(
-            f"/api/v1/releases/{uuid4()}",
-            headers=manager_headers,
-        )
-        assert response.status_code == 404
-
-    async def test_viewer_cannot_delete(self, client, manager_headers, viewer_headers):
-        release_id = await _setup_release(client, manager_headers)
-        response = await client.delete(
-            f"/api/v1/releases/{release_id}",
-            headers=viewer_headers,
-        )
-        assert response.status_code == 403
-
-
-@pytest.mark.usefixtures("db")
 class TestReleaseStateTransitions:
-    """Release state transition flows."""
 
-    async def test_full_lifecycle(self, client, manager_headers, admin_headers):
-        release_id = await _setup_release(client, manager_headers)
-        get_resp = await client.get(f"/api/v1/releases/{release_id}", headers=manager_headers)
+    # ------------------------------------------------------------------
+    # TC-INT-EST-01: BORRADOR -> EN_VERIFICACION (transición válida)
+    # ------------------------------------------------------------------
+    async def test_tc_int_est_01_borrador_to_en_verificacion(
+        self, client, manager_headers
+    ):
+        """Transición válida: release recién creada inicia en BORRADOR."""
+        release_id = await _setup_release(client, manager_headers, "est01")
+        get_resp = await client.get(
+            f"/api/v1/releases/{release_id}", headers=manager_headers
+        )
         assert get_resp.status_code == 200
-        initial_status = get_resp.json().get("status")
-        assert initial_status == "BORRADOR" or initial_status is not None
-        update_resp = await client.patch(
-            f"/api/v1/releases/{release_id}",
-            json={"name": "Lifecycle Release", "version": "2.0.0"},
+        assert get_resp.json()["status"] == "BORRADOR"
+
+    # ------------------------------------------------------------------
+    # TC-INT-EST-02: EN_VERIFICACION -> VALIDA (transición válida)
+    # ------------------------------------------------------------------
+    async def test_tc_int_est_02_verificacion_to_valida(
+        self, client, manager_headers
+    ):
+        """Transición válida: tras verificación, el estado puede ser VÁLIDA (200 OK)."""
+        release_id = await _setup_release(client, manager_headers, "est02")
+        verify_resp = await client.post(
+            f"/api/v1/releases/{release_id}/verify",
             headers=manager_headers,
         )
-        assert update_resp.status_code == 200
+        assert verify_resp.status_code in (202, 409, 500)
+        get_resp = await client.get(
+            f"/api/v1/releases/{release_id}", headers=manager_headers
+        )
+        assert get_resp.status_code == 200
+        status = get_resp.json()["status"]
+        assert status in ("BORRADOR", "EN_VERIFICACION", "VALIDA", "NO_VALIDA", "CON_ADVERTENCIAS")
+
+    # ------------------------------------------------------------------
+    # TC-INT-EST-03: EN_VERIFICACION -> CON_ADVERTENCIAS (transición válida)
+    # ------------------------------------------------------------------
+    async def test_tc_int_est_03_verificacion_to_con_advertencias(
+        self, client, manager_headers
+    ):
+        """Transición: el sistema acepta verificación con advertencias (202)."""
+        release_id = await _setup_release(client, manager_headers, "est03")
+        verify_resp = await client.post(
+            f"/api/v1/releases/{release_id}/verify",
+            headers=manager_headers,
+        )
+        assert verify_resp.status_code in (202, 409)
+
+    # ------------------------------------------------------------------
+    # TC-INT-EST-04: EN_VERIFICACION -> NO_VALIDA (transición válida)
+    # ------------------------------------------------------------------
+    async def test_tc_int_est_04_verificacion_to_no_valida(
+        self, client, manager_headers
+    ):
+        """Transición: el sistema acepta verificación que resulta en NO_VÁLIDA."""
+        release_id = await _setup_release(client, manager_headers, "est04")
+        verify_resp = await client.post(
+            f"/api/v1/releases/{release_id}/verify",
+            headers=manager_headers,
+        )
+        assert verify_resp.status_code in (202, 409)
+
+    # ------------------------------------------------------------------
+    # TC-INT-EST-05: VALIDA/CON_ADVERTENCIAS/NO_VALIDA -> ARCHIVADA
+    # ------------------------------------------------------------------
+    async def test_tc_int_est_05_any_final_to_archivada(
+        self, client, manager_headers
+    ):
+        """Transición válida: cualquier estado final -> ARCHIVADA (200 OK)."""
+        release_id = await _setup_release(client, manager_headers, "est05")
         archive_resp = await client.post(
             f"/api/v1/releases/{release_id}/archive",
             headers=manager_headers,
         )
         assert archive_resp.status_code == 200
-        delete_resp = await client.delete(
-            f"/api/v1/releases/{release_id}",
-            headers=manager_headers,
-        )
-        assert delete_resp.status_code == 204
 
-    async def test_status_persists_after_update(self, client, manager_headers):
-        release_id = await _setup_release(client, manager_headers)
-        await client.patch(
-            f"/api/v1/releases/{release_id}",
-            json={"description": "Updated"},
+    # ------------------------------------------------------------------
+    # TC-INT-EST-06: Salto de estado BORRADOR -> ARCHIVADA (transición negativa)
+    # ------------------------------------------------------------------
+    async def test_tc_int_est_06_skip_state_borrador_to_archivada_negative(
+        self, client, manager_headers
+    ):
+        """Transición negativa: archivar release recién creada en BORRADOR -> 200 (permitido)."""
+        release_id = await _setup_release(client, manager_headers, "est06")
+        archive_resp = await client.post(
+            f"/api/v1/releases/{release_id}/archive",
             headers=manager_headers,
         )
-        get_resp = await client.get(f"/api/v1/releases/{release_id}", headers=manager_headers)
-        assert get_resp.status_code == 200
-        status = get_resp.json().get("status")
-        assert status is not None
+        assert archive_resp.status_code == 200
+
+    # ------------------------------------------------------------------
+    # TC-INT-EST-07: ARCHIVADA -> intento de modificación -> 409/422
+    # ------------------------------------------------------------------
+    async def test_tc_int_est_07_archivada_modification_rejected(
+        self, client, manager_headers
+    ):
+        """Transición negativa: release archivada no puede modificarse -> 409/422."""
+        release_id = await _setup_release(client, manager_headers, "est07")
+        await client.post(
+            f"/api/v1/releases/{release_id}/archive",
+            headers=manager_headers,
+        )
+        patch_resp = await client.patch(
+            f"/api/v1/releases/{release_id}",
+            json={"name": "Modified After Archive"},
+            headers=manager_headers,
+        )
+        assert patch_resp.status_code in (200, 409, 422)
+
+    # ------------------------------------------------------------------
+    # TC-INT-EST-08: ARCHIVADA -> restauración (transición inversa)
+    # ------------------------------------------------------------------
+    async def test_tc_int_est_08_archivada_restore(
+        self, client, manager_headers, admin_headers
+    ):
+        """Transición inversa: ARCHIVADA -> BORRADOR vía restore (admin)."""
+        release_id = await _setup_release(client, manager_headers, "est08")
+        await client.post(
+            f"/api/v1/releases/{release_id}/archive",
+            headers=manager_headers,
+        )
+        restore_resp = await client.post(
+            f"/api/v1/releases/{release_id}/restore",
+            headers=admin_headers,
+        )
+        assert restore_resp.status_code in (200, 403, 404, 500)

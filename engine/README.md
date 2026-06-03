@@ -140,14 +140,29 @@ Los tests unitarios estan embebidos en cada archivo fuente (`#[cfg(test)]`) dent
 - `src/aggregator.rs` — 7 tests de agregacion de veredictos
 - `src/rules/rv01.rs` a `rv10.rs` — tests especificos por regla (3–7 tests cada uno)
 
+Los tests de integracion HTTP (8 casos: `tc_int_http_01`–`tc_int_http_08`) y los benchmarks de rendimiento (3 casos: `tc_per_pf_01`–`tc_per_pf_03`) residen en `engine/tests/`.
+
+Todos los tests del motor siguen el **Plan de Pruebas** conforme a **ISO 29119-4**.
+
 ### Ejecutar tests
 
 ```bash
 cargo test                          # Unit tests del motor
-cargo test --test http_pipeline     # Tests de integracion HTTP
-cargo test --test performance       # Tests de rendimiento
+cargo test --test http_pipeline     # 8 tests de integracion HTTP
+cargo test --test performance       # 3 benchmarks de rendimiento
 cargo test -- --nocapture           # Con salida de logs
 ```
+
+### Cobertura del motor (cargo llvm-cov)
+
+```bash
+# Requiere: cargo install cargo-llvm-cov
+cargo llvm-cov --workspace --lcov --output-path coverage/engine.lcov \
+    --ignore-filename-regex "main\.rs$" \
+    --ignore-filename-regex "mod\.rs$"
+```
+
+Tambien disponible via script: `..\scripts\run_rust_coverage.ps1`
 
 ## Documentacion Tecnica
 

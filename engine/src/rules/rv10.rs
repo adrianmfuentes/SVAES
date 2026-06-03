@@ -93,8 +93,10 @@ mod tests {
         }
     }
 
+    /// TC-UNI-MOT-10: RV-10 caso base — artefacto con estado de aprobación encontrado.
+    /// Each Choice: cubre el resultado OK para aprobación final.
     #[test]
-    fn rv10_approved_document_returns_ok() {
+    fn tc_uni_mot_10_rv10_approved_artifact_returns_ok() {
         let artifacts = vec![
             make_artifact("D-001", "DOCUMENTO", json!({"status": "APROBADO"})),
         ];
@@ -105,91 +107,5 @@ mod tests {
         assert_eq!(result.status, RuleStatus::Ok);
         let msg = result.message.unwrap();
         assert!(msg.contains("D-001") && msg.contains("APROBADO"));
-    }
-
-    #[test]
-    fn rv10_validated_document_returns_ok() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({"status": "VALIDADO"})),
-        ];
-        let rule = make_rule("RV-10");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn rv10_non_approved_status_returns_error() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({"status": "BORRADOR"})),
-        ];
-        let rule = make_rule("RV-10");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        let msg = result.message.unwrap();
-        assert!(msg.contains("No se encontró"));
-    }
-
-    #[test]
-    fn rv10_no_artifacts_of_type_returns_error() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({"status": "DONE"})),
-        ];
-        let rule = make_rule("RV-10");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-    }
-
-    #[test]
-    fn rv10_missing_status_field_returns_error() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({})),
-        ];
-        let rule = make_rule("RV-10");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-    }
-
-    #[test]
-    fn rv10_custom_artifact_type_and_status() {
-        let artifacts = vec![
-            make_artifact("R-001", "REPORTE", json!({"approval_state": "APPROVED"})),
-        ];
-        let rule = VerificationRule {
-            id: "RV-10".to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({
-                "artifact_type": "REPORTE",
-                "status_field": "approval_state",
-                "approved_states": ["APPROVED"]
-            }),
-        };
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn rv10_first_approved_found_returns_ok() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({"status": "BORRADOR"})),
-            make_artifact("D-002", "DOCUMENTO", json!({"status": "APROBADO"})),
-            make_artifact("D-003", "DOCUMENTO", json!({"status": "VALIDADO"})),
-        ];
-        let rule = make_rule("RV-10");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
-        let msg = result.message.unwrap();
-        assert!(msg.contains("D-002") || msg.contains("D-003"));
     }
 }

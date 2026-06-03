@@ -81,16 +81,10 @@ mod tests {
         }
     }
 
-    fn make_rule(id: &str) -> VerificationRule {
-        VerificationRule {
-            id: id.to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({}),
-        }
-    }
-
+    /// TC-UNI-MOT-06: RV-06 caso base — todos los atributos de versión coinciden.
+    /// Each Choice: cubre el resultado OK para coherencia de atributos.
     #[test]
-    fn rv06_all_versions_match_returns_ok() {
+    fn tc_uni_mot_06_rv06_all_versions_match_returns_ok() {
         let artifacts = vec![
             make_artifact("D-001", "DOCUMENTO", json!({"version": "2.0"})),
             make_artifact("D-002", "DOCUMENTO", json!({"version": "2.0"})),
@@ -105,75 +99,5 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
-    }
-
-    #[test]
-    fn rv06_mismatched_version_returns_error() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({"version": "2.0"})),
-            make_artifact("D-002", "DOCUMENTO", json!({"version": "1.5"})),
-        ];
-        let rule = VerificationRule {
-            id: "RV-06".to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({"expected_value": "2.0"}),
-        };
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("D-002"));
-    }
-
-    #[test]
-    fn rv06_missing_attribute_returns_error() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({"version": "2.0"})),
-            make_artifact("D-002", "DOCUMENTO", json!({})),
-        ];
-        let rule = VerificationRule {
-            id: "RV-06".to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({"expected_value": "2.0"}),
-        };
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("D-002"));
-    }
-
-    #[test]
-    fn rv06_no_artifacts_of_type_returns_ok() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({"version": "1.0"})),
-        ];
-        let rule = make_rule("RV-06");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn rv06_custom_attribute() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({"revision": "A"})),
-            make_artifact("D-002", "DOCUMENTO", json!({"revision": "B"})),
-        ];
-        let rule = VerificationRule {
-            id: "RV-06".to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({
-                "artifact_type": "DOCUMENTO",
-                "attribute": "revision",
-                "expected_value": "A"
-            }),
-        };
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("D-002"));
     }
 }

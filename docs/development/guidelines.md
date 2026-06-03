@@ -64,12 +64,12 @@ svaes/
 │   └── security/              # Security audit documentation
 ├── scripts/                   # Auxiliary scripts
 ├── docker-compose.yml         # Services: api, postgres, redis
-└── tests/                     # Full test suite
-    ├── unit/                  # Implemented — 59 files (core, connectors, api, repositories)
-    ├── integration/           # Implemented — ~90 tests (flow, lifecycle, resilience, rate limit)
-    ├── performance/           # Implemented — Rust benchmarks + Locust stub
-    ├── security/              # Implemented — auth, injection, OWASP vectors
-    └── acceptance/            # Pending — Cypress E2E
+└── tests/                     # Full test suite (Plan de Pruebas — ISO 29119-4)
+    ├── unit/                  # 150+ cases (TC-UNI-*): services branch coverage, connectors CE+VL, endpoints Base Choice, factories, gaps
+    ├── integration/           # 16 cases (TC-INT-*): full flow, rate limit, resilience, state transitions
+    ├── performance/           # 4 Locust cases (TC-PER-*) + 3 Rust benchmarks
+    ├── security/              # 5 cases (TC-SEC-*): brute force, JWT, SQLi, XSS, credential encryption
+    └── acceptance/            # 10 Cypress cases (TC-ACP-*): visual, multi-res, forms, usability
 ```
 
 **Current status:**
@@ -115,7 +115,7 @@ svaes/
 ### Python (backend — api/src/)
 - Formatting: **Black** + **isort**. Maximum line length: 88.
 - Types: all functions must be annotated. **Pydantic v2** is used for models.
-- Tests: **pytest**. Minimum target coverage: 80% in `domain/` and `application/`.
+- Tests: **pytest**. Minimum target coverage: 70% total, >= 80% in `domain/` and `application/`.
 - Alembic migrations: one file per schema change, with a descriptive message.
 - Internal structure of `src/`:
   ```
@@ -176,51 +176,25 @@ svaes/
 
 ## 9. Testing Conventions
 
+All tests follow the **Plan de Pruebas** structured according to **ISO 29119-4**. Each test case has a unique identifier: `TC-{NIVEL}-{CATEGORIA}-{NUM}`.
+
 ### Unit tests (`tests/unit/`)
 
 ```
 tests/unit/
-├── core/                           # Credential encryptor, pseudonymizer
-│   ├── test_credential_encryptor.py
-│   └── test_pseudonymizer.py
-├── connectors/                     # 8 connector implementations
-│   ├── conftest.py
-│   ├── test_gitlab.py
-│   ├── test_jira.py
-│   ├── test_trello.py
-│   ├── test_plane.py
-│   ├── test_linear.py
-│   ├── test_jira_sm.py
-│   ├── test_redmine.py
-│   ├── test_gitea.py
-│   └── test_wikijs.py
-├── api/                            # Use cases, services, routers (34 files)
-│   ├── conftest.py                 # 14 mock repos, task queue, connector registry
-│   ├── test_authenticate_user.py
-│   ├── test_auth_service.py
-│   ├── test_releases.py
-│   ├── test_releases_router.py
-│   ├── test_user_service.py
-│   ├── test_verification_service.py
-│   ├── test_verification_worker.py
-│   └── ...                         # (+26 more files)
-└── repositories/                   # 15 SQL repository tests (in-memory SQLite)
-    ├── conftest.py
-    ├── test_user_repository.py
-    ├── test_release_repository.py
-    ├── test_project_repository.py
-    ├── test_organization_repository.py
-    └── ...                         # (+10 more files)
+├── conftest.py                    # Env vars, async engine mock, Python path
+├── test_connectors_optimized.py   # TC-UNI-CON-01…06: connectors (CE+VL)
+└── test_releases_endpoint.py      # TC-UNI-API-00…07: endpoints (Base Choice)
 ```
 
-- One file per module: `test_<module_name>.py`
-- One class per unit: `class Test<UnitName>`
-- Methods: `test_<condition>_<expected_result>`
+- One file per test group with multiple related test cases.
+- One class per test category: `class Test<Category>`
+- Methods: `test_tc_<level>_<cat>_<num>_<description>` following ISO 29119-4
 - Domain entities and application commands are **never** mocked.
 
 ### Integration tests (`tests/integration/`)
 
-4 Python test files (~90 tests) + 8 Rust HTTP pipeline tests. Real PostgreSQL + Redis via ephemeral Docker containers.
+2 Python test files (16 cases) + 8 Rust HTTP pipeline tests. Real PostgreSQL + Redis via ephemeral Docker containers.
 
 ```powershell
 # One-command script (spins up infra, runs tests, tears down)
@@ -229,12 +203,12 @@ tests/unit/
 
 ### Rust tests
 
-Unit tests are inline under `#[cfg(test)]`. Integration and performance tests live in `engine/tests/`.
+Unit tests are inline under `#[cfg(test)]` in all 11 source files. HTTP integration and performance tests live in `engine/tests/`.
 
 ```bash
 cargo test                              # All unit tests
-cargo test --test http_pipeline          # HTTP integration tests
-cargo test --test performance            # Performance benchmarks
+cargo test --test http_pipeline          # 8 HTTP integration tests
+cargo test --test performance            # 3 performance benchmarks
 ```
 
 ---

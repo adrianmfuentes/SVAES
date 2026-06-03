@@ -214,7 +214,7 @@ SVAES/
 │   │   └── core/                # services, guards, interceptors, i18n
 │   ├── src/assets/i18n/         # en.json, es.json
 │   └── Dockerfile
-├── tests/                       # Unit, integration, performance, acceptance
+├── tests/                       # Unit (150+ cases), integration (16), performance (4+3), acceptance (10) — 70% coverage
 ├── docs/                        # Project documentation
 │   ├── api/
 │   │   ├── reference.md         # Full API endpoint & domain reference

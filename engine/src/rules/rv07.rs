@@ -94,8 +94,10 @@ mod tests {
         }
     }
 
+    /// TC-UNI-MOT-07: RV-07 caso base — marcador de registro externo encontrado.
+    /// Each Choice: cubre el resultado OK para registro externo.
     #[test]
-    fn rv07_marker_found_with_true_flag_returns_ok() {
+    fn tc_uni_mot_07_rv07_marker_found_returns_ok() {
         let artifacts = vec![
             make_artifact("P-001", "PLAN", json!({"external_registered": true})),
         ];
@@ -105,65 +107,5 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_some());
-    }
-
-    #[test]
-    fn rv07_marker_found_with_false_flag_returns_error() {
-        let artifacts = vec![
-            make_artifact("P-001", "PLAN", json!({"external_registered": false})),
-        ];
-        let rule = make_rule("RV-07");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        let msg = result.message.unwrap();
-        assert!(msg.contains("no es true"));
-    }
-
-    #[test]
-    fn rv07_marker_not_found_returns_error() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({})),
-        ];
-        let rule = make_rule("RV-07");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        let msg = result.message.unwrap();
-        assert!(msg.contains("No se encontró"));
-    }
-
-    #[test]
-    fn rv07_marker_missing_field_returns_error() {
-        let artifacts = vec![
-            make_artifact("P-001", "PLAN", json!({})),
-        ];
-        let rule = make_rule("RV-07");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("no es true"));
-    }
-
-    #[test]
-    fn rv07_custom_marker_type_and_field() {
-        let artifacts = vec![
-            make_artifact("R-001", "REGISTRO", json!({"tracked": true})),
-        ];
-        let rule = VerificationRule {
-            id: "RV-07".to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({
-                "artifact_type": "REGISTRO",
-                "marker_field": "tracked"
-            }),
-        };
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
     }
 }

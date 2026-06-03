@@ -213,20 +213,24 @@
 
 ## 5. TESTS
 
-### Status: ⚠️ Low coverage
+### Status: ✅ Structured — Plan de Pruebas (ISO 29119-4)
 
-| Area | Coverage |
-|------|----------|
-| Unit tests (API) | `test_auth.py` only (AuthService — 161 lines) |
-| Integration tests (API) | 2 files: `test_testclient.py`, `test_complete.py` (basic flows) |
-| Engine tests | Inline tests in `rv01.rs` (3 cases); other rules likely similar |
-| Acceptance tests | Empty directory |
-| Performance tests | Empty directory |
-| Web tests | 1 basic component test |
+All tests follow a formal **Plan de Pruebas** with unique test case identifiers.
+
+| Area | Cases | Details |
+|---|---|---|
+| Unit tests | 150+ cases (TC-UNI-*) | 12 files: services branch coverage, connectors CE+VL (6), endpoints Base Choice (8), DI factories (22), structural gaps (32) |
+| Integration tests | 16 + 8 cases | Python TC-INT-* (16) + Rust HTTP tc_int_http_* (8) |
+| Security tests | 5 cases (TC-SEC-*) | Brute force (2), SQLi/XSS injection (2), JWT encryption (1) |
+| Performance tests | 4 + 3 cases | Locust TC-PER-* (4) + Rust benchmarks tc_per_pf_* (3) |
+| Acceptance tests | 10 cases (TC-ACP-*) | Cypress E2E: visual (2), multi-res (3), forms (2), usability (3) |
+| Engine tests | Inline in 11 files | Rust `#[cfg(test)]` in all rules (rv01–rv10) + aggregator |
+
+Cobertura total del proyecto: **70%** (configurada en `.coveragerc`, `api/pyproject.toml`, `sonar-project.properties`). Exclusiones: puntos de entrada, configuracion, `__init__.py` de re-export, migraciones, ficheros auto-generados.
 
 ### Configuration
 - pytest with pytest-asyncio (`asyncio_mode = auto`)
-- `pytest.ini` has incorrect `pythonpath = apps/api/src` → actual path is `api/src`
+- `pytest.ini`: `pythonpath = api/src`, markers for `unit`, `integration`, `security`, `performance`, `e2e`
 - Coverage output: `coverage.xml` at project root (SonarCloud)
 
 ---

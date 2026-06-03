@@ -1,14 +1,12 @@
-const { defineConfig } = require('cypress');
-
-module.exports = defineConfig({
+module.exports = {
   e2e: {
     baseUrl: 'http://localhost:4200',
-    specPattern: 'cypress/e2e/**/*.cy.js',
-    supportFile: 'cypress/support/e2e.js',
+    specPattern: 'tests/acceptance/cypress/e2e/**/*.cy.js',
+    supportFile: 'tests/acceptance/cypress/support/e2e.js',
     video: false,
     screenshotOnRunFailure: true,
     defaultCommandTimeout: 10000,
     viewportWidth: 1280,
     viewportHeight: 720,
   },
-});
+};

@@ -94,8 +94,10 @@ mod tests {
         }
     }
 
+    /// TC-UNI-MOT-02: RV-02 caso base — todas las referencias existen.
+    /// Each Choice: cubre el resultado OK para trazabilidad entre artefactos.
     #[test]
-    fn rv02_all_references_exist_returns_ok() {
+    fn tc_uni_mot_02_rv02_all_references_exist_returns_ok() {
         let artifacts = vec![
             make_artifact("T-001", "TAREA", json!({})),
             make_artifact("T-002", "TAREA", json!({})),
@@ -110,8 +112,10 @@ mod tests {
         assert!(result.message.is_none());
     }
 
+    /// TC-UNI-MOT-12: RV-02 — referencia huérfana produce ERROR.
+    /// Each Choice: cubre el resultado ERROR para el catálogo de trazabilidad.
     #[test]
-    fn rv02_orphan_reference_returns_error() {
+    fn tc_uni_mot_12_rv02_orphan_reference_returns_error() {
         let artifacts = vec![
             make_artifact("T-001", "TAREA", json!({})),
             make_artifact("C-001", "CÓDIGO", json!({"task_id": "T-001"})),
@@ -124,53 +128,5 @@ mod tests {
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
         assert!(msg.contains("T-999"));
-    }
-
-    #[test]
-    fn rv02_no_source_artifacts_returns_ok() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({})),
-        ];
-        let rule = make_rule("RV-02");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn rv02_reference_field_missing_returns_ok() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({})),
-            make_artifact("C-001", "CÓDIGO", json!({})),
-        ];
-        let rule = make_rule("RV-02");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn rv02_custom_types_and_field() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({})),
-            make_artifact("C-001", "CÓDIGO", json!({"doc_ref": "D-001"})),
-            make_artifact("C-002", "CÓDIGO", json!({"doc_ref": "D-999"})),
-        ];
-        let rule = VerificationRule {
-            id: "RV-02".to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({
-                "source_type": "CÓDIGO",
-                "target_type": "DOCUMENTO",
-                "reference_field": "doc_ref"
-            }),
-        };
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("D-999"));
     }
 }

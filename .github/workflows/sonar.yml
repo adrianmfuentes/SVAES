@@ -72,6 +72,20 @@ jobs:
           POSTGRES_PASSWORD: svaes
         run: uv run --frozen --no-build --project api --extra dev pytest tests/integration tests/security --cov=api/src --cov-append --cov-report=xml
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Run Rust engine coverage
+        working-directory: engine
+        run: cargo llvm-cov --lcov --output-path lcov.info --ignore-filename-regex "main\.rs$"
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
         env:

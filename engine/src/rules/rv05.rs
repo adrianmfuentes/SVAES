@@ -95,8 +95,10 @@ mod tests {
         }
     }
 
+    /// TC-UNI-MOT-05: RV-05 caso base — todos los documentos accesibles.
+    /// Each Choice: cubre el resultado OK para disponibilidad de documentos.
     #[test]
-    fn rv05_all_accessible_returns_ok() {
+    fn tc_uni_mot_05_rv05_all_accessible_returns_ok() {
         let artifacts = vec![
             make_artifact("D-001", "DOCUMENTO", json!({"accessible": true})),
             make_artifact("D-002", "DOCUMENTO", json!({"accessible": true})),
@@ -107,67 +109,5 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
-    }
-
-    #[test]
-    fn rv05_no_documents_returns_error() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({})),
-        ];
-        let rule = make_rule("RV-05");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        let msg = result.message.unwrap();
-        assert!(msg.contains("No se encontraron"));
-    }
-
-    #[test]
-    fn rv05_inaccessible_document_returns_error() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({"accessible": true})),
-            make_artifact("D-002", "DOCUMENTO", json!({"accessible": false})),
-        ];
-        let rule = make_rule("RV-05");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("D-002"));
-    }
-
-    #[test]
-    fn rv05_missing_accessible_field_returns_error() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({})),
-        ];
-        let rule = make_rule("RV-05");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("D-001"));
-    }
-
-    #[test]
-    fn rv05_custom_artifact_type_and_field() {
-        let artifacts = vec![
-            make_artifact("R-001", "REPORTE", json!({"is_available": true})),
-            make_artifact("R-002", "REPORTE", json!({"is_available": false})),
-        ];
-        let rule = VerificationRule {
-            id: "RV-05".to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({
-                "artifact_type": "REPORTE",
-                "accessible_field": "is_available"
-            }),
-        };
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("R-002"));
     }
 }

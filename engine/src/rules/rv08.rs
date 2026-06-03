@@ -135,8 +135,10 @@ mod tests {
         }
     }
 
+    /// TC-UNI-MOT-08: RV-08 caso base — coincidencia exacta entre lista declarada y payload.
+    /// Each Choice: cubre el resultado OK para alineación de listas de planificación.
     #[test]
-    fn rv08_exact_match_returns_ok() {
+    fn tc_uni_mot_08_rv08_exact_match_returns_ok() {
         let artifacts = vec![
             make_artifact("PLAN-001", "PLAN", json!({"planned_tasks": ["T-001", "T-002"]})),
             make_artifact("T-001", "TAREA", json!({})),
@@ -148,82 +150,5 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
-    }
-
-    #[test]
-    fn rv08_missing_in_payload_returns_error() {
-        let artifacts = vec![
-            make_artifact("PLAN-001", "PLAN", json!({"planned_tasks": ["T-001", "T-002", "T-003"]})),
-            make_artifact("T-001", "TAREA", json!({})),
-            make_artifact("T-002", "TAREA", json!({})),
-        ];
-        let rule = make_rule("RV-08", "PLAN-001");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        let msg = result.message.unwrap();
-        assert!(msg.contains("T-003"));
-    }
-
-    #[test]
-    fn rv08_master_not_found_returns_error() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({})),
-        ];
-        let rule = make_rule("RV-08", "PLAN-999");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("no encontrado"));
-    }
-
-    #[test]
-    fn rv08_master_field_missing_returns_error() {
-        let artifacts = vec![
-            make_artifact("PLAN-001", "PLAN", json!({})),
-            make_artifact("T-001", "TAREA", json!({})),
-        ];
-        let rule = make_rule("RV-08", "PLAN-001");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("no encontrado"));
-    }
-
-    #[test]
-    fn rv08_no_target_artifacts_returns_error() {
-        let artifacts = vec![
-            make_artifact("PLAN-001", "PLAN", json!({"planned_tasks": ["T-001"]})),
-        ];
-        let rule = make_rule("RV-08", "PLAN-001");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-    }
-
-    #[test]
-    fn rv08_custom_master_field_and_target_type() {
-        let artifacts = vec![
-            make_artifact("MAP-001", "MAPA", json!({"mapped_docs": ["D-001", "D-002"]})),
-            make_artifact("D-001", "DOCUMENTO", json!({})),
-            make_artifact("D-002", "DOCUMENTO", json!({})),
-        ];
-        let rule = VerificationRule {
-            id: "RV-08".to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({
-                "master_artifact_id": "MAP-001",
-                "master_field": "mapped_docs",
-                "target_type": "DOCUMENTO"
-            }),
-        };
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
     }
 }

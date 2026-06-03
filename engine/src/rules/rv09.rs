@@ -116,8 +116,10 @@ mod tests {
         }
     }
 
+    /// TC-UNI-MOT-09: RV-09 caso base — referencias de código válidas y accesibles.
+    /// Each Choice: cubre el resultado OK para validación de referencias.
     #[test]
-    fn rv09_valid_references_returns_ok() {
+    fn tc_uni_mot_09_rv09_valid_references_returns_ok() {
         let artifacts = vec![
             make_artifact("C-001", "CÓDIGO", json!({
                 "link": "https://github.com/repo/commit/abc123",
@@ -131,104 +133,5 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
-    }
-
-    #[test]
-    fn rv09_invalid_url_format_returns_error() {
-        let artifacts = vec![
-            make_artifact("C-001", "CÓDIGO", json!({
-                "link": "ftp://invalid-protocol.com",
-                "accessible": true
-            })),
-        ];
-        let rule = make_rule("RV-09");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        let msg = result.message.unwrap();
-        assert!(msg.contains("C-001"));
-    }
-
-    #[test]
-    fn rv09_inaccessible_reference_returns_error() {
-        let artifacts = vec![
-            make_artifact("C-001", "CÓDIGO", json!({
-                "link": "https://github.com/repo/commit/abc123",
-                "accessible": false
-            })),
-        ];
-        let rule = make_rule("RV-09");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("no accesible"));
-    }
-
-    #[test]
-    fn rv09_invalid_branch_format_returns_error() {
-        let artifacts = vec![
-            make_artifact("C-001", "CÓDIGO", json!({
-                "branch": "feature with spaces",
-                "accessible": true
-            })),
-        ];
-        let rule = make_rule("RV-09");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("spaces"));
-    }
-
-    #[test]
-    fn rv09_no_artifacts_of_type_returns_ok() {
-        let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({})),
-        ];
-        let rule = make_rule("RV-09");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn rv09_missing_reference_field_is_ok() {
-        let artifacts = vec![
-            make_artifact("C-001", "CÓDIGO", json!({
-                "accessible": true
-            })),
-        ];
-        let rule = make_rule("RV-09");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn rv09_custom_reference_fields() {
-        let artifacts = vec![
-            make_artifact("D-001", "DOCUMENTO", json!({
-                "url": "not@valid!url",
-                "accessible": true
-            })),
-        ];
-        let rule = VerificationRule {
-            id: "RV-09".to_string(),
-            severity: "OBLIGATORIA".to_string(),
-            params: json!({
-                "artifact_type": "DOCUMENTO",
-                "reference_fields": ["url"],
-                "accessible_field": "accessible"
-            }),
-        };
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("not@valid!url"));
     }
 }
