@@ -9,6 +9,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
 from uuid import uuid4, UUID
 from datetime import datetime, timezone
+from domain.entities.access_request import AccessRequest
+from domain.enums import AccessRequestStatus
 
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("ENVIRONMENT", "test")
@@ -88,7 +90,7 @@ def _make_user_row(user_id=None, email="test@test.com", hashed_pw="hash",
                    display_name="Test", role="OPERATOR", is_active=True,
                    failed_attempts=0, locked_until=None, organization_id=None,
                    activation_token=None, activation_token_expiry=None,
-                   totp_secret=None, totp_enabled=False):
+                   totp_secret=None, totp_enabled=None):
     """Create a mock row resembling UserModel."""
     row = MagicMock()
     row.id = str(user_id or uuid4())
@@ -107,7 +109,7 @@ def _make_user_row(user_id=None, email="test@test.com", hashed_pw="hash",
     row.activation_token = activation_token
     row.activation_token_expiry = activation_token_expiry
     row.totp_secret = totp_secret
-    row.totp_enabled = totp_enabled
+    row.totp_enabled = False if totp_enabled is None else totp_enabled
     return row
 
 
@@ -609,7 +611,7 @@ class TestSqlUserRepository:
         from domain.entities.user import User
         from domain.enums import UserRole
         user = User(
-            id=uuid4(), email="new@test.com", hashed_password="pw",
+            id=uuid4(), email="new@test.com", hashed_password="pw", # NOSONAR
             display_name="New", role=UserRole.U2,
         )
         with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
@@ -705,7 +707,7 @@ class TestSqlUserRepository:
         from domain.entities.user import User
         from domain.enums import UserRole
         user = User(
-            id=uuid4(), email="updated@test.com", hashed_password="newhash",
+            id=uuid4(), email="updated@test.com", hashed_password="newhash", # NOSONAR
             display_name="Updated", role=UserRole.U1, is_active=False,
         )
         with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
@@ -721,7 +723,7 @@ class TestSqlUserRepository:
         from domain.entities.user import User
         from domain.enums import UserRole
         user = User(
-            id=uuid4(), email="x@x.com", hashed_password="pw",
+            id=uuid4(), email="x@x.com", hashed_password="pw", # NOSONAR
             display_name="X", role=UserRole.U2,
         )
         with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
@@ -768,3 +770,252 @@ class TestSqlUserRepository:
         with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="User not found"):
                 await repo.delete(uuid4())
+
+
+# ── helpers: access request mock row ──────────────────────────────────────────
+
+
+from typing import Optional
+
+
+def _make_access_request_row(
+    request_id=None,
+    requester_name: str = "John Doe",
+    requester_email: str = "john@example.com",
+    organization_name: str = "ACME Corp",
+    organization_description: Optional[str] = "A test company",
+    slug_preview: Optional[str] = "acme-corp",
+    status: str = "PENDING",
+    rejection_reason: Optional[str] = None,
+    reviewed_by: Optional[UUID] = None,
+    reviewed_at: Optional[datetime] = None,
+):
+    """Create a mock row resembling AccessRequestModel."""
+    row = MagicMock()
+    row.id = request_id or uuid4()
+    row.requester_name = requester_name
+    row.requester_email = requester_email
+    row.organization_name = organization_name
+    row.organization_description = organization_description
+    row.slug_preview = slug_preview
+    row.status = status
+    row.rejection_reason = rejection_reason
+    row.reviewed_by = reviewed_by if reviewed_by else None
+    row.reviewed_at = reviewed_at
+    row.created_at = datetime.now(timezone.utc)
+    row.updated_at = datetime.now(timezone.utc)
+    return row
+
+
+# ── SqlAccessRequestRepository ────────────────────────────────────────────────
+
+
+class TestSqlAccessRequestRepository:
+    @pytest.fixture
+    def repo(self):
+        from infrastructure.secondary.database.repositories.access_request_repository import (
+            SqlAccessRequestRepository,
+        )
+        return SqlAccessRequestRepository()
+
+    def test_model_to_entity_full(self, repo):
+        """Branch: _model_to_entity with all fields populated"""
+        rid = uuid4()
+        reviewed_by = uuid4()
+        now = datetime.now(timezone.utc)
+        row = _make_access_request_row(
+            request_id=rid,
+            requester_name="Alice",
+            requester_email="alice@example.com",
+            organization_name="Alice Org",
+            organization_description="Desc",
+            slug_preview="alice-org",
+            status="APPROVED",
+            rejection_reason=None,
+            reviewed_by=reviewed_by,
+            reviewed_at=now,
+        )
+        entity = repo._model_to_entity(row)
+        assert entity.id == rid
+        assert entity.requester_name == "Alice"
+        assert entity.requester_email == "alice@example.com"
+        assert entity.organization_name == "Alice Org"
+        assert entity.organization_description == "Desc"
+        assert entity.slug_preview == "alice-org"
+        assert entity.status == AccessRequestStatus.APPROVED
+        assert entity.rejection_reason is None
+        assert entity.reviewed_by == reviewed_by
+        assert entity.reviewed_at == now
+
+    def test_model_to_entity_nulls(self, repo):
+        """Branch: _model_to_entity with nullable fields as None"""
+        row = _make_access_request_row(
+            organization_description=None,
+            slug_preview=None,
+            rejection_reason=None,
+            reviewed_by=None,
+            reviewed_at=None,
+        )
+        entity = repo._model_to_entity(row)
+        assert entity.organization_description is None
+        assert entity.slug_preview is None
+        assert entity.rejection_reason is None
+        assert entity.reviewed_by is None
+        assert entity.reviewed_at is None
+
+    async def test_create_success(self, repo):
+        """Branch: create adds model, commits, refreshes, returns entity"""
+        session, mgr = _make_mock_session()
+        ar = AccessRequest(
+            requester_name="Bob",
+            requester_email="bob@test.com",
+            organization_name="Bob Org",
+            organization_description="Bob's company",
+            slug_preview="bob-org",
+            status=AccessRequestStatus.PENDING,
+        )
+        with patch(
+            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            return_value=mgr,
+        ):
+            result = await repo.create(ar)
+        session.add.assert_called_once()
+        session.commit.assert_awaited_once()
+        session.refresh.assert_awaited_once()
+        assert result is not None
+        assert result.requester_email == "bob@test.com"
+
+    async def test_get_by_id_found(self, repo):
+        """Branch: get_by_id finds row → returns AccessRequest"""
+        session, mgr = _make_mock_session()
+        row = _make_access_request_row(requester_email="found@test.com")
+        result = _make_scalar_result(row)
+        session.execute = AsyncMock(return_value=result)
+        with patch(
+            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            return_value=mgr,
+        ):
+            entity = await repo.get_by_id(uuid4())
+        assert entity is not None
+        assert entity.requester_email == "found@test.com"
+
+    async def test_get_by_id_not_found(self, repo):
+        """Branch: get_by_id returns None → returns None"""
+        session, mgr = _make_mock_session()
+        result = _make_scalar_result(None)
+        session.execute = AsyncMock(return_value=result)
+        with patch(
+            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            return_value=mgr,
+        ):
+            entity = await repo.get_by_id(uuid4())
+        assert entity is None
+
+    async def test_get_by_email_found(self, repo):
+        """Branch: get_by_email finds row → returns AccessRequest"""
+        session, mgr = _make_mock_session()
+        row = _make_access_request_row(requester_email="specific@test.com")
+        result = _make_scalar_result(row)
+        session.execute = AsyncMock(return_value=result)
+        with patch(
+            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            return_value=mgr,
+        ):
+            entity = await repo.get_by_email("specific@test.com")
+        assert entity is not None
+        assert entity.requester_email == "specific@test.com"
+
+    async def test_get_by_email_not_found(self, repo):
+        """Branch: get_by_email returns None → returns None"""
+        session, mgr = _make_mock_session()
+        result = _make_scalar_result(None)
+        session.execute = AsyncMock(return_value=result)
+        with patch(
+            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            return_value=mgr,
+        ):
+            entity = await repo.get_by_email("noone@test.com")
+        assert entity is None
+
+    async def test_list_by_status_returns_list(self, repo):
+        """Branch: list_by_status with results → returns list of AccessRequests"""
+        session, mgr = _make_mock_session()
+        rows = [_make_access_request_row(), _make_access_request_row(requester_email="other@test.com")]
+        result = _make_scalars_result(rows)
+        session.execute = AsyncMock(return_value=result)
+        with patch(
+            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            return_value=mgr,
+        ):
+            entities = await repo.list_by_status(AccessRequestStatus.PENDING)
+        assert len(entities) == 2
+
+    async def test_list_by_status_empty(self, repo):
+        """Branch: list_by_status no results → empty list"""
+        session, mgr = _make_mock_session()
+        result = _make_scalars_result([])
+        session.execute = AsyncMock(return_value=result)
+        with patch(
+            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            return_value=mgr,
+        ):
+            entities = await repo.list_by_status(AccessRequestStatus.APPROVED)
+        assert entities == []
+
+    async def test_list_by_status_pagination(self, repo):
+        """Branch: list_by_status with skip + limit parameters"""
+        session, mgr = _make_mock_session()
+        rows = [_make_access_request_row()]
+        result = _make_scalars_result(rows)
+        session.execute = AsyncMock(return_value=result)
+        with patch(
+            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            return_value=mgr,
+        ):
+            entities = await repo.list_by_status(
+                AccessRequestStatus.PENDING, skip=10, limit=50
+            )
+        assert len(entities) == 1
+        session.execute.assert_awaited_once()
+
+    async def test_update_found(self, repo):
+        """Branch: update finds row → updates fields, returns entity"""
+        session, mgr = _make_mock_session()
+        row = _make_access_request_row()
+        session.get = AsyncMock(return_value=row)
+        ar = AccessRequest(
+            id=uuid4(),
+            requester_name="Updated",
+            requester_email="updated@test.com",
+            organization_name="Updated Org",
+            status=AccessRequestStatus.REJECTED,
+            rejection_reason="Not eligible",
+            reviewed_by=uuid4(),
+            reviewed_at=datetime.now(timezone.utc),
+        )
+        with patch(
+            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            return_value=mgr,
+        ):
+            result = await repo.update(ar)
+        session.commit.assert_awaited_once()
+        session.refresh.assert_awaited_once()
+        assert result is not None
+
+    async def test_update_not_found_raises(self, repo):
+        """Branch: update does not find row → raises ValueError"""
+        session, mgr = _make_mock_session()
+        session.get = AsyncMock(return_value=None)
+        ar = AccessRequest(
+            id=uuid4(),
+            requester_name="Ghost",
+            requester_email="ghost@test.com",
+            organization_name="Ghost Org",
+            status=AccessRequestStatus.PENDING,
+        )
+        with patch(
+            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            return_value=mgr,
+        ):
+            with pytest.raises(ValueError, match="not found"):
+                await repo.update(ar)
