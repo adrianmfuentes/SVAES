@@ -22,6 +22,8 @@ def pytest_configure():
     os.environ.setdefault("CELERY_RESULT_BACKEND", TEST_REDIS_URL)
     os.environ.setdefault("ENGINE_URL", "http://localhost:8081")
     os.environ.setdefault("ENGINE_API_KEY", "")
+    os.environ.setdefault("ADMIN_EMAIL", "admin@test.local")
+    os.environ.setdefault("ADMIN_PASSWORD", "test-password-not-for-production")
 
 
 @pytest.fixture(scope="session")
