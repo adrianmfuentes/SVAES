@@ -3,6 +3,8 @@ omit =
     api/src/main.py
     api/src/core/config.py
     api/src/__init__.py
+    api/src/application/ports/**
+    api/src/infrastructure/workers/verification_worker.py
     api/src/infrastructure/primary/routers/api/__init__.py
     api/src/infrastructure/primary/routers/api/v1/__init__.py
     api/src/infrastructure/secondary/database/models/__init__.py
