@@ -23,7 +23,7 @@ for env_path in possible_env_paths:
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL is None:
-    raise ValueError("DATABASE_URL is not set")
+    raise ValueError("DATABASE_URL is not set")  # pragma: no cover — guard clause a nivel módulo, no testeable sin manipular env antes del import
 
 # Crear el motor asíncrono
 _sql_echo = os.getenv("ENVIRONMENT", "production") == "development"
