@@ -1,28 +1,28 @@
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.50s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.79s
      Running unittests src\lib.rs (target\debug\deps\svaes_engine-b17e4f5eba150019.exe)
 
 running 27 tests
-test aggregator::tests::tc_uni_agg_02_one_mandatory_error_returns_no_valida ... ok
-test aggregator::tests::tc_uni_agg_07_multiple_mandatory_errors_returns_no_valida ... ok
-test aggregator::tests::tc_uni_agg_04_transition_zero_to_one_mandatory_errors ... ok
-test rules::rv03::tests::tc_uni_mot_03_rv03_all_states_valid_returns_ok ... ok
+test rules::rv01::tests::tc_uni_mot_01_rv01_artifacts_present_returns_ok ... ok
 test aggregator::tests::tc_uni_agg_06_mandatory_error_overrides_optional_warning ... ok
 test aggregator::tests::tc_uni_agg_01_all_rules_ok_returns_valida ... ok
-test rules::rv01::tests::tc_uni_mot_01_rv01_artifacts_present_returns_ok ... ok
+test aggregator::tests::tc_uni_agg_04_transition_zero_to_one_mandatory_errors ... ok
+test aggregator::tests::tc_uni_agg_05_excluida_rules_no_evaluada_do_not_affect_verdict ... ok
+test aggregator::tests::tc_uni_agg_02_one_mandatory_error_returns_no_valida ... ok
+test aggregator::tests::tc_uni_agg_03_optional_warning_without_mandatory_error_returns_con_advertencias ... ok
 test rules::rv01::tests::tc_uni_mot_11_rv01_empty_artifacts_returns_error ... ok
 test rules::rv02::tests::tc_uni_mot_02_rv02_all_references_exist_returns_ok ... ok
 test rules::rv02::tests::tc_uni_mot_12_rv02_orphan_reference_returns_error ... ok
+test rules::rv03::tests::tc_uni_mot_03_rv03_all_states_valid_returns_ok ... ok
 test rules::rv04::tests::tc_uni_mot_04_rv04_all_fields_valid_returns_ok ... ok
-test aggregator::tests::tc_uni_agg_03_optional_warning_without_mandatory_error_returns_con_advertencias ... ok
-test aggregator::tests::tc_uni_agg_05_excluida_rules_no_evaluada_do_not_affect_verdict ... ok
+test rules::rv05::tests::tc_uni_mot_05_rv05_all_accessible_returns_ok ... ok
+test aggregator::tests::tc_uni_agg_07_multiple_mandatory_errors_returns_no_valida ... ok
 test rules::rv06::tests::tc_uni_mot_06_rv06_all_versions_match_returns_ok ... ok
 test rules::rv07::tests::tc_uni_mot_07_rv07_marker_found_returns_ok ... ok
-test rules::rv05::tests::tc_uni_mot_05_rv05_all_accessible_returns_ok ... ok
 test rules::rv08::tests::tc_uni_mot_08_rv08_exact_match_returns_ok ... ok
 test rules::rv09::tests::different_artifact_type_skipped ... ok
 test rules::rv09::tests::invalid_branch_returns_error ... ok
-test rules::rv09::tests::invalid_link_returns_error ... ok
 test rules::rv09::tests::missing_accessible_field_treated_as_ok ... ok
+test rules::rv09::tests::invalid_link_returns_error ... ok
 test rules::rv09::tests::missing_reference_field_treated_as_ok ... ok
 test rules::rv09::tests::multiple_artifacts_collects_all_errors ... ok
 test rules::rv09::tests::not_accessible_returns_error ... ok

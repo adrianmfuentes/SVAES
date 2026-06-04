@@ -24,4 +24,4 @@ tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_t
 tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_07_archivada_modification_rejected PASSED [ 93%]
 tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_08_archivada_restore PASSED [100%]
 
-======================= 16 passed in 108.25s (0:01:48) ========================
+======================= 16 passed in 108.76s (0:01:48) ========================

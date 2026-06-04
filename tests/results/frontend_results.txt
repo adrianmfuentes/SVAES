@@ -14,33 +14,36 @@ vitest-mock-patch.js                          | vitest-mock-patch               
 
                                               | Initial total                              |  30.10 kB
 
-Application bundle generation complete. [2.903 seconds] - 2026-06-04T21:40:49.502Z
+Application bundle generation complete. [2.740 seconds] - 2026-06-04T22:00:36.885Z
 
 
  RUN  v4.1.5 D:/34644/Documents/GitHub/SVAES/web
 
-stdout | src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-01: POST /releases 201 -> Observable emite Release, Bearer presente
-TC-UNI-FE-SVC-01 PASS
-
 stdout | src/app/features/releases/verify.service.spec.ts > Verify Release ÔÇö Verification Flow > TC-UNI-FE-NGR-01: API 202+taskId -> verifyReleaseSuccess con taskId
 TC-UNI-FE-NGR-01 PASS
-
-stdout | src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-02: POST /releases 401 -> Observable emite error de autenticacion
-TC-UNI-FE-SVC-02 PASS
 
 stdout | src/app/features/releases/verify.service.spec.ts > Verify Release ÔÇö Verification Flow > TC-UNI-FE-NGR-02: API 409 -> verifyReleaseFailure con INVALID_STATE
 TC-UNI-FE-NGR-02 PASS
 
- Ô£ô  web  src/app/features/releases/verify.service.spec.ts > Verify Release ÔÇö Verification Flow > TC-UNI-FE-NGR-01: API 202+taskId -> verifyReleaseSuccess con taskId 47ms
- Ô£ô  web  src/app/features/releases/verify.service.spec.ts > Verify Release ÔÇö Verification Flow > TC-UNI-FE-NGR-02: API 409 -> verifyReleaseFailure con INVALID_STATE 10ms
+ Ô£ô  web  src/app/features/releases/verify.service.spec.ts > Verify Release ÔÇö Verification Flow > TC-UNI-FE-NGR-01: API 202+taskId -> verifyReleaseSuccess con taskId 42ms
+ Ô£ô  web  src/app/features/releases/verify.service.spec.ts > Verify Release ÔÇö Verification Flow > TC-UNI-FE-NGR-02: API 409 -> verifyReleaseFailure con INVALID_STATE 8ms
+stdout | src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-01: POST /releases 201 -> Observable emite Release, Bearer presente
+TC-UNI-FE-SVC-01 PASS
+
+stdout | src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-02: POST /releases 401 -> Observable emite fallo de autenticacion
+TC-UNI-FE-SVC-02 PASS
+
 stdout | src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-03: POST /releases 422 -> Observable emite ValidationError
 TC-UNI-FE-SVC-03 PASS
 
- Ô£ô  web  src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-01: POST /releases 201 -> Observable emite Release, Bearer presente 45ms
- Ô£ô  web  src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-02: POST /releases 401 -> Observable emite error de autenticacion 11ms
- Ô£ô  web  src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-03: POST /releases 422 -> Observable emite ValidationError 8ms
+ Ô£ô  web  src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-01: POST /releases 201 -> Observable emite Release, Bearer presente 42ms
+ Ô£ô  web  src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-02: POST /releases 401 -> Observable emite fallo de autenticacion 9ms
+ Ô£ô  web  src/app/features/releases/release.service.spec.ts > POST /releases ÔÇö HTTP Service Layer > TC-UNI-FE-SVC-03: POST /releases 422 -> Observable emite ValidationError 5ms
 stdout | src/app/core/guards/auth.guard.spec.ts > authGuard > TC-UNI-FE-GRD-01: Token valido, U2/OPERATOR, ruta permitida -> canActivate=true
 TC-UNI-FE-GRD-01 PASS
+
+stdout | src/app/core/guards/role.guard.spec.ts > roleGuard > TC-UNI-FE-GRD-04: U1/VIEWER en ruta ADMIN -> canActivate=false, /forbidden
+TC-UNI-FE-GRD-04 PASS
 
 stdout | src/app/core/guards/auth.guard.spec.ts > authGuard > TC-UNI-FE-GRD-02: Token caducado -> canActivate=false, redirige /login
 TC-UNI-FE-GRD-02 PASS
@@ -51,17 +54,14 @@ TC-UNI-FE-GRD-03 PASS
  Ô£ô  web  src/app/core/guards/auth.guard.spec.ts > authGuard > TC-UNI-FE-GRD-01: Token valido, U2/OPERATOR, ruta permitida -> canActivate=true 26ms
  Ô£ô  web  src/app/core/guards/auth.guard.spec.ts > authGuard > TC-UNI-FE-GRD-02: Token caducado -> canActivate=false, redirige /login 7ms
  Ô£ô  web  src/app/core/guards/auth.guard.spec.ts > authGuard > TC-UNI-FE-GRD-03: Token ausente -> canActivate=false, redirige /login 5ms
-stdout | src/app/core/guards/role.guard.spec.ts > roleGuard > TC-UNI-FE-GRD-04: U1/VIEWER en ruta ADMIN -> canActivate=false, /forbidden
-TC-UNI-FE-GRD-04 PASS
-
- Ô£ô  web  src/app/app.spec.ts > App > should create the app 84ms
- Ô£ô  web  src/app/app.spec.ts > App > should render router-outlet 18ms
- Ô£ô  web  src/app/core/guards/role.guard.spec.ts > roleGuard > TC-UNI-FE-GRD-04: U1/VIEWER en ruta ADMIN -> canActivate=false, /forbidden 30ms
- Ô£ô  web  src/app/core/guards/role.guard.spec.ts > roleGuard > should allow access when no role is required 6ms
- Ô£ô  web  src/app/core/guards/role.guard.spec.ts > roleGuard > should allow access when user role matches required role 5ms
+ Ô£ô  web  src/app/core/guards/role.guard.spec.ts > roleGuard > TC-UNI-FE-GRD-04: U1/VIEWER en ruta ADMIN -> canActivate=false, /forbidden 27ms
+ Ô£ô  web  src/app/core/guards/role.guard.spec.ts > roleGuard > should allow access when no role is required 7ms
+ Ô£ô  web  src/app/core/guards/role.guard.spec.ts > roleGuard > should allow access when user role matches required role 4ms
+ Ô£ô  web  src/app/app.spec.ts > App > should create the app 78ms
+ Ô£ô  web  src/app/app.spec.ts > App > should render router-outlet 20ms
 
  Test Files  5 passed (5)
       Tests  13 passed (13)
-   Start at  23:40:50
-   Duration  5.14s (transform 662ms, setup 7.10s, import 1.25s, tests 318ms, environment 13.78s)
+   Start at  00:00:37
+   Duration  5.64s (transform 598ms, setup 5.64s, import 1.08s, tests 294ms, environment 17.94s)
 
