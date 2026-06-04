@@ -736,9 +736,9 @@ export class AdminComponent implements OnInit {
   private simpleHash(input: string): string {
     let hash = 0;
     for (let i = 0; i < input.length; i++) {
-      const char = input.charCodeAt(i);
+      const char = input.codePointAt(i)!;
       hash = ((hash << 5) - hash) + char;
-      hash |= 0;
+      hash = Math.trunc(hash);
     }
     return Math.abs(hash).toString(16).slice(0, 8).padStart(8, '0');
   }

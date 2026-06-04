@@ -8,7 +8,7 @@ import { Router, RouterModule } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
-import { TranslationService } from '../../../core/i18n/translation.service';
+
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../../core/components/lang-toggle/lang-toggle.component';
 import { catchError, of } from 'rxjs';
@@ -581,7 +581,7 @@ export class LoginComponent implements OnInit {
 
   fieldHasError(name: string): boolean {
     const ctrl = this.loginForm.get(name);
-    return !!(ctrl && ctrl.invalid && ctrl.touched);
+    return !!(ctrl?.invalid && ctrl?.touched);
   }
 
   onSubmit(): void {
@@ -597,7 +597,7 @@ export class LoginComponent implements OnInit {
     this.pendingEmail = email!;
 
     this.authService
-      .login(email!, password!)
+      .login(email as string, password as string)
       .pipe(
         catchError((err) => {
           this.errorKey = parseLoginErrorKey(err);
@@ -644,7 +644,7 @@ export class LoginComponent implements OnInit {
     const { code } = this.totpForm.value;
 
     this.authService
-      .verify2fa(this.pendingTotpToken, code!)
+      .verify2fa(this.pendingTotpToken, code as string)
       .pipe(
         catchError((err) => {
           this.errorKey = parseLoginErrorKey(err);

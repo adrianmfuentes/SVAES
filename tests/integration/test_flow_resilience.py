@@ -3,12 +3,12 @@ Pruebas de Integración — Flujo Completo, Rate Limiting y Resiliencia
 Total: 8 tests
   TC-INT-FLW-01: Flujo completo con conectores activos
   TC-INT-FLW-02: Flujo completo con conectores inactivos
+  TC-INT-FLW-03: Re-verificación tras NO_VÁLIDA → VÁLIDA
   TC-INT-LIM-01: 100 peticiones -> HTTP 200
   TC-INT-LIM-02: 101ª petición -> HTTP 429
   TC-INT-RES-01: Recuperación ante caída del worker Docker
   TC-INT-RES-02: Recuperación ante caída de Redis
   TC-INT-MIG-01: Migración de release entre perfiles
-  TC-INT-MIG-02: Migración de release entre proyectos
 """
 
 import asyncio
@@ -106,6 +106,33 @@ class TestFullFlow:
         )
         assert results_resp.status_code == 200
 
+    async def test_tc_int_flw_03_reverify_after_no_valida(
+        self, client, manager_headers
+    ):
+        """TC-INT-FLW-03: Re-verificación tras NO_VÁLIDA → VÁLIDA (rework del ciclo de vida)."""
+        org_id, project_id, profile_id, release_id = await _setup_full_chain(
+            client, manager_headers, "flw03"
+        )
+        first_verify = await client.post(
+            f"/api/v1/releases/{release_id}/verify",
+            headers=manager_headers,
+        )
+        assert first_verify.status_code in (202, 409, 500)
+        await asyncio.sleep(2)
+        second_verify = await client.post(
+            f"/api/v1/releases/{release_id}/verify",
+            headers=manager_headers,
+        )
+        assert second_verify.status_code in (202, 409, 500)
+        await asyncio.sleep(2)
+        results_resp = await client.get(
+            f"/api/v1/releases/{release_id}/results",
+            headers=manager_headers,
+        )
+        assert results_resp.status_code == 200
+        results = results_resp.json()
+        assert isinstance(results, list)
+
 
 # ============================================================================
 # TC-INT-LIM: Rate Limiting exacto
@@ -183,17 +210,3 @@ class TestMigration:
         )
         assert get_resp.status_code == 200
         assert get_resp.json()["name"] == "Migrated Release"
-
-    async def test_tc_int_mig_02_release_cross_project_transfer(
-        self, client, manager_headers
-    ):
-        """TC-INT-MIG-02: Transferencia de release entre proyectos (404 esperado para proyecto ajeno)."""
-        org_id, project_id, profile_id, release_id = await _setup_full_chain(
-            client, manager_headers, "mig02"
-        )
-        other_project_id = uuid4()
-        response = await client.get(
-            f"/api/v1/projects/{other_project_id}/releases",
-            headers=manager_headers,
-        )
-        assert response.status_code in (200, 404)

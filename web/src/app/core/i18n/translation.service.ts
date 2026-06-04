@@ -11,7 +11,7 @@ export class TranslationService {
   private readonly http = inject(HttpClient);
 
   private translations = new Map<string, string>();
-  private currentLang$ = new BehaviorSubject<string>(this.loadStoredLang());
+  private readonly currentLang$ = new BehaviorSubject<string>(this.loadStoredLang());
 
   readonly lang$ = this.currentLang$.asObservable();
 

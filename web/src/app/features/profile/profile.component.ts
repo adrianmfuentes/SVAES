@@ -1016,7 +1016,7 @@ export class ProfileComponent implements OnInit {
     this.totpLoading.set(true);
     this.totpError.set(null);
     const { code } = this.totpEnableForm.value;
-    this.authService.enable2fa(code!)
+    this.authService.enable2fa(code as string)
       .pipe(catchError((err: HttpErrorResponse) => {
         this.totpError.set(err.error?.detail ?? this.ts.translateInstant('common.error_occurred'));
         this.totpLoading.set(false);

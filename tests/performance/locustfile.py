@@ -1,10 +1,10 @@
 """
 Pruebas de Rendimiento — Locust (ISO 29119-4)
 Total: 4 tests
-  TC-PER-VL-01: E2E ≤ 5s (p95)
+  TC-PER-VL-01: E2E <= 5s (p95)
   TC-PER-VL-02: Motor Rust < 500ms (p95)
-  TC-PER-CE-01: 50 peticiones simultáneas sin timeout
-  TC-PER-CE-02: CE adicional de carga sostenida
+  TC-PER-VL-03: 50 POST /verify simultáneos -> todas 202 (RNF-06)
+  TC-PER-CE-04: Suite completa -> SonarCloud cobertura >=70% (RNF-27)
 """
 
 import os
@@ -26,7 +26,7 @@ else:
 class E2EVerificationUser(HttpUser):
     """
     TC-PER-VL-01: Usuario que simula flujo E2E completo.
-    Objetivo: p95 ≤ 5 segundos por iteración completa.
+    Objetivo: p95 <= 5 segundos por iteración completa.
     """
     host = TARGET_HOST
     wait_time = between(1, 3)
@@ -88,10 +88,9 @@ class RustEngineUser(HttpUser):
                 r.success()
 
 
-class ConcurrentLoadUser(HttpUser):
+class ConcurrentVerifyUser(HttpUser):
     """
-    TC-PER-CE-01: 50 peticiones simultáneas sin timeout.
-    TC-PER-CE-02: Carga sostenida de clase de equivalencia.
+    TC-PER-VL-03: 50 peticiones POST /verify simultáneas -> todas 202.
     """
     host = TARGET_HOST
     wait_time = between(0.1, 0.5)
@@ -103,38 +102,30 @@ class ConcurrentLoadUser(HttpUser):
             **AUTH_HEADERS,
         }
 
-    @task(2)
-    def concurrent_health(self):
-        """TC-PER-CE-01: Health check concurrente — sin timeout."""
-        with self.client.get(
-            HEALTH_ENDPOINT,
-            name="TC-PER-CE-01 health",
-            catch_response=True,
-        ) as r:
-            if r.status_code == 200:
-                r.success()
-            else:
-                r.failure(f"Health returned {r.status_code}")
-
     @task(1)
-    def sustained_releases_list(self):
-        """TC-PER-CE-02: Carga sostenida en listado de releases."""
-        with self.client.get(
-            "/api/v1/releases",
+    def concurrent_verify(self):
+        """TC-PER-VL-03: POST /verify concurrente — todas deben retornar 202."""
+        with self.client.post(
+            "/api/v1/releases/mock-uuid/verify",
+            json={},
             headers=self.headers,
-            name="TC-PER-CE-02 releases",
+            name="TC-PER-VL-03 verify",
             catch_response=True,
         ) as r:
-            status_ok = r.status_code in (200, 401, 403)
-            if status_ok:
+            if r.status_code == 202:
                 r.success()
             else:
-                r.failure(f"Releases returned {r.status_code}")
+                r.failure(f"POST /verify returned {r.status_code}, expected 202")
 
 
 @events.init.add_listener
 def on_locust_init(environment, **kwargs):
-    """Configuración de límites para pruebas de rendimiento."""
+    """Configuración de límites para pruebas de rendimiento.
+
+    TC-PER-CE-04: La cobertura >= 70% se verifica vía SonarCloud
+    (sonar-project.properties en la raíz del proyecto).
+    Esta prueba no se ejecuta con Locust sino en el pipeline CI/CD.
+    """
     if isinstance(environment.runner, MasterRunner):
         environment.runner.target_user_count = 50
         environment.runner.spawn_rate = 10

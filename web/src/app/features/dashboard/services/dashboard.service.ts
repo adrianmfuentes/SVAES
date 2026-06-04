@@ -48,13 +48,17 @@ export class DashboardService {
     return this.projects$;
   }
 
+  private static attachProjectName(projectName: string) {
+    return (releases: RecentRelease[]) => releases.map(r => ({ ...r, project_name: projectName }));
+  }
+
   getRecentReleases(): Observable<RecentRelease[]> {
     return this.getProjects().pipe(
       switchMap(projects => {
         if (!projects.length) return of([] as RecentRelease[]);
         const calls = projects.slice(0, 5).map(p =>
           this.http.get<RecentRelease[]>(`/api/v1/projects/${p.id}/releases`).pipe(
-            map(releases => releases.map(r => ({ ...r, project_name: p.name }))),
+            map(DashboardService.attachProjectName(p.name)),
             catchError(() => of([] as RecentRelease[]))
           )
         );

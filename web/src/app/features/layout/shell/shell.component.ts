@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
-import { TranslationService } from '../../../core/i18n/translation.service';
+
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../../core/components/lang-toggle/lang-toggle.component';
 

@@ -710,7 +710,7 @@ export class AccessRequestFormComponent {
 
   fieldHasError(name: string): boolean {
     const ctrl = this.requestForm.get(name);
-    return !!(ctrl && ctrl.invalid && ctrl.touched);
+    return !!(ctrl?.invalid && ctrl?.touched);
   }
 
   updateSlug(): void {
