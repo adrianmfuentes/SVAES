@@ -127,5 +127,57 @@ describe('AdminComponent', () => {
       component.relativeDate(ago);
       expect(tsMock.translateInstant).toHaveBeenCalledWith('releases.relative_days', { n: 5 });
     });
+
+    it('should return formatted date string for >30 days', () => {
+      const old = new Date(Date.now() - 60 * 86400000).toISOString();
+      const result = component.relativeDate(old);
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('loadUsers', () => {
+    it('should load users and anonymize them', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/organizations').flush([]);
+      component.setTab('users');
+      const req = httpCtrl.expectOne('/api/v1/admin/users?limit=200');
+      req.flush([{ id: 'user-abc', email: 'real@example.com', display_name: 'Real Name', role: 'OPERATOR', is_active: true }]);
+      expect(component.users()).toHaveLength(1);
+      expect(component.users()[0].email).toContain('anonymous.local');
+      expect(component.usersLoading()).toBe(false);
+    });
+
+    it('should set usersError on failure', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/organizations').flush([]);
+      component.setTab('users');
+      httpCtrl.expectOne('/api/v1/admin/users?limit=200').flush('', { status: 500, statusText: 'Error' });
+      expect(component.usersError()).toBe('admin.loading_users_error');
+      expect(component.usersLoading()).toBe(false);
+    });
+  });
+
+  describe('loadOrgs anonymization', () => {
+    it('should anonymize org names', () => {
+      component.ngOnInit();
+      const req = httpCtrl.expectOne('/api/v1/organizations');
+      req.flush([{ id: 'org-aaa', name: 'Real Org Name', slug: 'real-org' }]);
+      expect(component.orgs()[0].name).toMatch(/^Organization /);
+    });
+  });
+
+  describe('setArStatus reload', () => {
+    it('should reload access requests on status change', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/organizations').flush([]);
+      component.setTab('access-requests');
+      httpCtrl.expectOne('/api/v1/access-requests?status=PENDING').flush([]);
+      component.setArStatus('REJECTED');
+      const req = httpCtrl.expectOne('/api/v1/access-requests?status=REJECTED');
+      req.flush([]);
+      expect(component.arStatus()).toBe('REJECTED');
+      expect(component.arLoading()).toBe(false);
+    });
   });
 });

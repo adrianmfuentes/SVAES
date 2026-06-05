@@ -162,4 +162,74 @@ describe('ConnectorsComponent', () => {
       expect(component.testingId()).toBeNull();
     });
   });
+
+  describe('toggleConnector', () => {
+    beforeEach(() => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush([]);
+    });
+
+    it('should PATCH with INACTIVO when connector is active', () => {
+      const conn = { id: 'conn-1', name: 'X', type: 'gitlab', status: 'active' as const, global: false };
+      component.globalConnectors.set([conn]);
+      component.toggleConnector(conn);
+      const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1');
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body.status).toBe('INACTIVO');
+      req.flush({ id: 'conn-1', name: 'X', connector_type: 'REPO_CODIGO', status: 'INACTIVO', created_at: '2025-01-01T00:00:00Z' });
+      expect(component.globalConnectors()[0].status).toBe('inactive');
+    });
+
+    it('should PATCH with ACTIVO when connector is inactive', () => {
+      const conn = { id: 'conn-2', name: 'Y', type: 'jira', status: 'inactive' as const, global: false };
+      component.globalConnectors.set([conn]);
+      component.toggleConnector(conn);
+      const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-2');
+      expect(req.request.body.status).toBe('ACTIVO');
+      req.flush({ id: 'conn-2', name: 'Y', connector_type: 'GESTOR_TAREAS', status: 'ACTIVO', created_at: '2025-01-01T00:00:00Z' });
+      expect(component.globalConnectors()[0].status).toBe('active');
+    });
+
+    it('should handle toggle error gracefully', () => {
+      const conn = { id: 'conn-1', name: 'X', type: 'gitlab', status: 'active' as const, global: false };
+      component.globalConnectors.set([conn]);
+      component.toggleConnector(conn);
+      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1').flush(
+        {}, { status: 503, statusText: 'Error' }
+      );
+      expect(component.globalConnectors()[0].status).toBe('active');
+    });
+  });
+
+  describe('submitConnector with different types', () => {
+    beforeEach(() => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush([]);
+    });
+
+    it('should map jira type to GESTOR_TAREAS', () => {
+      component.openCreate();
+      component.connectorForm.setValue({ name: 'Jira Conn', type: 'jira', base_url: 'https://jira.io', token: 'tok' });
+      component.submitConnector();
+      const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors');
+      expect(req.request.body.connector_type).toBe('GESTOR_TAREAS');
+      req.flush({ id: 'j1', name: 'Jira Conn', connector_type: 'GESTOR_TAREAS', status: 'ACTIVO', created_at: '2025-01-01T00:00:00Z' });
+    });
+
+    it('should map unknown type to REPO_CODIGO', () => {
+      component.openCreate();
+      component.connectorForm.setValue({ name: 'Unknown', type: 'unknown_tool', base_url: 'https://x.com', token: '' });
+      component.submitConnector();
+      const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors');
+      expect(req.request.body.connector_type).toBe('REPO_CODIGO');
+      req.flush({ id: 'u1', name: 'Unknown', connector_type: 'REPO_CODIGO', status: 'ACTIVO', created_at: '2025-01-01T00:00:00Z' });
+    });
+
+    it('should not submit if form is invalid', () => {
+      component.openCreate();
+      component.connectorForm.setValue({ name: '', type: 'gitlab', base_url: '', token: '' });
+      component.submitConnector();
+      httpCtrl.expectNone('/api/v1/organizations/org-abc/connectors');
+    });
+  });
 });

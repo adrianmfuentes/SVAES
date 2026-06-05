@@ -155,5 +155,35 @@ describe('AccessRequestFormComponent', () => {
       httpCtrl.expectOne('/api/v1/access-requests').flush({}, { status: 0, statusText: '' });
       expect(component.errorMessage()).toBe('login.error.no_connection');
     });
+
+    it('should set submission error on generic server error', () => {
+      fillValid(component);
+      component.onSubmit();
+      httpCtrl.expectOne('/api/v1/access-requests').flush({}, { status: 503, statusText: 'Service Unavailable' });
+      expect(component.errorMessage()).toBe('access_request.error.submission');
+    });
+
+    it('should not submit if form is invalid (markAllAsTouched)', () => {
+      const spy = vi.spyOn(component.requestForm, 'markAllAsTouched');
+      component.onSubmit();
+      expect(spy).toHaveBeenCalled();
+      httpCtrl.expectNone('/api/v1/access-requests');
+    });
+  });
+
+  describe('handleFormSubmit step 3', () => {
+    it('should call onSubmit when on step 3 and form is valid', () => {
+      component.requestForm.patchValue({
+        requester_name: 'Jane Smith',
+        requester_email: 'jane@example.com',
+        organization_name: 'Acme Corp',
+        organization_description: 'A great company',
+      });
+      component.currentStep.set(3);
+      component.handleFormSubmit();
+      const req = httpCtrl.expectOne('/api/v1/access-requests');
+      req.flush({ id: 'req-2' });
+      expect(component.submitted()).toBe(true);
+    });
   });
 });

@@ -269,7 +269,7 @@ class TestGetVerificationHistoryUseCase:
 
         assert len(result) == 1
         assert result[0].verdict == "VALID"
-        assert result[0].summary == "all good"
+        assert result[0].summary == {"text": "all good"}
 
 
 # ── 5. UpdateReleaseUseCase ──────────────────────────────────────────────────

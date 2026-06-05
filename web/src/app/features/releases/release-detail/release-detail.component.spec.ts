@@ -193,4 +193,147 @@ describe('ReleaseDetailComponent', () => {
       expect(component.statusBadgeClass()['status-borrador']).toBe(true);
     });
   });
+
+  describe('verdictBadgeClass', () => {
+    it('should return verdict-badge-valid for VALID', () => {
+      component.latestResult.set({ ...mockResult, verdict: 'VALID' });
+      expect(component.verdictBadgeClass()['verdict-badge-valid']).toBe(true);
+    });
+
+    it('should return verdict-badge-warning for WITH_WARNINGS', () => {
+      component.latestResult.set({ ...mockResult, verdict: 'WITH_WARNINGS' });
+      expect(component.verdictBadgeClass()['verdict-badge-warning']).toBe(true);
+    });
+
+    it('should return verdict-badge-invalid for INVALID', () => {
+      component.latestResult.set({ ...mockResult, verdict: 'INVALID' });
+      expect(component.verdictBadgeClass()['verdict-badge-invalid']).toBe(true);
+    });
+
+    it('should return verdict-badge-unevaluated for null result', () => {
+      component.latestResult.set(null);
+      expect(component.verdictBadgeClass()['verdict-badge-unevaluated']).toBe(true);
+    });
+  });
+
+  describe('verdictBadgeMap / verdictLabelMap', () => {
+    it('verdictBadgeMap should delegate to ruleResultClass', () => {
+      const cls = component.verdictBadgeMap('VALID');
+      expect(cls['result-valid']).toBe(true);
+    });
+
+    it('verdictLabelMap should return VALID for VALID', () => {
+      expect(component.verdictLabelMap('VALID')).toBe('VALID');
+    });
+
+    it('verdictLabelMap should return WITH_WARNINGS for VALID_WITH_WARNINGS', () => {
+      expect(component.verdictLabelMap('VALID_WITH_WARNINGS')).toBe('WITH_WARNINGS');
+    });
+
+    it('verdictLabelMap should return NOT_EVALUATED for unknown', () => {
+      expect(component.verdictLabelMap('')).toBe('NOT_EVALUATED');
+    });
+  });
+
+  describe('launchVerification', () => {
+    it('should POST verify and reload on success', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([]);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/results').flush([mockResult]);
+
+      component.launchVerification();
+      expect(component.verifying()).toBe(true);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/verify').flush({ task_id: 't1', status: 'pending' });
+      expect(component.verifying()).toBe(false);
+      expect(component.loading()).toBe(true);
+
+      httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([]);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/results').flush([mockResult]);
+    });
+
+    it('should set error and stop verifying on failure', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([]);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/results').flush([]);
+
+      component.launchVerification();
+      httpCtrl.expectOne('/api/v1/releases/release-abc/verify').flush(
+        { detail: 'Verification failed' },
+        { status: 409, statusText: 'Conflict' }
+      );
+      expect(component.verifying()).toBe(false);
+    });
+
+    it('should not launch if already verifying', () => {
+      component.verifying.set(true);
+      component.launchVerification();
+      httpCtrl.expectNone('/api/v1/releases/release-abc/verify');
+    });
+  });
+
+  describe('loadResultDetail', () => {
+    it('should fetch and set a specific result', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([]);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/results').flush([mockResult]);
+
+      const detailResult = { ...mockResult, id: 'res-2', verdict: 'INVALID' };
+      component.loadResultDetail('res-2');
+      httpCtrl.expectOne('/api/v1/releases/release-abc/results/res-2').flush(detailResult);
+      expect(component.latestResult()?.id).toBe('res-2');
+    });
+
+    it('should not update on error', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([]);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/results').flush([mockResult]);
+
+      component.loadResultDetail('missing-res');
+      httpCtrl.expectOne('/api/v1/releases/release-abc/results/missing-res').flush(
+        {},
+        { status: 404, statusText: 'Not Found' }
+      );
+      expect(component.latestResult()?.id).toBe('res-1');
+    });
+  });
+
+  describe('ngOnInit with release load error', () => {
+    it('should handle release error gracefully', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/releases/release-abc').flush(
+        { detail: 'Not found' }, { status: 404, statusText: 'Not Found' }
+      );
+      httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([]);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/results').flush([]);
+      expect(component.release()).toBeNull();
+      expect(component.loading()).toBe(false);
+    });
+  });
+});
+
+describe('ReleaseDetailComponent — no route id', () => {
+  it('should set error and stop loading when no id param', () => {
+    const routeNoId = { paramMap: of({ get: (_key: string) => null }) };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TranslationService, useValue: tsMock },
+        { provide: ActivatedRoute, useValue: routeNoId },
+      ],
+    });
+    const fixture2 = TestBed.createComponent(ReleaseDetailComponent);
+    const comp2 = fixture2.componentInstance;
+    const httpCtrl2 = TestBed.inject(HttpTestingController);
+    comp2.ngOnInit();
+    expect(comp2.loading()).toBe(false);
+    expect(comp2.error()).toBeTruthy();
+    httpCtrl2.verify();
+  });
 });

@@ -153,4 +153,65 @@ describe('SystemComponent', () => {
       expect(component.activeUserCount()).toBe(2);
     });
   });
+
+  describe('ngOnInit', () => {
+    it('should call loadAll and set up timer subscription', () => {
+      const loadSpy = vi.spyOn(component, 'loadAll');
+      component.ngOnInit();
+      flushAll();
+      expect(loadSpy).toHaveBeenCalled();
+    });
+
+    it('ngOnDestroy should unsubscribe timer', () => {
+      component.ngOnInit();
+      flushAll();
+      expect(() => component.ngOnDestroy()).not.toThrow();
+    });
+  });
+
+  describe('buildServiceCards edge cases', () => {
+    it('should set api as down when all endpoints fail', () => {
+      component.loadAll();
+      httpCtrl.expectOne('/health').flush('', { status: 503, statusText: 'Error' });
+      httpCtrl.expectOne('/api/v1/organizations').flush('', { status: 503, statusText: 'Error' });
+      httpCtrl.expectOne('/api/v1/admin/users?limit=200').flush('', { status: 503, statusText: 'Error' });
+      httpCtrl.expectOne('/api/v1/connectors/types').flush('', { status: 503, statusText: 'Error' });
+      const services = component.services();
+      const apiSvc = services.find(s => s.name === 'system.service_api');
+      expect(apiSvc?.status).toBe('down');
+    });
+
+    it('should mark db as unknown when health ok but db fails', () => {
+      component.loadAll();
+      httpCtrl.expectOne('/health').flush(healthOk);
+      httpCtrl.expectOne('/api/v1/organizations').flush('', { status: 503, statusText: 'Error' });
+      httpCtrl.expectOne('/api/v1/admin/users?limit=200').flush('', { status: 503, statusText: 'Error' });
+      httpCtrl.expectOne('/api/v1/connectors/types').flush([mockConnType]);
+      const services = component.services();
+      const dbSvc = services.find(s => s.name === 'system.service_db');
+      expect(dbSvc?.status).toBe('unknown');
+    });
+
+    it('should mark engine as unknown when api up but connTypes fail', () => {
+      component.loadAll();
+      httpCtrl.expectOne('/health').flush(healthOk);
+      httpCtrl.expectOne('/api/v1/organizations').flush([mockOrg]);
+      httpCtrl.expectOne('/api/v1/admin/users?limit=200').flush([mockUser]);
+      httpCtrl.expectOne('/api/v1/connectors/types').flush('', { status: 503, statusText: 'Error' });
+      const services = component.services();
+      const engSvc = services.find(s => s.name === 'system.service_engine');
+      expect(engSvc?.status).toBe('unknown');
+    });
+  });
+
+  describe('confirmingReload', () => {
+    it('should be set to false after executeReload completes', () => {
+      component.loadAll();
+      flushAll();
+      component.confirmingReload.set(true);
+      component.executeReload();
+      httpCtrl.expectOne('/api/v1/admin/rules/reload').flush({ success: true, rules_loaded: 5, message: 'ok' });
+      expect(component.confirmingReload()).toBe(false);
+    });
+  });
 });

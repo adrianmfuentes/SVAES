@@ -149,4 +149,74 @@ describe('LoginComponent', () => {
       expect(component.totpForm.value.code).toBeNull();
     });
   });
+
+  describe('parseLoginErrorKey via onSubmit', () => {
+    beforeEach(() => {
+      component.loginForm.setValue({ email: 'x@x.com', password: 'pass' });
+    });
+
+    it('should set pending_activation error for 403', () => {
+      authMock.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+      component.onSubmit();
+      expect(component.errorKey).toBe('login.error.pending_activation');
+    });
+
+    it('should set too_many error for 429', () => {
+      authMock.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 429 })));
+      component.onSubmit();
+      expect(component.errorKey).toBe('login.error.too_many');
+    });
+
+    it('should set server error for 502', () => {
+      authMock.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 502 })));
+      component.onSubmit();
+      expect(component.errorKey).toMatch(/login\.error\./);
+    });
+
+    it('should set server error for 504', () => {
+      authMock.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 504 })));
+      component.onSubmit();
+      expect(component.errorKey).toMatch(/login\.error\./);
+    });
+
+    it('should use 401 detail message when short', () => {
+      authMock.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401, error: { detail: 'Cuenta desactivada' } })));
+      component.onSubmit();
+      expect(component.errorKey).toBe('Cuenta desactivada');
+    });
+
+    it('should return wrong_credentials for 401 without detail', () => {
+      authMock.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401, error: {} })));
+      component.onSubmit();
+      expect(component.errorKey).toBe('login.error.wrong_credentials');
+    });
+  });
+
+  describe('onSubmitTotp errors', () => {
+    it('should set error on verify2fa failure', () => {
+      authMock.verify2fa.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401, error: {} })));
+      (component as any).pendingTotpToken = 'pending-totp';
+      component.totpForm.setValue({ code: '999999' });
+      component.onSubmitTotp();
+      expect(authMock.verify2fa).toHaveBeenCalled();
+      expect(component.errorKey).toMatch(/login\.error\./);
+    });
+
+    it('should not call verify2fa when totpForm invalid', () => {
+      (component as any).pendingTotpToken = 'pending-totp';
+      component.totpForm.setValue({ code: '' });
+      component.onSubmitTotp();
+      expect(authMock.verify2fa).not.toHaveBeenCalled();
+    });
+
+    it('should navigate to /app/system for admin after TOTP', () => {
+      const navSpy = vi.spyOn(router, 'navigate');
+      authMock.isAdmin.mockReturnValue(true);
+      authMock.verify2fa.mockReturnValue(of({ access_token: 'tok', refresh_token: 'ref' }));
+      (component as any).pendingTotpToken = 'pending-totp';
+      component.totpForm.setValue({ code: '123456' });
+      component.onSubmitTotp();
+      expect(navSpy).toHaveBeenCalledWith(['/app/system']);
+    });
+  });
 });
