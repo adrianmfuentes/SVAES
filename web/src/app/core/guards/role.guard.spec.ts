@@ -3,6 +3,10 @@ import { ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/ro
 import { roleGuard } from './role.guard';
 import { AuthService } from '../services/auth.service';
 
+function createRoute(data: Record<string, unknown>): ActivatedRouteSnapshot {
+  return { data } as ActivatedRouteSnapshot;
+}
+
 describe('roleGuard', () => {
   let authService: AuthService;
   let router: Router;
@@ -27,10 +31,6 @@ describe('roleGuard', () => {
     router = TestBed.inject(Router);
     state = {} as RouterStateSnapshot;
   });
-
-  function createRoute(data: Record<string, unknown>): ActivatedRouteSnapshot {
-    return { data } as ActivatedRouteSnapshot;
-  }
 
   it('TC-UNI-FE-GRD-04: U1/VIEWER en ruta ADMIN -> canActivate=false, /forbidden', () => {
     console.log('TC-UNI-FE-GRD-04 PASS');

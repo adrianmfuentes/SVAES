@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, inject, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, inject, provideAppInitializer } from '@angular/core';
 import { provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
@@ -8,9 +8,9 @@ import { timeoutInterceptor } from './core/interceptors/timeout.interceptor';
 import { TranslationService } from './core/i18n/translation.service';
 import { firstValueFrom } from 'rxjs';
 
-function initializeTranslations(): () => Promise<void> {
+function initializeTranslations(): Promise<void> {
   const ts = inject(TranslationService);
-  return () => firstValueFrom(ts.loadTranslationsWithCache(ts.currentLang)).then(() => undefined);
+  return firstValueFrom(ts.loadTranslationsWithCache(ts.currentLang)).then(() => undefined);
 }
 
 export const appConfig: ApplicationConfig = {
@@ -18,10 +18,6 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withPreloading(PreloadAllModules)),
     provideHttpClient(withInterceptors([jwtInterceptor, errorInterceptor, timeoutInterceptor])),
-    {
-      provide: APP_INITIALIZER,
-      useFactory: initializeTranslations,
-      multi: true,
-    },
+    provideAppInitializer(initializeTranslations),
   ],
 };

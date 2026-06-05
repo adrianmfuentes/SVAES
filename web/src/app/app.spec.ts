@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { App } from './app';
 import { TranslationService } from './core/i18n/translation.service';
 
