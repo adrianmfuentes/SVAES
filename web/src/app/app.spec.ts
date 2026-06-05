@@ -1,10 +1,22 @@
 import { TestBed } from '@angular/core/testing';
+import { of, Subject } from 'rxjs';
 import { App } from './app';
+import { TranslationService } from './core/i18n/translation.service';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [
+        {
+          provide: TranslationService,
+          useValue: {
+            currentLang: 'es',
+            lang$: new Subject<string>().asObservable(),
+            translateInstant: () => '',
+          },
+        },
+      ],
     }).compileComponents();
   });
 
