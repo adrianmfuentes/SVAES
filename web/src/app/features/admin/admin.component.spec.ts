@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';
@@ -21,10 +21,12 @@ const authMock = {
 
 describe('AdminComponent', () => {
   let component: AdminComponent;
+  let fixture: ComponentFixture<AdminComponent>;
   let httpCtrl: HttpTestingController;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -35,12 +37,15 @@ describe('AdminComponent', () => {
       ],
     });
 
-    const fixture = TestBed.createComponent(AdminComponent);
+    fixture = TestBed.createComponent(AdminComponent);
     component = fixture.componentInstance;
     httpCtrl = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => httpCtrl.verify());
+  afterEach(() => {
+    httpCtrl?.verify();
+    TestBed.resetTestingModule();
+  });
 
   describe('ngOnInit', () => {
     it('should load organizations on init', () => {
@@ -178,6 +183,93 @@ describe('AdminComponent', () => {
       req.flush([]);
       expect(component.arStatus()).toBe('REJECTED');
       expect(component.arLoading()).toBe(false);
+    });
+  });
+
+  describe('loadAccessRequests error', () => {
+    it('should set arError when access requests fail to load', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/organizations').flush([]);
+      component.setTab('access-requests');
+      httpCtrl.expectOne('/api/v1/access-requests?status=PENDING').flush(
+        '',
+        { status: 500, statusText: 'Error' }
+      );
+      expect(component.arError()).toBe('Error loading access requests');
+      expect(component.arLoading()).toBe(false);
+    });
+  });
+
+  describe('template rendering', () => {
+    const mockOrgs = [{ id: 'org-1', name: 'Org A', slug: 'org-a' }];
+    const mockUsers = [{ id: 'u1', email: 'a@b.com', display_name: 'User', role: 'OPERATOR', is_active: true }];
+    const mockAR = [{ id: 'ar-1', requester_name: 'Jane', requester_email: 'j@example.com', organization_name: 'Org', status: 'PENDING' as const, created_at: new Date().toISOString() }];
+
+    const renderTemplate = (flushOrgLoad = true) => {
+      fixture.detectChanges();
+      if (flushOrgLoad) {
+        httpCtrl.expectOne('/api/v1/organizations').flush(mockOrgs);
+      }
+    };
+
+    it('should render organizations tab (default)', () => {
+      component.orgsLoading.set(false);
+      component.orgs.set(mockOrgs);
+      renderTemplate();
+    });
+
+    it('should render organizations tab loading state', () => {
+      component.orgsLoading.set(true);
+      renderTemplate();
+    });
+
+    it('should render organizations tab error state', () => {
+      component.orgsLoading.set(false);
+      component.orgsError.set('Failed to load');
+      renderTemplate();
+    });
+
+    it('should render users tab', () => {
+      component.activeTab.set('users');
+      component.usersLoading.set(false);
+      component.users.set(mockUsers);
+      renderTemplate();
+    });
+
+    it('should render users tab error', () => {
+      component.activeTab.set('users');
+      component.usersLoading.set(false);
+      component.usersError.set('Error');
+      renderTemplate();
+    });
+
+    it('should render access-requests tab with data', () => {
+      component.activeTab.set('access-requests');
+      component.arLoading.set(false);
+      component.accessRequests.set(mockAR);
+      renderTemplate();
+    });
+
+    it('should render access-requests tab error and success', () => {
+      component.activeTab.set('access-requests');
+      component.arLoading.set(false);
+      component.arError.set('Load failed');
+      component.arSuccess.set('Done');
+      renderTemplate();
+    });
+
+    it('should render empty states', () => {
+      component.orgsLoading.set(false);
+      component.orgs.set([]);
+      renderTemplate();
+      component.activeTab.set('users');
+      component.usersLoading.set(false);
+      component.users.set([]);
+      renderTemplate(false);
+      component.activeTab.set('access-requests');
+      component.arLoading.set(false);
+      component.accessRequests.set([]);
+      renderTemplate(false);
     });
   });
 });

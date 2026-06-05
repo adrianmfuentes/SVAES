@@ -8,6 +8,7 @@ describe('POST /releases — HTTP Service Layer', () => {
   let controller: HttpTestingController;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -16,7 +17,8 @@ describe('POST /releases — HTTP Service Layer', () => {
   });
 
   afterEach(() => {
-    controller.verify();
+    controller?.verify();
+    TestBed.resetTestingModule();
   });
 
   it('TC-UNI-FE-SVC-01: POST /releases 201 -> Observable emite Release, Bearer presente', async () => {

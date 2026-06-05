@@ -14,6 +14,7 @@ describe('RecentReleasesTableComponent', () => {
   let component: RecentReleasesTableComponent;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -23,6 +24,10 @@ describe('RecentReleasesTableComponent', () => {
 
     const fixture = TestBed.createComponent(RecentReleasesTableComponent);
     component = fixture.componentInstance;
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
   });
 
   describe('shortId', () => {

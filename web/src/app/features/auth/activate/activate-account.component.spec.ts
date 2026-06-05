@@ -25,6 +25,7 @@ describe('ActivateAccountComponent', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     routeMock.snapshot.queryParamMap.get.mockReturnValue(null);
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -40,7 +41,10 @@ describe('ActivateAccountComponent', () => {
     httpCtrl = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => httpCtrl.verify());
+  afterEach(() => {
+    httpCtrl?.verify();
+    TestBed.resetTestingModule();
+  });
 
   describe('ngOnInit', () => {
     it('should stay on step 1 when no token in query params', () => {

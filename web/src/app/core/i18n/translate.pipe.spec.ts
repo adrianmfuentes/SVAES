@@ -10,6 +10,7 @@ describe('TranslatePipe', () => {
   let translateInstantSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     lang$ = new BehaviorSubject('es');
     translateInstantSpy = vi.fn();
 
@@ -34,7 +35,8 @@ describe('TranslatePipe', () => {
   });
 
   afterEach(() => {
-    pipe.ngOnDestroy();
+    pipe?.ngOnDestroy();
+    TestBed.resetTestingModule();
   });
 
   it('should call translateInstant and return translated value', () => {

@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, throwError } from 'rxjs';
@@ -27,10 +27,12 @@ const mockUser = { id: 'u1', display_name: 'Test User', email: 'test@example.com
 
 describe('ProfileComponent', () => {
   let component: ProfileComponent;
+  let fixture: ComponentFixture<ProfileComponent>;
   let httpCtrl: HttpTestingController;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -41,12 +43,15 @@ describe('ProfileComponent', () => {
       ],
     });
 
-    const fixture = TestBed.createComponent(ProfileComponent);
+    fixture = TestBed.createComponent(ProfileComponent);
     component = fixture.componentInstance;
     httpCtrl = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => httpCtrl.verify());
+  afterEach(() => {
+    httpCtrl?.verify();
+    TestBed.resetTestingModule();
+  });
 
   describe('ngOnInit', () => {
     it('should load profile and API keys', () => {
@@ -318,6 +323,231 @@ describe('ProfileComponent', () => {
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       expect(comp2.keysLoading()).toBe(false);
       authMock.getUser.mockReturnValue({ id: 'u1', organization_id: 'org-1' });
+    });
+
+    it('should handle api-keys load error gracefully', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
+      httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush(
+        '',
+        { status: 500, statusText: 'Error' }
+      );
+      expect(component.apiKeys()).toEqual([]);
+      expect(component.keysLoading()).toBe(false);
+    });
+  });
+
+  describe('savePassword invalid form', () => {
+    beforeEach(() => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
+      httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+    });
+
+    it('should not submit if pwForm is invalid', () => {
+      component.savePassword();
+      httpCtrl.expectNone('/api/v1/users/me/password');
+    });
+  });
+
+  describe('createKey edge cases', () => {
+    beforeEach(() => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
+      httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+    });
+
+    it('should not submit if keyForm is invalid', () => {
+      component.keyForm.setValue({ name: '', expires_in_days: null });
+      component.createKey();
+      httpCtrl.expectNone('/api/v1/users/u1/api-keys');
+    });
+
+    it('should include expires_in_days in body when set', () => {
+      component.keyForm.setValue({ name: 'Expiring Key', expires_in_days: 30 });
+      component.createKey();
+      const req = httpCtrl.expectOne('/api/v1/users/u1/api-keys');
+      expect(req.request.body).toMatchObject({ name: 'Expiring Key', expires_in_days: 30 });
+      req.flush({ id: 'k2', name: 'Expiring Key', key: 'new-secret' });
+      expect(component.newKeyValue()).toBe('new-secret');
+    });
+
+    it('should do nothing when no userId on createKey', () => {
+      authMock.getUser.mockReturnValue(null);
+      component.keyForm.setValue({ name: 'Key', expires_in_days: null });
+      component.createKey();
+      httpCtrl.expectNone('/api/v1/users/u1/api-keys');
+      authMock.getUser.mockReturnValue({ id: 'u1', organization_id: 'org-1' });
+    });
+  });
+
+  describe('revokeKey edge cases', () => {
+    beforeEach(() => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
+      httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+    });
+
+    it('should clear newKeyValue when revoking', () => {
+      component.apiKeys.set([{ id: 'k1', name: 'Key1', prefix: 'abc', is_active: true, expires_at: null, created_at: '2025-01-01T00:00:00Z', last_used_at: null }]);
+      component.newKeyValue.set('some-raw-key');
+      component.revokeKey('k1');
+      httpCtrl.expectOne('/api/v1/users/u1/api-keys/k1').flush({});
+      expect(component.newKeyValue()).toBeNull();
+    });
+
+    it('should do nothing when no userId on revokeKey', () => {
+      authMock.getUser.mockReturnValue(null);
+      component.revokeKey('k1');
+      httpCtrl.expectNone('/api/v1/users/u1/api-keys/k1');
+      authMock.getUser.mockReturnValue({ id: 'u1', organization_id: 'org-1' });
+    });
+  });
+
+  describe('copyKey', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('should do nothing when no key present', () => {
+      const writeText = vi.fn();
+      vi.stubGlobal('navigator', { clipboard: { writeText } });
+      component.newKeyValue.set(null);
+      component.copyKey();
+      expect(writeText).not.toHaveBeenCalled();
+    });
+
+    it('should copy key to clipboard and set keyCopied', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      vi.stubGlobal('navigator', { clipboard: { writeText } });
+      component.newKeyValue.set('the-raw-api-key');
+      component.copyKey();
+      expect(writeText).toHaveBeenCalledWith('the-raw-api-key');
+      await writeText.mock.results[0].value;
+      expect(component.keyCopied()).toBe(true);
+    });
+  });
+
+  describe('saveName fallback error message', () => {
+    beforeEach(() => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
+      httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+    });
+
+    it('should use fallback message when error has no detail', () => {
+      component.nameForm.setValue({ display_name: 'X' });
+      component.saveName();
+      httpCtrl.expectOne('/api/v1/users/me').flush({}, { status: 500, statusText: 'Error' });
+      expect(component.nameSaveError()).toBe('common.error_saving');
+    });
+  });
+
+  describe('template rendering', () => {
+    const renderTemplate = (flushInitRequests = true) => {
+      fixture.detectChanges();
+      if (flushInitRequests) {
+        httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
+        httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      }
+    };
+
+    it('should render loading skeleton', () => {
+      component.loading.set(true);
+      renderTemplate();
+    });
+
+    it('should render profile with org (hasOrg=true, isAdmin=false)', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.hasOrg.set(true);
+      component.isAdmin.set(false);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      renderTemplate();
+    });
+
+    it('should render org creation form (hasOrg=false, isAdmin=false)', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.hasOrg.set(false);
+      component.isAdmin.set(false);
+      component.orgCreated.set(false);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      renderTemplate();
+    });
+
+    it('should render org created success state', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.hasOrg.set(false);
+      component.isAdmin.set(false);
+      component.orgCreated.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      renderTemplate();
+    });
+
+    it('should render API keys table and new-key banner', () => {
+      const key = { id: 'k1', name: 'Key', prefix: 'abc', is_active: true, expires_at: '2026-01-01T00:00:00Z', created_at: '2025-01-01T00:00:00Z', last_used_at: null };
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.hasOrg.set(true);
+      component.isAdmin.set(true);
+      component.apiKeys.set([key]);
+      component.keysLoading.set(false);
+      component.newKeyValue.set('raw-key-value');
+      renderTemplate();
+    });
+
+    it('should render keys skeleton and empty state', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.hasOrg.set(true);
+      component.isAdmin.set(false);
+      component.apiKeys.set([]);
+      component.keysLoading.set(true);
+      renderTemplate();
+      component.keysLoading.set(false);
+      renderTemplate(false);
+    });
+
+    it('should render TOTP setup panel', () => {
+      component.loading.set(false);
+      component.profile.set({ ...mockUser, totp_enabled: false });
+      component.hasOrg.set(true);
+      component.isAdmin.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      component.totpSetupData.set({ secret: 'ABCD1234', qr_data_url: 'data:image/png;base64,abc', totp_uri: 'otpauth://totp/Example:alice@example.com?secret=ABCD1234&issuer=Example' });
+      renderTemplate();
+    });
+
+    it('should render TOTP enabled (disable form)', () => {
+      component.loading.set(false);
+      component.profile.set({ ...mockUser, totp_enabled: true });
+      component.hasOrg.set(true);
+      component.isAdmin.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      renderTemplate();
+    });
+
+    it('should render name save and pw save confirmation states', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.hasOrg.set(true);
+      component.isAdmin.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      component.nameSaved.set(true);
+      component.pwSaved.set(true);
+      component.nameSaveError.set('some error');
+      component.pwSaveError.set('pw error');
+      component.orgError.set('org error');
+      component.keyCreateError.set('key error');
+      component.totpError.set('totp error');
+      component.totpSuccess.set(true);
+      renderTemplate();
     });
   });
 });

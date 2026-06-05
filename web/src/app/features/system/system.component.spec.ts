@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';
@@ -19,6 +19,7 @@ const mockConnType = { type: 'REPO_CODIGO' };
 
 describe('SystemComponent', () => {
   let component: SystemComponent;
+  let fixture: ComponentFixture<SystemComponent>;
   let httpCtrl: HttpTestingController;
 
   const flushAll = () => {
@@ -30,6 +31,7 @@ describe('SystemComponent', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -39,14 +41,15 @@ describe('SystemComponent', () => {
       ],
     });
 
-    const fixture = TestBed.createComponent(SystemComponent);
+    fixture = TestBed.createComponent(SystemComponent);
     component = fixture.componentInstance;
     httpCtrl = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => {
-    component.ngOnDestroy();
-    httpCtrl.verify();
+    component?.ngOnDestroy();
+    httpCtrl?.verify();
+    TestBed.resetTestingModule();
   });
 
   describe('loadAll', () => {
@@ -212,6 +215,55 @@ describe('SystemComponent', () => {
       component.executeReload();
       httpCtrl.expectOne('/api/v1/admin/rules/reload').flush({ success: true, rules_loaded: 5, message: 'ok' });
       expect(component.confirmingReload()).toBe(false);
+    });
+  });
+
+  describe('template rendering', () => {
+    const upServices = [
+      { name: 'system.service_api', status: 'up' as const, detail: 'v1.0.0' },
+      { name: 'system.service_db', status: 'up' as const },
+      { name: 'system.service_engine', status: 'up' as const },
+      { name: 'system.service_frontend', status: 'up' as const },
+    ];
+
+    const renderTemplate = () => {
+      vi.spyOn(component, 'ngOnInit').mockImplementation(() => {});
+      fixture.detectChanges();
+      flushAll();
+    };
+
+    it('should render loading state', () => {
+      component.loading.set(true);
+      renderTemplate();
+    });
+
+    it('should render loaded state with services up', () => {
+      component.loading.set(false);
+      component.services.set(upServices);
+      component.orgs.set([{ id: 'o1', name: 'Org', slug: 'org' }]);
+      component.users.set([{ id: 'u1', role: 'OPERATOR', is_active: true, email: 'u1@example.com', display_name: 'User One' }]);
+      component.apiVersion.set('1.2.3');
+      renderTemplate();
+    });
+
+    it('should render services in down and unknown states', () => {
+      component.loading.set(false);
+      component.services.set([
+        { name: 'system.service_api', status: 'down' as const },
+        { name: 'system.service_db', status: 'unknown' as const },
+        { name: 'system.service_engine', status: 'down' as const },
+        { name: 'system.service_frontend', status: 'up' as const },
+      ]);
+      renderTemplate();
+    });
+
+    it('should render confirmingReload and reloadResult states', () => {
+      component.loading.set(false);
+      component.services.set(upServices);
+      component.confirmingReload.set(true);
+      component.reloadResult.set({ success: true, rules_loaded: 5, message: 'ok' });
+      component.reloadError.set('Engine unavailable');
+      renderTemplate();
     });
   });
 });

@@ -14,6 +14,7 @@ describe('SuccessRateChartComponent', () => {
   let component: SuccessRateChartComponent;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       schemas: [NO_ERRORS_SCHEMA],
       providers: [
@@ -23,6 +24,10 @@ describe('SuccessRateChartComponent', () => {
 
     const fixture = TestBed.createComponent(SuccessRateChartComponent);
     component = fixture.componentInstance;
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
   });
 
   it('should create', () => {

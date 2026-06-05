@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';
@@ -27,10 +27,12 @@ const mockReleases = [
 
 describe('ReleasesComponent', () => {
   let component: ReleasesComponent;
+  let fixture: ComponentFixture<ReleasesComponent>;
   let httpCtrl: HttpTestingController;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -41,12 +43,15 @@ describe('ReleasesComponent', () => {
       ],
     });
 
-    const fixture = TestBed.createComponent(ReleasesComponent);
+    fixture = TestBed.createComponent(ReleasesComponent);
     component = fixture.componentInstance;
     httpCtrl = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => httpCtrl.verify());
+  afterEach(() => {
+    httpCtrl?.verify();
+    TestBed.resetTestingModule();
+  });
 
   describe('ngOnInit / HTTP', () => {
     it('should load releases on init', () => {
@@ -148,6 +153,49 @@ describe('ReleasesComponent', () => {
       expect(component.page()).toBe(1);
       component.nextPage();
       expect(component.page()).toBe(1);
+    });
+  });
+
+  describe('template rendering', () => {
+    const renderTemplate = () => {
+      vi.spyOn(component, 'ngOnInit').mockImplementation(() => {});
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/releases').flush([]);
+    };
+
+    it('should render loading skeleton', () => {
+      component.loading.set(true);
+      renderTemplate();
+    });
+
+    it('should render error state', () => {
+      component.loading.set(false);
+      component.error.set('releases.loading_error');
+      renderTemplate();
+    });
+
+    it('should render releases list with various verdicts', () => {
+      component.loading.set(false);
+      component.releases.set(mockReleases);
+      component.filtered.set(mockReleases);
+      renderTemplate();
+    });
+
+    it('should render empty state', () => {
+      component.loading.set(false);
+      component.releases.set([]);
+      component.filtered.set([]);
+      renderTemplate();
+    });
+
+    it('should render with pagination', () => {
+      const many = Array.from({ length: 45 }, (_, i) => ({
+        id: `r${i}`, name: `release-${i}`, verdict: 'VALID', created_at: '2025-01-01T00:00:00Z',
+      }));
+      component.loading.set(false);
+      component.releases.set(many);
+      component.filtered.set(many);
+      renderTemplate();
     });
   });
 });

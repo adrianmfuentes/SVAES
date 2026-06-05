@@ -26,6 +26,7 @@ describe('AuthService', () => {
   let router: Router;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     clearAccessToken();
     localStorage.clear();
 
@@ -48,8 +49,9 @@ describe('AuthService', () => {
   });
 
   afterEach(() => {
-    controller.verify();
+    controller?.verify();
     localStorage.clear();
+    TestBed.resetTestingModule();
   });
 
   describe('decodeToken', () => {

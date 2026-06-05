@@ -78,6 +78,13 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "reporters": ["verbose"]
+          },
+          "configurations": {
+            "ci": {
+              "coverage": true,
+              "coverageReporters": ["lcov", "text-summary"],
+              "coverageExclude": ["**/*.gen.ts", "src/main.ts"]
+            }
           }
         }
       }

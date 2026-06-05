@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
@@ -27,9 +27,11 @@ const mockResult = {
 
 describe('ReleaseDetailComponent', () => {
   let component: ReleaseDetailComponent;
+  let fixture: ComponentFixture<ReleaseDetailComponent>;
   let httpCtrl: HttpTestingController;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     vi.clearAllMocks();
     TestBed.configureTestingModule({
       providers: [
@@ -41,12 +43,15 @@ describe('ReleaseDetailComponent', () => {
       ],
     });
 
-    const fixture = TestBed.createComponent(ReleaseDetailComponent);
+    fixture = TestBed.createComponent(ReleaseDetailComponent);
     component = fixture.componentInstance;
     httpCtrl = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => httpCtrl.verify());
+  afterEach(() => {
+    httpCtrl?.verify();
+    TestBed.resetTestingModule();
+  });
 
   describe('ngOnInit', () => {
     it('should load release, artifacts, and results', () => {
@@ -312,6 +317,72 @@ describe('ReleaseDetailComponent', () => {
       httpCtrl.expectOne('/api/v1/releases/release-abc/results').flush([]);
       expect(component.release()).toBeNull();
       expect(component.loading()).toBe(false);
+    });
+  });
+
+  describe('template rendering', () => {
+    const mockRuleResult = { rule_id: 'r1', rule_name: 'Rule', verdict: 'VALID', evidence: '' as string, message: '', result: 'PASSED' };
+    const fullResult = { ...mockResult, verdict: 'VALID', rule_results: [mockRuleResult], summary: { VALID: 1 } };
+    const renderTemplate = () => {
+      fixture.detectChanges();
+      const requests = httpCtrl.match(() => true);
+      if (requests.length > 0) {
+        requests[0]?.flush(mockRelease);
+        requests[1]?.flush([]);
+        requests[2]?.flush([]);
+      }
+    };
+
+    it('should render loading skeleton', () => {
+      component.loading.set(true);
+      renderTemplate();
+    });
+
+    it('should render error state', () => {
+      component.loading.set(false);
+      component.error.set('Release not found');
+      renderTemplate();
+    });
+
+    it('should render loaded release with VALID result', () => {
+      component.loading.set(false);
+      component.release.set(mockRelease);
+      component.latestResult.set(fullResult);
+      component.artifacts.set([]);
+      component.verificationHistory.set([fullResult]);
+      component.verifying.set(false);
+      renderTemplate();
+    });
+
+    it('should render loaded release with no result (unevaluated)', () => {
+      component.loading.set(false);
+      component.release.set(mockRelease);
+      component.latestResult.set(null);
+      component.artifacts.set([{ id: 'a1', connector_implementation: 'JIRA', artifact_type: 'TAREA', external_ref: 'REF-1', release_id: 'r1', connector_instance_id: 'ci1' }]);
+      renderTemplate();
+    });
+
+    it('should render verifying state', () => {
+      component.loading.set(false);
+      component.release.set(mockRelease);
+      component.latestResult.set(null);
+      component.verifying.set(true);
+      renderTemplate();
+    });
+
+    it('should render history with expanded rule', () => {
+      component.loading.set(false);
+      component.release.set(mockRelease);
+      component.latestResult.set({ ...fullResult, verdict: 'INVALID' });
+      component.expandedRule.set(0);
+      renderTemplate();
+    });
+
+    it('should render WITH_WARNINGS verdict', () => {
+      component.loading.set(false);
+      component.release.set(mockRelease);
+      component.latestResult.set({ ...fullResult, verdict: 'WITH_WARNINGS' });
+      renderTemplate();
     });
   });
 });

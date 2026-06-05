@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';
@@ -23,10 +23,12 @@ const mockProfile = { id: 'p1', name: 'Profile A', description: 'Desc', rules_co
 
 describe('ProfilesComponent', () => {
   let component: ProfilesComponent;
+  let fixture: ComponentFixture<ProfilesComponent>;
   let httpCtrl: HttpTestingController;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -37,12 +39,15 @@ describe('ProfilesComponent', () => {
       ],
     });
 
-    const fixture = TestBed.createComponent(ProfilesComponent);
+    fixture = TestBed.createComponent(ProfilesComponent);
     component = fixture.componentInstance;
     httpCtrl = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => httpCtrl.verify());
+  afterEach(() => {
+    httpCtrl?.verify();
+    TestBed.resetTestingModule();
+  });
 
   describe('ngOnInit', () => {
     it('should load profiles on init', () => {
@@ -136,6 +141,53 @@ describe('ProfilesComponent', () => {
       httpCtrl.expectOne(`/api/v1/profiles/${mockProfile.id}`).flush({});
       expect(component.orgProfiles()).toHaveLength(0);
       expect(component.deletingId()).toBeNull();
+    });
+  });
+
+  describe('template rendering', () => {
+    const renderTemplate = () => {
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-abc/profiles').flush([]);
+    };
+
+    it('should render loading skeleton', () => {
+      component.loading.set(true);
+      renderTemplate();
+    });
+
+    it('should render error state', () => {
+      component.loading.set(false);
+      component.error.set('profiles.loading_error');
+      renderTemplate();
+    });
+
+    it('should render profiles list', () => {
+      component.loading.set(false);
+      component.orgProfiles.set([mockProfile]);
+      component.templates.set([{ ...mockProfile, id: 'tmpl-1', is_template: true }]);
+      renderTemplate();
+    });
+
+    it('should render empty state', () => {
+      component.loading.set(false);
+      component.orgProfiles.set([]);
+      component.templates.set([]);
+      renderTemplate();
+    });
+
+    it('should render create modal', () => {
+      component.loading.set(false);
+      component.showModal.set(true);
+      component.editingProfile.set(null);
+      renderTemplate();
+    });
+
+    it('should render edit modal with error', () => {
+      component.loading.set(false);
+      component.showModal.set(true);
+      component.editingProfile.set(mockProfile);
+      component.modalError.set('Already exists');
+      renderTemplate();
     });
   });
 });

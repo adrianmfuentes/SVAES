@@ -42,6 +42,9 @@ dev = [
 asyncio_mode = "auto"
 testpaths = ["../tests"]
 pythonpath = ["."]
+filterwarnings = [
+    "ignore:The engine provided as bind produced a connection that is already in a transaction.*:sqlalchemy.exc.SAWarning",
+]
 
 [dependency-groups]
 dev = [

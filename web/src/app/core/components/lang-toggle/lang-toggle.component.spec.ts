@@ -14,6 +14,7 @@ describe('LangToggleComponent', () => {
   };
 
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     tsMock = {
       currentLang: 'es',
       setLanguage: vi.fn(),
@@ -31,6 +32,10 @@ describe('LangToggleComponent', () => {
     fixture = TestBed.createComponent(LangToggleComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
   });
 
   it('TC-UNI-FE-COM-01: should create the component', () => {

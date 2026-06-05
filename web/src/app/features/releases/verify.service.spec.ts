@@ -8,6 +8,7 @@ describe('Verify Release — Verification Flow', () => {
   let controller: HttpTestingController;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -16,7 +17,8 @@ describe('Verify Release — Verification Flow', () => {
   });
 
   afterEach(() => {
-    controller.verify();
+    controller?.verify();
+    TestBed.resetTestingModule();
   });
 
   it('TC-UNI-FE-NGR-01: API 202+taskId -> verifyReleaseSuccess con taskId', async () => {

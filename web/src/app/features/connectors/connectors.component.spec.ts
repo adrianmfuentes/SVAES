@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';
@@ -28,10 +28,12 @@ const apiConnector = {
 
 describe('ConnectorsComponent', () => {
   let component: ConnectorsComponent;
+  let fixture: ComponentFixture<ConnectorsComponent>;
   let httpCtrl: HttpTestingController;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -42,12 +44,15 @@ describe('ConnectorsComponent', () => {
       ],
     });
 
-    const fixture = TestBed.createComponent(ConnectorsComponent);
+    fixture = TestBed.createComponent(ConnectorsComponent);
     component = fixture.componentInstance;
     httpCtrl = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => httpCtrl.verify());
+  afterEach(() => {
+    httpCtrl?.verify();
+    TestBed.resetTestingModule();
+  });
 
   describe('ngOnInit', () => {
     it('should load connectors for the user org', () => {
@@ -230,6 +235,59 @@ describe('ConnectorsComponent', () => {
       component.connectorForm.setValue({ name: '', type: 'gitlab', base_url: '', token: '' });
       component.submitConnector();
       httpCtrl.expectNone('/api/v1/organizations/org-abc/connectors');
+    });
+  });
+
+  describe('template rendering', () => {
+    const mockConn = { id: 'c1', name: 'GitLab', type: 'gitlab', status: 'active' as const, global: false };
+
+    const renderTemplate = () => {
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush([]);
+    };
+
+    it('should render loading skeleton', () => {
+      component.loading.set(true);
+      renderTemplate();
+    });
+
+    it('should render error state', () => {
+      component.loading.set(false);
+      component.error.set('connectors.loading_error');
+      renderTemplate();
+    });
+
+    it('should render list of connectors', () => {
+      component.loading.set(false);
+      component.globalConnectors.set([mockConn]);
+      renderTemplate();
+    });
+
+    it('should render empty state', () => {
+      component.loading.set(false);
+      component.globalConnectors.set([]);
+      renderTemplate();
+    });
+
+    it('should render modal for creating connector', () => {
+      component.loading.set(false);
+      component.showModal.set(true);
+      component.editingConnector.set(null);
+      renderTemplate();
+    });
+
+    it('should render modal for editing connector with error', () => {
+      component.loading.set(false);
+      component.showModal.set(true);
+      component.editingConnector.set(mockConn);
+      component.modalError.set('Token invalid');
+      renderTemplate();
+    });
+
+    it('should render connector with inactive status', () => {
+      component.loading.set(false);
+      component.globalConnectors.set([{ ...mockConn, status: 'inactive' as const }]);
+      renderTemplate();
     });
   });
 });

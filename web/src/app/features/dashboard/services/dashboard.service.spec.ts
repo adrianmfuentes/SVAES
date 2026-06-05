@@ -9,6 +9,7 @@ describe('DashboardService', () => {
   let controller: HttpTestingController;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting(), DashboardService],
     });
@@ -17,7 +18,8 @@ describe('DashboardService', () => {
   });
 
   afterEach(() => {
-    controller.verify();
+    controller?.verify();
+    TestBed.resetTestingModule();
   });
 
   describe('getMetrics', () => {

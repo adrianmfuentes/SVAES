@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -19,11 +19,13 @@ const mockProjects = [
 
 describe('ReleaseNewComponent', () => {
   let component: ReleaseNewComponent;
+  let fixture: ComponentFixture<ReleaseNewComponent>;
   let httpCtrl: HttpTestingController;
   let router: Router;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -33,13 +35,16 @@ describe('ReleaseNewComponent', () => {
       ],
     });
 
-    const fixture = TestBed.createComponent(ReleaseNewComponent);
+    fixture = TestBed.createComponent(ReleaseNewComponent);
     component = fixture.componentInstance;
     httpCtrl = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
   });
 
-  afterEach(() => httpCtrl.verify());
+  afterEach(() => {
+    httpCtrl?.verify();
+    TestBed.resetTestingModule();
+  });
 
   describe('ngOnInit', () => {
     it('should load projects on init', () => {
