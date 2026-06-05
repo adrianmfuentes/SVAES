@@ -94,7 +94,7 @@ class SqlNotificationRepository(INotificationRepository):
             model = await session.get(NotificationChannelModel, channel_id)
             if not model:
                 raise ValueError("Notification channel not found")
-            await session.delete(model)
+            session.delete(model)
             await session.commit()
 
     async def list_subscriptions(self, user_id: uuid.UUID) -> List[NotificationSubscription]:
@@ -150,5 +150,5 @@ class SqlNotificationRepository(INotificationRepository):
             model = result.scalar_one_or_none()
             if not model:
                 return
-            await session.delete(model)
+            session.delete(model)
             await session.commit()

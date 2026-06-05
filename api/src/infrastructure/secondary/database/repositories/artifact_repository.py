@@ -64,5 +64,5 @@ class SqlArtifactRepository(IArtifactRepository):
             artifact_model = await session.get(ArtifactModel, artifact_id)
             if not artifact_model:
                 raise ValueError("Artifact not found")
-            await session.delete(artifact_model)
+            session.delete(artifact_model)
             await session.commit()

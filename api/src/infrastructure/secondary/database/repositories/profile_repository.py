@@ -169,5 +169,5 @@ class SqlProfileRepository(IProfileRepository):
             if not profile_model:
                 raise ValueError("Profile not found")
 
-            await session.delete(profile_model)
+            session.delete(profile_model)
             await session.commit()

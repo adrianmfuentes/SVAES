@@ -126,7 +126,7 @@ class SqlReleaseRepository(IReleaseRepository):
             if not release_row:
                 raise EntityNotFoundError("Release no encontrado")
 
-            await session.delete(release_row)
+            session.delete(release_row)
             await session.commit()
 
 

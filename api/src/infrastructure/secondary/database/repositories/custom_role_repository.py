@@ -78,5 +78,5 @@ class SqlCustomRoleRepository(ICustomRoleRepository):
             if not model:
                 raise ValueError("Custom role not found")
 
-            await session.delete(model)
+            session.delete(model)
             await session.commit()

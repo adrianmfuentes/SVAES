@@ -87,5 +87,5 @@ class SqlTemplateRepository(ITemplateRepository):
             if not model:
                 raise ValueError("Template not found")
 
-            await session.delete(model)
+            session.delete(model)
             await session.commit()

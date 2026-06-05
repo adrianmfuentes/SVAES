@@ -43,7 +43,7 @@ class BaseSqlRepository[T, M]:
             model = await session.get(self.model_class, id)
             if model is None:
                 raise ValueError(f"{self.entity_class.__name__} not found")
-            await session.delete(model)
+            session.delete(model)
             await session.commit()
 
     def _model_to_entity(self, row: M) -> T:

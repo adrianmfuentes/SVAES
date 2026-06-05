@@ -94,7 +94,7 @@ class SqlAPIKeyRepository(IAPIKeyRepository):
             model = await session.get(APIKeyModel, api_key_id)
             if not model:
                 raise ValueError("API key not found")
-            await session.delete(model)
+            session.delete(model)
             await session.commit()
 
     @staticmethod

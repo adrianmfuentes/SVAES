@@ -96,5 +96,5 @@ class SqlConnectorRepository(IConnectorRepository):
             if not connector_model:
                 raise ValueError("Connector not found")
 
-            await session.delete(connector_model)
+            session.delete(connector_model)
             await session.commit()

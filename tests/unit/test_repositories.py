@@ -492,7 +492,7 @@ class TestSqlReleaseRepository:
         session.execute = AsyncMock(return_value=result)
         with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
-        session.delete.assert_awaited_once_with(rel_row)
+        session.delete.assert_called_once_with(rel_row)
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, repo):
@@ -640,7 +640,7 @@ class TestSqlNotificationRepository:
         session.get = AsyncMock(return_value=model)
         with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
             await repo.delete_channel(uuid4())
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_channel_not_found_raises(self, repo):
@@ -727,7 +727,7 @@ class TestSqlNotificationRepository:
         session.execute = AsyncMock(return_value=result)
         with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
             await repo.delete_subscription(uuid4(), "release_validated")
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_subscription_not_found(self, repo):
@@ -737,7 +737,7 @@ class TestSqlNotificationRepository:
         session.execute = AsyncMock(return_value=result)
         with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
             await repo.delete_subscription(uuid4(), "release_validated")
-        session.delete.assert_not_awaited()
+        session.delete.assert_not_called()
 
 
 # ── SqlUserRepository ────────────────────────────────────────────────────────
@@ -926,7 +926,7 @@ class TestSqlUserRepository:
         session.get = AsyncMock(return_value=model)
         with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, repo):
@@ -1284,7 +1284,7 @@ class TestSqlTemplateRepository:
         session.get = AsyncMock(return_value=model)
         with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, repo):
@@ -1459,7 +1459,7 @@ class TestSqlConnectorRepository:
         session.get = AsyncMock(return_value=model)
         with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, repo):
@@ -1592,7 +1592,7 @@ class TestSqlCustomRoleRepository:
         session.get = AsyncMock(return_value=model)
         with patch("infrastructure.secondary.database.repositories.custom_role_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, repo):
@@ -1763,7 +1763,7 @@ class TestSqlVerificationRuleRepository:
         session.get = AsyncMock(return_value=model)
         with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, repo):
@@ -1938,7 +1938,7 @@ class TestSqlAPIKeyRepository:
         session.get = AsyncMock(return_value=model)
         with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, repo):
@@ -2076,7 +2076,7 @@ class TestSqlProfileRepository:
         session.get = AsyncMock(return_value=model)
         with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, repo):
@@ -2246,7 +2246,7 @@ class TestBaseSqlRepository:
         session.get = AsyncMock(return_value=model)
         with patch("infrastructure.secondary.database.repositories.base_sql_repository.AsyncSessionLocal", return_value=mgr):
             await repo._delete(uuid4())
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, mock_session_scope):
@@ -2365,7 +2365,7 @@ class TestSqlProjectRepository:
         session.get = AsyncMock(return_value=model)
         with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
-        session.delete.assert_awaited_once()
+        session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, repo):
