@@ -1,5 +1,5 @@
 """
-Branch-coverage tests for domain/enums.py and domain/exceptions.py.
+Unit tests for domain layer: enums and exceptions.
 """
 
 import os

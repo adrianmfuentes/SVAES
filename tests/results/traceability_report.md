@@ -81,3 +81,15 @@
 | `TC-SEC-INY-01` | Seguridad | §7.6 | ✅ PASS | pytest | SQLi en nombre release → neutralizado (OWASP A3) |
 | `TC-SEC-INY-02` | Seguridad | §7.6 | ✅ PASS | pytest | XSS en release → escapado al frontend (OWASP A3) |
 | `TC-SEC-CIF-01` | Seguridad | §7.6 | ✅ PASS | pytest | Credenciales cifradas AES-256-GCM en BD (RNF-13) |
+
+## TC-IDs en tests no reconocidos en el plan
+
+- `TC-UNI-FE-COM-01`
+- `TC-UNI-FE-GRD-05`
+- `TC-UNI-FE-GRD-06`
+- `TC-UNI-FE-NTR-01`
+- `TC-UNI-FE-NTR-02`
+- `TC-UNI-FE-NTR-03`
+- `TC-UNI-FE-NTR-04`
+- `TC-UNI-FE-NTR-05`
+- `TC-UNI-FE-NTR-06`

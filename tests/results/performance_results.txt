@@ -12,4 +12,4 @@ tests/performance/test_coverage_threshold.py::test_tc_per_vl_02_rust_engine_late
 tests/performance/test_coverage_threshold.py::test_tc_per_vl_03_concurrent_verify_structure PASSED [ 75%]
 tests/performance/test_coverage_threshold.py::test_tc_per_ce_04_sonarcloud_coverage_threshold SKIPPED [100%]
 
-======================== 3 passed, 1 skipped in 0.27s =========================
+======================== 3 passed, 1 skipped in 0.24s =========================
