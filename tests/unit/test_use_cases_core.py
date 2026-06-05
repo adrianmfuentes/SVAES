@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "api", "s
 
 pytestmark = pytest.mark.unit
 
-VALID_FERNET_KEY = "g7vylajG0IOM0hvMbCNcVWN7G9l1oIF_pHFIj5uO5m8="
+VALID_FERNET_KEY = "g7vylajG0IOM0hvMbCNcVWN7G9l1oIF_pHFIj5uO5m8=" # NOSONAR
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -255,12 +255,13 @@ class TestGetVerificationHistoryUseCase:
         """Branch: valid release_id → returns list from repository"""
         use_case, verification_repo = svc
         from domain.entities.verification_result import VerificationResult
+        from domain.enums import VerdictType
         vr = VerificationResult(
             id=uuid4(),
             release_id=uuid4(),
-            verdict="VALID",
+            verdict=VerdictType.VALID,
             rule_results=[],
-            summary="all good",
+            summary={"text": "all good"},
         )
         verification_repo.find_by_release = AsyncMock(return_value=[vr])
 
@@ -447,7 +448,7 @@ class TestFernetCredentialEncryptor:
         """Branch: key is bytes → used directly without encoding"""
         from core.credential_encryptor import FernetCredentialEncryptor
         key_bytes = VALID_FERNET_KEY.encode()
-        enc = FernetCredentialEncryptor(key_bytes)
+        enc = FernetCredentialEncryptor(key_bytes)  # type: ignore[arg-type]
         assert enc._fernet is not None
 
     def test_encrypt_returns_bytes(self, encryptor):

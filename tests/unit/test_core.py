@@ -10,6 +10,7 @@ import sys
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
+from typing import cast
 
 from fastapi import HTTPException, status
 
@@ -32,7 +33,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "api", "s
 
 pytestmark = pytest.mark.unit
 
-VALID_FERNET_KEY = "g7vylajG0IOM0hvMbCNcVWN7G9l1oIF_pHFIj5uO5m8="
+VALID_FERNET_KEY = "g7vylajG0IOM0hvMbCNcVWN7G9l1oIF_pHFIj5uO5m8=" # NOSONAR
 
 
 # ── seed_admin_user ───────────────────────────────────────────────────────
@@ -44,7 +45,7 @@ class TestSeedAdminUser:
     @pytest.fixture
     def settings(self):
         from core.config import Settings
-        return Settings(
+        return Settings.model_construct(
             admin_email="admin@test.local",
             admin_password="admin-pass",
         )
@@ -644,7 +645,8 @@ class TestFernetCredentialEncryptor:
         """Branch: key is bytes → used directly without encoding"""
         from core.credential_encryptor import FernetCredentialEncryptor
         key_bytes = VALID_FERNET_KEY.encode()
-        enc = FernetCredentialEncryptor(key_bytes)
+        # cast to satisfy type checkers while passing bytes at runtime
+        enc = FernetCredentialEncryptor(cast(str, key_bytes))
         assert enc._fernet is not None
 
     def test_encrypt_returns_bytes(self, encryptor):

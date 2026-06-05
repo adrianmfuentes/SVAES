@@ -151,7 +151,7 @@ describe('LogsComponent', () => {
 
   describe('maskIp', () => {
     it('should mask last octets of IPv4', () => {
-      expect(component.maskIp('192.168.1.100')).toBe('192.168.•••.•••');
+      expect(component.maskIp('192.168.1.100')).toBe('192.168.•••.•••'); // NOSONAR: intentional test data for IP masking logic
     });
 
     it('should truncate sha256 ips', () => {

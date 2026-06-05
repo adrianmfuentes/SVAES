@@ -176,7 +176,7 @@ def _make_access_request_row(
 
 
 def _make_template_row(template_id=None, org_id=None, name="tpl",
-                       description="desc", profile_id=None, created_by=None,
+                       description: Optional[str] = "desc", profile_id=None, created_by=None,
                        project_name_template=None, is_archived=False):
     """Create a mock row resembling TemplateModel."""
     row = MagicMock()

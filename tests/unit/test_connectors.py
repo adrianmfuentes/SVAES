@@ -923,6 +923,7 @@ class TestConnectorImplementations:
         from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
         c = GitLabConnector()
         params = c._get_list_params({"state": "merged"}, {})
+        assert params is not None
         assert params["state"] == "merged"
 
     def test_connector_registry_register_and_create(self):

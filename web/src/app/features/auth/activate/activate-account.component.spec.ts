@@ -1,9 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter, Router } from '@angular/router';
-import { ActivatedRoute } from '@angular/router';
-import { convertToParamMap } from '@angular/router';
+import { provideRouter, ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { ActivateAccountComponent } from './activate-account.component';
 import { TranslationService } from '../../../core/i18n/translation.service';
@@ -23,7 +21,6 @@ const routeMock = {
 describe('ActivateAccountComponent', () => {
   let component: ActivateAccountComponent;
   let httpCtrl: HttpTestingController;
-  let router: Router;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -41,7 +38,6 @@ describe('ActivateAccountComponent', () => {
     const fixture = TestBed.createComponent(ActivateAccountComponent);
     component = fixture.componentInstance;
     httpCtrl = TestBed.inject(HttpTestingController);
-    router = TestBed.inject(Router);
   });
 
   afterEach(() => httpCtrl.verify());

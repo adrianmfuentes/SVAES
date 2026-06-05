@@ -10,6 +10,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch, call
 from uuid import UUID, uuid4
+from domain.entities.user import User
 
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("ENVIRONMENT", "test")
@@ -17,7 +18,7 @@ os.environ.setdefault("JWT_SECRET_KEY", "base-choice-test-secret-key-32-ch!")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 os.environ.setdefault("JWT_EXPIRE_MINUTES", "60")
 os.environ.setdefault("ALLOWED_ORIGINS", "*")
-os.environ.setdefault("ENCRYPTION_KEY", "g7vylajG0IOM0hvMbCNcVWN7G9l1oIF_pHFIj5uO5m8=")
+os.environ.setdefault("ENCRYPTION_KEY", "g7vylajG0IOM0hvMbCNcVWN7G9l1oIF_pHFIj5uO5m8=") # NOSONAR
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:6379/0")
 os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
@@ -30,7 +31,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "api", "s
 
 pytestmark = pytest.mark.unit
 
-_VALID_FERNET_KEY = "g7vylajG0IOM0hvMbCNcVWN7G9l1oIF_pHFIj5uO5m8="
+_VALID_FERNET_KEY = "g7vylajG0IOM0hvMbCNcVWN7G9l1oIF_pHFIj5uO5m8=" # NOSONAR
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -44,8 +45,7 @@ def _make_user(
     totp_secret: str | None = None,
     role=None,
     organization_id: UUID | None = None,
-) -> "User":
-    from domain.entities.user import User
+) -> User:
     from domain.enums import UserRole
     return User(
         id=uuid4(),

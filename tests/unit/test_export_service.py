@@ -128,9 +128,9 @@ class TestExportServicePDF:
             id=vid,
             release_id=rid,
             verdict=VerdictType.VALID,
-            summary=None,
+            summary={},
             rule_results=[],
-            executed_at=None,
+            executed_at=MagicMock(),
         )
 
         verification_repo.find_by_id = AsyncMock(return_value=result)
@@ -153,7 +153,7 @@ class TestExportServicePDF:
         vid = uuid4()
         result = MagicMock()
         result.verdict = "CUSTOM_VERDICT"
-        result.summary = None
+        result.summary = {}
         result.rule_results = []
         result.executed_at = None
 
