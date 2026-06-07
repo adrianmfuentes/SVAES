@@ -79,7 +79,7 @@ jobs:
         run: uv run --frozen --no-build --project api --extra dev pytest tests/performance/test_coverage_threshold.py -v --tb=short
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
 
