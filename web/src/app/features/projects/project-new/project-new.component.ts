@@ -8,29 +8,29 @@ import { AuthService } from '../../../core/services/auth.service';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
-interface Project {
+interface Profile {
   id: string;
   name: string;
 }
 
 @Component({
-  selector: 'app-release-new',
+  selector: 'app-project-new',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe],
   template: `
-    <div class="new-release-page">
+    <div class="new-project-page">
       <div class="page-header">
         <div class="page-header-left">
-          <a routerLink="/app/releases" class="back-link">{{ 'release_new.back_link' | t }}</a>
-          <h1 class="page-title">{{ 'release_new.title' | t }}</h1>
+          <a routerLink="/app/projects" class="back-link">{{ 'project_new.back_link' | t }}</a>
+          <h1 class="page-title">{{ 'project_new.title' | t }}</h1>
         </div>
       </div>
 
       <div class="form-layout">
         <div class="card">
-          <h2 class="card-title">{{ 'release_new.form_title' | t }}</h2>
+          <h2 class="card-title">{{ 'project_new.form_title' | t }}</h2>
 
-          @if (projectsLoading()) {
+          @if (profilesLoading()) {
             <div class="skeleton-list">
               <div class="skeleton sk-input"></div>
               <div class="skeleton sk-input"></div>
@@ -38,43 +38,27 @@ interface Project {
             </div>
           }
 
-          @if (!projectsLoading()) {
-            @if (projects().length === 0) {
+          @if (!profilesLoading()) {
+            @if (profiles().length === 0) {
               <div class="empty-notice">
-                {{ 'release_new.no_projects' | t }}
-                @if (isManager) {
-                  {{ 'release_new.no_projects_manager' | t }}
-                  <a routerLink="/app/projects/new" class="inline-link">{{ 'release_new.no_projects_link' | t }}</a>.
-                }
+                {{ 'project_new.no_profiles' | t }}
+                <a routerLink="/app/profiles" class="inline-link">{{ 'project_new.no_profiles_link' | t }}</a>.
               </div>
             }
 
-            @if (projects().length > 0) {
+            @if (profiles().length > 0) {
               <form [formGroup]="form" (ngSubmit)="submit()">
                 <div class="form-group">
-                  <label for="project-id">{{ 'release_new.project_label' | t }}</label>
-                  <select id="project-id" formControlName="project_id">
-                    <option value="">{{ 'release_new.project_placeholder' | t }}</option>
-                    @for (p of projects(); track p.id) {
-                      <option [value]="p.id">{{ p.name }}</option>
-                    }
-                  </select>
-                  @if (form.get('project_id')?.hasError('required') && form.get('project_id')?.touched) {
-                    <div class="field-error">{{ 'release_new.project_required' | t }}</div>
-                  }
-                </div>
-
-                <div class="form-group">
-                  <label for="name">{{ 'release_new.name_label' | t }}</label>
+                  <label for="proj-name">{{ 'project_new.name_label' | t }}</label>
                   <input
-                    id="name"
+                    id="proj-name"
                     type="text"
                     formControlName="name"
-                    [placeholder]="'release_new.name_placeholder' | t"
+                    [placeholder]="'project_new.name_placeholder' | t"
                     autocomplete="off"
                   />
                   @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
-                    <div class="field-error">{{ 'release_new.name_required' | t }}</div>
+                    <div class="field-error">{{ 'project_new.name_required' | t }}</div>
                   }
                   @if (form.get('name')?.hasError('maxlength') && form.get('name')?.touched) {
                     <div class="field-error">{{ 'common.max_chars' | t : { max: 100 } }}</div>
@@ -82,29 +66,31 @@ interface Project {
                 </div>
 
                 <div class="form-group">
-                  <label for="version">{{ 'release_new.version_label' | t }}</label>
-                  <input
-                    id="version"
-                    type="text"
-                    formControlName="version"
-                    placeholder="1.4.2"
-                    autocomplete="off"
-                  />
-                  @if (form.get('version')?.hasError('required') && form.get('version')?.touched) {
-                    <div class="field-error">{{ 'release_new.version_required' | t }}</div>
+                  <label for="proj-description">
+                    {{ 'project_new.description_label' | t }}
+                    <span class="optional">({{ 'common.optional' | t }})</span>
+                  </label>
+                  <textarea
+                    id="proj-description"
+                    formControlName="description"
+                    rows="3"
+                    [placeholder]="'project_new.description_placeholder' | t"
+                  ></textarea>
+                  @if (form.get('description')?.hasError('maxlength') && form.get('description')?.touched) {
+                    <div class="field-error">{{ 'common.max_chars' | t : { max: 500 } }}</div>
                   }
                 </div>
 
                 <div class="form-group">
-                  <label for="description">{{ 'release_new.description_label' | t }} <span class="optional">({{ 'common.optional' | t }})</span></label>
-                  <textarea
-                    id="description"
-                    formControlName="description"
-                    rows="3"
-                    [placeholder]="'release_new.description_placeholder' | t"
-                  ></textarea>
-                  @if (form.get('description')?.hasError('maxlength') && form.get('description')?.touched) {
-                    <div class="field-error">{{ 'common.max_chars' | t : { max: 1000 } }}</div>
+                  <label for="proj-profile">{{ 'project_new.profile_label' | t }}</label>
+                  <select id="proj-profile" formControlName="profile_id">
+                    <option value="">{{ 'project_new.profile_placeholder' | t }}</option>
+                    @for (p of profiles(); track p.id) {
+                      <option [value]="p.id">{{ p.name }}</option>
+                    }
+                  </select>
+                  @if (form.get('profile_id')?.hasError('required') && form.get('profile_id')?.touched) {
+                    <div class="field-error">{{ 'project_new.profile_required' | t }}</div>
                   }
                 </div>
 
@@ -113,12 +99,12 @@ interface Project {
                 }
 
                 <div class="form-footer">
-                  <a routerLink="/app/releases" class="btn-secondary">{{ 'common.cancel' | t }}</a>
+                  <a routerLink="/app/projects" class="btn-secondary">{{ 'common.cancel' | t }}</a>
                   <button
                     type="submit"
                     class="btn-primary"
                     [disabled]="form.invalid || submitting()">
-                    {{ submitting() ? ('release_new.submitting' | t) : ('release_new.submit' | t) }}
+                    {{ submitting() ? ('project_new.submitting' | t) : ('project_new.submit' | t) }}
                   </button>
                 </div>
               </form>
@@ -130,7 +116,7 @@ interface Project {
   `,
   styles: [`
     :host { display: block; }
-    .new-release-page { padding: 0; }
+    .new-project-page { padding: 0; }
 
     .page-header {
       display: flex;
@@ -164,9 +150,7 @@ interface Project {
       color: var(--ink);
     }
 
-    .form-layout {
-      max-width: 640px;
-    }
+    .form-layout { max-width: 640px; }
 
     .card {
       background: var(--surface-raised);
@@ -185,9 +169,7 @@ interface Project {
       color: var(--ink);
     }
 
-    .form-group {
-      margin-bottom: var(--spacing-md);
-    }
+    .form-group { margin-bottom: var(--spacing-md); }
 
     .form-group label {
       display: block;
@@ -339,56 +321,61 @@ interface Project {
     }
   `],
 })
-export class ReleaseNewComponent implements OnInit {
+export class ProjectNewComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
 
-  readonly isManager = this.authService.getUserRole() === 'MANAGER';
-
-  projects = signal<Project[]>([]);
-  projectsLoading = signal(true);
+  profiles = signal<Profile[]>([]);
+  profilesLoading = signal(true);
   submitting = signal(false);
   submitError = signal<string | null>(null);
 
   form = this.fb.group({
-    project_id: ['', [Validators.required]],
     name: ['', [Validators.required, Validators.maxLength(100)]],
-    version: ['', [Validators.required]],
-    description: ['', [Validators.maxLength(1000)]],
+    description: ['', [Validators.maxLength(500)]],
+    profile_id: ['', [Validators.required]],
   });
 
   ngOnInit(): void {
-    this.http.get<Project[]>('/api/v1/projects')
-      .pipe(catchError(() => of([] as Project[])))
+    const orgId = this.authService.getUser()?.organization_id;
+    if (!orgId) {
+      this.profilesLoading.set(false);
+      return;
+    }
+    this.http.get<Profile[]>(`/api/v1/organizations/${orgId}/profiles`)
+      .pipe(catchError(() => of([] as Profile[])))
       .subscribe(data => {
-        this.projects.set(data);
-        this.projectsLoading.set(false);
+        this.profiles.set(data);
+        this.profilesLoading.set(false);
       });
   }
 
   submit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    const orgId = this.authService.getUser()?.organization_id;
+    if (!orgId) return;
+
     this.submitting.set(true);
     this.submitError.set(null);
 
-    const { project_id, name, version, description } = this.form.value;
-    const body: Record<string, unknown> = { name, version, description: description || '' };
+    const { name, description, profile_id } = this.form.value;
+    const body = { name, description: description || '', profile_id };
 
-    this.http.post<{ id: string; status: string }>(
-      `/api/v1/projects/${project_id}/releases`, body
-    ).pipe(
-      catchError((err: HttpErrorResponse) => {
-        this.submitError.set(err.error?.detail ?? this.ts.translateInstant('release_new.error'));
-        this.submitting.set(false);
-        return of(null);
-      })
-    ).subscribe(res => {
-      if (res) {
-        this.router.navigate(['/app/releases', res.id]);
-      }
-    });
+    this.http.post<{ id: string }>(`/api/v1/organizations/${orgId}/projects`, body)
+      .pipe(
+        catchError((err: HttpErrorResponse) => {
+          this.submitError.set(err.error?.detail ?? this.ts.translateInstant('project_new.error'));
+          this.submitting.set(false);
+          return of(null);
+        })
+      )
+      .subscribe(res => {
+        if (res) {
+          this.router.navigate(['/app/projects']);
+        }
+      });
   }
 }

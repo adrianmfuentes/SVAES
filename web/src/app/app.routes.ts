@@ -73,6 +73,22 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'projects',
+        canActivate: [businessRouteGuard],
+        loadComponent: () =>
+          import('./features/projects/projects.component').then(
+            (m) => m.ProjectsComponent,
+          ),
+      },
+      {
+        path: 'projects/new',
+        canActivate: [businessRouteGuard],
+        loadComponent: () =>
+          import('./features/projects/project-new/project-new.component').then(
+            (m) => m.ProjectNewComponent,
+          ),
+      },
+      {
         path: 'connectors',
         canActivate: [businessRouteGuard],
         loadComponent: () =>

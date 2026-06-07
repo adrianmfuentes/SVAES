@@ -74,6 +74,15 @@
       <div class="nav-section">{{ 'shell.nav_configuration' | t }}</div>
 
       <a
+        routerLink="/app/projects"
+        routerLinkActive="nav-item-active"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="nav-item"
+      >
+        {{ 'shell.nav_projects' | t }}
+      </a>
+
+      <a
         routerLink="/app/connectors"
         routerLinkActive="nav-item-active"
         [routerLinkActiveOptions]="{ exact: false }"
@@ -107,10 +116,6 @@
       <div class="lang-switcher">
         <app-lang-toggle theme="dark" />
       </div>
-      <div class="sidebar-role-indicator" *ngIf="isAdmin">
-        <span class="role-label">{{ 'shell.role_admin_global' | t }}</span>
-        <span class="role-badge">U3</span>
-      </div>
       <button class="sidebar-logout" (click)="logout()">
         {{ 'shell.logout' | t }}
       </button>
@@ -118,6 +123,12 @@
   </aside>
 
   <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-user">
+        <span class="topbar-name">{{ displayName }}</span>
+        <span class="topbar-role">{{ roleLabel }}</span>
+      </div>
+    </header>
     <div class="content-inner">
       <router-outlet></router-outlet>
     </div>

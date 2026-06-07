@@ -191,7 +191,7 @@ interface UserProfile {
         </div>
 
         <!-- 2FA card -->
-        <div class="card">
+        <div class="card twofa-card">
           <h2 class="card-title">{{ 'profile_page.2fa_title' | t }}</h2>
 
           <div class="field-readonly">
@@ -537,7 +537,8 @@ interface UserProfile {
       margin-bottom: var(--spacing-md);
     }
 
-    .api-keys-card {
+    .api-keys-card,
+    .twofa-card {
       grid-column: 1 / -1;
     }
 

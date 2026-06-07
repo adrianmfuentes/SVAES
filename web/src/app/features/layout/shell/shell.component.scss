@@ -83,33 +83,6 @@
   padding: 0 var(--spacing-sm);
 }
 
-.sidebar-role-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--spacing-sm) var(--spacing-sm);
-}
-
-.role-label {
-  font-family: var(--font-sans);
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(232, 213, 163, 0.7);
-}
-
-.role-badge {
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--accent);
-  background: rgba(232, 213, 163, 0.12);
-  border: 1px solid rgba(232, 213, 163, 0.25);
-  border-radius: var(--rounded-sm);
-  padding: 0.0625rem 0.3125rem;
-}
 
 .sidebar-logout {
   display: block;
@@ -136,11 +109,52 @@
 
 .main-content {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--paper);
 }
 
+.topbar {
+  flex-shrink: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 var(--spacing-xl);
+  border-bottom: 1px solid var(--border);
+  background: var(--paper);
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.topbar-name {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.topbar-role {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--paper-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-sm);
+  padding: 2px 8px;
+}
+
 .content-inner {
+  flex: 1;
+  overflow-y: auto;
   width: 100%;
   padding: var(--spacing-xl);
   box-sizing: border-box;

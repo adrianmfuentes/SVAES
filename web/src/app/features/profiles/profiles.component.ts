@@ -14,7 +14,8 @@ interface Profile {
   rules_count?: number;
   organization_id?: string;
   organization_name?: string;
-  is_template: boolean;
+  is_template?: boolean;
+  is_default?: boolean;
   created_at?: string;
 }
 
@@ -465,10 +466,22 @@ export class ProfilesComponent implements OnInit {
       return of(null);
     })).subscribe(p => {
       if (p) {
+        const formDesc = this.profileForm.value.description ?? '';
         if (editing) {
-          this.templates.update(list => list.map(x => x.id === p.id ? p : x));
+          this.orgProfiles.update(list => list.map(x =>
+            x.id === p.id
+              ? { ...x, name: p.name, description: formDesc, is_default: p.is_default }
+              : x
+          ));
         } else {
-          this.templates.update(list => [...list, p]);
+          this.orgProfiles.update(list => [...list, {
+            id: p.id,
+            name: p.name,
+            description: formDesc,
+            rules_count: 0,
+            is_default: p.is_default,
+            is_template: false,
+          }]);
         }
         this.showModal.set(false);
       }

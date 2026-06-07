@@ -146,9 +146,9 @@ class AuthService(IAuthService):
         totp = pyotp.TOTP(secret)
         uri = totp.provisioning_uri(name=user.email, issuer_name="SVAES")
 
-        buf = io.StringIO()
+        buf = io.BytesIO()
         segno.make_qr(uri).save(buf, kind="svg", scale=4, border=1)
-        qr_data_url = "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue().encode()).decode()
+        qr_data_url = "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode()
 
         user.totp_secret = secret
         await self._user_repo.update(user)
