@@ -43,13 +43,13 @@ Diseñar e implementar un sistema extensible y desacoplado capaz de verificar au
 
 # 3. Estado del proyecto
 
-| Componente       | Estado           | Descripción                                               |
-| ---------------- | ---------------- | --------------------------------------------------------- |
-| Backend FastAPI  | ✅ Completo      | API REST completa con todos los endpoints                 |
-| Frontend Angular | ✅ Implementado  | SPA con autenticación, dashboard, releases, conectores, perfil, admin, i18n ES/EN, 2FA |
-| Motor Rust       | ✅ Implementado  | Motor completo en engine/, evaluador paralelo + 10 reglas |
-| Worker Celery    | ✅ Implementado  | worker real en verification_worker.py                     |
-| Conectores       | ✅ Implementados | 20 conectores en 5 categorías funcionales                 |
+| Componente       | Estado           |
+| ---------------- | ---------------- |
+| Backend FastAPI  | API REST completa con todos los endpoints                 |
+| Frontend Angular | SPA con autenticación, dashboard, releases, conectores, perfil, admin, i18n ES/EN, 2FA |
+| Motor Rust       | Motor completo en engine/, evaluador paralelo + 10 reglas |
+| Worker Celery    | Worker real en verification_worker.py                     |
+| Conectores       | 20 conectores en 5 categorías funcionales                 |
 
 ---
 
@@ -90,12 +90,12 @@ Principio clave:
 
 El sistema se divide en los siguientes componentes:
 
-- Frontend (Angular SPA) — ✅ Implementado
-- Backend (FastAPI) — ✅ Completo
-- Motor de verificación (Rust) — ✅ Implementado (completo)
-- Cola de tareas (Celery + Redis) — ✅ Implementada
-- Base de datos (PostgreSQL) — ✅ Operativo
-- Conectores externos — ✅ 20 implementaciones
+- Frontend (Angular SPA)
+- Backend (FastAPI)
+- Motor de verificación (Rust)
+- Cola de tareas (Celery + Redis)
+- Base de datos (PostgreSQL)
+- Conectores externos
 
 ## 5.3 Estructura del backend
 
@@ -153,80 +153,6 @@ Un manager configura en su organización qué implementaciones concretas quiere 
 | `HERRAMIENTA_PLANIFICACION` | Roadmap a largo plazo, épicas y planes de versiones                   |
 | `GESTION_CAMBIOS`           | Sistemas ITSM para aprobaciones formales, CABs e incidencias          |
 
-## 6.3 Implementaciones disponibles
-
-### GESTOR_TAREAS
-
-| Implementación | API        | Plan gratuito |
-| -------------- | ---------- | ------------- |
-| Jira           | REST v2/v3 | 10 usuarios   |
-| Linear         | GraphQL    | Sólido        |
-| Trello         | REST       | Muy permisivo |
-| Asana          | REST       | 15 usuarios   |
-
-### REPO_CODIGO
-
-| Implementación | API     | Plan gratuito             |
-| -------------- | ------- | ------------------------- |
-| GitLab         | REST v4 | Ilimitado                 |
-| GitHub         | REST    | Ilimitado                 |
-| Bitbucket      | REST    | 5 usuarios                |
-| Gitea          | REST    | Auto-alojado, open source |
-
-### SISTEMA_DOCUMENTAL
-
-| Implementación | API     | Plan gratuito             |
-| -------------- | ------- | ------------------------- |
-| Confluence     | REST    | 10 usuarios               |
-| Notion         | REST    | Muy completo              |
-| Wiki.js        | GraphQL | Auto-alojado, open source |
-| BookStack      | REST    | Auto-alojado, open source |
-
-### HERRAMIENTA_PLANIFICACION
-
-| Implementación | API  | Plan gratuito             |
-| -------------- | ---- | ------------------------- |
-| ClickUp        | REST | Muy completo              |
-| Taiga          | REST | Cloud o auto-alojado      |
-| Plane          | REST | Auto-alojado, open source |
-| Miro           | REST | 3 pizarras                |
-
-### GESTION_CAMBIOS
-
-| Implementación          | API      | Plan gratuito             |
-| ----------------------- | -------- | ------------------------- |
-| Jira Service Management | REST     | 3 agentes                 |
-| GLPI                    | REST     | Auto-alojado, open source |
-| Zammad                  | REST     | Auto-alojado, open source |
-| Redmine                 | REST/XML | Auto-alojado, open source |
-
-## 6.4 Puerto IConnector
-
-```python
-class IConnector(Protocol):
-    @property
-    def connector_type(self) -> str: ...
-
-    @property
-    def connector_implementation(self) -> str: ...
-
-    async def test_connection(self, config: Dict[str, Any]) -> bool: ...
-
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]: ...
-
-    async def list_artifacts(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> List[Dict[str, Any]]: ...
-
-    def get_metadata(self) -> Dict[str, Any]: ...
-```
-
-## 6.5 Flujo de configuración por UI
-
-1. UI consulta `GET /api/v1/connectors/types` para ver implementaciones disponibles
-2. UI muestra `config_schema` de cada implementación para renderizar formulario
-3. Manager llena formulario y envía `POST /api/v1/organizations/{org_id}/connectors`
-4. Sistema guarda `connector_type`, `connector_implementation` y credenciales cifradas
-5. En verificación se usa `connector_implementation` para instanciar el conector correcto
-
 ---
 
 # 7. Modelo de dominio
@@ -242,8 +168,6 @@ Entidades principales:
 - **VerificationProfile** — Conjunto de reglas para un proyecto
 - **VerificationRule** — Plantilla con severidad y parámetros
 - **VerificationResult** — Resultado de una verificación con veredicto
-
-Cada verificación almacena un snapshot completo del estado evaluado.
 
 ---
 
@@ -299,18 +223,18 @@ Base de datos PostgreSQL:
 
 # 11. Tecnologías
 
-| Capa               | Tecnología               | Estado                     |
-| ------------------ | ------------------------ | -------------------------- |
-| API Backend        | FastAPI (Python 3.11+)   | ✅ Completo                |
-| Base de datos      | PostgreSQL 16            | ✅ Operativo               |
-| ORM                | SQLAlchemy 2.x           | ✅ Operativo               |
-| Migraciones        | Alembic                  | ✅ Operativo               |
-| Autenticación      | JWT (PyJWT)              | ✅ Completo                |
-| HTTP Client        | httpx (async)            | ✅ Integrado en conectores |
-| Frontend           | Angular 21               | ✅ Implementado            |
-| Motor verificación | Rust (Actix-web + Rayon) | ✅ Implementado            |
-| Cola de tareas     | Celery + Redis           | ✅ Implementado            |
-| Contenedores       | Docker + Docker Compose  | ✅ Configurado             |
+| Capa               | Tecnología               |
+| ------------------ | ------------------------ |
+| API Backend        | FastAPI (Python 3.11+)   |
+| Base de datos      | PostgreSQL 16            |
+| ORM                | SQLAlchemy 2.x           |
+| Migraciones        | Alembic                  |
+| Autenticación      | JWT (PyJWT)              |
+| HTTP Client        | httpx (async)            |
+| Frontend           | Angular 21               |
+| Motor verificación | Rust (Actix-web + Rayon) |
+| Cola de tareas     | Celery + Redis           |
+| Contenedores       | Docker + Docker Compose  |
 
 ---
 
