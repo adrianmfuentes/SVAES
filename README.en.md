@@ -43,13 +43,13 @@ Design and implement an extensible, decoupled system capable of automatically ve
 
 # 3. Project status
 
-| Component        | Status         | Description                                               |
-| ---------------- | -------------- | --------------------------------------------------------- |
-| FastAPI Backend  | ✅ Complete    | Full REST API with all endpoints                          |
-| Angular Frontend | ✅ Implemented | SPA with auth, dashboard, releases, connectors, profile, admin, i18n ES/EN, 2FA |
-| Rust Engine      | ✅ Implemented | Complete engine in engine/, parallel evaluator + 10 rules |
-| Celery Worker    | ✅ Implemented | real worker in verification_worker.py                     |
-| Connectors       | ✅ Implemented | 20 connectors in 5 functional categories                  |
+| Component        | Status         |
+| ---------------- | -------------- |
+| FastAPI Backend  | Full REST API with all endpoints                          |
+| Angular Frontend | SPA with auth, dashboard, releases, connectors, profile, admin, i18n ES/EN, 2FA |
+| Rust Engine      | Complete engine in engine/, parallel evaluator + 10 rules |
+| Celery Worker    | Real worker in verification_worker.py                     |
+| Connectors       | 20 connectors in 5 functional categories                  |
 
 ---
 
@@ -90,12 +90,12 @@ Key principle:
 
 The system is divided into the following components:
 
-- Frontend (Angular SPA) — ✅ Implemented
-- Backend (FastAPI) — ✅ Complete
-- Verification engine (Rust) — ✅ Implemented (complete)
-- Task queue (Celery + Redis) — ✅ Implemented
-- Database (PostgreSQL) — ✅ Operational
-- External connectors — ✅ 20 implementations
+- Frontend (Angular SPA)
+- Backend (FastAPI)
+- Verification engine (Rust)
+- Task queue (Celery + Redis)
+- Database (PostgreSQL)
+- External connectors
 
 ## 5.3 Backend structure
 
@@ -103,27 +103,27 @@ The system is divided into the following components:
 api/src/
 ├── domain/                    # Entities, enums, exceptions
 │   ├── entities/              # User, Organization, Project, Release, Artifact, ConnectorInstance
-│   └── enums.py                # UserRole, ConnectorType, ConnectorImplementation, etc.
+│   └── enums.py               # UserRole, ConnectorType, ConnectorImplementation, etc.
 │
-├── application/                # Use cases (business logic)
+├── application/               # Use cases (business logic)
 │   ├── ports/
 │   │   ├── input/             # IReleaseService, IConnectorService, etc.
 │   │   └── output/            # IUserRepository, IConnectorRegistry, IConnector
 │   └── use_cases/             # Use case implementations
 │
-├── infrastructure/             # Adapters
+├── infrastructure/            # Adapters
 │   ├── primary/
 │   │   ├── routers/           # FastAPI endpoints (v1)
 │   │   └── middleware/         # JWT, rate limiting, password hasher
 │   └── secondary/
 │       ├── database/          # SQLAlchemy models + repositories
 │       ├── queue/             # Celery + Redis
-│       └── connectors/        # Connector implementations
-│           ├── task_management/    # Jira, Linear, Trello, Asana
+│       └── connectors/         # Connector implementations
+│           ├── task_management/   # Jira, Linear, Trello, Asana
 │           ├── source_control/    # GitHub, GitLab, Bitbucket, Gitea
-│           ├── documentation/        # Confluence, Notion, Wiki.js, BookStack
+│           ├── documentation/       # Confluence, Notion, Wiki.js, BookStack
 │           ├── planning/           # ClickUp, Taiga, Plane, Miro
-│           └── change_management/ # Jira SM, GLPI, Zammad, Redmine
+│           └── change_management/  # Jira SM, GLPI, Zammad, Redmine
 │
 └── core/                      # Config, dependencies, rate limiting
 ```
@@ -153,80 +153,6 @@ A manager configures in their organization which concrete implementations they w
 | `HERRAMIENTA_PLANIFICACION` | Long-term roadmap, epics and release plans                       |
 | `GESTION_CAMBIOS`           | ITSM systems for formal approvals, CABs and production incidents |
 
-## 6.3 Available implementations
-
-### GESTOR_TAREAS
-
-| Implementation | API        | Free plan       |
-| -------------- | ---------- | --------------- |
-| Jira           | REST v2/v3 | 10 users        |
-| Linear         | GraphQL    | Solid           |
-| Trello         | REST       | Very permissive |
-| Asana          | REST       | 15 users        |
-
-### REPO_CODIGO
-
-| Implementation | API     | Free plan                |
-| -------------- | ------- | ------------------------ |
-| GitLab         | REST v4 | Unlimited                |
-| GitHub         | REST    | Unlimited                |
-| Bitbucket      | REST    | 5 users                  |
-| Gitea          | REST    | Self-hosted, open source |
-
-### SISTEMA_DOCUMENTAL
-
-| Implementation | API     | Free plan                |
-| -------------- | ------- | ------------------------ |
-| Confluence     | REST    | 10 users                 |
-| Notion         | REST    | Very complete            |
-| Wiki.js        | GraphQL | Self-hosted, open source |
-| BookStack      | REST    | Self-hosted, open source |
-
-### HERRAMIENTA_PLANIFICACION
-
-| Implementation | API  | Free plan                |
-| -------------- | ---- | ------------------------ |
-| ClickUp        | REST | Very complete            |
-| Taiga          | REST | Cloud or self-hosted     |
-| Plane          | REST | Self-hosted, open source |
-| Miro           | REST | 3 boards                 |
-
-### GESTION_CAMBIOS
-
-| Implementation          | API      | Free plan                |
-| ----------------------- | -------- | ------------------------ |
-| Jira Service Management | REST     | 3 agents                 |
-| GLPI                    | REST     | Self-hosted, open source |
-| Zammad                  | REST     | Self-hosted, open source |
-| Redmine                 | REST/XML | Self-hosted, open source |
-
-## 6.4 IConnector port
-
-```python
-class IConnector(Protocol):
-    @property
-    def connector_type(self) -> str: ...
-
-    @property
-    def connector_implementation(self) -> str: ...
-
-    async def test_connection(self, config: Dict[str, Any]) -> bool: ...
-
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]: ...
-
-    async def list_artifacts(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> List[Dict[str, Any]]: ...
-
-    def get_metadata(self) -> Dict[str, Any]: ...
-```
-
-## 6.5 UI configuration flow
-
-1. UI calls `GET /api/v1/connectors/types` to see available implementations
-2. UI renders form using `config_schema` from each implementation
-3. Manager fills form and sends `POST /api/v1/organizations/{org_id}/connectors`
-4. System stores `connector_type`, `connector_implementation` and encrypted credentials
-5. During verification, `connector_implementation` is used to instantiate the correct connector
-
 ---
 
 # 7. Domain model
@@ -242,8 +168,6 @@ Main entities:
 - **VerificationProfile** — Set of rules for a project
 - **VerificationRule** — Template with severity and parameters
 - **VerificationResult** — Verification result with verdict
-
-Each verification stores a complete snapshot of the evaluated state.
 
 ---
 
@@ -283,34 +207,34 @@ PostgreSQL database:
 
 # 10. Security
 
-| Layer                  | Mechanism                | Detail                                             |
-| ---------------------- | ------------------------ | -------------------------------------------------- |
-| Authentication         | JWT (HS256)              | Signed tokens. Claims: `sub`, `role`, `iat`, `exp` |
-| Two-factor auth (2FA)  | TOTP (pyotp + segno)     | Optional per-user two-step authentication          |
-| Passwords              | bcrypt (passlib)         | Cost factor 12. Constant-time comparison           |
-| Connector credentials  | Fernet (AES-128-CBC)     | Authenticated encryption                           |
-| Protected endpoints    | Bearer token             | `Authorization: Bearer <jwt>` required             |
-| Multi-tenant isolation | `organization_id` filter | 403 on cross-org access                            |
-| Rate limiting          | slowapi                  | 30 req/min on auth, 100 req/min reads, 20 req/min writes |
-| Brute force            | Account lockout          | 5 failed attempts → 15 min block                   |
-| GDPR audit             | audit_log (PostgreSQL)   | Full traceability; pseudonymisation in verifications |
+| Layer                  | Mechanism                    | Detail                                               |
+| ---------------------- | ---------------------------- | ---------------------------------------------------- |
+| Authentication         | JWT (HS256)                  | Signed tokens. Claims: `sub`, `role`, `iat`, `exp`   |
+| Two-factor auth (2FA)  | TOTP (pyotp + segno)         | Optional per-user two-step authentication            |
+| Passwords              | bcrypt (passlib)             | Cost factor 12. Constant-time comparison             |
+| Connector credentials  | Fernet (AES-128-CBC)         | Authenticated encryption                             |
+| Protected endpoints    | Bearer token                 | `Authorization: Bearer <jwt>` required               |
+| Multi-tenant isolation | Filter by `organization_id`  | 403 on cross-org access                              |
+| Rate limiting          | slowapi                      | 30 req/min on auth, 100 req/min reads, 20 req/min writes |
+| Brute force            | Account lockout              | 5 failed attempts → 15 min block                     |
+| GDPR audit             | audit_log (PostgreSQL)       | Full traceability; pseudonymisation in verifications |
 
 ---
 
 # 11. Technologies
 
-| Layer               | Technology               | Status                      |
-| ------------------- | ------------------------ | --------------------------- |
-| API Backend         | FastAPI (Python 3.11+)   | ✅ Complete                 |
-| Database            | PostgreSQL 16            | ✅ Operational              |
-| ORM                 | SQLAlchemy 2.x           | ✅ Operational              |
-| Migrations          | Alembic                  | ✅ Operational              |
-| Authentication      | JWT (PyJWT)              | ✅ Complete                 |
-| HTTP Client         | httpx (async)            | ✅ Integrated in connectors |
-| Frontend            | Angular 21               | ✅ Implemented              |
-| Verification engine | Rust (Actix-web + Rayon) | ✅ Implemented              |
-| Task queue          | Celery + Redis           | ✅ Implemented              |
-| Containers          | Docker + Docker Compose  | ✅ Configured               |
+| Layer               | Technology               |
+| ------------------- | ------------------------ |
+| API Backend         | FastAPI (Python 3.11+)   |
+| Database            | PostgreSQL 16            |
+| ORM                 | SQLAlchemy 2.x           |
+| Migrations          | Alembic                  |
+| Authentication      | JWT (PyJWT)              |
+| HTTP Client         | httpx (async)            |
+| Frontend            | Angular 21               |
+| Verification engine | Rust (Actix-web + Rayon) |
+| Task queue          | Celery + Redis           |
+| Containers          | Docker + Docker Compose  |
 
 ---
 
@@ -341,12 +265,12 @@ Interactive documentation: `http://localhost:8000/docs`
 
 ### Authentication
 
-| Method | Path                   | Auth | Description                             |
-| ------ | ---------------------- | ---- | --------------------------------------- |
-| `POST` | `/auth/login`          | No   | Login → returns JWT (step 1 if 2FA on)  |
-| `POST` | `/auth/2fa/verify`     | No   | Verify TOTP code (step 2)               |
-| `POST` | `/auth/refresh`        | No   | Refresh token                           |
-| `POST` | `/auth/register`       | No   | Register with terms acceptance          |
+| Method | Path                   | Auth | Description                            |
+| ------ | ---------------------- | ---- | -------------------------------------- |
+| `POST` | `/auth/login`          | No   | Login → returns JWT (step 1 if 2FA on) |
+| `POST` | `/auth/2fa/verify`     | No   | Verify TOTP code (step 2)              |
+| `POST` | `/auth/refresh`        | No   | Refresh token                          |
+| `POST` | `/auth/register`       | No   | Register with terms acceptance         |
 
 ### Organizations
 

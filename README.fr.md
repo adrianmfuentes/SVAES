@@ -43,19 +43,19 @@ Concevoir et implémenter un système extensible et découplé capable de vérif
 
 # 3. État du projet
 
-| Composant        | État           | Description                                                   |
-| ---------------- | -------------- | ------------------------------------------------------------- |
-| Backend FastAPI  | ✅ Complet     | API REST complète avec tous les endpoints                     |
-| Frontend Angular | ✅ Implémenté  | SPA avec auth, dashboard, releases, connecteurs, profil, admin, i18n ES/EN, 2FA |
-| Moteur Rust      | ✅ Implémenté  | Moteur complet dans engine/, évaluateur parallèle + 10 règles |
-| Worker Celery    | ✅ Implémenté  | worker réel dans verification_worker.py                       |
-| Connecteurs      | ✅ Implémentés | 20 connecteurs en 5 catégories fonctionnelles                 |
+| Composant        | État           |
+| ---------------- | ---------------- |
+| Backend FastAPI  | API REST complète avec tous les endpoints                 |
+| Frontend Angular | SPA avec authentification, dashboard, releases, connecteurs, profil, admin, i18n ES/EN, 2FA |
+| Moteur Rust      | Moteur complet dans engine/, évaluateur parallèle + 10 règles |
+| Worker Celery    | Worker réel dans verification_worker.py                     |
+| Connecteurs      | 20 connecteurs dans 5 catégories fonctionnelles                 |
 
 ---
 
 # 4. Portée fonctionnelle
 
-Le système couvre les capacités suivantes:
+Le système couvre les capacités suivantes :
 
 - Gestion des organisations (multi-tenant)
 - Gestion des projets et des releases
@@ -65,7 +65,7 @@ Le système couvre les capacités suivantes:
 - Enregistrement des résultats et audit
 - Exposition de l'API REST pour l'intégration
 
-Hors scope:
+Hors scope :
 
 - Exécution des pipelines CI/CD
 - Modification des systèmes externes
@@ -77,25 +77,25 @@ Hors scope:
 
 ## 5.1 Approche architecturale
 
-Le système adopte une architecture hybride basée sur:
+Le système adopte une architecture hybride basée sur :
 
 - Architecture hexagonale (Ports & Adapters)
 - Clean Architecture
 
-Principe clé:
+Principe clé :
 
 > Les dépendances ne peuvent pointer que vers le domaine.
 
 ## 5.2 Décomposition en conteneurs
 
-Le système est divisé en les composants suivants:
+Le système est divisé en les composants suivants :
 
-- Frontend (Angular SPA) — ✅ Implémenté
-- Backend (FastAPI) — ✅ Complet
-- Moteur de vérification (Rust) — ✅ Implémenté (complet)
-- File de tâches (Celery + Redis) — ✅ Implémentée
-- Base de données (PostgreSQL) — ✅ Opérationnel
-- Connecteurs externes — ✅ 20 implémentations
+- Frontend (Angular SPA)
+- Backend (FastAPI)
+- Moteur de vérification (Rust)
+- File de tâches (Celery + Redis)
+- Base de données (PostgreSQL)
+- Connecteurs externes
 
 ## 5.3 Structure du backend
 
@@ -103,7 +103,7 @@ Le système est divisé en les composants suivants:
 api/src/
 ├── domain/                    # Entités, enums, exceptions
 │   ├── entities/              # User, Organization, Project, Release, Artifact, ConnectorInstance
-│   └── enums.py                # UserRole, ConnectorType, ConnectorImplementation, etc.
+│   └── enums.py               # UserRole, ConnectorType, ConnectorImplementation, etc.
 │
 ├── application/               # Cas d'utilisation (logique métier)
 │   ├── ports/
@@ -118,11 +118,11 @@ api/src/
 │   └── secondary/
 │       ├── database/          # Modèles SQLAlchemy + dépôts
 │       ├── queue/             # Celery + Redis
-│       └── connectors/        # Implémentations des connecteurs
-│           ├── task_management/    # Jira, Linear, Trello, Asana
-│           ├── source_control/      # GitHub, GitLab, Bitbucket, Gitea
+│       └── connectors/         # Implémentations des connecteurs
+│           ├── task_management/   # Jira, Linear, Trello, Asana
+│           ├── source_control/    # GitHub, GitLab, Bitbucket, Gitea
 │           ├── documentation/       # Confluence, Notion, Wiki.js, BookStack
-│           ├── planning/            # ClickUp, Taiga, Plane, Miro
+│           ├── planning/           # ClickUp, Taiga, Plane, Miro
 │           └── change_management/  # Jira SM, GLPI, Zammad, Redmine
 │
 └── core/                      # Config, dépendances, rate limiting
@@ -134,7 +134,7 @@ api/src/
 
 ## 6.1 Architecture à deux niveaux
 
-Le système de connecteurs suit une conception à **deux niveaux**:
+Le système de connecteurs suit une conception à **deux niveaux** :
 
 | Concept                     | Description                | Exemples                                             |
 | --------------------------- | -------------------------- | ---------------------------------------------------- |
@@ -153,85 +153,11 @@ Un manager configure dans son organisation quelles implémentations concrètes i
 | `HERRAMIENTA_PLANIFICACION` | Roadmap à long terme, épics et plans de release                                |
 | `GESTION_CAMBIOS`           | Systèmes ITSM pour approbations formelles, CABs et incidents de production     |
 
-## 6.3 Implémentations disponibles
-
-### GESTOR_TAREAS
-
-| Implémentation | API        | Plan gratuit    |
-| -------------- | ---------- | --------------- |
-| Jira           | REST v2/v3 | 10 utilisateurs |
-| Linear         | GraphQL    | Solide          |
-| Trello         | REST       | Très permissif  |
-| Asana          | REST       | 15 utilisateurs |
-
-### REPO_CODIGO
-
-| Implémentation | API     | Plan gratuit              |
-| -------------- | ------- | ------------------------- |
-| GitLab         | REST v4 | Illimité                  |
-| GitHub         | REST    | Illimité                  |
-| Bitbucket      | REST    | 5 utilisateurs            |
-| Gitea          | REST    | Auto-hébergé, open source |
-
-### SISTEMA_DOCUMENTAL
-
-| Implémentation | API     | Plan gratuit              |
-| -------------- | ------- | ------------------------- |
-| Confluence     | REST    | 10 utilisateurs           |
-| Notion         | REST    | Très complet              |
-| Wiki.js        | GraphQL | Auto-hébergé, open source |
-| BookStack      | REST    | Auto-hébergé, open source |
-
-### HERRAMIENTA_PLANIFICACION
-
-| Implémentation | API  | Plan gratuit              |
-| -------------- | ---- | ------------------------- |
-| ClickUp        | REST | Très complet              |
-| Taiga          | REST | Cloud ou auto-hébergé     |
-| Plane          | REST | Auto-hébergé, open source |
-| Miro           | REST | 3 tableaux                |
-
-### GESTION_CAMBIOS
-
-| Implémentation          | API      | Plan gratuit              |
-| ----------------------- | -------- | ------------------------- |
-| Jira Service Management | REST     | 3 agents                  |
-| GLPI                    | REST     | Auto-hébergé, open source |
-| Zammad                  | REST     | Auto-hébergé, open source |
-| Redmine                 | REST/XML | Auto-hébergé, open source |
-
-## 6.4 Port IConnector
-
-```python
-class IConnector(Protocol):
-    @property
-    def connector_type(self) -> str: ...
-
-    @property
-    def connector_implementation(self) -> str: ...
-
-    async def test_connection(self, config: Dict[str, Any]) -> bool: ...
-
-    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]: ...
-
-    async def list_artifacts(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> List[Dict[str, Any]]: ...
-
-    def get_metadata(self) -> Dict[str, Any]: ...
-```
-
-## 6.5 Flux de configuration par UI
-
-1. L'UI appelle `GET /api/v1/connectors/types` pour voir les implémentations disponibles
-2. L'UI affiche `config_schema` de chaque implémentation pour rendre le formulaire
-3. Le manager remplit le formulaire et envoie `POST /api/v1/organizations/{org_id}/connectors`
-4. Le système stocke `connector_type`, `connector_implementation` et les credentials chiffrées
-5. Lors de la vérification, `connector_implementation` est utilisé pour instancier le bon connecteur
-
 ---
 
 # 7. Modèle de domaine
 
-Entités principales:
+Entités principales :
 
 - **Organization** — Tenant principal avec owner
 - **User** — Utilisateur avec rôle et organisation
@@ -242,8 +168,6 @@ Entités principales:
 - **VerificationProfile** — Ensemble de règles pour un projet
 - **VerificationRule** — Modèle avec sévérité et paramètres
 - **VerificationResult** — Résultat de vérification avec verdict
-
-Chaque vérification stocke un instantané complet de l'état évalué.
 
 ---
 
@@ -272,7 +196,7 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 # 9. Persistance
 
-Base de données PostgreSQL:
+Base de données PostgreSQL :
 
 - UUID comme identifiants
 - JSONB pour les données dynamiques
@@ -286,31 +210,31 @@ Base de données PostgreSQL:
 | Couche                  | Mécanisme                    | Détail                                             |
 | ----------------------- | ---------------------------- | -------------------------------------------------- |
 | Authentification        | JWT (HS256)                  | Tokens signés. Claims: `sub`, `role`, `iat`, `exp` |
-| Double facteur (2FA)    | TOTP (pyotp + segno)         | Authentification à deux étapes optionnelle         |
+| Double facteur (2FA)    | TOTP (pyotp + segno)         | Authentification à deux étapes optionnelle par utilisateur |
 | Mots de passe           | bcrypt (passlib)             | Facteur de coût 12. Comparaison en temps constant  |
 | Credentials connecteurs | Fernet (AES-128-CBC)         | Chiffrement authentifié                            |
 | Endpoints protégés      | Bearer token                 | `Authorization: Bearer <jwt>` requis               |
 | Isolation multi-tenant  | Filtre par `organization_id` | 403 sur accès croisé                               |
 | Rate limiting           | slowapi                      | 30 req/min auth, 100 req/min lectures, 20 req/min écritures |
 | Force brute             | Verrouillage de compte       | 5 tentatives échouées → 15 min de blocage          |
-| Audit RGPD              | audit_log (PostgreSQL)       | Traçabilité complète; pseudonymisation dans les vérifications |
+| Audit RGPD              | audit_log (PostgreSQL)       | Traçabilité complète ; pseudonymisation dans les vérifications |
 
 ---
 
 # 11. Technologies
 
-| Couche                 | Technologie              | État                            |
-| ---------------------- | ------------------------ | ------------------------------- |
-| API Backend            | FastAPI (Python 3.11+)   | ✅ Complet                      |
-| Base de données        | PostgreSQL 16            | ✅ Opérationnel                 |
-| ORM                    | SQLAlchemy 2.x           | ✅ Opérationnel                 |
-| Migrations             | Alembic                  | ✅ Opérationnel                 |
-| Authentification       | JWT (PyJWT)              | ✅ Complet                      |
-| Client HTTP            | httpx (async)            | ✅ Intégré dans les connecteurs |
-| Frontend               | Angular 21               | ✅ Implémenté                   |
-| Moteur de vérification | Rust (Actix-web + Rayon) | ✅ Implémenté                   |
-| File de tâches         | Celery + Redis           | ✅ Implémenté                   |
-| Conteneurs             | Docker + Docker Compose  | ✅ Configuré                    |
+| Couche                 | Technologie              |
+| ---------------------- | ------------------------ |
+| API Backend            | FastAPI (Python 3.11+)   |
+| Base de données        | PostgreSQL 16            |
+| ORM                    | SQLAlchemy 2.x           |
+| Migrations             | Alembic                  |
+| Authentification       | JWT (PyJWT)              |
+| Client HTTP            | httpx (async)            |
+| Frontend               | Angular 21               |
+| Moteur de vérification | Rust (Actix-web + Rayon) |
+| File de tâches         | Celery + Redis           |
+| Conteneurs             | Docker + Docker Compose  |
 
 ---
 
@@ -320,13 +244,13 @@ Base de données PostgreSQL:
 | -------------------- | ---------------------------------------------- | ------- |
 | `DATABASE_URL`       | `postgresql+asyncpg://user:pass@host:5432/db`  | Oui     |
 | `JWT_SECRET_KEY`     | Clé de signature des tokens JWT                | Oui     |
-| `JWT_ALGORITHM`      | Algorithme JWT (défaut: `HS256`)               | Non     |
-| `JWT_EXPIRE_MINUTES` | Expiration du token en minutes (défaut: `60`)  | Non     |
+| `JWT_ALGORITHM`      | Algorithme JWT (défaut : `HS256`)              | Non     |
+| `JWT_EXPIRE_MINUTES` | Expiration du token en minutes (défaut : `60`) | Non     |
 | `ENCRYPTION_KEY`     | Clé Fernet pour le chiffrement des credentials | Oui     |
 | `ENVIRONMENT`        | `development` ou `production`                  | Non     |
 | `ALLOWED_ORIGINS`    | Origines CORS séparées par virgule             | Non     |
 
-Générer `ENCRYPTION_KEY`:
+Générer `ENCRYPTION_KEY` :
 
 ```bash
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
@@ -336,16 +260,16 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 # 13. API — Endpoints principaux
 
-URL de base: `http://localhost:8000/api/v1`
-Documentation interactive: `http://localhost:8000/docs`
+URL de base : `http://localhost:8000/api/v1`
+Documentation interactive : `http://localhost:8000/docs`
 
 ### Authentification
 
-| Méthode | Chemin                 | Auth | Description                                |
-| ------- | ---------------------- | ---- | ------------------------------------------ |
+| Méthode | Chemin                 | Auth | Description                                 |
+| ------- | ---------------------- | ---- | ------------------------------------------- |
 | `POST`  | `/auth/login`          | Non  | Login → retourne JWT (étape 1 si 2FA actif) |
-| `POST`  | `/auth/2fa/verify`     | Non  | Vérifier code TOTP (étape 2)               |
-| `POST`  | `/auth/refresh`        | Non  | Rafraîchir token                           |
+| `POST`  | `/auth/2fa/verify`     | Non  | Vérifier code TOTP (étape 2)                |
+| `POST`  | `/auth/refresh`        | Non  | Rafraîchir token                            |
 | `POST`  | `/auth/register`       | Non  | Inscription avec acceptation des conditions |
 
 ### Organisations
@@ -384,7 +308,7 @@ cd svaes
 docker compose up --build
 ```
 
-API: `http://localhost:8000` · Swagger: `http://localhost:8000/docs` · PostgreSQL: `localhost:5432`
+API : `http://localhost:8000` · Swagger : `http://localhost:8000/docs` · PostgreSQL : `localhost:5432`
 
 ## Développement local (sans Docker)
 
@@ -411,9 +335,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 Le système fournit une solution découplée, extensible et robuste pour la vérification automatique des livraisons de logiciels.
 
-Le système est pleinement opérationnel avec:
+Le système est pleinement opérationnel avec :
 
-- 20 implémentations de connecteurs à travers 5 types fonctionnels
+- 20 implémentations de connecteurs dans 5 types fonctionnels
 - Frontend Angular avec authentification 2FA, dashboard, gestion des releases et connecteurs
 - Internationalisation ES/EN dans tous les modules frontend
 - Isolation multi-tenant complète avec piste d'audit RGPD
@@ -421,4 +345,4 @@ Le système est pleinement opérationnel avec:
 
 ---
 
-_Dernière mise à jour: Juin 2026 — Adrián Martínez (UO295454)_
+_Dernière mise à jour : Juin 2026 — Adrián Martínez (UO295454)_

@@ -16,7 +16,6 @@ target/
 .env
 .env.local
 .env.*.local
-api/.env
 
 # Logs
 /logs/

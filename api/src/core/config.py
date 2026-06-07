@@ -1,9 +1,12 @@
 import logging
 from functools import lru_cache
+from pathlib import Path
 
 from cryptography.fernet import Fernet
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
+
+_ROOT_ENV = str(Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
 _log = logging.getLogger(__name__)
 
@@ -49,7 +52,7 @@ class Settings(BaseSettings):
     smtp_from: str = "noreply@svaes.local"
     app_base_url: str = "http://localhost:4200"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
+    model_config = {"env_file": _ROOT_ENV, "env_file_encoding": "utf-8", "extra": "ignore"}
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
