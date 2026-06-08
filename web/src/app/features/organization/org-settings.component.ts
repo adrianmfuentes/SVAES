@@ -13,7 +13,7 @@ interface OrgUser {
   id: string;
   email: string;
   display_name: string;
-  role: 'VIEWER' | 'OPERATOR' | 'ADMIN' | 'MANAGER';
+  role: 'VIEWER' | 'OPERATOR' | 'ADMIN' | 'MANAGER' | 'OWNER';
 }
 
 interface Project {
