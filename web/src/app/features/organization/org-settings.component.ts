@@ -13,7 +13,7 @@ interface OrgUser {
   id: string;
   email: string;
   display_name: string;
-  role: 'VIEWER' | 'OPERATOR' | 'ADMIN' | 'MANAGER' | 'OWNER';
+  role: 'VIEWER' | 'OPERATOR' | 'ADMIN' | 'MANAGER';
 }
 
 interface Project {
@@ -69,7 +69,7 @@ interface Project {
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let member of members()" [class.row-locked]="member.role === 'OWNER'">
+              <tr *ngFor="let member of members()" [class.row-locked]="member.role === 'MANAGER'">
                 <td class="cell-primary">
                   {{ member.display_name }}
                   <span class="self-tag" *ngIf="member.id === currentUserId">{{ 'org_settings.self_tag' | t }}</span>
@@ -77,7 +77,7 @@ interface Project {
                 <td class="cell-muted">{{ member.email }}</td>
                 <td>
                   <select
-                    *ngIf="member.role !== 'OWNER' && member.id !== currentUserId"
+                    *ngIf="member.role !== 'MANAGER' && member.id !== currentUserId"
                     class="role-select"
                     [value]="member.role"
                     (change)="onRoleChange(member, $event)"
@@ -86,12 +86,12 @@ interface Project {
                     <option value="OPERATOR">{{ 'org_settings.role_operator' | t }}</option>
                     <option value="MANAGER">{{ 'org_settings.role_manager' | t }}</option>
                   </select>
-                  <span *ngIf="member.role === 'OWNER'" class="role-owner">{{ 'org_settings.role_owner' | t }}</span>
-                  <span *ngIf="member.id === currentUserId && member.role !== 'OWNER'" class="role-text">{{ 'org_settings.role_' + member.role.toLowerCase() | t }}</span>
+                  <span *ngIf="member.role === 'MANAGER'" class="role-owner">{{ 'org_settings.role_owner' | t }}</span>
+                  <span *ngIf="member.id === currentUserId && member.role !== 'MANAGER'" class="role-text">{{ 'org_settings.role_' + member.role.toLowerCase() | t }}</span>
                 </td>
                 <td class="cell-actions">
                   <button
-                    *ngIf="member.id !== currentUserId && member.role !== 'OWNER'"
+                    *ngIf="member.id !== currentUserId && member.role !== 'MANAGER'"
                     class="btn-ghost btn-danger-ghost"
                     (click)="confirmRemoveMember(member)"
                   >{{ 'common.delete' | t }}</button>
