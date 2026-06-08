@@ -104,7 +104,7 @@ describe('ProfilesComponent', () => {
       expect(req.request.method).toBe('POST');
       req.flush({ ...mockProfile, id: 'p2', name: 'New' });
       expect(component.showModal()).toBe(false);
-      expect(component.templates()).toHaveLength(1);
+      expect(component.orgProfiles()).toHaveLength(1);
     });
 
     it('should PATCH existing profile', () => {
