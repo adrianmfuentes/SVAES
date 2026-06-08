@@ -83,6 +83,16 @@
       </a>
 
       <a
+        *ngIf="isManager"
+        routerLink="/app/org-settings"
+        routerLinkActive="nav-item-active"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="nav-item"
+      >
+        {{ 'shell.nav_org_settings' | t }}
+      </a>
+
+      <a
         routerLink="/app/connectors"
         routerLinkActive="nav-item-active"
         [routerLinkActiveOptions]="{ exact: false }"

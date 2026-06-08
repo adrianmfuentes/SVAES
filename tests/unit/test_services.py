@@ -245,7 +245,7 @@ class TestAuthService:
         user_repo.get_by_id = AsyncMock(return_value=user)
         user_repo.update = AsyncMock(return_value=user)
         mock_qr = MagicMock()
-        mock_qr.save = MagicMock(side_effect=lambda buf, **kw: buf.write("<svg/>"))
+        mock_qr.save = MagicMock(side_effect=lambda buf, **kw: buf.write(b"<svg/>"))
         with patch("segno.make_qr", return_value=mock_qr):
             result = await service.setup_totp(user.id)
         assert result.secret == existing_secret
@@ -257,7 +257,7 @@ class TestAuthService:
         user_repo.get_by_id = AsyncMock(return_value=user)
         user_repo.update = AsyncMock(return_value=user)
         mock_qr = MagicMock()
-        mock_qr.save = MagicMock(side_effect=lambda buf, **kw: buf.write("<svg/>"))
+        mock_qr.save = MagicMock(side_effect=lambda buf, **kw: buf.write(b"<svg/>"))
         with patch("segno.make_qr", return_value=mock_qr):
             result = await service.setup_totp(user.id)
         assert result.secret is not None

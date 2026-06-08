@@ -132,6 +132,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'org-settings',
+        canActivate: [roleGuard],
+        data: { role: 'MANAGER' },
+        loadComponent: () =>
+          import('./features/organization/org-settings.component').then(
+            (m) => m.OrgSettingsComponent,
+          ),
+      },
+      {
         path: 'profile',
         loadComponent: () =>
           import('./features/profile/profile.component').then(

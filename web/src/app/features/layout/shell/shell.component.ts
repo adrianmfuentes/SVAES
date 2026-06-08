@@ -21,6 +21,10 @@ export class ShellComponent {
     return this.authService.isAdmin();
   }
 
+  get isManager(): boolean {
+    return this.authService.getUserRole() === 'MANAGER';
+  }
+
   get displayName(): string {
     const user = this.authService.getUser();
     return user?.display_name || user?.email || '';
