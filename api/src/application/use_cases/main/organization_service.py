@@ -119,6 +119,28 @@ class OrganizationService(IOrganizationService):
         return updated
 
 
+    async def unarchive_project(self, project_id: UUID) -> Project:
+        project = await self._project_repo.get_by_id(project_id)
+        if not project:
+            raise EntityNotFoundError(f"Proyecto no encontrado: {project_id}")
+
+        project.is_archived = False
+        updated = await self._project_repo.update(project)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.PROJECT_UNARCHIVED,
+            user_id=project.organization_id,
+            organization_id=project.organization_id,
+            resource_type="project",
+            resource_id=project_id,
+            details={"name": project.name},
+        ))
+        _log.info("Project unarchived: id=%s org=%s", project_id, project.organization_id)
+
+        return updated
+
+
     async def transfer_ownership(
         self,
         organization_id: UUID,

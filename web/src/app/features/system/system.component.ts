@@ -173,7 +173,7 @@ interface ProbeResult<T> {
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let org of orgs()">
+            <tr *ngFor="let org of anonymizedOrgs()">
               <td class="cell-primary">{{ org.name }}</td>
               <td><code class="mono-sm">{{ org.slug }}</code></td>
             </tr>
@@ -614,6 +614,13 @@ export class SystemComponent implements OnInit, OnDestroy {
 
   activeUserCount = computed(() => this.users().filter(u => u.is_active).length);
 
+  anonymizedOrgs = computed(() =>
+    this.orgs().map(org => ({
+      ...org,
+      name: `Organization ${this.simpleHash(org.id)}`,
+    }))
+  );
+
   secondsSince = signal(0);
   private lastRefresh = Date.now();
   private timerSub?: Subscription;
@@ -743,5 +750,15 @@ export class SystemComponent implements OnInit, OnDestroy {
   maskId(id: string): string {
     if (!id || id.length < 8) return '••••••••';
     return id.slice(0, 6) + '••••' + id.slice(-4);
+  }
+
+  private simpleHash(input: string): string {
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.codePointAt(i)!;
+      hash = ((hash << 5) - hash) + char;
+      hash = Math.trunc(hash);
+    }
+    return Math.abs(hash).toString(16).slice(0, 8).padStart(8, '0');
   }
 }

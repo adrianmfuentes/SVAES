@@ -320,6 +320,36 @@ async def archive_project(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
+@router.post("/api/v1/organizations/{org_id}/projects/{project_id}/unarchive", status_code=status.HTTP_200_OK)
+async def unarchive_project(
+    org_id: UUID,
+    project_id: UUID,
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.ARCHIVE_PROJECT))],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
+):
+    """Endpoint para desarchivar un proyecto.
+
+    Atributos:
+        - org_id: UUID - El ID de la organización.
+        - project_id: UUID - El ID del proyecto a desarchivar.
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.
+
+    Retorna:
+        - Un diccionario con el ID, nombre y estado del proyecto desarchivado.
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso a la organización.
+        - Lanza HTTPException con status 404 si la organización o el proyecto no existen.
+        - Lanza HTTPException con status 500 para cualquier error inesperado.
+    """
+    try:
+        project = await service.unarchive_project(project_id=project_id)
+        return {"id": str(project.id), "name": project.name, "is_archived": project.is_archived}
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
 @router.post("/api/v1/organizations/{org_id}/restore", status_code=status.HTTP_200_OK)
 async def restore_organization(
     org_id: UUID,

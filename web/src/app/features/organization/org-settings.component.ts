@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -22,6 +22,11 @@ interface Project {
   description: string;
   is_archived: boolean;
   created_at: string | null;
+}
+
+interface Profile {
+  id: string;
+  name: string;
 }
 
 @Component({
@@ -109,6 +114,14 @@ interface Project {
       <div *ngIf="activeTab() === 'projects'" class="tab-content">
         <div class="tab-toolbar">
           <h2 class="tab-title">{{ 'org_settings.projects_title' | t }}</h2>
+          <div class="toolbar-actions">
+            <button class="btn-ghost" (click)="toggleShowArchived()">
+              {{ showArchived() ? ('projects.hide_archived' | t) : ('projects.show_archived' | t) }}
+            </button>
+            <button class="btn-primary" (click)="openCreateProjectModal()">
+              {{ 'projects.new_btn' | t }}
+            </button>
+          </div>
         </div>
 
         <div *ngIf="projectsLoading()" class="skeleton-list">
@@ -118,7 +131,7 @@ interface Project {
         <div *ngIf="projectsError() && !projectsLoading()" class="error-banner">{{ projectsError() }}</div>
 
         <div *ngIf="!projectsLoading() && !projectsError()" class="data-table-wrap">
-          <table class="data-table" *ngIf="projects().length > 0; else projectsEmpty">
+          <table class="data-table" *ngIf="displayedProjects().length > 0; else projectsEmpty">
             <thead>
               <tr>
                 <th>{{ 'common.name' | t }}</th>
@@ -128,7 +141,7 @@ interface Project {
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let project of projects()">
+              <tr *ngFor="let project of displayedProjects()">
                 <td class="cell-primary">{{ project.name }}</td>
                 <td class="cell-muted">{{ project.description || '—' }}</td>
                 <td>
@@ -142,6 +155,11 @@ interface Project {
                     class="btn-ghost"
                     (click)="confirmArchiveProject(project)"
                   >{{ 'org_settings.archive_btn' | t }}</button>
+                  <button
+                    *ngIf="project.is_archived"
+                    class="btn-ghost"
+                    (click)="unarchiveProject(project)"
+                  >{{ 'projects.unarchive_btn' | t }}</button>
                 </td>
               </tr>
             </tbody>
@@ -221,6 +239,51 @@ interface Project {
         </div>
       </div>
     </div>
+
+    <!-- CREATE PROJECT MODAL -->
+    <div *ngIf="showCreateProjectModal()" class="modal-overlay" (click)="closeCreateProjectModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'project_new.title' | t }}</h3>
+          <button class="modal-close" (click)="closeCreateProjectModal()">×</button>
+        </div>
+        <div class="form-group">
+          <label for="proj-name">{{ 'project_new.name_label' | t }}</label>
+          <input
+            id="proj-name"
+            type="text"
+            [(ngModel)]="newProjectName"
+            [placeholder]="'project_new.name_placeholder' | t"
+            autocomplete="off"
+          />
+        </div>
+        <div class="form-group">
+          <label for="proj-desc">{{ 'project_new.description_label' | t }}</label>
+          <textarea
+            id="proj-desc"
+            [(ngModel)]="newProjectDescription"
+            rows="3"
+            [placeholder]="'project_new.description_placeholder' | t"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label for="proj-profile">{{ 'project_new.profile_label' | t }}</label>
+          <select id="proj-profile" [(ngModel)]="newProjectProfileId" class="select">
+            <option value="">{{ 'project_new.profile_placeholder' | t }}</option>
+            @for (p of profiles(); track p.id) {
+              <option [value]="p.id">{{ p.name }}</option>
+            }
+          </select>
+        </div>
+        <div *ngIf="createProjectError()" class="error-banner error-sm">{{ createProjectError() }}</div>
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="closeCreateProjectModal()">{{ 'common.cancel' | t }}</button>
+          <button class="btn-primary" (click)="createProject()" [disabled]="creatingProject()">
+            {{ creatingProject() ? ('project_new.submitting' | t) : ('project_new.submit' | t) }}
+          </button>
+        </div>
+      </div>
+    </div>
   `,
   styles: [`
     :host { display: block; }
@@ -292,6 +355,12 @@ interface Project {
       letter-spacing: -0.01em;
       color: var(--ink);
       margin: 0;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
     }
 
     .data-table-wrap {
@@ -656,6 +725,12 @@ export class OrgSettingsComponent implements OnInit {
   projects = signal<Project[]>([]);
   projectsLoading = signal(true);
   projectsError = signal<string | null>(null);
+  showArchived = signal(false);
+
+  displayedProjects = computed(() => {
+    if (this.showArchived()) return this.projects();
+    return this.projects().filter(p => !p.is_archived);
+  });
 
   // Invite modal
   showInviteModal = signal(false);
@@ -672,6 +747,16 @@ export class OrgSettingsComponent implements OnInit {
   // Archive project modal
   projectToArchive = signal<Project | null>(null);
   archiving = signal(false);
+
+  // Create project modal
+  showCreateProjectModal = signal(false);
+  profiles = signal<Profile[]>([]);
+  profilesLoading = signal(false);
+  newProjectName = '';
+  newProjectDescription = '';
+  newProjectProfileId = '';
+  createProjectError = signal<string | null>(null);
+  creatingProject = signal(false);
 
   private readonly loaded = new Set<OrgSettingsTab>();
 
@@ -824,6 +909,64 @@ export class OrgSettingsComponent implements OnInit {
           p.id === project.id ? { ...p, is_archived: true } : p
         ));
         this.projectToArchive.set(null);
+      });
+  }
+
+  openCreateProjectModal(): void {
+    this.newProjectName = '';
+    this.newProjectDescription = '';
+    this.newProjectProfileId = '';
+    this.createProjectError.set(null);
+    this.profilesLoading.set(true);
+    this.showCreateProjectModal.set(true);
+
+    this.http.get<Profile[]>(`/api/v1/organizations/${this.orgId}/profiles`)
+      .pipe(catchError(() => of([] as Profile[])))
+      .subscribe(data => {
+        this.profiles.set(data);
+        this.profilesLoading.set(false);
+      });
+  }
+
+  closeCreateProjectModal(): void {
+    this.showCreateProjectModal.set(false);
+  }
+
+  createProject(): void {
+    if (!this.newProjectName || !this.newProjectProfileId) return;
+    this.creatingProject.set(true);
+    this.createProjectError.set(null);
+
+    this.http.post<Project>(`/api/v1/organizations/${this.orgId}/projects`, {
+      name: this.newProjectName,
+      description: this.newProjectDescription || '',
+      profile_id: this.newProjectProfileId,
+    }).pipe(
+      catchError(err => {
+        this.createProjectError.set(err.error?.detail || this.ts.translateInstant('project_new.error'));
+        this.creatingProject.set(false);
+        return of(null);
+      })
+    ).subscribe(res => {
+      this.creatingProject.set(false);
+      if (res) {
+        this.projects.update(projects => [res, ...projects]);
+        this.closeCreateProjectModal();
+      }
+    });
+  }
+
+  toggleShowArchived(): void {
+    this.showArchived.update(v => !v);
+  }
+
+  unarchiveProject(project: Project): void {
+    this.http.post(`/api/v1/organizations/${this.orgId}/projects/${project.id}/unarchive`, {})
+      .pipe(catchError(() => of(null)))
+      .subscribe(() => {
+        this.projects.update(projects => projects.map(p =>
+          p.id === project.id ? { ...p, is_archived: false } : p
+        ));
       });
   }
 }

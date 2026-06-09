@@ -556,6 +556,9 @@
   "projects.empty_text": "No projects yet.",
   "projects.empty_cta": "Create your first project",
   "projects.load_error": "Error loading projects.",
+  "projects.show_archived": "Show archived",
+  "projects.hide_archived": "Hide archived",
+  "projects.unarchive_btn": "Unarchive",
 
   "project_new.title": "New project",
   "project_new.back_link": "← Projects",

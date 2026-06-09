@@ -66,6 +66,10 @@ class IOrganizationService(ABC):
         pass
 
     @abstractmethod
+    async def unarchive_project(self, project_id: UUID) -> Project:
+        pass
+
+    @abstractmethod
     async def restore_organization(self, organization_id: UUID) -> Organization:
         pass
 

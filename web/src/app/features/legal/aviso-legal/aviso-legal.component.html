@@ -5,7 +5,7 @@
     <a routerLink="/" class="legal-logo">SVAES</a>
     <div class="legal-header-nav">
       <app-lang-toggle theme="light" />
-      <a routerLink="/" class="btn-secondary">{{ 'legal.common.back_start' | t }}</a>
+      <a routerLink="/" class="btn-secondary">{{ 'legal.common.back_home' | t }}</a>
     </div>
   </header>
 
@@ -14,13 +14,13 @@
       <nav [attr.aria-label]="'legal.notice.nav_label' | t">
         <p class="legal-toc-heading" aria-hidden="true">{{ 'legal.common.toc_heading' | t }}</p>
         <ol class="legal-toc-list">
-          <li class="legal-toc-item"><a href="#datos-titular"             class="legal-toc-link">{{ 'legal.notice.toc.1' | t }}</a></li>
-          <li class="legal-toc-item"><a href="#objeto-aceptacion"         class="legal-toc-link">{{ 'legal.notice.toc.2' | t }}</a></li>
-          <li class="legal-toc-item"><a href="#acceso-uso"                class="legal-toc-link">{{ 'legal.notice.toc.3' | t }}</a></li>
-          <li class="legal-toc-item"><a href="#propiedad-intelectual"     class="legal-toc-link">{{ 'legal.notice.toc.4' | t }}</a></li>
-          <li class="legal-toc-item"><a href="#exclusion-responsabilidad" class="legal-toc-link">{{ 'legal.notice.toc.5' | t }}</a></li>
-          <li class="legal-toc-item"><a href="#proteccion-datos"          class="legal-toc-link">{{ 'legal.notice.toc.6' | t }}</a></li>
-          <li class="legal-toc-item"><a href="#ley-aplicable"             class="legal-toc-link">{{ 'legal.notice.toc.7' | t }}</a></li>
+          <li class="legal-toc-item"><a href="/legal/aviso-legal#datos-titular" class="legal-toc-link">{{ 'legal.notice.toc.1' | t }}</a></li>
+          <li class="legal-toc-item"><a href="/legal/aviso-legal#objeto-aceptacion" class="legal-toc-link">{{ 'legal.notice.toc.2' | t }}</a></li>
+          <li class="legal-toc-item"><a href="/legal/aviso-legal#acceso-uso" class="legal-toc-link">{{ 'legal.notice.toc.3' | t }}</a></li>
+          <li class="legal-toc-item"><a href="/legal/aviso-legal#propiedad-intelectual" class="legal-toc-link">{{ 'legal.notice.toc.4' | t }}</a></li>
+          <li class="legal-toc-item"><a href="/legal/aviso-legal#exclusion-responsabilidad" class="legal-toc-link">{{ 'legal.notice.toc.5' | t }}</a></li>
+          <li class="legal-toc-item"><a href="/legal/aviso-legal#proteccion-datos" class="legal-toc-link">{{ 'legal.notice.toc.6' | t }}</a></li>
+          <li class="legal-toc-item"><a href="/legal/aviso-legal#ley-aplicable" class="legal-toc-link">{{ 'legal.notice.toc.7' | t }}</a></li>
         </ol>
       </nav>
     </aside>
