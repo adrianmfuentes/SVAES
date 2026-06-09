@@ -228,7 +228,7 @@
   "shell.role_operator": "Operador",
   "shell.role_viewer": "Visor",
   "shell.logout": "Cerrar sesión",
-  "shell.nav_org_settings": "Configuración",
+  "shell.nav_org_settings": "Miembros",
 
   "dashboard.title": "Dashboard",
   "dashboard.total_releases": "Total entregas",
@@ -638,7 +638,7 @@
   "admin.access_requests_title": "Solicitudes de acceso",
   "admin.no_ar": "No hay solicitudes de acceso.",
 
-  "org_settings.title": "Configuración de la organización",
+  "org_settings.title": "Miembros",
   "org_settings.tab_members": "Miembros",
   "org_settings.tab_projects": "Proyectos",
   "org_settings.members_title": "Miembros de la organización",
@@ -658,10 +658,10 @@
   "org_settings.role_operator": "Técnico",
   "org_settings.role_viewer": "Lector",
   "org_settings.remove_member_title": "Eliminar miembro",
-  "org_settings.remove_member_confirm": "¿Está seguro de que desea eliminar a {{ name }} de la organización? Perderán el acceso a esta organización.",
+  "org_settings.remove_member_confirm": "¿Está seguro de que desea eliminar a {{name}} de la organización? Perderán el acceso a esta organización.",
   "org_settings.archive_btn": "Archivar",
   "org_settings.archive_project_title": "Archivar proyecto",
-  "org_settings.archive_project_confirm": "¿Está seguro de que desea archivar el proyecto \"{{ name }}\"? Los proyectos archivados son de solo lectura y no se pueden usar para nuevas entregas.",
+  "org_settings.archive_project_confirm": "¿Está seguro de que desea archivar el proyecto \"{{name}}\"? Los proyectos archivados son de solo lectura y no se pueden usar para nuevas entregas.",
 
   "system.system_badge": "Sistema",
   "system.updated_ago": "Actualizado hace {{n}}s",

@@ -44,6 +44,7 @@ interface Project {
                 <th>{{ 'projects.col_description' | t }}</th>
                 <th>{{ 'projects.col_status' | t }}</th>
                 <th>{{ 'projects.col_created' | t }}</th>
+                <th *ngIf="isManager" class="cell-actions-header">{{ 'common.actions' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -56,6 +57,18 @@ interface Project {
                   </span>
                 </td>
                 <td class="cell-muted">{{ p.created_at | date:'dd MMM yyyy' }}</td>
+                <td *ngIf="isManager" class="cell-actions">
+                  <button
+                    *ngIf="!p.is_archived"
+                    class="btn-ghost"
+                    (click)="confirmArchive(p)"
+                  >{{ 'org_settings.archive_btn' | t }}</button>
+                  <button
+                    *ngIf="p.is_archived"
+                    class="btn-ghost"
+                    (click)="unarchive(p)"
+                  >{{ 'projects.unarchive_btn' | t }}</button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -69,6 +82,23 @@ interface Project {
             </a>
           </div>
         </ng-template>
+      </div>
+    </div>
+
+    <!-- CONFIRM ARCHIVE MODAL -->
+    <div *ngIf="projectToArchive()" class="modal-overlay" (click)="cancelArchive()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'org_settings.archive_project_title' | t }}</h3>
+          <button class="modal-close" (click)="cancelArchive()">×</button>
+        </div>
+        <p class="modal-body-text">{{ 'org_settings.archive_project_confirm' | t: { name: projectToArchive()!.name } }}</p>
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="cancelArchive()">{{ 'common.cancel' | t }}</button>
+          <button class="btn-primary" (click)="archive()" [disabled]="archiving()">
+            {{ archiving() ? ('common.loading' | t) : ('org_settings.archive_btn' | t) }}
+          </button>
+        </div>
       </div>
     </div>
   `,
@@ -151,6 +181,8 @@ interface Project {
 
     .cell-primary { font-weight: 500; }
     .cell-muted { color: var(--muted); }
+    .data-table th.cell-actions-header, .data-table td.cell-actions { text-align: right !important; }
+    .cell-actions { padding-right: var(--spacing-md); }
 
     .status-badge {
       font-family: var(--font-sans);
@@ -210,6 +242,99 @@ interface Project {
       color: var(--muted);
       margin: 0;
     }
+
+    .cell-actions {
+      text-align: right;
+      white-space: nowrap;
+      display: flex;
+      gap: var(--spacing-sm);
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .btn-ghost {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: 1px solid transparent;
+      border-radius: var(--rounded-md);
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+    }
+
+    .btn-ghost:hover:not(:disabled) { color: var(--ink); background: var(--paper-secondary); border-color: var(--border); }
+    .btn-ghost:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-panel {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--rounded-lg);
+      padding: var(--spacing-lg);
+      width: 480px;
+      max-width: calc(100vw - 48px);
+      max-height: calc(100vh - 80px);
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .modal-title {
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    .modal-close {
+      font-size: 1.25rem;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      transition: color 0.12s ease;
+    }
+
+    .modal-close:hover { color: var(--ink); }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-lg);
+      padding-top: var(--spacing-md);
+      border-top: 1px solid var(--border);
+    }
+
+    .modal-body-text {
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      color: var(--ink);
+      line-height: 1.65;
+      margin: 0 0 var(--spacing-md);
+    }
   `],
 })
 export class ProjectsComponent implements OnInit {
@@ -218,13 +343,16 @@ export class ProjectsComponent implements OnInit {
   private readonly ts = inject(TranslationService);
 
   readonly isManager = this.authService.getUserRole() === 'MANAGER';
+  readonly orgId = this.authService.getUser()?.organization_id ?? '';
 
   projects = signal<Project[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
+  projectToArchive = signal<Project | null>(null);
+  archiving = signal(false);
 
   ngOnInit(): void {
-    this.http.get<Project[]>('/api/v1/projects')
+    this.http.get<Project[]>(`/api/v1/organizations/${this.orgId}/projects`)
       .pipe(catchError(() => {
         this.error.set(this.ts.translateInstant('projects.load_error'));
         return of([] as Project[]);
@@ -232,6 +360,43 @@ export class ProjectsComponent implements OnInit {
       .subscribe(data => {
         this.projects.set(data);
         this.loading.set(false);
+      });
+  }
+
+  confirmArchive(project: Project): void {
+    this.projectToArchive.set(project);
+  }
+
+  cancelArchive(): void {
+    this.projectToArchive.set(null);
+  }
+
+  archive(): void {
+    const project = this.projectToArchive();
+    if (!project) return;
+    this.archiving.set(true);
+
+    this.http.post(`/api/v1/organizations/${this.orgId}/projects/${project.id}/archive`, {})
+      .pipe(catchError(() => {
+        this.archiving.set(false);
+        return of(null);
+      }))
+      .subscribe(() => {
+        this.archiving.set(false);
+        this.projects.update(projects => projects.map(p =>
+          p.id === project.id ? { ...p, is_archived: true } : p
+        ));
+        this.projectToArchive.set(null);
+      });
+  }
+
+  unarchive(project: Project): void {
+    this.http.post(`/api/v1/organizations/${this.orgId}/projects/${project.id}/unarchive`, {})
+      .pipe(catchError(() => of(null)))
+      .subscribe(() => {
+        this.projects.update(projects => projects.map(p =>
+          p.id === project.id ? { ...p, is_archived: false } : p
+        ));
       });
   }
 }

@@ -228,7 +228,7 @@
   "shell.role_operator": "Operator",
   "shell.role_viewer": "Viewer",
   "shell.logout": "Log out",
-  "shell.nav_org_settings": "Settings",
+  "shell.nav_org_settings": "Members",
 
   "dashboard.title": "Dashboard",
   "dashboard.total_releases": "Total releases",
@@ -638,7 +638,7 @@
   "admin.access_requests_title": "Access requests",
   "admin.no_ar": "No access requests.",
 
-  "org_settings.title": "Organization Settings",
+  "org_settings.title": "Members",
   "org_settings.tab_members": "Members",
   "org_settings.tab_projects": "Projects",
   "org_settings.members_title": "Organization Members",
@@ -658,10 +658,10 @@
   "org_settings.role_operator": "Operator",
   "org_settings.role_viewer": "Viewer",
   "org_settings.remove_member_title": "Remove member",
-  "org_settings.remove_member_confirm": "Are you sure you want to remove {{ name }} from the organization? They will lose access to this organization.",
+  "org_settings.remove_member_confirm": "Are you sure you want to remove {{name}} from the organization? They will lose access to this organization.",
   "org_settings.archive_btn": "Archive",
   "org_settings.archive_project_title": "Archive project",
-  "org_settings.archive_project_confirm": "Are you sure you want to archive the project \"{{ name }}\"? Archived projects are read-only and cannot be used for new releases.",
+  "org_settings.archive_project_confirm": "Are you sure you want to archive the project \"{{name}}\"? Archived projects are read-only and cannot be used for new releases.",
 
   "system.system_badge": "System",
   "system.updated_ago": "Updated {{n}}s ago",
