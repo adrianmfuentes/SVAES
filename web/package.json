@@ -13,7 +13,8 @@
   "pnpm": {
     "overrides": {
       "qs": "6.15.2",
-      "hono": ">=4.12.21"
+      "hono": ">=4.12.21",
+      "shell-quote": ">=1.8.4"
     }
   },
   "dependencies": {
