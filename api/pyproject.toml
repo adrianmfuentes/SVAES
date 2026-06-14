@@ -35,7 +35,7 @@ dev = [
     "factory-boy",
     "faker",
     "testcontainers",
-    "locust>=2.44.1",
+    "locust>=2.44.3",
 ]
 
 [tool.pytest.ini_options]
