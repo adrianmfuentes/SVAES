@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, HostListener } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
@@ -16,6 +16,14 @@ import { LangToggleComponent } from '../../../core/components/lang-toggle/lang-t
 export class ShellComponent {
   readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
+
+  sidebarOpen = false;
+
+  toggleSidebar(): void { this.sidebarOpen = !this.sidebarOpen; }
+  closeSidebar(): void { this.sidebarOpen = false; }
+
+  @HostListener('window:keydown.escape')
+  onEscape(): void { this.sidebarOpen = false; }
 
   get isAdmin(): boolean {
     return this.authService.isAdmin();

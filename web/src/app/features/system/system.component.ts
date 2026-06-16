@@ -90,7 +90,7 @@ interface ProbeResult<T> {
         <div class="service-grid">
           <div class="service-card skeleton-card" *ngFor="let i of [1,2,3,4]">
             <div class="skeleton sk-sm"></div>
-            <div class="skeleton sk-md" style="margin-top:10px"></div>
+            <div class="skeleton sk-md" style="margin-top:0.625rem"></div>
           </div>
         </div>
       </ng-template>
@@ -123,7 +123,7 @@ interface ProbeResult<T> {
         <div class="metrics-grid">
           <div class="metric-card" *ngFor="let i of [1,2,3,4]">
             <div class="skeleton sk-sm"></div>
-            <div class="skeleton sk-lg" style="margin-top:10px"></div>
+            <div class="skeleton sk-lg" style="margin-top:0.625rem"></div>
           </div>
         </div>
       </ng-template>
@@ -254,9 +254,9 @@ interface ProbeResult<T> {
       text-transform: uppercase;
       color: var(--muted);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
+      padding: 0.125rem 0.5rem;
     }
 
     .refresh-controls {
@@ -273,7 +273,7 @@ interface ProbeResult<T> {
     .btn-refresh {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 0.3125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -281,9 +281,9 @@ interface ProbeResult<T> {
       text-transform: uppercase;
       color: var(--muted);
       background: none;
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
-      padding: 5px 10px;
+      padding: 0.3125rem 0.625rem;
       cursor: pointer;
       transition: color 0.12s ease, border-color 0.12s ease;
     }
@@ -321,8 +321,8 @@ interface ProbeResult<T> {
 
     .service-card {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
-      border-left-width: 3px;
+      border: 0.0625rem solid var(--border);
+      border-left-width: 0.1875rem;
       border-radius: var(--rounded-lg);
       padding: var(--spacing-md);
     }
@@ -345,13 +345,13 @@ interface ProbeResult<T> {
     .service-status-row {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 0.4375rem;
     }
 
     .service-dot {
       display: inline-block;
-      width: 7px;
-      height: 7px;
+      width: 0.4375rem;
+      height: 0.4375rem;
       border-radius: 50%;
     }
 
@@ -372,7 +372,7 @@ interface ProbeResult<T> {
       font-family: var(--font-mono);
       font-size: 0.6875rem;
       color: var(--muted);
-      margin-top: 4px;
+      margin-top: 0.25rem;
     }
 
     .metrics-grid {
@@ -383,7 +383,7 @@ interface ProbeResult<T> {
 
     .metric-card {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-lg);
     }
@@ -415,12 +415,12 @@ interface ProbeResult<T> {
     .metric-sub {
       font-size: 0.75rem;
       color: var(--muted);
-      margin-top: 4px;
+      margin-top: 0.25rem;
     }
 
     .action-card {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-lg);
       display: flex;
@@ -452,7 +452,7 @@ interface ProbeResult<T> {
       align-items: center;
       gap: var(--spacing-sm);
       flex-shrink: 0;
-      padding-top: 4px;
+      padding-top: 0.25rem;
     }
 
     .confirm-label {
@@ -469,9 +469,9 @@ interface ProbeResult<T> {
       text-transform: uppercase;
       color: var(--muted);
       background: none;
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
-      padding: 7px 12px;
+      padding: 0.4375rem 0.75rem;
       cursor: pointer;
       transition: color 0.12s ease, border-color 0.12s ease;
     }
@@ -482,7 +482,7 @@ interface ProbeResult<T> {
     .reload-result {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 0.375rem;
       font-size: 0.8125rem;
       border-radius: var(--rounded-md);
       padding: var(--spacing-xs) var(--spacing-sm);
@@ -492,13 +492,13 @@ interface ProbeResult<T> {
     .reload-ok {
       color: var(--verdict-valid);
       background: var(--verdict-valid-bg);
-      border: 1px solid var(--verdict-valid-border);
+      border: 0.0625rem solid var(--verdict-valid-border);
     }
 
     .reload-fail {
       color: var(--verdict-invalid);
       background: var(--verdict-invalid-bg);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
     }
 
     .result-icon { font-weight: 700; }
@@ -512,7 +512,7 @@ interface ProbeResult<T> {
 
     .data-table-wrap {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       overflow: hidden;
       margin-bottom: var(--spacing-md);
@@ -529,7 +529,7 @@ interface ProbeResult<T> {
       color: var(--muted);
       padding: var(--spacing-sm) var(--spacing-md);
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       background: var(--paper-secondary);
     }
 
@@ -537,9 +537,9 @@ interface ProbeResult<T> {
       font-size: 0.8125rem;
       color: var(--ink);
       padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       vertical-align: middle;
-      height: 44px;
+      height: 2.75rem;
     }
 
     .data-table tr:last-child td { border-bottom: none; }
@@ -563,8 +563,8 @@ interface ProbeResult<T> {
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
-      border: 1px solid;
+      padding: 0.125rem 0.5rem;
+      border: 0.0625rem solid;
     }
 
     .badge-active { color: var(--verdict-valid); background: var(--verdict-valid-bg); border-color: var(--verdict-valid-border); }
@@ -579,10 +579,10 @@ interface ProbeResult<T> {
       animation: shimmer 1.6s linear infinite;
     }
 
-    .sk-sm { height: 10px; width: 45%; }
-    .sk-md { height: 20px; width: 60%; }
-    .sk-lg { height: 28px; width: 50%; }
-    .sk-row { height: 44px; }
+    .sk-sm { height: 0.625rem; width: 45%; }
+    .sk-md { height: 1.25rem; width: 60%; }
+    .sk-lg { height: 1.75rem; width: 50%; }
+    .sk-row { height: 2.75rem; }
 
     @keyframes shimmer {
       0% { background-position: 200% 0; }
@@ -594,6 +594,31 @@ interface ProbeResult<T> {
       text-align: center;
       font-size: 0.8125rem;
       color: var(--muted);
+    }
+
+    @media (max-width: 56.25rem) {
+      .service-grid { grid-template-columns: repeat(2, 1fr); }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 48rem) {
+      .page-title { font-size: 1.75rem; }
+
+      .page-header { flex-wrap: wrap; }
+
+      .action-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .action-controls { flex-wrap: wrap; }
+
+      .data-table-wrap { overflow-x: auto; }
+    }
+
+    @media (max-width: 30rem) {
+      .service-grid { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: 1fr; }
     }
   `],
 })

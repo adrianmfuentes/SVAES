@@ -174,16 +174,16 @@ interface AuditLogsResponse {
       text-transform: uppercase;
       color: var(--muted);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
+      padding: 0.125rem 0.5rem;
     }
 
     .unavailable-panel {
       display: flex;
       gap: var(--spacing-lg);
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-lg);
     }
@@ -191,7 +191,7 @@ interface AuditLogsResponse {
     .unavailable-icon {
       flex-shrink: 0;
       color: var(--muted);
-      margin-top: 2px;
+      margin-top: 0.125rem;
     }
 
     .unavailable-body { flex: 1; }
@@ -229,9 +229,9 @@ interface AuditLogsResponse {
       font-family: var(--font-mono);
       font-size: 0.8125rem;
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-sm);
-      padding: 0 4px;
+      padding: 0 0.25rem;
     }
 
     .filters-bar {
@@ -245,9 +245,9 @@ interface AuditLogsResponse {
       font-size: 0.8125rem;
       color: var(--ink);
       background: var(--paper);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 7px 10px;
+      padding: 0.4375rem 0.625rem;
       outline: none;
       width: auto;
     }
@@ -260,9 +260,9 @@ interface AuditLogsResponse {
       text-transform: uppercase;
       color: var(--muted);
       background: none;
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
-      padding: 7px 12px;
+      padding: 0.4375rem 0.75rem;
       cursor: pointer;
       transition: color 0.12s ease, border-color 0.12s ease;
     }
@@ -273,11 +273,11 @@ interface AuditLogsResponse {
     .privacy-notice {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 0.375rem;
       font-size: 0.75rem;
       color: var(--muted);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       margin-bottom: var(--spacing-md);
@@ -285,7 +285,7 @@ interface AuditLogsResponse {
 
     .data-table-wrap {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       overflow: hidden;
     }
@@ -301,7 +301,7 @@ interface AuditLogsResponse {
       color: var(--muted);
       padding: var(--spacing-sm) var(--spacing-md);
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       background: var(--paper-secondary);
       white-space: nowrap;
     }
@@ -310,9 +310,9 @@ interface AuditLogsResponse {
       font-size: 0.8125rem;
       color: var(--ink);
       padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       vertical-align: middle;
-      height: 44px;
+      height: 2.75rem;
     }
 
     .data-table tr:last-child td { border-bottom: none; }
@@ -332,9 +332,9 @@ interface AuditLogsResponse {
       font-size: 0.6875rem;
       color: var(--muted);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-sm);
-      padding: 1px 6px;
+      padding: 0.0625rem 0.375rem;
     }
 
     .result-badge {
@@ -343,8 +343,8 @@ interface AuditLogsResponse {
       font-weight: 600;
       letter-spacing: 0.06em;
       border-radius: var(--rounded-sm);
-      padding: 2px 6px;
-      border: 1px solid;
+      padding: 0.125rem 0.375rem;
+      border: 0.0625rem solid;
     }
 
     .result-success { color: var(--verdict-valid); background: var(--verdict-valid-bg); border-color: var(--verdict-valid-border); }
@@ -356,7 +356,7 @@ interface AuditLogsResponse {
       align-items: center;
       justify-content: space-between;
       padding: var(--spacing-sm) var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
       background: var(--paper-secondary);
     }
 
@@ -379,7 +379,7 @@ interface AuditLogsResponse {
       animation: shimmer 1.6s linear infinite;
     }
 
-    .skeleton-row { height: 44px; }
+    .skeleton-row { height: 2.75rem; }
 
     @keyframes shimmer {
       0%   { background-position: 200% 0; }
@@ -391,6 +391,23 @@ interface AuditLogsResponse {
       text-align: center;
       font-size: 0.8125rem;
       color: var(--muted);
+    }
+
+    @media (max-width: 48rem) {
+      .page-title { font-size: 1.75rem; }
+
+      .filters-bar {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+      }
+
+      .data-table-wrap { overflow-x: auto; }
+
+      .table-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+      }
     }
   `],
 })

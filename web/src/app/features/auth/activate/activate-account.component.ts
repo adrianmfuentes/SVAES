@@ -244,7 +244,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       align-items: center;
       justify-content: center;
       padding: var(--spacing-lg) var(--spacing-xxl);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
     }
 
     .activate-logo {
@@ -266,7 +266,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       width: 100%;
       max-width: 35rem;
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-xl);
     }
@@ -276,7 +276,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       align-items: center;
       justify-content: center;
       padding: var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
       font-family: var(--font-sans);
       font-size: 0.75rem;
       color: var(--muted);
@@ -298,8 +298,8 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
     }
 
     .step-circle {
-      width: 28px;
-      height: 28px;
+      width: 1.75rem;
+      height: 1.75rem;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -307,7 +307,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       font-family: var(--font-sans);
       font-size: 0.75rem;
       font-weight: 600;
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       color: var(--muted);
       background: transparent;
       transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -342,10 +342,10 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
 
     .step-line {
       flex: 1;
-      height: 1px;
+      height: 0.0625rem;
       background: var(--border);
       margin: 0 var(--spacing-sm);
-      margin-bottom: 20px;
+      margin-bottom: 1.25rem;
       transition: background-color 0.2s ease;
     }
 
@@ -411,7 +411,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       font-size: 0.9375rem;
       background: var(--paper);
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
       padding: 0.5625rem 0.75rem;
       outline: none;
@@ -429,7 +429,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
     .form-group input:focus {
       border-color: var(--ink);
       background: var(--surface-raised);
-      outline: 3px solid rgba(232, 213, 163, 0.4);
+      outline: 0.1875rem solid rgba(232, 213, 163, 0.4);
     }
 
     .btn-reveal {
@@ -465,7 +465,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       grid-template-columns: 1fr 1fr;
       gap: 0.25rem 0;
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-md);
     }
@@ -496,7 +496,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       display: flex;
       justify-content: flex-end;
       padding-top: var(--spacing-sm);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
       margin-top: var(--spacing-xs);
     }
 
@@ -513,7 +513,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       gap: var(--spacing-sm);
       background: var(--ink);
       color: var(--paper);
-      border: 1px solid var(--ink);
+      border: 0.0625rem solid var(--ink);
       border-radius: var(--rounded-md);
       padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
@@ -534,7 +534,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       gap: var(--spacing-xs);
       background: transparent;
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
       padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
@@ -554,7 +554,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       display: inline-block;
       width: 0.875rem;
       height: 0.875rem;
-      border: 2px solid var(--paper);
+      border: 0.125rem solid var(--paper);
       border-top-color: transparent;
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
@@ -569,7 +569,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       font-size: 0.8125rem;
       color: var(--verdict-invalid);
       background: var(--verdict-invalid-bg);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-sm);
       padding: var(--spacing-sm) var(--spacing-md);
     }
@@ -584,8 +584,8 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
     }
 
     .state-icon {
-      width: 48px;
-      height: 48px;
+      width: 3rem;
+      height: 3rem;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -597,13 +597,13 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
     .state-icon--success {
       background: var(--verdict-valid-bg);
       color: var(--verdict-valid);
-      border: 1px solid var(--verdict-valid-border);
+      border: 0.0625rem solid var(--verdict-valid-border);
     }
 
     .state-icon--error {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
     }
 
     .state-title {

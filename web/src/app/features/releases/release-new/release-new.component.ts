@@ -165,12 +165,12 @@ interface Project {
     }
 
     .form-layout {
-      max-width: 640px;
+      max-width: 40rem;
     }
 
     .card {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-lg);
     }
@@ -214,9 +214,9 @@ interface Project {
       width: 100%;
       background: var(--paper);
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 9px 12px;
+      padding: 0.5625rem 0.75rem;
       font-family: var(--font-sans);
       font-size: 0.9375rem;
       outline: none;
@@ -226,7 +226,7 @@ interface Project {
 
     .form-group textarea {
       resize: vertical;
-      min-height: 80px;
+      min-height: 5rem;
       line-height: 1.65;
     }
 
@@ -235,7 +235,7 @@ interface Project {
     .form-group textarea:focus {
       border-color: var(--ink);
       background: var(--surface-raised);
-      box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
+      box-shadow: 0 0 0 0.1875rem rgba(232, 213, 163, 0.4);
     }
 
     .field-error {
@@ -247,7 +247,7 @@ interface Project {
     .alert-error {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
@@ -260,7 +260,7 @@ interface Project {
       justify-content: flex-end;
       gap: var(--spacing-sm);
       padding-top: var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
       margin-top: var(--spacing-md);
     }
 
@@ -269,9 +269,9 @@ interface Project {
       align-items: center;
       background: var(--ink);
       color: var(--paper);
-      border: 1px solid var(--ink);
+      border: 0.0625rem solid var(--ink);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -290,9 +290,9 @@ interface Project {
       align-items: center;
       background: transparent;
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -318,7 +318,7 @@ interface Project {
       animation: shimmer 1.6s linear infinite;
     }
 
-    .sk-input { height: 40px; }
+    .sk-input { height: 2.5rem; }
 
     @keyframes shimmer {
       0% { background-position: 200% 0; }
@@ -336,6 +336,23 @@ interface Project {
       color: var(--ink);
       font-weight: 500;
       text-decoration: underline;
+    }
+
+    @media (max-width: 48rem) {
+      .page-title { font-size: 1.75rem; }
+
+      .form-layout { max-width: 100%; }
+
+      .form-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        justify-content: center;
+        width: 100%;
+      }
     }
   `],
 })

@@ -26,6 +26,25 @@ interface ConnectorApiItem {
   created_at: string;
 }
 
+interface ConfigSchemaField {
+  type: string;
+  label: string;
+  required: boolean;
+  sensitive?: boolean;
+  default?: string;
+}
+
+interface ConnectorImplementation {
+  implementation: string;
+  metadata: { name: string; description?: string };
+  config_schema: Record<string, ConfigSchemaField>;
+}
+
+interface ConnectorTypesResponse {
+  implementations: ConnectorImplementation[];
+  by_type: Record<string, ConnectorImplementation[]>;
+}
+
 @Component({
   selector: 'app-connectors',
   standalone: true,
@@ -97,31 +116,41 @@ interface ConnectorApiItem {
         <form [formGroup]="connectorForm" (ngSubmit)="submitConnector()">
           <div class="form-group">
             <label for="conn-name">{{ 'connectors.name_label' | t }}</label>
-            <input id="conn-name" type="text" formControlName="name" placeholder="GitLab CI" />
+            <input id="conn-name" type="text" formControlName="name" placeholder="Mi conector Jira" />
           </div>
-          <div class="form-group">
-            <label for="conn-type">{{ 'connectors.type_label' | t }}</label>
-            <select id="conn-type" formControlName="type">
-              <option value="gitlab">GitLab</option>
-              <option value="github">GitHub</option>
-              <option value="jira">Jira</option>
-              <option value="sonarqube">SonarQube</option>
-              <option value="jenkins">Jenkins</option>
-              <option value="webhook">Webhook</option>
+          <div class="form-group" *ngIf="connectorTypes()">
+            <label for="conn-type">{{ 'connectors.category_label' | t }}</label>
+            <select id="conn-type" formControlName="connectorType" (change)="onTypeChange($event)">
+              <option value="">-- {{ 'connectors.select_category' | t }} --</option>
+              <option *ngFor="let type of getConnectorTypes()" [value]="type">{{ typeLabel(type) | t }}</option>
             </select>
           </div>
-          <div class="form-group">
-            <label for="conn-url">{{ 'connectors.base_url_label' | t }}</label>
-            <input id="conn-url" type="text" formControlName="base_url" placeholder="https://gitlab.example.com" />
+          <div class="form-group" *ngIf="selectedType()">
+            <label for="conn-implementation">{{ 'connectors.system_label' | t }}</label>
+            <select id="conn-implementation" formControlName="connectorImplementation" (change)="onImplementationChange($event)">
+              <option value="">-- {{ 'connectors.select_system' | t }} --</option>
+              <option *ngFor="let impl of availableImplementations()" [value]="impl.implementation">{{ impl.metadata.name }}</option>
+            </select>
           </div>
-          <div class="form-group">
-            <label for="conn-token">{{ 'connectors.token_label' | t }}</label>
-            <input id="conn-token" type="password" formControlName="token" placeholder="glpat-…" />
-          </div>
+          <ng-container *ngIf="selectedImplementation() && currentConfigSchema()">
+            <div class="form-group" *ngFor="let field of getConfigFields()" [ngClass]="{'has-error': shouldShowError(field.key)}">
+              <label for="field-{{ field.key }}">{{ field.label }}</label>
+              <input *ngIf="!field.sensitive"
+                id="field-{{ field.key }}"
+                type="text"
+                [formControlName]="field.key"
+                [placeholder]="field.label" />
+              <input *ngIf="field.sensitive"
+                id="field-{{ field.key }}"
+                type="password"
+                [formControlName]="field.key"
+                [placeholder]="field.label" />
+            </div>
+          </ng-container>
           <div *ngIf="modalError()" class="error-banner error-banner-sm">{{ modalError() }}</div>
           <div class="modal-footer">
             <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.cancel' | t }}</button>
-            <button type="submit" class="btn-primary" [disabled]="saving()">
+            <button type="submit" class="btn-primary" [disabled]="saving() || !isFormValid()">
               {{ saving() ? ('connectors.saving' | t) : (editingConnector() ? ('connectors.save_changes' | t) : ('connectors.create' | t)) }}
             </button>
           </div>
@@ -165,9 +194,9 @@ interface ConnectorApiItem {
       text-transform: uppercase;
       color: var(--muted);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
+      padding: 0.125rem 0.5rem;
     }
 
     .section-label {
@@ -184,7 +213,7 @@ interface ConnectorApiItem {
 
     .data-table-wrap {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       overflow: hidden;
       margin-bottom: var(--spacing-md);
@@ -206,7 +235,7 @@ interface ConnectorApiItem {
       color: var(--muted);
       padding: var(--spacing-sm) var(--spacing-md);
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       background: var(--paper-secondary);
     }
 
@@ -214,9 +243,9 @@ interface ConnectorApiItem {
       font-size: 0.8125rem;
       color: var(--ink);
       padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       vertical-align: middle;
-      height: 44px;
+      height: 2.75rem;
     }
 
     .data-table tr:last-child td { border-bottom: none; }
@@ -238,17 +267,17 @@ interface ConnectorApiItem {
       font-size: 0.75rem;
       color: var(--muted);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-sm);
-      padding: 1px 6px;
+      padding: 0.0625rem 0.375rem;
     }
 
     .status-dot {
       display: inline-block;
-      width: 6px;
-      height: 6px;
+      width: 0.375rem;
+      height: 0.375rem;
       border-radius: 50%;
-      margin-right: 6px;
+      margin-right: 0.375rem;
       vertical-align: middle;
     }
 
@@ -269,9 +298,9 @@ interface ConnectorApiItem {
       text-transform: uppercase;
       color: var(--muted);
       background: none;
-      border: 1px solid transparent;
+      border: 0.0625rem solid transparent;
       border-radius: var(--rounded-md);
-      padding: 4px 10px;
+      padding: 0.25rem 0.625rem;
       cursor: pointer;
       transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
     }
@@ -284,9 +313,9 @@ interface ConnectorApiItem {
       align-items: center;
       background: var(--ink);
       color: var(--paper);
-      border: 1px solid var(--ink);
+      border: 0.0625rem solid var(--ink);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -304,9 +333,9 @@ interface ConnectorApiItem {
       align-items: center;
       background: transparent;
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -321,7 +350,7 @@ interface ConnectorApiItem {
     .error-banner {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
@@ -339,7 +368,7 @@ interface ConnectorApiItem {
       animation: shimmer 1.6s linear infinite;
     }
 
-    .skeleton-row { height: 44px; }
+    .skeleton-row { height: 2.75rem; }
 
     @keyframes shimmer {
       0% { background-position: 200% 0; }
@@ -365,11 +394,11 @@ interface ConnectorApiItem {
 
     .modal-panel {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-lg);
-      width: 480px;
-      max-width: calc(100vw - 48px);
+      width: 30rem;
+      max-width: calc(100vw - 3rem);
     }
 
     .modal-header {
@@ -392,7 +421,7 @@ interface ConnectorApiItem {
       background: none;
       border: none;
       cursor: pointer;
-      padding: 0 4px;
+      padding: 0 0.25rem;
       line-height: 1;
     }
 
@@ -405,7 +434,7 @@ interface ConnectorApiItem {
       gap: var(--spacing-sm);
       margin-top: var(--spacing-lg);
       padding-top: var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
     }
 
     .form-group {
@@ -428,9 +457,9 @@ interface ConnectorApiItem {
       width: 100%;
       background: var(--paper);
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 9px 12px;
+      padding: 0.5625rem 0.75rem;
       font-family: var(--font-sans);
       font-size: 0.9375rem;
       outline: none;
@@ -441,7 +470,25 @@ interface ConnectorApiItem {
     .form-group select:focus {
       border-color: var(--ink);
       background: var(--surface-raised);
-      box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
+      box-shadow: 0 0 0 0.1875rem rgba(232, 213, 163, 0.4);
+    }
+
+    .form-group.has-error input,
+    .form-group.has-error select {
+      border-color: var(--verdict-invalid);
+    }
+
+    @media (max-width: 48rem) {
+      .page-header { flex-wrap: wrap; }
+
+      .page-title { font-size: 1.75rem; }
+
+      .filters-bar {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+      }
+
+      .data-table-wrap { overflow-x: auto; }
     }
   `],
 })
@@ -469,11 +516,16 @@ export class ConnectorsComponent implements OnInit {
   modalError = signal<string | null>(null);
   testingId = signal<string | null>(null);
 
+  connectorTypes = signal<ConnectorTypesResponse | null>(null);
+  selectedType = signal<string | null>(null);
+  selectedImplementation = signal<string | null>(null);
+  availableImplementations = signal<ConnectorImplementation[]>([]);
+  currentConfigSchema = signal<Record<string, ConfigSchemaField>>({});
+
   connectorForm = this.fb.group({
     name: ['', [Validators.required]],
-    type: ['gitlab', [Validators.required]],
-    base_url: ['', [Validators.required]],
-    token: [''],
+    connectorType: ['', [Validators.required]],
+    connectorImplementation: ['', [Validators.required]],
   });
 
   ngOnInit(): void {
@@ -492,6 +544,13 @@ export class ConnectorsComponent implements OnInit {
         this.globalConnectors.set(mapped);
         this.orgConnectors.set([]);
         this.loading.set(false);
+      });
+    this.http.get<ConnectorTypesResponse>('/api/v1/connectors/types')
+      .pipe(catchError(() => of(null)))
+      .subscribe(data => {
+        if (data) {
+          this.connectorTypes.set(data);
+        }
       });
   }
 
@@ -516,33 +575,42 @@ export class ConnectorsComponent implements OnInit {
 
   openCreate(): void {
     this.editingConnector.set(null);
-    this.connectorForm.reset({ name: '', type: 'gitlab', base_url: '', token: '' });
+    this.selectedType.set(null);
+    this.selectedImplementation.set(null);
+    this.availableImplementations.set([]);
+    this.currentConfigSchema.set({});
+    this.connectorForm.reset({ name: '', connectorType: '', connectorImplementation: '' });
+    this.removeConfigFields();
     this.modalError.set(null);
     this.showModal.set(true);
   }
 
   openEdit(c: Connector): void {
     this.editingConnector.set(c);
-    this.connectorForm.patchValue({ name: c.name, type: c.type });
     this.modalError.set(null);
     this.showModal.set(true);
   }
 
   submitConnector(): void {
-    if (this.connectorForm.invalid) { this.connectorForm.markAllAsTouched(); return; }
+    if (this.connectorForm.invalid || !this.selectedImplementation()) { this.connectorForm.markAllAsTouched(); return; }
     this.saving.set(true);
     this.modalError.set(null);
     const editing = this.editingConnector();
+    const credentials: Record<string, string> = {};
+    const schema = this.currentConfigSchema();
+    for (const key of Object.keys(schema)) {
+      const value = this.connectorForm.get(key)?.value;
+      if (value) {
+        credentials[key] = value;
+      }
+    }
     const body = editing
       ? { name: this.connectorForm.value.name }
       : {
-          connector_type: this.implementationToType(this.connectorForm.value.type ?? ''),
-          connector_implementation: (this.connectorForm.value.type ?? '').toUpperCase(),
-          name: this.connectorForm.value.name,
-          credentials: {
-            token: this.connectorForm.value.token,
-            base_url: this.connectorForm.value.base_url,
-          },
+          connector_type: this.connectorForm.value.connectorType ?? '',
+          connector_implementation: this.connectorForm.value.connectorImplementation ?? '',
+          name: this.connectorForm.value.name ?? '',
+          credentials,
         };
     const req = editing
       ? this.http.patch<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors/${editing.id}`, body)
@@ -584,22 +652,6 @@ export class ConnectorsComponent implements OnInit {
       .subscribe(() => this.testingId.set(null));
   }
 
-  private implementationToType(impl: string): string {
-    const map: Record<string, string> = {
-      gitlab: 'REPO_CODIGO', github: 'REPO_CODIGO',
-      bitbucket: 'REPO_CODIGO', gitea: 'REPO_CODIGO',
-      jira: 'GESTOR_TAREAS', linear: 'GESTOR_TAREAS',
-      trello: 'GESTOR_TAREAS', asana: 'GESTOR_TAREAS',
-      confluence: 'SISTEMA_DOCUMENTAL', notion: 'SISTEMA_DOCUMENTAL',
-      wikijs: 'SISTEMA_DOCUMENTAL', bookstack: 'SISTEMA_DOCUMENTAL',
-      clickup: 'HERRAMIENTA_PLANIFICACION', taiga: 'HERRAMIENTA_PLANIFICACION',
-      plane: 'HERRAMIENTA_PLANIFICACION', miro: 'HERRAMIENTA_PLANIFICACION',
-      jira_sm: 'GESTION_CAMBIOS', glpi: 'GESTION_CAMBIOS',
-      zammad: 'GESTION_CAMBIOS', redmine: 'GESTION_CAMBIOS',
-    };
-    return map[impl.toLowerCase()] ?? 'REPO_CODIGO';
-  }
-
   statusLabel(status: string): string {
     const map: Record<string, string> = {
       active: this.ts.translateInstant('connectors.status_active'),
@@ -607,5 +659,87 @@ export class ConnectorsComponent implements OnInit {
       error: this.ts.translateInstant('connectors.status_error'),
     };
     return map[status] ?? status;
+  }
+
+  getConnectorTypes(): string[] {
+    const types = this.connectorTypes()?.by_type;
+    return types ? Object.keys(types) : [];
+  }
+
+  typeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      GESTOR_TAREAS: 'Gestor de Tareas',
+      REPO_CODIGO: 'Repositorio de Código',
+      SISTEMA_DOCUMENTAL: 'Sistema de Gestor Documental',
+      HERRAMIENTA_PLANIFICACION: 'Herramienta de Planificación',
+      GESTION_CAMBIOS: 'Gestión de Cambios',
+    };
+    return labels[type] ?? type;
+  }
+
+  onTypeChange(event: Event): void {
+    const type = (event.target as HTMLSelectElement).value;
+    this.selectedType.set(type);
+    this.selectedImplementation.set(null);
+    this.currentConfigSchema.set({});
+    const impls = this.connectorTypes()?.by_type[type] ?? [];
+    this.availableImplementations.set(impls);
+    this.connectorForm.patchValue({ connectorImplementation: '' });
+    this.removeConfigFields();
+  }
+
+  onImplementationChange(event: Event): void {
+    const impl = (event.target as HTMLSelectElement).value;
+    this.selectedImplementation.set(impl);
+    const implData = this.availableImplementations().find(i => i.implementation === impl);
+    if (implData) {
+      this.currentConfigSchema.set(implData.config_schema);
+      this.addConfigFields(implData.config_schema);
+    }
+  }
+
+  getConfigFields(): {key: string, label: string, required: boolean, sensitive?: boolean}[] {
+    const schema = this.currentConfigSchema();
+    return Object.entries(schema).map(([key, field]) => ({
+      key,
+      label: field.label,
+      required: field.required,
+      sensitive: field.sensitive,
+    }));
+  }
+
+  shouldShowError(fieldKey: string): boolean {
+    const control = this.connectorForm.get(fieldKey);
+    return !!(control && control.invalid && control.touched);
+  }
+
+  isFormValid(): boolean {
+    if (this.connectorForm.invalid) return false;
+    if (!this.selectedImplementation()) return false;
+    const schema = this.currentConfigSchema();
+    for (const [key, field] of Object.entries(schema)) {
+      if (field.required) {
+        const value = this.connectorForm.get(key)?.value;
+        if (!value) return false;
+      }
+    }
+    return true;
+  }
+
+  private addConfigFields(schema: Record<string, ConfigSchemaField>): void {
+    this.removeConfigFields();
+    for (const [key, field] of Object.entries(schema)) {
+      const validators = field.required ? [Validators.required] : [];
+      (this.connectorForm as any).addControl(key, this.fb.control(field.default ?? '', validators));
+    }
+  }
+
+  private removeConfigFields(): void {
+    const schema = this.currentConfigSchema();
+    for (const key of Object.keys(schema)) {
+      if (this.connectorForm.contains(key)) {
+        (this.connectorForm as any).removeControl(key);
+      }
+    }
   }
 }

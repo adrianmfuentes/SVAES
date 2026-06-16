@@ -298,6 +298,50 @@ async def update_connector(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
+class ConnectorToggleRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    status: ConnectorStatus
+
+
+@router.post("/api/v1/organizations/{org_id}/connectors/{connector_id}/toggle", status_code=status.HTTP_200_OK)
+async def toggle_connector_status(
+    org_id: UUID,
+    connector_id: UUID,
+    payload: ConnectorToggleRequest,
+    current_user: Annotated[CurrentUser, Depends(require_org_access())],
+    service: Annotated[IConnectorService, Depends(get_connector_service)],
+    _: Annotated[None, Depends(require_connector_access())],
+):
+    """Endpoint para cambiar el estado de un conector existente.
+
+    Atributos:
+        - connector_id: UUID - El ID del conector cuyo estado se quiere cambiar.
+        - payload: ConnectorToggleRequest - El nuevo estado (ACTIVO o INACTIVO).
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: El servicio de conectores.
+
+    Retorna:
+        - Un diccionario con el ID, nombre y estado del conector actualizado.
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso.
+        - Lanza HTTPException con status 404 si el conector no es encontrado.
+        - Lanza HTTPException con status 422 si los datos de entrada son inválidos.
+        - Lanza HTTPException con status 500 para cualquier otro error inesperado.
+    """
+    try:
+        connector = await service.toggle_connector_status(
+            connector_id=connector_id,
+            status=payload.status,
+            requested_by=current_user.user_id,
+        )
+        return {"id": str(connector.id), "name": connector.name, "status": connector.status.value}
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
 @router.delete("/api/v1/organizations/{org_id}/connectors/{connector_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_connector(
     org_id: UUID,

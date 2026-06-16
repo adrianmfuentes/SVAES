@@ -179,6 +179,54 @@ async def delete_profile(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
+@router.get("/api/v1/profiles/{profile_id}")
+async def get_profile(
+    profile_id: UUID,
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES))],
+    _: Annotated[None, Depends(require_profile_access())],
+    service: Annotated[IProfileService, Depends(get_profile_service)],
+):
+    """Endpoint para obtener un perfil con sus reglas.
+
+    Atributos:
+        - profile_id: UUID - El ID del perfil a obtener.
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: IProfileService - El servicio de perfiles, inyectado mediante dependencias.
+
+    Retorna:
+        - Un diccionario con la información del perfil y sus reglas.
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso.
+        - Lanza HTTPException con status 404 si el perfil no existe.
+        - Lanza HTTPException con status 500 para cualquier error inesperado.
+    """
+    try:
+        profile = await service.get_profile(profile_id)
+        if not profile:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil no encontrado")
+        return {
+            "id": str(profile.id),
+            "name": profile.name,
+            "description": profile.description,
+            "is_default": profile.is_default,
+            "rules": [
+                {
+                    "id": str(r.id),
+                    "rule_template": r.rule_template,
+                    "severity": r.severity.value,
+                    "connector_instance_id": str(r.connector_instance_id) if r.connector_instance_id else None,
+                    "params": r.params,
+                    "display_order": r.display_order,
+                    "is_active": r.is_active,
+                }
+                for r in profile.rules
+            ],
+        }
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
 @router.post("/api/v1/profiles/{profile_id}/rules", status_code=status.HTTP_201_CREATED)
 async def add_rule(
     profile_id: UUID,
@@ -213,8 +261,10 @@ async def add_rule(
         return {"id": str(rule.id), "rule_template": rule.rule_template}
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+    except Exception as e:
+        import logging
+        logging.exception("Error adding rule to profile %s: %s", profile_id, e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.patch("/api/v1/rules/{rule_id}")

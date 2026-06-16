@@ -228,6 +228,7 @@
   "shell.role_operator": "Operador",
   "shell.role_viewer": "Visor",
   "shell.logout": "Cerrar sesión",
+  "shell.toggle_nav": "Abrir/cerrar navegación",
   "shell.nav_org_settings": "Miembros",
 
   "dashboard.title": "Dashboard",
@@ -367,6 +368,13 @@
   "profiles.delete_confirm": "¿Está seguro de que desea eliminar este perfil?",
   "profiles.no_rules_selected": "Debe seleccionar al menos una regla",
   "profiles.error.no_name": "El nombre del perfil es obligatorio",
+  "profiles.add_rule": "Añadir regla",
+  "profiles.rule_template": "Plantilla de regla",
+  "profiles.select_rule": "Seleccionar plantilla",
+  "profiles.severity_label": "Severidad",
+  "profiles.update_rule": "Actualizar regla",
+  "profiles.no_rules": "No hay reglas configuradas para este perfil",
+  "profiles.rule_saving_error": "Error al guardar la regla",
 
   "system.title": "Visión general del sistema",
   "system.status": "Estado de los servicios",
@@ -599,6 +607,10 @@
   "connectors.edit_label": "Editar",
   "connectors.loading_error": "Error al cargar conectores",
   "connectors.saving_error": "Error al guardar conector",
+  "connectors.category_label": "Categoría",
+  "connectors.select_category": "Seleccionar categoría",
+  "connectors.system_label": "Sistema",
+  "connectors.select_system": "Seleccionar sistema",
 
   "profiles.global_scope": "Vista global",
   "profiles.global_templates_section": "Plantillas globales",

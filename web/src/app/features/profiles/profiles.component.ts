@@ -19,6 +19,22 @@ interface Profile {
   created_at?: string;
 }
 
+interface ProfileRule {
+  id: string;
+  rule_template: string;
+  severity: SeverityType;
+  connector_instance_id?: string;
+  params: Record<string, unknown>;
+  display_order: number;
+  is_active: boolean;
+}
+
+interface ProfileWithRules extends Profile {
+  rules: ProfileRule[];
+}
+
+type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
 @Component({
   selector: 'app-profiles',
   standalone: true,
@@ -78,20 +94,76 @@ interface Profile {
 
     <!-- MODAL: Create/Edit Template -->
     <div class="modal-overlay" *ngIf="showModal()" (click)="showModal.set(false)">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
+      <div class="modal-panel modal-panel-wide" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <h3 class="modal-title">{{ editingProfile() ? ('profiles.edit_title' | t) : ('profiles.create_title' | t) }}</h3>
           <button class="modal-close" (click)="showModal.set(false)">&times;</button>
         </div>
         <form [formGroup]="profileForm" (ngSubmit)="submitProfile()">
-          <div class="form-group">
-            <label for="prof-name">{{ 'profiles.name_label' | t }}</label>
-            <input id="prof-name" type="text" formControlName="name" [placeholder]="'profiles.template_placeholder' | t" />
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prof-name">{{ 'profiles.name_label' | t }}</label>
+              <input id="prof-name" type="text" formControlName="name" [placeholder]="'profiles.template_placeholder' | t" />
+            </div>
+            <div class="form-group">
+              <label for="prof-desc">{{ 'common.description' | t }}</label>
+              <input id="prof-desc" type="text" formControlName="description" [placeholder]="'profiles.desc_placeholder' | t" />
+            </div>
           </div>
-          <div class="form-group">
-            <label for="prof-desc">{{ 'common.description' | t }}</label>
-            <input id="prof-desc" type="text" formControlName="description" [placeholder]="'profiles.desc_placeholder' | t" />
+
+          <div *ngIf="editingProfile()" class="rules-section">
+            <div class="rules-section-header">
+              <h4>{{ 'profiles.rules_label' | t }}</h4>
+              <button type="button" class="btn-ghost btn-sm" (click)="openAddRule()">
+                + {{ 'profiles.add_rule' | t }}
+              </button>
+            </div>
+
+            <div *ngIf="showRuleForm()" class="rule-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="rule-template">{{ 'profiles.rule_template' | t }}</label>
+                  <select id="rule-template" [formControl]="ruleFormControl('rule_template')">
+                    <option value="">-- {{ 'profiles.select_rule' | t }} --</option>
+                    <option *ngFor="let tmpl of ruleTemplates()" [value]="tmpl">{{ tmpl }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="rule-severity">{{ 'profiles.severity_label' | t }}</label>
+                  <select id="rule-severity" [formControl]="ruleFormControl('severity')">
+                    <option value="INFO">INFO</option>
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                  </select>
+                </div>
+              </div>
+              <div class="rule-form-actions">
+                <button type="button" class="btn-secondary btn-sm" (click)="cancelRuleForm()">{{ 'common.cancel' | t }}</button>
+                <button type="button" class="btn-primary btn-sm" [disabled]="savingRule()" (click)="submitRule()">
+                  {{ savingRule() ? ('profiles.saving' | t) : (editingRule() ? ('profiles.update_rule' | t) : ('profiles.add_rule' | t)) }}
+                </button>
+              </div>
+            </div>
+
+            <div class="rules-list" *ngIf="profileRules().length > 0">
+              <div class="rule-item" *ngFor="let rule of profileRules()">
+                <div class="rule-info">
+                  <span class="rule-template">{{ rule.rule_template }}</span>
+                  <span class="severity-badge" [ngClass]="'severity-' + rule.severity.toLowerCase()">{{ rule.severity }}</span>
+                </div>
+                <div class="rule-actions">
+                  <button type="button" class="btn-ghost btn-xs" (click)="openEditRule(rule)">{{ 'common.edit' | t }}</button>
+                  <button type="button" class="btn-ghost btn-danger-ghost btn-xs" (click)="deleteRule(rule)">{{ 'common.delete' | t }}</button>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="profileRules().length === 0 && !showRuleForm()" class="empty-rules">
+              {{ 'profiles.no_rules' | t }}
+            </div>
           </div>
+
           <div *ngIf="modalError()" class="error-banner error-banner-sm">{{ modalError() }}</div>
           <div class="modal-footer">
             <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.cancel' | t }}</button>
@@ -139,9 +211,9 @@ interface Profile {
       text-transform: uppercase;
       color: var(--muted);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
+      padding: 0.125rem 0.5rem;
     }
 
     .section-label {
@@ -161,7 +233,7 @@ interface Profile {
 
     .data-table-wrap {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       overflow: hidden;
     }
@@ -180,7 +252,7 @@ interface Profile {
       color: var(--muted);
       padding: var(--spacing-sm) var(--spacing-md);
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       background: var(--paper-secondary);
     }
 
@@ -188,9 +260,9 @@ interface Profile {
       font-size: 0.8125rem;
       color: var(--ink);
       padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       vertical-align: middle;
-      height: 44px;
+      height: 2.75rem;
     }
 
     .data-table tr:last-child td { border-bottom: none; }
@@ -214,9 +286,9 @@ interface Profile {
       text-transform: uppercase;
       color: var(--muted);
       background: none;
-      border: 1px solid transparent;
+      border: 0.0625rem solid transparent;
       border-radius: var(--rounded-md);
-      padding: 4px 10px;
+      padding: 0.25rem 0.625rem;
       cursor: pointer;
       transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
     }
@@ -232,9 +304,9 @@ interface Profile {
       align-items: center;
       background: var(--ink);
       color: var(--paper);
-      border: 1px solid var(--ink);
+      border: 0.0625rem solid var(--ink);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -252,9 +324,9 @@ interface Profile {
       align-items: center;
       background: transparent;
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -269,7 +341,7 @@ interface Profile {
     .error-banner {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
@@ -287,7 +359,7 @@ interface Profile {
       animation: shimmer 1.6s linear infinite;
     }
 
-    .skeleton-row { height: 44px; }
+    .skeleton-row { height: 2.75rem; }
 
     @keyframes shimmer {
       0% { background-position: 200% 0; }
@@ -313,11 +385,123 @@ interface Profile {
 
     .modal-panel {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-lg);
-      width: 480px;
-      max-width: calc(100vw - 48px);
+      width: 30rem;
+      max-width: calc(100vw - 3rem);
+    }
+
+    .modal-panel-wide {
+      width: 45rem;
+      max-width: calc(100vw - 3rem);
+    }
+
+    .form-row {
+      display: flex;
+      gap: var(--spacing-md);
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    .rules-section {
+      margin-top: var(--spacing-lg);
+      padding-top: var(--spacing-md);
+      border-top: 0.0625rem solid var(--border);
+    }
+
+    .rules-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .rules-section-header h4 {
+      margin: 0;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .rule-form {
+      background: var(--paper-secondary);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .rule-form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-md);
+    }
+
+    .rules-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .rule-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: var(--paper);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-md);
+    }
+
+    .rule-info {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .rule-template {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+    }
+
+    .severity-badge {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      padding: 0.125rem 0.375rem;
+      border-radius: var(--rounded-sm);
+      text-transform: uppercase;
+    }
+
+    .severity-info { background: #e8f4fd; color: #0077b6; }
+    .severity-low { background: #e8f5e9; color: #2e7d32; }
+    .severity-medium { background: #fff8e1; color: #f57f17; }
+    .severity-high { background: #ffebee; color: #c62828; }
+    .severity-critical { background: #4a0e0e; color: #ff6659; }
+
+    .rule-actions {
+      display: flex;
+      gap: var(--spacing-xs);
+    }
+
+    .empty-rules {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8125rem;
+      padding: var(--spacing-md);
+    }
+
+    .btn-xs {
+      font-size: 0.625rem;
+      padding: 0.125rem 0.375rem;
+    }
+
+    .btn-sm {
+      font-size: 0.6875rem;
+      padding: 0.25rem 0.5rem;
     }
 
     .modal-header {
@@ -340,7 +524,7 @@ interface Profile {
       background: none;
       border: none;
       cursor: pointer;
-      padding: 0 4px;
+      padding: 0 0.25rem;
       line-height: 1;
     }
 
@@ -353,7 +537,7 @@ interface Profile {
       gap: var(--spacing-sm);
       margin-top: var(--spacing-lg);
       padding-top: var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
     }
 
     .form-group {
@@ -375,9 +559,9 @@ interface Profile {
       width: 100%;
       background: var(--paper);
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 9px 12px;
+      padding: 0.5625rem 0.75rem;
       font-family: var(--font-sans);
       font-size: 0.9375rem;
       outline: none;
@@ -387,7 +571,15 @@ interface Profile {
     .form-group input:focus {
       border-color: var(--ink);
       background: var(--surface-raised);
-      box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
+      box-shadow: 0 0 0 0.1875rem rgba(232, 213, 163, 0.4);
+    }
+
+    @media (max-width: 48rem) {
+      .page-header { flex-wrap: wrap; }
+
+      .page-title { font-size: 1.75rem; }
+
+      .data-table-wrap { overflow-x: auto; }
     }
   `],
 })
@@ -414,9 +606,31 @@ export class ProfilesComponent implements OnInit {
   modalError = signal<string | null>(null);
   deletingId = signal<string | null>(null);
 
+  profileRules = signal<ProfileRule[]>([]);
+  editingRule = signal<ProfileRule | null>(null);
+  showRuleForm = signal(false);
+  savingRule = signal(false);
+  ruleTemplates = signal<string[]>([
+    'has_high_severity_vulnerabilities',
+    'has_critical_vulnerabilities',
+    'has_open_high_priority_issues',
+    'has_code_smells',
+    'has_security_hotspots',
+    'has_uncovered_code',
+    'has_duplicated_code',
+    'has_blocking_issues',
+    'meets_minimum_test_coverage',
+    'meets_maximum_complexity',
+  ]);
+
   profileForm = this.fb.group({
     name: ['', [Validators.required]],
     description: [''],
+  });
+
+  ruleForm = this.fb.group({
+    rule_template: ['', [Validators.required]],
+    severity: ['HIGH' as SeverityType, [Validators.required]],
   });
 
   ngOnInit(): void {
@@ -439,6 +653,7 @@ export class ProfilesComponent implements OnInit {
 
   openCreate(): void {
     this.editingProfile.set(null);
+    this.profileRules.set([]);
     this.profileForm.reset({ name: '', description: '' });
     this.modalError.set(null);
     this.showModal.set(true);
@@ -446,9 +661,106 @@ export class ProfilesComponent implements OnInit {
 
   openEdit(p: Profile): void {
     this.editingProfile.set(p);
+    this.profileRules.set([]);
     this.profileForm.patchValue({ name: p.name, description: p.description ?? '' });
     this.modalError.set(null);
     this.showModal.set(true);
+    this.loadProfileRules(p.id);
+  }
+
+  private loadProfileRules(profileId: string): void {
+    this.http.get<ProfileWithRules>(`/api/v1/profiles/${profileId}`)
+      .pipe(catchError(() => of(null)))
+      .subscribe(data => {
+        if (data && data.rules) {
+          this.profileRules.set(data.rules);
+        }
+      });
+  }
+
+  openAddRule(): void {
+    this.editingRule.set(null);
+    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType });
+    this.showRuleForm.set(true);
+  }
+
+  openEditRule(rule: ProfileRule): void {
+    this.editingRule.set(rule);
+    this.ruleForm.patchValue({
+      rule_template: rule.rule_template,
+      severity: rule.severity,
+    });
+    this.showRuleForm.set(true);
+  }
+
+  cancelRuleForm(): void {
+    this.editingRule.set(null);
+    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType });
+    this.showRuleForm.set(false);
+  }
+
+  ruleFormControl(name: string): any {
+    return this.ruleForm.get(name);
+  }
+
+  submitRule(): void {
+    if (this.ruleForm.invalid || !this.editingProfile()) return;
+    this.savingRule.set(true);
+    const profileId = this.editingProfile()!.id;
+    const editing = this.editingRule();
+
+    if (editing) {
+      this.http.patch<{ id: string; is_active: boolean }>(`/api/v1/rules/${editing.id}`, {
+        severity: this.ruleForm.value.severity,
+      }).pipe(
+        catchError((err: HttpErrorResponse) => {
+          this.modalError.set(err.error?.detail ?? this.ts.translateInstant('profiles.rule_saving_error'));
+          this.savingRule.set(false);
+          return of(null);
+        })
+      ).subscribe(data => {
+        if (data) {
+          this.profileRules.update(rules => rules.map(r =>
+            r.id === data.id ? { ...r, severity: this.ruleForm.value.severity as SeverityType } : r
+          ));
+          this.cancelRuleForm();
+        }
+        this.savingRule.set(false);
+      });
+    } else {
+      this.http.post<{ id: string; rule_template: string }>(`/api/v1/profiles/${profileId}/rules`, {
+        rule_template: this.ruleForm.value.rule_template,
+        severity: this.ruleForm.value.severity,
+      }).pipe(
+        catchError((err: HttpErrorResponse) => {
+          this.modalError.set(err.error?.detail ?? this.ts.translateInstant('profiles.rule_saving_error'));
+          this.savingRule.set(false);
+          return of(null);
+        })
+      ).subscribe(data => {
+        if (data) {
+          const newRule: ProfileRule = {
+            id: data.id,
+            rule_template: data.rule_template,
+            severity: this.ruleForm.value.severity as SeverityType,
+            params: {},
+            display_order: 0,
+            is_active: true,
+          };
+          this.profileRules.update(rules => [...rules, newRule]);
+          this.cancelRuleForm();
+        }
+        this.savingRule.set(false);
+      });
+    }
+  }
+
+  deleteRule(rule: ProfileRule): void {
+    this.http.delete(`/api/v1/rules/${rule.id}`)
+      .pipe(catchError(() => of(null)))
+      .subscribe(() => {
+        this.profileRules.update(rules => rules.filter(r => r.id !== rule.id));
+      });
   }
 
   submitProfile(): void {
@@ -467,10 +779,11 @@ export class ProfilesComponent implements OnInit {
     })).subscribe(p => {
       if (p) {
         const formDesc = this.profileForm.value.description ?? '';
+        const rulesCount = this.profileRules().length;
         if (editing) {
           this.orgProfiles.update(list => list.map(x =>
             x.id === p.id
-              ? { ...x, name: p.name, description: formDesc, is_default: p.is_default }
+              ? { ...x, name: p.name, description: formDesc, is_default: p.is_default, rules_count: rulesCount }
               : x
           ));
         } else {

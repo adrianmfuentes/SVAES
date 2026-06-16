@@ -34,7 +34,7 @@
 
 .error-banner {
   background: var(--verdict-invalid-bg);
-  border: 1px solid var(--verdict-invalid-border);
+  border: 0.0625rem solid var(--verdict-invalid-border);
   border-radius: var(--rounded-md);
   color: var(--verdict-invalid);
   font-size: 0.8125rem;

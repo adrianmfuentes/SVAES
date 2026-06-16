@@ -327,43 +327,43 @@ interface VerificationResult {
 
     /* Verdict banner */
     .verdict-banner {
-      height: 56px;
+      height: 3.5rem;
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 0 24px;
+      gap: 0.75rem;
+      padding: 0 1.5rem;
       border-radius: var(--rounded-md);
       margin-bottom: var(--spacing-lg);
-      border: 1px solid;
+      border: 0.0625rem solid;
     }
 
     .verdict-banner-valid {
       background: var(--verdict-valid-bg);
       border-color: var(--verdict-valid-border);
-      border-left: 4px solid var(--verdict-valid);
+      border-left: 0.25rem solid var(--verdict-valid);
     }
 
     .verdict-banner-warning {
       background: var(--verdict-warning-bg);
       border-color: var(--verdict-warning-border);
-      border-left: 4px solid var(--verdict-warning);
+      border-left: 0.25rem solid var(--verdict-warning);
     }
 
     .verdict-banner-invalid {
       background: var(--verdict-invalid-bg);
       border-color: var(--verdict-invalid-border);
-      border-left: 4px solid var(--verdict-invalid);
+      border-left: 0.25rem solid var(--verdict-invalid);
     }
 
     .verdict-banner-unevaluated {
       background: var(--verdict-unevaluated-bg);
       border-color: var(--verdict-unevaluated-border);
-      border-left: 4px solid var(--verdict-unevaluated);
+      border-left: 0.25rem solid var(--verdict-unevaluated);
     }
 
     .verdict-icon {
-      font-size: 16px;
-      width: 16px;
+      font-size: 1rem;
+      width: 1rem;
       text-align: center;
       flex-shrink: 0;
     }
@@ -382,8 +382,8 @@ interface VerificationResult {
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
-      border: 1px solid;
+      padding: 0.125rem 0.5rem;
+      border: 0.0625rem solid;
     }
 
     .verdict-badge-valid { color: var(--verdict-valid); background: var(--verdict-valid-bg); border-color: var(--verdict-valid-border); }
@@ -409,7 +409,7 @@ interface VerificationResult {
     /* Card */
     .card {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-lg);
       margin-bottom: var(--spacing-lg);
@@ -435,7 +435,7 @@ interface VerificationResult {
     .info-field {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 0.125rem;
     }
 
     .info-label {
@@ -455,7 +455,7 @@ interface VerificationResult {
     .info-description {
       margin-top: var(--spacing-md);
       padding-top: var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
     }
 
     .info-description-text {
@@ -474,8 +474,8 @@ interface VerificationResult {
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
-      border: 1px solid;
+      padding: 0.125rem 0.5rem;
+      border: 0.0625rem solid;
       align-self: flex-start;
     }
 
@@ -489,7 +489,7 @@ interface VerificationResult {
 
     /* Verification rule table */
     .data-table-wrap {
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
       overflow: hidden;
     }
@@ -508,7 +508,7 @@ interface VerificationResult {
       color: var(--muted);
       padding: var(--spacing-sm) var(--spacing-md);
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       background: var(--paper-secondary);
     }
 
@@ -516,9 +516,9 @@ interface VerificationResult {
       font-size: 0.8125rem;
       color: var(--ink);
       padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       vertical-align: middle;
-      height: 44px;
+      height: 2.75rem;
     }
 
     .data-table tr:last-child td { border-bottom: none; }
@@ -526,9 +526,9 @@ interface VerificationResult {
     .data-table tbody tr:hover td { background: var(--paper-secondary); }
     .data-table tbody tr { cursor: default; }
 
-    .col-id { width: 80px; }
-    .col-connector { width: 140px; }
-    .col-result { width: 120px; }
+    .col-id { width: 5rem; }
+    .col-connector { width: 8.75rem; }
+    .col-result { width: 7.5rem; }
 
     .cell-primary { font-weight: 500; }
     .cell-muted { color: var(--muted); }
@@ -550,8 +550,8 @@ interface VerificationResult {
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
-      border: 1px solid;
+      padding: 0.125rem 0.5rem;
+      border: 0.0625rem solid;
     }
 
     .result-valid { color: var(--verdict-valid); background: var(--verdict-valid-bg); border-color: var(--verdict-valid-border); }
@@ -573,7 +573,7 @@ interface VerificationResult {
 
     .evidence-row td {
       padding: 0 var(--spacing-md) var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       height: auto;
     }
 
@@ -583,13 +583,13 @@ interface VerificationResult {
       line-height: 1.6;
       color: var(--ink);
       background: var(--paper);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-md);
       margin: 0;
       white-space: pre-wrap;
       word-break: break-word;
-      max-height: 400px;
+      max-height: 25rem;
       overflow-y: auto;
     }
 
@@ -602,7 +602,7 @@ interface VerificationResult {
       padding: var(--spacing-md);
       background: var(--paper);
       border-radius: var(--rounded-md);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       flex-wrap: wrap;
     }
 
@@ -622,9 +622,9 @@ interface VerificationResult {
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      padding: 2px 8px;
+      padding: 0.125rem 0.5rem;
       border-radius: var(--rounded-sm);
-      border: 1px solid;
+      border: 0.0625rem solid;
     }
 
     .summary-duration { margin-left: auto; font-size: 0.8125rem; }
@@ -639,9 +639,9 @@ interface VerificationResult {
       text-transform: uppercase;
       color: var(--muted);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
+      padding: 0.125rem 0.5rem;
     }
 
     .btn-ghost {
@@ -652,9 +652,9 @@ interface VerificationResult {
       text-transform: uppercase;
       color: var(--muted);
       background: none;
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
-      padding: 5px 12px;
+      padding: 0.3125rem 0.75rem;
       cursor: pointer;
       transition: color 0.12s ease, background-color 0.12s ease;
     }
@@ -664,7 +664,7 @@ interface VerificationResult {
     .error-banner {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
@@ -681,9 +681,9 @@ interface VerificationResult {
       animation: shimmer 1.6s linear infinite;
     }
 
-    .skeleton-banner { height: 56px; }
-    .skeleton-card { height: 200px; }
-    .skeleton-row { height: 44px; }
+    .skeleton-banner { height: 3.5rem; }
+    .skeleton-card { height: 12.5rem; }
+    .skeleton-row { height: 2.75rem; }
 
     @keyframes shimmer {
       0% { background-position: 200% 0; }
@@ -699,6 +699,32 @@ interface VerificationResult {
       font-size: 0.9375rem;
       color: var(--muted);
       margin: 0 0 var(--spacing-md);
+    }
+
+    @media (max-width: 48rem) {
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+      }
+
+      .page-header-actions { flex-wrap: wrap; }
+
+      .page-title { font-size: 1.75rem; }
+
+      .verdict-banner {
+        height: auto;
+        flex-wrap: wrap;
+        padding: var(--spacing-md);
+      }
+
+      .info-grid { grid-template-columns: repeat(2, 1fr); }
+
+      .data-table-wrap { overflow-x: auto; }
+    }
+
+    @media (max-width: 30rem) {
+      .info-grid { grid-template-columns: 1fr; }
     }
   `],
 })

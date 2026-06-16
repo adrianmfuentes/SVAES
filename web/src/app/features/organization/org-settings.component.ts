@@ -166,8 +166,8 @@ interface OrgUser {
 
     .admin-tabs {
       display: flex;
-      gap: 2px;
-      border-bottom: 1px solid var(--border);
+      gap: 0.125rem;
+      border-bottom: 0.0625rem solid var(--border);
       margin-bottom: var(--spacing-lg);
     }
 
@@ -180,10 +180,10 @@ interface OrgUser {
       color: var(--muted);
       background: none;
       border: none;
-      border-bottom: 2px solid transparent;
+      border-bottom: 0.125rem solid transparent;
       padding: var(--spacing-sm) var(--spacing-md);
       cursor: pointer;
-      margin-bottom: -1px;
+      margin-bottom: -0.0625rem;
       transition: color 0.12s ease, border-color 0.12s ease;
     }
 
@@ -193,7 +193,7 @@ interface OrgUser {
     .tab-content { animation: fadeIn 0.12s ease; }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
+      from { opacity: 0; transform: translateY(0.25rem); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
@@ -222,7 +222,7 @@ interface OrgUser {
 
     .data-table-wrap {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       overflow: hidden;
     }
@@ -238,18 +238,18 @@ interface OrgUser {
       padding: var(--spacing-sm) var(--spacing-md);
       text-align: left;
       vertical-align: middle;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       background: var(--paper-secondary);
-      height: 40px;
+      height: 2.5rem;
     }
 
     .data-table td {
       font-size: 0.8125rem;
       color: var(--ink);
       padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       vertical-align: middle;
-      height: 44px;
+      height: 2.75rem;
     }
 
     .data-table tr:last-child td { border-bottom: none; }
@@ -272,9 +272,9 @@ interface OrgUser {
       align-items: center;
       background: var(--ink);
       color: var(--paper);
-      border: 1px solid var(--ink);
+      border: 0.0625rem solid var(--ink);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -293,9 +293,9 @@ interface OrgUser {
       align-items: center;
       background: var(--verdict-invalid);
       color: var(--paper);
-      border: 1px solid var(--verdict-invalid);
+      border: 0.0625rem solid var(--verdict-invalid);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -316,9 +316,9 @@ interface OrgUser {
       text-transform: uppercase;
       color: var(--muted);
       background: none;
-      border: 1px solid transparent;
+      border: 0.0625rem solid transparent;
       border-radius: var(--rounded-md);
-      padding: 4px 10px;
+      padding: 0.25rem 0.625rem;
       cursor: pointer;
       transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
     }
@@ -334,9 +334,9 @@ interface OrgUser {
       font-size: 0.8125rem;
       color: var(--ink);
       background: var(--paper);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 3px 6px;
+      padding: 0.1875rem 0.375rem;
       outline: none;
       cursor: pointer;
     }
@@ -364,9 +364,9 @@ interface OrgUser {
       letter-spacing: 0.04em;
       color: var(--muted);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-sm);
-      padding: 1px 5px;
+      padding: 0.0625rem 0.3125rem;
       margin-left: var(--spacing-sm);
       vertical-align: middle;
     }
@@ -378,10 +378,10 @@ interface OrgUser {
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
+      padding: 0.125rem 0.5rem;
       background: var(--verdict-valid-bg);
       color: var(--verdict-valid);
-      border: 1px solid var(--verdict-valid-border);
+      border: 0.0625rem solid var(--verdict-valid-border);
     }
 
     .status-badge.status-archived {
@@ -400,7 +400,7 @@ interface OrgUser {
     .skeleton-list { display: flex; flex-direction: column; gap: var(--spacing-sm); }
 
     .skeleton-row {
-      height: 44px;
+      height: 2.75rem;
       border-radius: var(--rounded-md);
       background: linear-gradient(90deg, var(--paper-secondary) 25%, #e5e2db 50%, var(--paper-secondary) 75%);
       background-size: 200% 100%;
@@ -415,7 +415,7 @@ interface OrgUser {
     .error-banner {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
@@ -427,7 +427,7 @@ interface OrgUser {
     .success-banner {
       background: var(--verdict-valid-bg);
       color: var(--verdict-valid);
-      border: 1px solid var(--verdict-valid-border);
+      border: 0.0625rem solid var(--verdict-valid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
@@ -446,12 +446,12 @@ interface OrgUser {
 
     .modal-panel {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-lg);
-      width: 480px;
-      max-width: calc(100vw - 48px);
-      max-height: calc(100vh - 80px);
+      width: 30rem;
+      max-width: calc(100vw - 3rem);
+      max-height: calc(100vh - 5rem);
       overflow-y: auto;
     }
 
@@ -475,7 +475,7 @@ interface OrgUser {
       background: none;
       border: none;
       cursor: pointer;
-      padding: 0 4px;
+      padding: 0 0.25rem;
       line-height: 1;
       transition: color 0.12s ease;
     }
@@ -489,7 +489,7 @@ interface OrgUser {
       gap: var(--spacing-sm);
       margin-top: var(--spacing-lg);
       padding-top: var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
     }
 
     .modal-body-text {
@@ -520,9 +520,9 @@ interface OrgUser {
       width: 100%;
       background: var(--paper);
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 9px 12px;
+      padding: 0.5625rem 0.75rem;
       font-family: var(--font-sans);
       font-size: 0.9375rem;
       outline: none;
@@ -534,7 +534,7 @@ interface OrgUser {
     .form-group textarea:focus {
       border-color: var(--ink);
       background: var(--surface-raised);
-      box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
+      box-shadow: 0 0 0 0.1875rem rgba(232, 213, 163, 0.4);
     }
 
     .row-locked td {
@@ -545,13 +545,19 @@ interface OrgUser {
       width: 100%;
       background: var(--paper);
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 9px 12px;
+      padding: 0.5625rem 0.75rem;
       font-family: var(--font-sans);
       font-size: 0.9375rem;
       outline: none;
       cursor: pointer;
+    }
+
+    @media (max-width: 48rem) {
+      .page-title { font-size: 1.75rem; }
+
+      .data-table-wrap { overflow-x: auto; }
     }
   `],
 })

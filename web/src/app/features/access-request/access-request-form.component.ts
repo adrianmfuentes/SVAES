@@ -242,7 +242,7 @@ function generateSlug(name: string): string {
   styles: [
     `
       @keyframes stepIn {
-        from { opacity: 0; transform: translateX(12px); }
+        from { opacity: 0; transform: translateX(0.75rem); }
         to   { opacity: 1; transform: translateX(0); }
       }
 
@@ -264,7 +264,7 @@ function generateSlug(name: string): string {
         left: var(--spacing-lg);
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 0.375rem;
         font-family: var(--font-sans);
         font-size: 0.8125rem;
         font-weight: 500;
@@ -293,11 +293,11 @@ function generateSlug(name: string): string {
 
       .request-card {
         background: var(--surface-raised);
-        border: 1px solid var(--border);
+        border: 0.0625rem solid var(--border);
         border-radius: var(--rounded-lg);
         padding: var(--spacing-xl);
         width: 100%;
-        max-width: 440px;
+        max-width: 27.5rem;
       }
 
       /* ── Stepper ──────────────────────────────────────────────────── */
@@ -312,14 +312,14 @@ function generateSlug(name: string): string {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 6px;
+        gap: 0.375rem;
       }
 
       .stepper-dot {
-        width: 28px;
-        height: 28px;
+        width: 1.75rem;
+        height: 1.75rem;
         border-radius: 50%;
-        border: 1.5px solid var(--border);
+        border: 0.0938rem solid var(--border);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -354,9 +354,9 @@ function generateSlug(name: string): string {
 
       .stepper-connector {
         flex: 1;
-        height: 1px;
+        height: 0.0625rem;
         background: var(--border);
-        margin-top: 14px;
+        margin-top: 0.875rem;
         transition: background 0.2s ease;
       }
 
@@ -420,7 +420,7 @@ function generateSlug(name: string): string {
         text-transform: none;
         color: var(--muted);
         opacity: 0.8;
-        margin-left: 4px;
+        margin-left: 0.25rem;
       }
 
       .form-group input,
@@ -428,9 +428,9 @@ function generateSlug(name: string): string {
         width: 100%;
         background: var(--paper);
         color: var(--ink);
-        border: 1px solid var(--border-strong);
+        border: 0.0625rem solid var(--border-strong);
         border-radius: var(--rounded-md);
-        padding: 9px 12px;
+        padding: 0.5625rem 0.75rem;
         font-family: var(--font-sans);
         font-size: 0.9375rem;
         line-height: 1.5;
@@ -441,14 +441,14 @@ function generateSlug(name: string): string {
 
       .form-group textarea {
         resize: none;
-        min-height: 72px;
+        min-height: 4.5rem;
       }
 
       .form-group input:focus,
       .form-group textarea:focus {
         border-color: var(--ink);
         background: var(--surface-raised);
-        box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
+        box-shadow: 0 0 0 0.1875rem rgba(232, 213, 163, 0.4);
       }
 
       .form-group input.input-error,
@@ -522,7 +522,7 @@ function generateSlug(name: string): string {
 
       .review-block {
         background: var(--paper);
-        border: 1px solid var(--border);
+        border: 0.0625rem solid var(--border);
         border-radius: var(--rounded-md);
         overflow: hidden;
         margin-bottom: var(--spacing-sm);
@@ -533,8 +533,8 @@ function generateSlug(name: string): string {
         align-items: baseline;
         justify-content: space-between;
         gap: var(--spacing-md);
-        padding: 10px var(--spacing-md);
-        border-bottom: 1px solid var(--border);
+        padding: 0.625rem var(--spacing-md);
+        border-bottom: 0.0625rem solid var(--border);
       }
 
       .review-row:last-child {
@@ -573,7 +573,7 @@ function generateSlug(name: string): string {
         gap: var(--spacing-sm);
         background: var(--verdict-invalid-bg);
         color: var(--verdict-invalid);
-        border: 1px solid var(--verdict-invalid-border);
+        border: 0.0625rem solid var(--verdict-invalid-border);
         border-radius: var(--rounded-md);
         padding: var(--spacing-sm) var(--spacing-md);
         font-family: var(--font-sans);
@@ -584,7 +584,7 @@ function generateSlug(name: string): string {
 
       .alert-icon {
         flex-shrink: 0;
-        margin-top: 2px;
+        margin-top: 0.125rem;
       }
 
       /* ── Submit button ────────────────────────────────────────────── */
@@ -606,8 +606,8 @@ function generateSlug(name: string): string {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 48px;
-        height: 48px;
+        width: 3rem;
+        height: 3rem;
         border-radius: var(--rounded-full);
         background: var(--verdict-valid-bg);
         margin-bottom: var(--spacing-md);
@@ -624,7 +624,7 @@ function generateSlug(name: string): string {
         align-items: center;
         justify-content: space-between;
         padding: var(--spacing-md) var(--spacing-lg);
-        border-top: 1px solid var(--border);
+        border-top: 0.0625rem solid var(--border);
         background: var(--paper);
         font-size: 0.75rem;
         color: var(--muted);
@@ -648,11 +648,35 @@ function generateSlug(name: string): string {
 
       /* ── Responsive ───────────────────────────────────────────────── */
 
-      @media (max-width: 480px) {
-        .request-main {
-          padding: 0 var(--spacing-md);
+      @media (max-width: 40rem) {
+        .request-page {
+          height: auto;
+          min-height: 100vh;
+          overflow: auto;
         }
 
+        .request-main {
+          padding: var(--spacing-xxl) var(--spacing-md) var(--spacing-md);
+          align-items: flex-start;
+        }
+
+        .step-nav {
+          flex-direction: column-reverse;
+          align-items: stretch;
+        }
+
+        .step-nav-end {
+          flex-direction: column;
+        }
+
+        .step-nav button,
+        .step-nav a {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      @media (max-width: 30rem) {
         .request-card {
           padding: var(--spacing-lg);
         }
@@ -663,7 +687,7 @@ function generateSlug(name: string): string {
         }
       }
 
-      @media (max-height: 640px) {
+      @media (max-height: 40rem) {
         .request-card {
           padding: var(--spacing-lg);
         }

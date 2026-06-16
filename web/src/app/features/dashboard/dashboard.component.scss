@@ -33,7 +33,7 @@
 
 .period-control {
   display: flex;
-  border: 1px solid var(--border-strong);
+  border: 0.0625rem solid var(--border-strong);
   border-radius: var(--rounded-md);
   overflow: hidden;
 }
@@ -48,7 +48,7 @@
   color: var(--muted);
   background: transparent;
   border: none;
-  border-right: 1px solid var(--border-strong);
+  border-right: 0.0625rem solid var(--border-strong);
   cursor: pointer;
   transition: background-color 0.12s ease, color 0.12s ease;
 
@@ -73,7 +73,7 @@
   padding: 0.4375rem 0.75rem;
   background: var(--paper);
   color: var(--ink);
-  border: 1px solid var(--border-strong);
+  border: 0.0625rem solid var(--border-strong);
   border-radius: var(--rounded-md);
   cursor: pointer;
   min-width: 10rem;
@@ -127,7 +127,7 @@
   text-transform: uppercase;
   border-radius: var(--rounded-sm);
   padding: 0.125rem 0.5rem;
-  border: 1px solid;
+  border: 0.0625rem solid;
 
   &.dist-badge--valid {
     color: var(--verdict-valid);
@@ -165,7 +165,7 @@
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 
-@media (max-width: 900px) {
+@media (max-width: 56.25rem) {
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -175,7 +175,7 @@
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 35rem) {
   .kpi-grid {
     grid-template-columns: 1fr;
   }

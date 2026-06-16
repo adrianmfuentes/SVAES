@@ -233,7 +233,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
         left: var(--spacing-lg);
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 0.375rem;
         font-family: var(--font-sans);
         font-size: 0.8125rem;
         font-weight: 500;
@@ -265,7 +265,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
       }
 
       .login-context {
-        flex: 0 0 420px;
+        flex: 0 0 26.25rem;
         background: var(--ink);
         color: var(--paper);
         display: flex;
@@ -293,9 +293,9 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
         text-transform: uppercase;
         color: var(--muted);
         background: rgba(246, 244, 240, 0.12);
-        border: 1px solid rgba(246, 244, 240, 0.15);
+        border: 0.0625rem solid rgba(246, 244, 240, 0.15);
         border-radius: var(--rounded-sm);
-        padding: 1px 6px;
+        padding: 0.0625rem 0.375rem;
       }
 
       .context-title {
@@ -314,7 +314,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
         line-height: 1.7;
         color: rgba(246, 244, 240, 0.6);
         margin: 0 0 var(--spacing-xl);
-        max-width: 320px;
+        max-width: 20rem;
       }
 
       .context-features {
@@ -325,7 +325,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
       .context-feature {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 0.25rem;
       }
 
       .feature-num {
@@ -351,7 +351,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
         flex-direction: column;
         justify-content: center;
         padding: var(--spacing-xxl);
-        max-width: 480px;
+        max-width: 30rem;
         margin: 0 auto;
         width: 100%;
       }
@@ -393,9 +393,9 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
         width: 100%;
         background: var(--paper);
         color: var(--ink);
-        border: 1px solid var(--border-strong);
+        border: 0.0625rem solid var(--border-strong);
         border-radius: var(--rounded-md);
-        padding: 9px 12px;
+        padding: 0.5625rem 0.75rem;
         font-family: var(--font-sans);
         font-size: 0.9375rem;
         line-height: 1.5;
@@ -406,7 +406,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
       .form-group input:focus {
         border-color: var(--ink);
         background: var(--surface-raised);
-        box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
+        box-shadow: 0 0 0 0.1875rem rgba(232, 213, 163, 0.4);
       }
 
       .form-group input.input-error {
@@ -429,7 +429,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
       .btn-submit {
         margin-top: var(--spacing-sm);
         width: 100%;
-        height: 40px;
+        height: 2.5rem;
         transition: opacity 0.2s ease;
       }
 
@@ -444,7 +444,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
         gap: var(--spacing-sm);
         background: var(--verdict-invalid-bg);
         color: var(--verdict-invalid);
-        border: 1px solid var(--verdict-invalid-border);
+        border: 0.0625rem solid var(--verdict-invalid-border);
         border-radius: var(--rounded-md);
         padding: var(--spacing-sm) var(--spacing-md);
         font-family: var(--font-sans);
@@ -455,7 +455,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
 
       .alert-icon {
         flex-shrink: 0;
-        margin-top: 2px;
+        margin-top: 0.125rem;
       }
 
       .form-footer-link {
@@ -497,7 +497,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
         align-items: center;
         justify-content: space-between;
         padding: var(--spacing-md) var(--spacing-lg);
-        border-top: 1px solid var(--border);
+        border-top: 0.0625rem solid var(--border);
         background: var(--paper);
         font-size: 0.75rem;
         color: var(--muted);
@@ -518,7 +518,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
         color: var(--ink);
       }
 
-      @media (max-width: 768px) {
+      @media (max-width: 48rem) {
         .login-panel {
           flex-direction: column;
         }

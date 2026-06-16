@@ -228,6 +228,7 @@
   "shell.role_operator": "Operator",
   "shell.role_viewer": "Viewer",
   "shell.logout": "Log out",
+  "shell.toggle_nav": "Toggle navigation",
   "shell.nav_org_settings": "Members",
 
   "dashboard.title": "Dashboard",
@@ -367,6 +368,13 @@
   "profiles.delete_confirm": "Are you sure you want to delete this profile?",
   "profiles.no_rules_selected": "You must select at least one rule",
   "profiles.error.no_name": "Profile name is required",
+  "profiles.add_rule": "Add rule",
+  "profiles.rule_template": "Rule template",
+  "profiles.select_rule": "Select template",
+  "profiles.severity_label": "Severity",
+  "profiles.update_rule": "Update rule",
+  "profiles.no_rules": "No rules configured for this profile",
+  "profiles.rule_saving_error": "Error saving rule",
 
   "system.title": "System overview",
   "system.status": "Service status",
@@ -599,6 +607,10 @@
   "connectors.edit_label": "Edit",
   "connectors.loading_error": "Error loading connectors",
   "connectors.saving_error": "Error saving connector",
+  "connectors.category_label": "Category",
+  "connectors.select_category": "Select category",
+  "connectors.system_label": "System",
+  "connectors.select_system": "Select system",
 
   "profiles.global_scope": "Global view",
   "profiles.global_templates_section": "Global templates",

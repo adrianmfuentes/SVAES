@@ -27,7 +27,7 @@
 
 .error-banner {
   background: var(--verdict-invalid-bg);
-  border: 1px solid var(--verdict-invalid-border);
+  border: 0.0625rem solid var(--verdict-invalid-border);
   border-radius: var(--rounded-md);
   color: var(--verdict-invalid);
   font-size: 0.8125rem;
@@ -44,7 +44,7 @@
 .rule-row {
   display: block;
   padding: var(--spacing-sm) 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0.0625rem solid var(--border);
   text-decoration: none;
   color: inherit;
   cursor: pointer;

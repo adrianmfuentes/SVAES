@@ -113,7 +113,7 @@ select {
   font-size: 0.9375rem;
   background: var(--paper);
   color: var(--ink);
-  border: 1px solid var(--border-strong);
+  border: 0.0625rem solid var(--border-strong);
   border-radius: var(--rounded-md);
   padding: 0.5625rem 0.75rem;
   outline: none;
@@ -124,7 +124,7 @@ input:focus,
 select:focus {
   border-color: var(--ink);
   background: var(--surface-raised);
-  outline: 3px solid rgba(232, 213, 163, 0.4);
+  outline: 0.1875rem solid rgba(232, 213, 163, 0.4);
 }
 
 input.ng-invalid.ng-touched,
@@ -151,7 +151,7 @@ label {
   gap: var(--spacing-sm);
   background: var(--ink);
   color: var(--paper);
-  border: 1px solid var(--ink);
+  border: 0.0625rem solid var(--ink);
   border-radius: var(--rounded-md);
   padding: 0.5625rem 1.125rem;
   font-family: var(--font-sans);
@@ -179,7 +179,7 @@ label {
   gap: var(--spacing-sm);
   background: transparent;
   color: var(--ink);
-  border: 1px solid var(--border-strong);
+  border: 0.0625rem solid var(--border-strong);
   border-radius: var(--rounded-md);
   padding: 0.5625rem 1.125rem;
   font-family: var(--font-sans);
@@ -202,7 +202,7 @@ label {
   gap: var(--spacing-sm);
   background: var(--accent);
   color: var(--ink);
-  border: 1px solid var(--accent-dark);
+  border: 0.0625rem solid var(--accent-dark);
   border-radius: var(--rounded-md);
   padding: 0.5625rem 1.125rem;
   font-family: var(--font-sans);
@@ -220,7 +220,7 @@ label {
 
 .card {
   background: var(--surface-raised);
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   border-radius: var(--rounded-lg);
   padding: var(--spacing-lg);
 }
@@ -238,7 +238,7 @@ label {
 .alert-error {
   background: var(--verdict-invalid-bg);
   color: var(--verdict-invalid);
-  border: 1px solid var(--verdict-invalid-border);
+  border: 0.0625rem solid var(--verdict-invalid-border);
   border-radius: var(--rounded-md);
   padding: var(--spacing-sm) var(--spacing-md);
   font-size: 0.8125rem;

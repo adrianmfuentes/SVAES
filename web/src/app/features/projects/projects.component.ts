@@ -128,9 +128,9 @@ interface Project {
       align-items: center;
       background: var(--ink);
       color: var(--paper);
-      border: 1px solid var(--ink);
+      border: 0.0625rem solid var(--ink);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -145,7 +145,7 @@ interface Project {
 
     .data-table-wrap {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       overflow: hidden;
     }
@@ -164,7 +164,7 @@ interface Project {
       color: var(--muted);
       padding: var(--spacing-sm) var(--spacing-md);
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       background: var(--paper-secondary);
     }
 
@@ -172,9 +172,9 @@ interface Project {
       font-size: 0.8125rem;
       color: var(--ink);
       padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       vertical-align: middle;
-      height: 44px;
+      height: 2.75rem;
     }
 
     .data-table tr:last-child td { border-bottom: none; }
@@ -191,10 +191,10 @@ interface Project {
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
+      padding: 0.125rem 0.5rem;
       background: var(--verdict-valid-bg);
       color: var(--verdict-valid);
-      border: 1px solid var(--verdict-valid-border);
+      border: 0.0625rem solid var(--verdict-valid-border);
     }
 
     .status-badge.status-archived {
@@ -206,7 +206,7 @@ interface Project {
     .error-banner {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
@@ -221,7 +221,7 @@ interface Project {
       animation: shimmer 1.6s linear infinite;
     }
 
-    .skeleton-row { height: 44px; }
+    .skeleton-row { height: 2.75rem; }
 
     @keyframes shimmer {
       0% { background-position: 200% 0; }
@@ -260,9 +260,9 @@ interface Project {
       text-transform: uppercase;
       color: var(--muted);
       background: none;
-      border: 1px solid transparent;
+      border: 0.0625rem solid transparent;
       border-radius: var(--rounded-md);
-      padding: 4px 10px;
+      padding: 0.25rem 0.625rem;
       cursor: pointer;
       transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
     }
@@ -282,12 +282,12 @@ interface Project {
 
     .modal-panel {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-lg);
-      width: 480px;
-      max-width: calc(100vw - 48px);
-      max-height: calc(100vh - 80px);
+      width: 30rem;
+      max-width: calc(100vw - 3rem);
+      max-height: calc(100vh - 5rem);
       overflow-y: auto;
     }
 
@@ -311,7 +311,7 @@ interface Project {
       background: none;
       border: none;
       cursor: pointer;
-      padding: 0 4px;
+      padding: 0 0.25rem;
       line-height: 1;
       transition: color 0.12s ease;
     }
@@ -325,7 +325,7 @@ interface Project {
       gap: var(--spacing-sm);
       margin-top: var(--spacing-lg);
       padding-top: var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
     }
 
     .modal-body-text {
@@ -334,6 +334,14 @@ interface Project {
       color: var(--ink);
       line-height: 1.65;
       margin: 0 0 var(--spacing-md);
+    }
+
+    @media (max-width: 48rem) {
+      .page-header { flex-wrap: wrap; }
+
+      .page-title { font-size: 1.75rem; }
+
+      .data-table-wrap { overflow-x: auto; }
     }
   `],
 })

@@ -27,12 +27,12 @@ import { TranslationService } from '../../core/i18n/translation.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: calc(100vh - 80px);
+      min-height: calc(100vh - 5rem);
     }
 
     .error-page {
       text-align: center;
-      max-width: 460px;
+      max-width: 28.75rem;
       padding: var(--spacing-xl);
     }
 
@@ -70,9 +70,9 @@ import { TranslationService } from '../../core/i18n/translation.service';
       justify-content: center;
       background: var(--ink);
       color: var(--paper);
-      border: 1px solid var(--ink);
+      border: 0.0625rem solid var(--ink);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -84,6 +84,12 @@ import { TranslationService } from '../../core/i18n/translation.service';
     }
 
     .btn-primary:hover { background: var(--ink-secondary); }
+
+    @media (max-width: 48rem) {
+      .error-page { padding: var(--spacing-xl) var(--spacing-md); }
+      .error-code { font-size: 4rem; }
+      .error-title { font-size: 1.75rem; }
+    }
   `],
 })
 export class ForbiddenComponent {

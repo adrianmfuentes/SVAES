@@ -17,9 +17,9 @@ import { TranslationService } from '../../i18n/translation.service';
       display: inline-flex;
       border-radius: var(--rounded-sm);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
-      padding: 2px;
-      gap: 2px;
+      border: 0.0625rem solid var(--border);
+      padding: 0.125rem;
+      gap: 0.125rem;
     }
 
     .lt--dark {
@@ -35,8 +35,8 @@ import { TranslationService } from '../../i18n/translation.service';
       text-transform: uppercase;
       background: none;
       border: none;
-      border-radius: 1px;
-      padding: 3px 8px;
+      border-radius: 0.0625rem;
+      padding: 0.1875rem 0.5rem;
       cursor: pointer;
       color: var(--muted);
       transition: color 0.12s ease, background-color 0.12s ease;
@@ -46,7 +46,7 @@ import { TranslationService } from '../../i18n/translation.service';
     .lt-btn--on {
       background: var(--surface-raised);
       color: var(--ink);
-      box-shadow: 0 1px 2px rgba(13, 15, 18, 0.08);
+      box-shadow: 0 0.0625rem 0.125rem rgba(13, 15, 18, 0.08);
     }
 
     .lt-btn:not(.lt-btn--on):hover {

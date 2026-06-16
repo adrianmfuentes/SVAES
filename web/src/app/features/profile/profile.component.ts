@@ -273,7 +273,7 @@ interface UserProfile {
               <div *ngIf="totpError()" class="alert-error">{{ totpError() }}</div>
               <div class="form-footer">
                 <span class="save-confirm" *ngIf="totpSuccess()">{{ 'profile_page.2fa_disabled_msg' | t }}</span>
-                <button type="submit" class="btn-danger-sm" style="padding: 9px 16px;" [disabled]="totpDisableForm.invalid || totpLoading()">
+                <button type="submit" class="btn-danger-sm" style="padding: 0.5625rem 1rem;" [disabled]="totpDisableForm.invalid || totpLoading()">
                   {{ totpLoading() ? ('common.loading' | t) : ('profile_page.2fa_disable_btn' | t) }}
                 </button>
               </div>
@@ -399,7 +399,7 @@ interface UserProfile {
 
     .card {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       padding: var(--spacing-lg);
     }
@@ -417,7 +417,7 @@ interface UserProfile {
     .field-readonly {
       margin-bottom: var(--spacing-md);
       padding-bottom: var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
     }
 
     .field-label {
@@ -427,7 +427,7 @@ interface UserProfile {
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 4px;
+      margin-bottom: 0.25rem;
     }
 
     .field-value {
@@ -438,7 +438,7 @@ interface UserProfile {
     .field-hint {
       font-size: 0.75rem;
       color: var(--muted);
-      margin-top: 2px;
+      margin-top: 0.125rem;
     }
 
     .form-group {
@@ -460,9 +460,9 @@ interface UserProfile {
       width: 100%;
       background: var(--paper);
       color: var(--ink);
-      border: 1px solid var(--border-strong);
+      border: 0.0625rem solid var(--border-strong);
       border-radius: var(--rounded-md);
-      padding: 9px 12px;
+      padding: 0.5625rem 0.75rem;
       font-family: var(--font-sans);
       font-size: 0.9375rem;
       outline: none;
@@ -473,7 +473,7 @@ interface UserProfile {
     .form-group input:focus {
       border-color: var(--ink);
       background: var(--surface-raised);
-      box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
+      box-shadow: 0 0 0 0.1875rem rgba(232, 213, 163, 0.4);
     }
 
     .field-error {
@@ -485,7 +485,7 @@ interface UserProfile {
     .alert-error {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
@@ -498,7 +498,7 @@ interface UserProfile {
       justify-content: flex-end;
       gap: var(--spacing-md);
       padding-top: var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
       margin-top: var(--spacing-md);
     }
 
@@ -520,7 +520,7 @@ interface UserProfile {
       animation: shimmer 1.6s linear infinite;
     }
 
-    .sk-row { height: 120px; }
+    .sk-row { height: 7.5rem; }
 
     @keyframes shimmer {
       0% { background-position: 200% 0; }
@@ -530,7 +530,7 @@ interface UserProfile {
     .alert-success {
       background: var(--verdict-valid-bg, #f0fdf4);
       color: var(--verdict-valid, #166534);
-      border: 1px solid var(--verdict-valid-border, #bbf7d0);
+      border: 0.0625rem solid var(--verdict-valid-border, #bbf7d0);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
@@ -544,7 +544,7 @@ interface UserProfile {
 
     .new-key-banner {
       background: var(--verdict-valid-bg);
-      border: 1px solid var(--verdict-valid-border);
+      border: 0.0625rem solid var(--verdict-valid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-md);
       margin-bottom: var(--spacing-md);
@@ -568,9 +568,9 @@ interface UserProfile {
       font-size: 0.8125rem;
       color: var(--ink);
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
-      padding: 6px 12px;
+      padding: 0.375rem 0.75rem;
       flex: 1;
       word-break: break-all;
     }
@@ -583,9 +583,9 @@ interface UserProfile {
       text-transform: uppercase;
       color: var(--verdict-valid);
       background: transparent;
-      border: 1px solid var(--verdict-valid-border);
+      border: 0.0625rem solid var(--verdict-valid-border);
       border-radius: var(--rounded-md);
-      padding: 6px 12px;
+      padding: 0.375rem 0.75rem;
       cursor: pointer;
       white-space: nowrap;
       transition: background-color 0.12s ease;
@@ -594,7 +594,7 @@ interface UserProfile {
     .btn-copy:hover { background: var(--verdict-valid-bg); }
 
     .data-table-wrap {
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
       overflow: hidden;
       margin-bottom: var(--spacing-md);
@@ -614,7 +614,7 @@ interface UserProfile {
       color: var(--muted);
       padding: var(--spacing-sm) var(--spacing-md);
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       background: var(--paper-secondary);
     }
 
@@ -622,9 +622,9 @@ interface UserProfile {
       font-size: 0.8125rem;
       color: var(--ink);
       padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       vertical-align: middle;
-      height: 44px;
+      height: 2.75rem;
     }
 
     .data-table tr:last-child td { border-bottom: none; }
@@ -647,9 +647,9 @@ interface UserProfile {
       text-transform: uppercase;
       color: var(--verdict-invalid);
       background: transparent;
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-md);
-      padding: 4px 10px;
+      padding: 0.25rem 0.625rem;
       cursor: pointer;
       transition: background-color 0.12s ease;
     }
@@ -663,7 +663,7 @@ interface UserProfile {
     }
 
     .key-form-section {
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
       padding-top: var(--spacing-md);
       margin-top: var(--spacing-md);
     }
@@ -683,7 +683,7 @@ interface UserProfile {
     }
 
     .form-group-flex { flex: 1; }
-    .form-group-narrow { width: 140px; flex-shrink: 0; }
+    .form-group-narrow { width: 8.75rem; flex-shrink: 0; }
 
     .optional {
       font-weight: 400;
@@ -701,25 +701,25 @@ interface UserProfile {
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
+      padding: 0.125rem 0.5rem;
     }
 
     .badge-enabled {
       background: var(--verdict-valid-bg);
       color: var(--verdict-valid);
-      border: 1px solid var(--verdict-valid-border);
+      border: 0.0625rem solid var(--verdict-valid-border);
     }
 
     .badge-disabled {
       background: var(--paper-secondary);
       color: var(--muted);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
     }
 
     .totp-setup-panel {
       margin-top: var(--spacing-md);
       padding-top: var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
     }
 
     .totp-instructions {
@@ -736,18 +736,18 @@ interface UserProfile {
     }
 
     .totp-qr {
-      width: 180px;
-      height: 180px;
-      border: 1px solid var(--border);
+      width: 11.25rem;
+      height: 11.25rem;
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
-      padding: 8px;
+      padding: 0.5rem;
       background: white;
     }
 
     .totp-secret-wrap {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 0.25rem;
       margin-bottom: var(--spacing-sm);
     }
 
@@ -765,9 +765,9 @@ interface UserProfile {
       font-size: 0.8125rem;
       color: var(--ink);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
-      padding: 6px 10px;
+      padding: 0.375rem 0.625rem;
       letter-spacing: 0.1em;
       word-break: break-all;
     }
@@ -775,11 +775,30 @@ interface UserProfile {
     .alert-error {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
       margin-bottom: var(--spacing-md);
+    }
+
+    @media (max-width: 56.25rem) {
+      .profile-grid { grid-template-columns: 1fr; }
+
+      .api-keys-card,
+      .twofa-card { grid-column: 1; }
+    }
+
+    @media (max-width: 48rem) {
+      .page-title { font-size: 1.75rem; }
+
+      .key-form-row { flex-direction: column; }
+
+      .form-group-narrow { width: 100%; }
+
+      .data-table-wrap { overflow-x: auto; }
+
+      .new-key-row { flex-wrap: wrap; }
     }
   `],
 })

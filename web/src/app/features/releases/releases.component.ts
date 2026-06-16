@@ -134,9 +134,9 @@ interface Release {
       text-transform: uppercase;
       color: var(--muted);
       background: var(--paper-secondary);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
+      padding: 0.125rem 0.5rem;
     }
 
     .filters-bar {
@@ -147,7 +147,7 @@ interface Release {
 
     .filter-input {
       flex: 1;
-      max-width: 320px;
+      max-width: 20rem;
     }
 
     .filter-select {
@@ -156,7 +156,7 @@ interface Release {
 
     .data-table-wrap {
       background: var(--surface-raised);
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-lg);
       overflow: hidden;
     }
@@ -175,7 +175,7 @@ interface Release {
       color: var(--muted);
       padding: var(--spacing-sm) var(--spacing-md);
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       background: var(--paper-secondary);
     }
 
@@ -183,9 +183,9 @@ interface Release {
       font-size: 0.8125rem;
       color: var(--ink);
       padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.0625rem solid var(--border);
       vertical-align: middle;
-      height: 44px;
+      height: 2.75rem;
     }
 
     .data-table tr:last-child td { border-bottom: none; }
@@ -211,8 +211,8 @@ interface Release {
       letter-spacing: 0.06em;
       text-transform: uppercase;
       border-radius: var(--rounded-sm);
-      padding: 2px 8px;
-      border: 1px solid;
+      padding: 0.125rem 0.5rem;
+      border: 0.0625rem solid;
     }
 
     .verdict-valid { color: var(--verdict-valid); background: var(--verdict-valid-bg); border-color: var(--verdict-valid-border); }
@@ -226,7 +226,7 @@ interface Release {
       justify-content: center;
       gap: var(--spacing-md);
       padding: var(--spacing-md);
-      border-top: 1px solid var(--border);
+      border-top: 0.0625rem solid var(--border);
     }
 
     .page-info {
@@ -242,9 +242,9 @@ interface Release {
       text-transform: uppercase;
       color: var(--muted);
       background: none;
-      border: 1px solid var(--border);
+      border: 0.0625rem solid var(--border);
       border-radius: var(--rounded-md);
-      padding: 5px 12px;
+      padding: 0.3125rem 0.75rem;
       cursor: pointer;
       transition: color 0.12s ease, background-color 0.12s ease;
     }
@@ -257,9 +257,9 @@ interface Release {
       align-items: center;
       background: var(--ink);
       color: var(--paper);
-      border: 1px solid var(--ink);
+      border: 0.0625rem solid var(--ink);
       border-radius: var(--rounded-md);
-      padding: 9px 18px;
+      padding: 0.5625rem 1.125rem;
       font-family: var(--font-sans);
       font-size: 0.6875rem;
       font-weight: 600;
@@ -274,7 +274,7 @@ interface Release {
     .error-banner {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
-      border: 1px solid var(--verdict-invalid-border);
+      border: 0.0625rem solid var(--verdict-invalid-border);
       border-radius: var(--rounded-md);
       padding: var(--spacing-sm) var(--spacing-md);
       font-size: 0.8125rem;
@@ -289,7 +289,7 @@ interface Release {
       animation: shimmer 1.6s linear infinite;
     }
 
-    .skeleton-row { height: 44px; }
+    .skeleton-row { height: 2.75rem; }
 
     @keyframes shimmer {
       0% { background-position: 200% 0; }
@@ -301,6 +301,25 @@ interface Release {
       text-align: center;
       font-size: 0.8125rem;
       color: var(--muted);
+    }
+
+    @media (max-width: 48rem) {
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+      }
+
+      .page-title { font-size: 1.75rem; }
+
+      .filters-bar {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+      }
+
+      .filter-input { max-width: 100%; }
+
+      .data-table-wrap { overflow-x: auto; }
     }
   `],
 })
