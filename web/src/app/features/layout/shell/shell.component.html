@@ -1,7 +1,7 @@
 <div class="app-layout">
   <a class="skip-link" href="#main-content">{{ 'a11y.skip_to_main' | t }}</a>
 
-  <button class="sidebar-overlay" [class.is-open]="sidebarOpen" (click)="closeSidebar()" aria-hidden="true" (keydown.escape)="closeSidebar()"></button>
+  <button class="sidebar-overlay" [class.is-open]="sidebarOpen" (click)="closeSidebar()" (keydown.escape)="closeSidebar()" aria-label="Close sidebar"></button>
 
   <aside class="sidebar" id="sidebar" [class.is-open]="sidebarOpen">
     <div class="sidebar-brand">
@@ -9,7 +9,7 @@
     </div>
 
     <!-- ADMIN (U3) navigation -->
-    <nav class="sidebar-nav" *ngIf="isAdmin" [attr.aria-label]="'shell.nav_admin_label' | t" (click)="closeSidebar()">
+    <nav class="sidebar-nav" *ngIf="isAdmin" [attr.aria-label]="'shell.nav_admin_label' | t" (click)="closeSidebar()" (keydown.enter)="closeSidebar()">
       <div class="nav-section">{{ 'shell.nav_system' | t }}</div>
 
       <a
@@ -54,7 +54,7 @@
     </nav>
 
     <!-- VIEWER (U1) navigation -->
-    <nav class="sidebar-nav" *ngIf="!isAdmin && isViewer" [attr.aria-label]="'shell.nav_user_label' | t" (click)="closeSidebar()">
+    <nav class="sidebar-nav" *ngIf="!isAdmin && isViewer" [attr.aria-label]="'shell.nav_user_label' | t" (click)="closeSidebar()" (keydown.enter)="closeSidebar()">
       <div class="nav-section">{{ 'shell.nav_main' | t }}</div>
 
       <a
@@ -79,7 +79,7 @@
     </nav>
 
     <!-- OPERATOR/MANAGER (U2/U4) navigation -->
-    <nav class="sidebar-nav" *ngIf="!isAdmin && !isViewer" [attr.aria-label]="'shell.nav_user_label' | t" (click)="closeSidebar()">
+    <nav class="sidebar-nav" *ngIf="!isAdmin && !isViewer" [attr.aria-label]="'shell.nav_user_label' | t" (click)="closeSidebar()" (keydown.enter)="closeSidebar()">
       <div class="nav-section">{{ 'shell.nav_main' | t }}</div>
 
       <a
