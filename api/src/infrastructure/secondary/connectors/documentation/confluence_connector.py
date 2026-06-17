@@ -24,6 +24,9 @@ class ConfluenceConnector(BaseHttpConnector):
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
         base_url = self._get_base_url(config)
+        cloud_id = config.get("cloud_id")
+        if cloud_id:
+            return f"{base_url}/wiki/rest/api/user/current?cloudId={cloud_id}"
         return f"{base_url}/wiki/rest/api/user/current"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:

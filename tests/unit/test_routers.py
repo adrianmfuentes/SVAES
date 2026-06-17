@@ -359,7 +359,7 @@ class TestReleasesCoverage:
         r = self._make_release()
         self.rel_svc.list_org_releases = AsyncMock(return_value=[r])
         client = TestClient(self.app)
-        resp = client.get("/api/v1/releases", headers=self._headers("OPERATOR"))
+        resp = client.get("/api/v1/releases", headers=self._headers("VIEWER"))
         assert resp.status_code == 200
 
     def test_list_global_releases_admin(self):
@@ -2136,21 +2136,24 @@ class TestConnectorsRouter:
 
     def test_test_connector_success(self):
         from fastapi.testclient import TestClient
-        self.svc.test_connector_connection = AsyncMock(return_value=True)
+        conn = self._make_connector()
+        self.svc.test_connector_connection = AsyncMock(return_value=conn)
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/connectors/{uuid4()}/test",
                            headers=self._headers())
         assert resp.status_code == 200
-        assert resp.json()["success"] is True
+        assert resp.json()["status"] == "ACTIVO"
 
     def test_test_connector_failure(self):
         from fastapi.testclient import TestClient
-        self.svc.test_connector_connection = AsyncMock(return_value=False)
+        conn = self._make_connector()
+        conn.status = ConnectorStatus.ERROR
+        self.svc.test_connector_connection = AsyncMock(return_value=conn)
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/connectors/{uuid4()}/test",
                            headers=self._headers())
         assert resp.status_code == 200
-        assert resp.json()["success"] is False
+        assert resp.json()["status"] == "ERROR"
 
     def test_test_connector_not_found_404(self):
         from fastapi.testclient import TestClient

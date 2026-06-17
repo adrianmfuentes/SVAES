@@ -2534,7 +2534,7 @@ class TestConnectorServiceTestConnection:
             encrypted_credentials=b"enc", status=ConnectorStatus.INACTIVO,
         )
         connector_repo.get_by_id = AsyncMock(return_value=c)
-        connector_repo.update = AsyncMock()
+        connector_repo.update = AsyncMock(return_value=c)
 
         mock_impl = MagicMock()
         mock_impl.test_connection = AsyncMock(return_value=True)
