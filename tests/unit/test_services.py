@@ -2549,7 +2549,8 @@ class TestConnectorServiceTestConnection:
 
             result = await service.test_connector_connection(c.id, uuid4())
 
-        assert result is True
+        assert isinstance(result, ConnectorInstance)
+        assert result.status == ConnectorStatus.ACTIVO
         assert c.status == ConnectorStatus.ACTIVO
         connector_repo.update.assert_awaited_once()
 

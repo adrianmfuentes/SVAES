@@ -2145,6 +2145,7 @@ class TestConnectorsRouter:
         assert resp.json()["status"] == "ACTIVO"
 
     def test_test_connector_failure(self):
+        from domain.enums import ConnectorStatus
         from fastapi.testclient import TestClient
         conn = self._make_connector()
         conn.status = ConnectorStatus.ERROR
