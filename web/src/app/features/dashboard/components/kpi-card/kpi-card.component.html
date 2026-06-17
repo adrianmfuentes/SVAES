@@ -1,12 +1,13 @@
-<div class="kpi-card">
+<div class="kpi-card" role="region" [attr.aria-label]="label">
   @if (loading) {
-    <div class="skeleton skeleton-label"></div>
-    <div class="skeleton skeleton-value"></div>
+    <div class="skeleton skeleton-label" aria-hidden="true"></div>
+    <div class="skeleton skeleton-value" aria-hidden="true"></div>
+    <span class="sr-only">{{ label }}</span>
   } @else if (error) {
-    <p class="card-label">{{ label }}</p>
-    <div class="error-banner">{{ error }}</div>
+    <p class="card-label" aria-hidden="true">{{ label }}</p>
+    <div class="error-banner" role="alert">{{ error }}</div>
   } @else {
-    <p class="card-label">{{ label }}</p>
+    <p class="card-label" aria-hidden="true">{{ label }}</p>
     <div class="card-value">
       <ng-content></ng-content>
     </div>

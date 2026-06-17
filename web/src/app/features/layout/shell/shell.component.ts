@@ -5,11 +5,12 @@ import { AuthService } from '../../../core/services/auth.service';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../../core/components/lang-toggle/lang-toggle.component';
+import { ToastComponent } from '../../../core/components/toast/toast.component';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslatePipe, LangToggleComponent],
+  imports: [CommonModule, RouterModule, TranslatePipe, LangToggleComponent, ToastComponent],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
 })
@@ -31,6 +32,14 @@ export class ShellComponent {
 
   get isManager(): boolean {
     return this.authService.getUserRole() === 'MANAGER';
+  }
+
+  get isViewer(): boolean {
+    return this.authService.getUserRole() === 'VIEWER';
+  }
+
+  get isOperator(): boolean {
+    return this.authService.getUserRole() === 'OPERATOR';
   }
 
   get displayName(): string {

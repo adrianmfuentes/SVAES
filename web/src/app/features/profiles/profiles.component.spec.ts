@@ -84,6 +84,7 @@ describe('ProfilesComponent', () => {
 
     it('openEdit should populate form and show modal', () => {
       component.openEdit(mockProfile);
+      httpCtrl.expectOne('/api/v1/profiles/p1').flush({ ...mockProfile, rules: [] });
       expect(component.showModal()).toBe(true);
       expect(component.editingProfile()).toEqual(mockProfile);
       expect(component.profileForm.value.name).toBe('Profile A');
@@ -110,6 +111,7 @@ describe('ProfilesComponent', () => {
     it('should PATCH existing profile', () => {
       component.templates.set([mockProfile]);
       component.openEdit(mockProfile);
+      httpCtrl.expectOne('/api/v1/profiles/p1').flush({ ...mockProfile, rules: [] });
       component.profileForm.setValue({ name: 'Updated', description: 'Desc' });
       component.submitProfile();
       const req = httpCtrl.expectOne(`/api/v1/profiles/${mockProfile.id}`);

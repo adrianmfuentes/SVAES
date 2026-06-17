@@ -29,7 +29,7 @@ interface Release {
           <h1 class="page-title">{{ 'releases.title' | t }}</h1>
           <span *ngIf="isAdmin" class="global-badge">{{ 'releases.global_view' | t }}</span>
         </div>
-        <a *ngIf="!isAdmin" routerLink="/app/releases/new" class="btn-primary">{{ 'releases.new_release' | t }}</a>
+        <a *ngIf="!isAdmin && !isViewer" routerLink="/app/releases/new" class="btn-primary">{{ 'releases.new_release' | t }}</a>
       </div>
 
       <div class="filters-bar">
@@ -59,11 +59,12 @@ interface Release {
         <table class="data-table" *ngIf="filtered().length > 0; else emptyState">
           <thead>
             <tr>
-              <th>{{ 'releases.table_id' | t }}</th>
-              <th>{{ 'releases.table_name' | t }}</th>
-              <th *ngIf="isAdmin">{{ 'releases.col_org' | t }}</th>
-              <th>{{ 'releases.table_verdict' | t }}</th>
-              <th>{{ 'releases.table_date' | t }}</th>
+              <th scope="col">{{ 'releases.table_id' | t }}</th>
+              <th scope="col">{{ 'releases.table_name' | t }}</th>
+              <th scope="col" *ngIf="isAdmin">{{ 'releases.col_org' | t }}</th>
+              <th scope="col">{{ 'releases.table_verdict' | t }}</th>
+              <th scope="col">{{ 'releases.table_date' | t }}</th>
+              <th scope="col" *ngIf="!isAdmin && !isViewer" class="col-actions">{{ 'releases.table_actions' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -81,6 +82,20 @@ interface Release {
                 </span>
               </td>
               <td class="cell-muted">{{ r.created_at | date:'dd MMM yyyy, HH:mm' }}</td>
+              <td *ngIf="!isAdmin && !isViewer" class="cell-actions" (click)="$event.stopPropagation()">
+                <a [routerLink]="['/app/releases', r.id, 'edit']" class="btn-action btn-edit" title="{{ 'common.edit' | t }}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </a>
+                <button class="btn-action btn-delete" title="{{ 'common.delete' | t }}" (click)="confirmDelete(r)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -96,6 +111,21 @@ interface Release {
           <button class="btn-ghost" [disabled]="page() >= totalPages() - 1" (click)="nextPage()">{{ 'common.next' | t }}</button>
         </div>
       </div>
+
+      @if (showDeleteModal()) {
+        <div class="modal-overlay" (click)="cancelDelete()">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <h3 class="modal-title">{{ 'common.confirm' | t }}</h3>
+            <p class="modal-message">{{ 'releases.delete_confirm' | t }}</p>
+            <div class="modal-footer">
+              <button class="btn-secondary" (click)="cancelDelete()">{{ 'common.cancel' | t }}</button>
+              <button class="btn-danger" [disabled]="deleting()" (click)="executeDelete()">
+                {{ deleting() ? ('common.deleting' | t) : ('common.delete' | t) }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -195,6 +225,9 @@ interface Release {
 
     .cell-primary { font-weight: 500; }
     .cell-muted { color: var(--muted); }
+    .cell-actions { white-space: nowrap; }
+
+    .col-actions { width: 6rem; text-align: center; }
 
     .mono-sm {
       font-family: var(--font-mono);
@@ -219,6 +252,36 @@ interface Release {
     .verdict-warning { color: var(--verdict-warning); background: var(--verdict-warning-bg); border-color: var(--verdict-warning-border); }
     .verdict-invalid { color: var(--verdict-invalid); background: var(--verdict-invalid-bg); border-color: var(--verdict-invalid-border); }
     .verdict-unevaluated { color: var(--verdict-unevaluated); background: var(--verdict-unevaluated-bg); border-color: var(--verdict-unevaluated-border); }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: var(--rounded-sm);
+      border: 0.0625rem solid var(--border);
+      background: var(--paper);
+      cursor: pointer;
+      transition: all 0.12s ease;
+      margin: 0 0.125rem;
+    }
+
+    .btn-action svg { color: var(--muted); }
+
+    .btn-edit:hover {
+      background: var(--paper-secondary);
+      border-color: var(--ink);
+    }
+
+    .btn-edit:hover svg { color: var(--ink); }
+
+    .btn-delete:hover {
+      background: var(--verdict-invalid-bg);
+      border-color: var(--verdict-invalid-border);
+    }
+
+    .btn-delete:hover svg { color: var(--verdict-invalid); }
 
     .pagination {
       display: flex;
@@ -271,6 +334,87 @@ interface Release {
 
     .btn-primary:hover { background: var(--ink-secondary); }
 
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      background: transparent;
+      color: var(--ink);
+      border: 0.0625rem solid var(--border-strong);
+      border-radius: var(--rounded-md);
+      padding: 0.5625rem 1.125rem;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      text-decoration: none;
+    }
+
+    .btn-secondary:hover { background: var(--paper-secondary); }
+
+    .btn-danger {
+      display: inline-flex;
+      align-items: center;
+      background: var(--verdict-invalid);
+      color: var(--paper);
+      border: 0.0625rem solid var(--verdict-invalid);
+      border-radius: var(--rounded-md);
+      padding: 0.5625rem 1.125rem;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-danger:hover:not(:disabled) { background: #c41e1e; }
+    .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: var(--surface-raised);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-lg);
+      padding: var(--spacing-lg);
+      max-width: 24rem;
+      width: 90%;
+      box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 400;
+      margin: 0 0 var(--spacing-sm);
+      color: var(--ink);
+    }
+
+    .modal-message {
+      font-size: 0.9375rem;
+      color: var(--muted);
+      margin: 0 0 var(--spacing-lg);
+      line-height: 1.5;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--spacing-sm);
+    }
+
     .error-banner {
       background: var(--verdict-invalid-bg);
       color: var(--verdict-invalid);
@@ -320,6 +464,16 @@ interface Release {
       .filter-input { max-width: 100%; }
 
       .data-table-wrap { overflow-x: auto; }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+      }
+
+      .btn-secondary,
+      .btn-danger {
+        justify-content: center;
+        width: 100%;
+      }
     }
   `],
 })
@@ -329,6 +483,7 @@ export class ReleasesComponent implements OnInit {
   private readonly ts = inject(TranslationService);
 
   readonly isAdmin = this.authService.isAdmin();
+  readonly isViewer = this.authService.getUserRole() === 'VIEWER';
   readonly pageSize = 20;
 
   releases = signal<Release[]>([]);
@@ -336,6 +491,10 @@ export class ReleasesComponent implements OnInit {
   loading = signal(true);
   error = signal<string | null>(null);
   page = signal(0);
+
+  showDeleteModal = signal(false);
+  releaseToDelete = signal<Release | null>(null);
+  deleting = signal(false);
 
   filterText = '';
   filterVerdict = '';
@@ -383,5 +542,37 @@ export class ReleasesComponent implements OnInit {
       'verdict-invalid': verdict === 'INVALID',
       'verdict-unevaluated': verdict === 'NOT_EVALUATED' || !verdict,
     };
+  }
+
+  confirmDelete(release: Release): void {
+    this.releaseToDelete.set(release);
+    this.showDeleteModal.set(true);
+  }
+
+  cancelDelete(): void {
+    this.showDeleteModal.set(false);
+    this.releaseToDelete.set(null);
+  }
+
+  executeDelete(): void {
+    const release = this.releaseToDelete();
+    if (!release) return;
+
+    this.deleting.set(true);
+    this.http.delete(`/api/v1/releases/${release.id}`)
+      .pipe(
+        catchError(err => {
+          this.error.set(this.ts.translateInstant('releases.delete_error'));
+          this.deleting.set(false);
+          this.cancelDelete();
+          return of(null);
+        })
+      )
+      .subscribe(() => {
+        this.releases.update(list => list.filter(r => r.id !== release.id));
+        this.filtered.update(list => list.filter(r => r.id !== release.id));
+        this.deleting.set(false);
+        this.cancelDelete();
+      });
   }
 }

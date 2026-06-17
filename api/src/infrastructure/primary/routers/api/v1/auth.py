@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 import hashlib
 import logging
@@ -278,7 +279,7 @@ async def activate_account(
     if expiry and expiry < now:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="El token de activación ha expirado.")
 
-    user.hashed_password = hasher.hash_password(payload.password)
+    user.hashed_password = await asyncio.to_thread(hasher.hash_password, payload.password)
     user.is_active = True
     user.activation_token = None
     user.activation_token_expiry = None

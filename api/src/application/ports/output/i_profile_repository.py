@@ -17,6 +17,10 @@ class IProfileRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_system_profile(self) -> Optional[VerificationProfile]:
+        pass
+
+    @abstractmethod
     async def update(self, profile: VerificationProfile) -> VerificationProfile:
         pass
 

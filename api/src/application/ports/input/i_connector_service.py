@@ -29,7 +29,7 @@ class IConnectorService(ABC):
         pass
 
     @abstractmethod
-    async def test_connector_connection(self, connector_id: UUID, requested_by: UUID) -> bool:
+    async def test_connector_connection(self, connector_id: UUID, requested_by: UUID) -> ConnectorInstance:
         pass
 
     @abstractmethod

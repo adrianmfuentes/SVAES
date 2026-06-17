@@ -33,7 +33,7 @@ function generateSlug(name: string): string {
   template: `
     <div class="request-page">
       <a routerLink="/" class="request-back">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" focusable="false">
           <path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         {{ 'login.back_home' | t }}
@@ -45,8 +45,8 @@ function generateSlug(name: string): string {
           <!-- Success state -->
           <ng-container *ngIf="submitted(); else formBlock">
             <div class="success-state step-block">
-              <div class="success-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <div class="success-icon" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
                   <circle cx="12" cy="12" r="10" stroke="var(--verdict-valid)" stroke-width="1.5"/>
                   <path d="M8 12l3 3 5-5" stroke="var(--verdict-valid)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -61,29 +61,35 @@ function generateSlug(name: string): string {
           <ng-template #formBlock>
 
             <!-- Stepper -->
-            <div class="stepper">
-              <div class="stepper-item" [class.done]="currentStep() > 1" [class.active]="currentStep() === 1">
-                <div class="stepper-dot">
-                  <svg *ngIf="currentStep() > 1" width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <div class="stepper" role="list">
+              <div class="stepper-item" role="listitem"
+                   [class.done]="currentStep() > 1" [class.active]="currentStep() === 1"
+                   [attr.aria-current]="currentStep() === 1 ? 'step' : null">
+                <div class="stepper-dot" aria-hidden="true">
+                  <svg *ngIf="currentStep() > 1" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
                     <path d="M2 5l2.5 2.5L8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span *ngIf="currentStep() <= 1">1</span>
+                  <span *ngIf="currentStep() <= 1" aria-hidden="true">1</span>
                 </div>
                 <span class="stepper-label">{{ 'access_request.step1' | t }}</span>
               </div>
-              <div class="stepper-connector" [class.active]="currentStep() > 1"></div>
-              <div class="stepper-item" [class.done]="currentStep() > 2" [class.active]="currentStep() === 2">
-                <div class="stepper-dot">
-                  <svg *ngIf="currentStep() > 2" width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <div class="stepper-connector" [class.active]="currentStep() > 1" aria-hidden="true"></div>
+              <div class="stepper-item" role="listitem"
+                   [class.done]="currentStep() > 2" [class.active]="currentStep() === 2"
+                   [attr.aria-current]="currentStep() === 2 ? 'step' : null">
+                <div class="stepper-dot" aria-hidden="true">
+                  <svg *ngIf="currentStep() > 2" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
                     <path d="M2 5l2.5 2.5L8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span *ngIf="currentStep() <= 2">2</span>
+                  <span *ngIf="currentStep() <= 2" aria-hidden="true">2</span>
                 </div>
                 <span class="stepper-label">{{ 'access_request.step2' | t }}</span>
               </div>
-              <div class="stepper-connector" [class.active]="currentStep() > 2"></div>
-              <div class="stepper-item" [class.active]="currentStep() === 3">
-                <div class="stepper-dot"><span>3</span></div>
+              <div class="stepper-connector" [class.active]="currentStep() > 2" aria-hidden="true"></div>
+              <div class="stepper-item" role="listitem"
+                   [class.active]="currentStep() === 3"
+                   [attr.aria-current]="currentStep() === 3 ? 'step' : null">
+                <div class="stepper-dot" aria-hidden="true"><span aria-hidden="true">3</span></div>
                 <span class="stepper-label">{{ 'access_request.step3' | t }}</span>
               </div>
             </div>
@@ -182,8 +188,8 @@ function generateSlug(name: string): string {
               <div class="step-block" *ngIf="currentStep() === 3">
                 <h2 class="card-title">{{ 'access_request.review_title' | t }}</h2>
 
-                <div class="alert-error" *ngIf="errorMessage()">
-                  <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <div class="alert-error" *ngIf="errorMessage()" role="alert">
+                  <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
                     <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                     <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                   </svg>

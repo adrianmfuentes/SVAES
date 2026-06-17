@@ -1,4 +1,6 @@
 <div class="landing">
+  <a class="skip-link" href="#main-content">{{ 'a11y.skip_to_main' | t }}</a>
+
   <header class="landing-header">
     <div class="landing-logo">
       SVAES
@@ -11,7 +13,7 @@
     </nav>
   </header>
 
-  <section class="landing-hero">
+  <section class="landing-hero" id="main-content">
     <div class="landing-hero-inner">
 
       <div class="landing-left">
@@ -44,7 +46,7 @@
         </div>
       </div>
 
-      <div class="landing-right">
+      <div class="landing-right" aria-hidden="true">
         <div class="mock-window">
           <div class="mock-window-bar">
             <span class="mock-window-title">{{ 'landing.mock_verification' | t }} · release/2024-Q3-hotfix</span>
@@ -57,13 +59,14 @@
             <span class="mock-verdict-meta">hace 2 min</span>
           </div>
 
-          <table class="mock-table">
+          <div class="mock-scan-area">
+          <table class="mock-table" role="presentation">
             <thead>
               <tr class="mock-thead-row">
-                <th>ID</th>
-                <th>Regla</th>
-                <th>Conector</th>
-                <th>Resultado</th>
+                <th scope="col">ID</th>
+                <th scope="col">Regla</th>
+                <th scope="col">Conector</th>
+                <th scope="col">Resultado</th>
               </tr>
             </thead>
             <tbody>
@@ -95,10 +98,11 @@
                 <td class="mock-id">RV-05</td>
                 <td>Approval gate</td>
                 <td class="mock-connector">GitHub</td>
-                <td><span class="mock-badge mock-checking"></span></td>
+                <td><span class="mock-badge mock-checking">● CHECKING</span></td>
               </tr>
             </tbody>
           </table>
+          </div>
 
           <div class="mock-footer">
             <span>{{ 'landing.mock_footer' | t }}</span>
@@ -112,7 +116,7 @@
   </section>
 
   <section class="landing-access">
-    <div class="landing-access-inner">
+    <div class="landing-access-inner" #accessInner>
 
       <div class="landing-access-text">
         <span class="landing-eyebrow">{{ 'landing.eyebrow_register' | t }}</span>

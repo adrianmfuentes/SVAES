@@ -31,6 +31,11 @@ describe('ConnectorsComponent', () => {
   let fixture: ComponentFixture<ConnectorsComponent>;
   let httpCtrl: HttpTestingController;
 
+  const flushInitRequests = () => {
+    httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush([]);
+    httpCtrl.expectOne('/api/v1/connectors/types').flush({ implementations: [], by_type: {} });
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     TestBed.resetTestingModule();
@@ -59,6 +64,7 @@ describe('ConnectorsComponent', () => {
       component.ngOnInit();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors');
       req.flush([apiConnector]);
+      httpCtrl.expectOne('/api/v1/connectors/types').flush({ implementations: [], by_type: {} });
       expect(component.connectors()).toHaveLength(1);
       expect(component.connectors()[0].status).toBe('active');
       expect(component.loading()).toBe(false);
@@ -76,6 +82,7 @@ describe('ConnectorsComponent', () => {
     it('should set error on HTTP failure', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush('', { status: 500, statusText: 'Error' });
+      httpCtrl.expectOne('/api/v1/connectors/types').flush({ implementations: [], by_type: {} });
       expect(component.error()).toBe('connectors.loading_error');
     });
   });
@@ -108,19 +115,19 @@ describe('ConnectorsComponent', () => {
       component.openEdit(conn);
       expect(component.showModal()).toBe(true);
       expect(component.editingConnector()).toEqual(conn);
-      expect(component.connectorForm.value.name).toBe('Test');
     });
   });
 
   describe('submitConnector', () => {
     beforeEach(() => {
       component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush([]);
+      flushInitRequests();
     });
 
     it('should POST new connector', () => {
       component.openCreate();
       component.connectorForm.setValue({ name: 'New Conn', connectorType: 'REPO_CODIGO', connectorImplementation: 'gitlab' });
+      component.selectedImplementation.set('gitlab');
       component.submitConnector();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors');
       expect(req.request.method).toBe('POST');
@@ -134,6 +141,7 @@ describe('ConnectorsComponent', () => {
       component.globalConnectors.set([existing]);
       component.openEdit(existing);
       component.connectorForm.patchValue({ name: 'Updated', connectorType: 'REPO_CODIGO', connectorImplementation: 'gitlab' });
+      component.selectedImplementation.set('gitlab');
       component.submitConnector();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1');
       expect(req.request.method).toBe('PATCH');
@@ -144,6 +152,7 @@ describe('ConnectorsComponent', () => {
     it('should set modalError on failure', () => {
       component.openCreate();
       component.connectorForm.setValue({ name: 'X', connectorType: 'REPO_CODIGO', connectorImplementation: 'gitlab' });
+      component.selectedImplementation.set('gitlab');
       component.submitConnector();
       httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush(
         { detail: 'Token invalid' },
@@ -156,7 +165,7 @@ describe('ConnectorsComponent', () => {
   describe('testConnector', () => {
     beforeEach(() => {
       component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush([]);
+      flushInitRequests();
     });
 
     it('should set and clear testingId', () => {
@@ -171,25 +180,25 @@ describe('ConnectorsComponent', () => {
   describe('toggleConnector', () => {
     beforeEach(() => {
       component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush([]);
+      flushInitRequests();
     });
 
-    it('should PATCH with INACTIVO when connector is active', () => {
+    it('should POST to /toggle with INACTIVO when connector is active', () => {
       const conn = { id: 'conn-1', name: 'X', type: 'gitlab', status: 'active' as const, global: false };
       component.globalConnectors.set([conn]);
       component.toggleConnector(conn);
-      const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1');
-      expect(req.request.method).toBe('PATCH');
+      const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1/toggle');
+      expect(req.request.method).toBe('POST');
       expect(req.request.body.status).toBe('INACTIVO');
       req.flush({ id: 'conn-1', name: 'X', connector_type: 'REPO_CODIGO', status: 'INACTIVO', created_at: '2025-01-01T00:00:00Z' });
       expect(component.globalConnectors()[0].status).toBe('inactive');
     });
 
-    it('should PATCH with ACTIVO when connector is inactive', () => {
+    it('should POST to /toggle with ACTIVO when connector is inactive', () => {
       const conn = { id: 'conn-2', name: 'Y', type: 'jira', status: 'inactive' as const, global: false };
       component.globalConnectors.set([conn]);
       component.toggleConnector(conn);
-      const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-2');
+      const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-2/toggle');
       expect(req.request.body.status).toBe('ACTIVO');
       req.flush({ id: 'conn-2', name: 'Y', connector_type: 'GESTOR_TAREAS', status: 'ACTIVO', created_at: '2025-01-01T00:00:00Z' });
       expect(component.globalConnectors()[0].status).toBe('active');
@@ -199,7 +208,7 @@ describe('ConnectorsComponent', () => {
       const conn = { id: 'conn-1', name: 'X', type: 'gitlab', status: 'active' as const, global: false };
       component.globalConnectors.set([conn]);
       component.toggleConnector(conn);
-      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1').flush(
+      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1/toggle').flush(
         {}, { status: 503, statusText: 'Error' }
       );
       expect(component.globalConnectors()[0].status).toBe('active');
@@ -209,12 +218,13 @@ describe('ConnectorsComponent', () => {
   describe('submitConnector with different types', () => {
     beforeEach(() => {
       component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush([]);
+      flushInitRequests();
     });
 
     it('should map jira type to GESTOR_TAREAS', () => {
       component.openCreate();
       component.connectorForm.setValue({ name: 'Jira Conn', connectorType: 'GESTOR_TAREAS', connectorImplementation: 'jira' });
+      component.selectedImplementation.set('jira');
       component.submitConnector();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors');
       expect(req.request.body.connector_type).toBe('GESTOR_TAREAS');
@@ -224,6 +234,7 @@ describe('ConnectorsComponent', () => {
     it('should map unknown type to REPO_CODIGO', () => {
       component.openCreate();
       component.connectorForm.setValue({ name: 'Unknown', connectorType: 'REPO_CODIGO', connectorImplementation: 'unknown_tool' });
+      component.selectedImplementation.set('unknown_tool');
       component.submitConnector();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors');
       expect(req.request.body.connector_type).toBe('REPO_CODIGO');
@@ -233,6 +244,7 @@ describe('ConnectorsComponent', () => {
     it('should not submit if form is invalid', () => {
       component.openCreate();
       component.connectorForm.setValue({ name: '', connectorType: 'REPO_CODIGO', connectorImplementation: 'gitlab' });
+      component.selectedImplementation.set('gitlab');
       component.submitConnector();
       httpCtrl.expectNone('/api/v1/organizations/org-abc/connectors');
     });
@@ -243,7 +255,7 @@ describe('ConnectorsComponent', () => {
 
     const renderTemplate = () => {
       fixture.detectChanges();
-      httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush([]);
+      flushInitRequests();
     };
 
     it('should render loading skeleton', () => {

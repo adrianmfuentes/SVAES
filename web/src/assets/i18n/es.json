@@ -70,7 +70,6 @@
   "common.build": "Versión",
   "common.language": "Idioma",
   "common.project": "Proyecto",
-
   "landing.aria_nav_main": "Navegación principal",
   "landing.aria_nav_footer": "Navegación del pie de página",
   "landing.tagline": "Sistema de Verificación Automática de Entregas",
@@ -100,7 +99,6 @@
   "landing.footer_copy": "© 2026 Adrián Martínez. Todos los derechos reservados.",
   "landing.footer_privacy": "Política de privacidad",
   "landing.footer_legal": "Aviso legal",
-
   "login.back_home": "Volver al inicio",
   "login.title": "Iniciar sesión",
   "login.context_title_line1": "Verificación",
@@ -122,7 +120,6 @@
   "login.request_access": "Solicitar acceso",
   "login.footer_privacy": "Privacidad",
   "login.footer_legal": "Aviso legal",
-
   "login.error.no_connection": "No se pudo conectar con el servidor. Compruebe su conexión a Internet.",
   "login.error.wrong_credentials": "El correo electrónico o la contraseña no son correctos.",
   "login.error.pending_activation": "Su cuenta está pendiente de activación. Revise su correo electrónico.",
@@ -133,7 +130,6 @@
   "login.error.auth_unavailable": "El servicio de autenticación no está disponible. Inténtelo de nuevo más tarde.",
   "login.error.unexpected": "Ha ocurrido un error inesperado. Inténtelo de nuevo.",
   "login.error.unexpected_response": "El servidor devolvió una respuesta inesperada. Inténtelo de nuevo.",
-
   "login.2fa_title": "Verificación en dos pasos",
   "login.2fa_hint": "Introduzca el código de 6 dígitos de su aplicación de autenticación.",
   "login.2fa_code_label": "Código de verificación",
@@ -142,7 +138,6 @@
   "login.2fa_code_invalid": "El código debe tener 6 dígitos.",
   "login.2fa_verify": "Verificar",
   "login.2fa_back": "Volver al inicio de sesión",
-
   "activate.title": "Activar cuenta",
   "activate.step1_title": "Código de activación",
   "activate.step2_title": "Establecer contraseña",
@@ -173,7 +168,6 @@
   "activate.back_login": "Volver al inicio de sesión",
   "activate.error.invalid_code": "El código de activación no es válido o ha expirado.",
   "activate.error.generic": "Error al activar la cuenta. Inténtelo de nuevo.",
-
   "access_request.title": "Solicitar acceso",
   "access_request.subtitle": "Complete el formulario para solicitar acceso a SVAES",
   "access_request.step1": "Sobre usted",
@@ -205,7 +199,6 @@
   "access_request.generating": "Generando…",
   "access_request.error.submission": "Error al enviar la solicitud. Inténtelo de nuevo.",
   "access_request.error.conflict": "Ya existe una cuenta con ese correo electrónico o ese identificador de organización.",
-
   "shell.sidebar_logo": "SVAES",
   "shell.nav_system": "Sistema",
   "shell.nav_overview": "Visión general",
@@ -230,7 +223,6 @@
   "shell.logout": "Cerrar sesión",
   "shell.toggle_nav": "Abrir/cerrar navegación",
   "shell.nav_org_settings": "Miembros",
-
   "dashboard.title": "Dashboard",
   "dashboard.total_releases": "Total entregas",
   "dashboard.success_rate": "Tasa de éxito",
@@ -242,7 +234,6 @@
   "dashboard.empty_data": "Sin datos para el período seleccionado",
   "dashboard.period": "Período",
   "dashboard.last_30_days": "Últimos 30 días",
-
   "releases.title": "Entregas",
   "releases.global_view": "Vista global",
   "releases.search_placeholder": "Buscar entregas...",
@@ -266,7 +257,6 @@
   "releases.relative_minutes": "hace {{n}} min",
   "releases.relative_hours": "hace {{n}} h",
   "releases.relative_days": "hace {{n}} d",
-
   "release_detail.title": "Detalle de entrega",
   "release_detail.back": "Volver a entregas",
   "release_detail.verifying": "Verificando…",
@@ -297,7 +287,6 @@
   "release_detail.history_date": "Fecha",
   "release_detail.history_verdict": "Resultado",
   "release_detail.history_trigger": "Disparador",
-
   "release_new.title": "Nueva entrega",
   "release_new.back": "Volver a entregas",
   "release_new.project_label": "Proyecto",
@@ -313,7 +302,13 @@
   "release_new.submitting": "Creando…",
   "release_new.success": "Entrega creada correctamente",
   "release_new.error": "Error al crear la entrega",
-
+  "release_new.edit_title": "Editar entrega",
+  "release_new.save": "Guardar cambios",
+  "release_new.saving": "Guardando…",
+  "release_new.edit_error": "Error al guardar los cambios",
+  "releases.delete_confirm": "¿Está seguro de que desea eliminar esta entrega? Esta acción no se puede deshacer.",
+  "releases.deleted_success": "Entrega eliminada correctamente",
+  "releases.delete_error": "Error al eliminar la entrega",
   "connectors.title": "Conectores",
   "connectors.global": "Conectores globales",
   "connectors.global_desc": "Conectores del sistema gestionados por el administrador",
@@ -346,7 +341,6 @@
   "connectors.new_connector": "Nuevo conector",
   "connectors.error.no_name": "El nombre del conector es obligatorio",
   "connectors.error.no_type": "El tipo de conector es obligatorio",
-
   "profiles.title": "Perfiles de verificación",
   "profiles.templates": "Plantillas de perfiles",
   "profiles.templates_desc": "Plantillas globales gestionadas por el administrador",
@@ -375,7 +369,6 @@
   "profiles.update_rule": "Actualizar regla",
   "profiles.no_rules": "No hay reglas configuradas para este perfil",
   "profiles.rule_saving_error": "Error al guardar la regla",
-
   "system.title": "Visión general del sistema",
   "system.status": "Estado de los servicios",
   "system.metrics": "Métricas del sistema",
@@ -407,7 +400,6 @@
   "system.no_users": "No hay usuarios registrados",
   "system.error.loading_status": "Error al cargar el estado del sistema",
   "system.error.loading_metrics": "Error al cargar las métricas",
-
   "logs.title": "Registros de auditoría",
   "logs.unavailable": "El sistema de registros no está disponible en este momento",
   "logs.filter_category": "Filtrar por categoría",
@@ -424,7 +416,6 @@
   "logs.no_logs": "No se encontraron registros",
   "logs.masked_user": "usuario-***",
   "logs.masked_ip": "ip-***",
-
   "admin.title": "Administración",
   "admin.tab_organizations": "Organizaciones",
   "admin.tab_users": "Usuarios",
@@ -445,7 +436,6 @@
   "admin.access_slug": "Slug",
   "admin.access_created": "Solicitado",
   "admin.no_access_requests": "No hay solicitudes pendientes",
-
   "profile_page.title": "Mi perfil",
   "profile_page.info": "Información del perfil",
   "profile_page.name": "Nombre",
@@ -484,7 +474,6 @@
   "profile_page.error.loading": "Error al cargar el perfil",
   "profile_page.error.creating_org": "Error al crear la organización",
   "profile_page.error.api_keys": "Error al cargar las claves API",
-
   "errors.403.title": "403",
   "errors.403.heading": "Acceso denegado",
   "errors.403.message": "No tiene permisos para acceder a esta página.",
@@ -494,12 +483,10 @@
   "errors.404.heading": "Página no encontrada",
   "errors.404.message": "La página que busca no existe o ha sido movida.",
   "errors.404.home": "Volver al inicio",
-
   "legal.privacy.title": "Política de Privacidad",
   "legal.privacy.last_updated": "Última actualización: 27 de mayo de 2026",
   "legal.legal_notice.title": "Aviso Legal",
   "legal.legal_notice.last_updated": "Última actualización: 27 de mayo de 2026",
-
   "common.previous": "Anterior",
   "common.next": "Siguiente",
   "common.saving": "Guardando…",
@@ -509,20 +496,17 @@
   "common.read_only": "Solo lectura",
   "common.continue": "Continuar",
   "common.testing": "Probando…",
-
   "dashboard.pass_rate": "Tasa de superación",
   "dashboard.verifications": "Verificaciones",
   "dashboard.release_status": "Estado de entregas",
   "dashboard.release_valid": "válidas",
   "dashboard.release_invalid": "inválidas",
   "dashboard.release_pending": "pendientes",
-
   "releases.filter_placeholder": "Filtrar por nombre o ID…",
   "releases.verdict_with_warnings": "Con advertencias",
   "releases.verdict_not_evaluated": "Sin evaluar",
   "releases.loading_error": "Error al cargar entregas",
   "releases.col_org": "Organización",
-
   "release_detail.back_releases": "← Entregas",
   "release_detail.verifying_label": "Verificando…",
   "release_detail.verify_label": "Verificar",
@@ -541,18 +525,17 @@
   "release_detail.col_executed": "Ejecutada",
   "release_detail.see_btn": "Ver",
   "release_detail.empty_desc": "Esta entrega aún no tiene artefactos ni verificaciones.",
+  "release_detail.add_artifact_first": "Añade al menos un artefacto antes de iniciar la verificación.",
   "release_detail.start_verification_btn": "Iniciar verificación",
   "release_detail.loading_error": "Error al cargar la entrega",
   "release_detail.no_id_error": "ID de entrega no encontrado en la ruta.",
   "release_detail.verification_error": "Error al lanzar la verificación",
-
   "release_new.back_link": "← Entregas",
   "release_new.form_title": "Datos de la entrega",
   "release_new.project_placeholder": "Selecciona un proyecto…",
   "release_new.no_projects": "No hay proyectos disponibles.",
   "release_new.no_projects_manager": "Crea un proyecto primero.",
   "release_new.no_projects_link": "Ir a Proyectos",
-
   "projects.title": "Proyectos",
   "projects.new_btn": "Nuevo proyecto",
   "projects.col_name": "Nombre",
@@ -567,7 +550,6 @@
   "projects.show_archived": "Ver archivados",
   "projects.hide_archived": "Ocultar archivados",
   "projects.unarchive_btn": "Desarchivar",
-
   "project_new.title": "Nuevo proyecto",
   "project_new.back_link": "← Proyectos",
   "project_new.form_title": "Datos del proyecto",
@@ -584,9 +566,7 @@
   "project_new.submit": "Crear proyecto",
   "project_new.submitting": "Creando…",
   "project_new.error": "Error al crear el proyecto.",
-
   "shell.nav_projects": "Proyectos",
-
   "connectors.global_scope": "Ámbito global",
   "connectors.global_system": "Conectores globales del sistema",
   "connectors.org_connectors_label": "Conectores de organización (solo lectura)",
@@ -611,7 +591,6 @@
   "connectors.select_category": "Seleccionar categoría",
   "connectors.system_label": "Sistema",
   "connectors.select_system": "Seleccionar sistema",
-
   "profiles.global_scope": "Vista global",
   "profiles.global_templates_section": "Plantillas globales",
   "profiles.org_readonly_section": "Perfiles de organizaciones (solo lectura)",
@@ -628,7 +607,6 @@
   "profiles.no_org_profiles": "No hay perfiles de verificación registrados.",
   "profiles.loading_error": "Error al cargar perfiles",
   "profiles.saving_error": "Error al guardar plantilla",
-
   "admin.global_badge": "Global · U3",
   "admin.anonymized_title": "Datos anonimizados",
   "admin.anonymized_desc": "Por cumplimiento normativo y protección de datos, la información de organizaciones, usuarios y solicitudes se muestra de forma anonimizada. La administración de estas entidades se gestiona exclusivamente a través de los flujos operativos del sistema.",
@@ -649,7 +627,6 @@
   "admin.tab_rejected": "Rechazadas",
   "admin.access_requests_title": "Solicitudes de acceso",
   "admin.no_ar": "No hay solicitudes de acceso.",
-
   "org_settings.title": "Miembros",
   "org_settings.tab_members": "Miembros",
   "org_settings.tab_projects": "Proyectos",
@@ -671,10 +648,17 @@
   "org_settings.role_viewer": "Lector",
   "org_settings.remove_member_title": "Eliminar miembro",
   "org_settings.remove_member_confirm": "¿Está seguro de que desea eliminar a {{name}} de la organización? Perderán el acceso a esta organización.",
+  "org_settings.transfer_btn": "Transferir",
+  "org_settings.transfer_title": "Transferir titularidad",
+  "org_settings.transfer_select_label": "Nuevo administrador de la organización",
+  "org_settings.transfer_select_placeholder": "Selecciona un miembro...",
+  "org_settings.transfer_warning": "El propietario actual pasará a ser técnico. Esta acción no se puede deshacer.",
+  "org_settings.transfer_confirm_btn": "Transferir titularidad",
+  "org_settings.transfer_success": "Titularidad transferida correctamente. Cerrando sesión...",
+  "org_settings.transfer_error": "Error al transferir la titularidad.",
   "org_settings.archive_btn": "Archivar",
   "org_settings.archive_project_title": "Archivar proyecto",
   "org_settings.archive_project_confirm": "¿Está seguro de que desea archivar el proyecto \"{{name}}\"? Los proyectos archivados son de solo lectura y no se pueden usar para nuevas entregas.",
-
   "system.system_badge": "Sistema",
   "system.updated_ago": "Actualizado hace {{n}}s",
   "system.refresh_btn": "Actualizar",
@@ -709,7 +693,6 @@
   "system.status_inactive": "Inactivo",
   "system.no_system_orgs": "No hay organizaciones en el sistema.",
   "system.no_system_users": "No hay usuarios en el sistema.",
-
   "logs.audit_badge": "Auditoría",
   "logs.unavailable_title": "Registros de auditoría no disponibles",
   "logs.unavailable_desc": "El endpoint de auditoría no está implementado en esta versión del backend. Esta funcionalidad registrará:",
@@ -741,7 +724,6 @@
   "logs.previous": "Anterior",
   "logs.next": "Siguiente",
   "logs.count": "{{n}} registros",
-
   "profile_page.display_name_label": "Nombre de visualización",
   "profile_page.display_name_placeholder": "Tu nombre",
   "profile_page.name_required_error": "El nombre es obligatorio.",
@@ -782,7 +764,6 @@
   "profile_page.role_manager": "Manager",
   "profile_page.role_operator": "Operator",
   "profile_page.role_viewer": "Viewer",
-
   "profile_page.2fa_title": "Verificación en dos pasos (2FA)",
   "profile_page.2fa_status_label": "Estado",
   "profile_page.2fa_enabled": "Activado",
@@ -799,7 +780,6 @@
   "profile_page.2fa_disable_btn": "Desactivar 2FA",
   "profile_page.2fa_enabled_msg": "¡2FA activado correctamente!",
   "profile_page.2fa_disabled_msg": "2FA desactivado.",
-
   "system.detail_responding": "Respondiendo",
   "system.detail_no_response": "Sin respuesta",
   "system.detail_accessible": "Accesible",
@@ -809,18 +789,15 @@
   "system.detail_inferred": "Inferido de API",
   "system.detail_not_verifiable": "No verificable",
   "system.reload_error": "Error al recargar reglas",
-
   "common.view_all": "Ver todos",
   "dashboard.no_data": "Sin datos disponibles",
   "dashboard.no_failed_rules": "Sin reglas fallidas en este período",
-
   "legal.common.doc_type": "Documento legal",
   "legal.common.jurisdiction": "España y Unión Europea",
   "legal.common.toc_heading": "Índice",
   "legal.common.skip_link": "Ir al contenido principal",
   "legal.common.back_home": "← Inicio",
   "legal.common.back_start": "← Volver al inicio",
-
   "legal.privacy.nav_label": "Tabla de contenidos de la política de privacidad",
   "legal.privacy.toc.1": "Responsable del tratamiento",
   "legal.privacy.toc.2": "Datos tratados y finalidades",
@@ -876,7 +853,6 @@
   "legal.privacy.s9.title": "Cambios en esta política",
   "legal.privacy.s9.p1": "El responsable del tratamiento se reserva el derecho a modificar la presente política de privacidad para adaptarla a novedades legislativas o jurisprudenciales. Los cambios entrarán en vigor desde su publicación en la plataforma. Se recomienda revisar periódicamente esta página.",
   "legal.privacy.footer": "Documento redactado conforme al <abbr title=\"Reglamento General de Protección de Datos (UE) 2016/679\">RGPD</abbr> y la <abbr title=\"Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales\">LOPDGDD</abbr>. Autoridad de control competente: <abbr title=\"Agencia Española de Protección de Datos\">AEPD</abbr>.",
-
   "legal.notice.nav_label": "Tabla de contenidos del aviso legal",
   "legal.notice.toc.1": "Datos del titular",
   "legal.notice.toc.2": "Objeto y aceptación",
@@ -908,6 +884,16 @@
   "legal.notice.s6.p1": "El tratamiento de los datos personales de los usuarios se rige por el <strong>Reglamento (UE) 2016/679 del Parlamento Europeo y del Consejo</strong> (<abbr title=\"Reglamento General de Protección de Datos\">RGPD</abbr>), la <strong>Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos Personales y garantía de los derechos digitales</strong> (<abbr title=\"Ley Orgánica de Protección de Datos Personales y garantía de los derechos digitales\">LOPDGDD</abbr>), y la <a href=\"/legal/privacidad\" class=\"legal-link\">Política de privacidad</a> disponible en todo momento en esta plataforma.",
   "legal.notice.s7.title": "Ley aplicable y jurisdicción",
   "legal.notice.s7.p1": "Las presentes condiciones legales se rigen por la legislación española. Para la resolución de cualquier controversia derivada del uso de esta plataforma, las partes se someten a los Juzgados y Tribunales de <span class=\"legal-placeholder\">Oviedo</span>, con renuncia expresa a cualquier otro fuero que pudiera corresponderles.",
-  "legal.notice.footer": "Documento redactado conforme a la <abbr title=\"Ley de Servicios de la Sociedad de la Información y de Comercio Electrónico\">LSSI-CE</abbr>, el <abbr title=\"Reglamento General de Protección de Datos (UE) 2016/679\">RGPD</abbr> y la <abbr title=\"Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales\">LOPDGDD</abbr>."
-
+  "legal.notice.footer": "Documento redactado conforme a la <abbr title=\"Ley de Servicios de la Sociedad de la Información y de Comercio Electrónico\">LSSI-CE</abbr>, el <abbr title=\"Reglamento General de Protección de Datos (UE) 2016/679\">RGPD</abbr> y la <abbr title=\"Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales\">LOPDGDD</abbr>.",
+  "project_new.profile_system_tag": "Por defecto",
+  "project_new.profile_default_hint": "Se usará el perfil por defecto del sistema con las 10 reglas de verificación estándar.",
+  "a11y.skip_to_main": "Saltar al contenido principal",
+  "a11y.lang_es": "Seleccionar español",
+  "a11y.lang_en": "Seleccionar inglés",
+  "a11y.dismiss_notification": "Cerrar notificación",
+  "a11y.pass_rate_good": "Bueno",
+  "a11y.pass_rate_fair": "Regular",
+  "a11y.pass_rate_poor": "Bajo",
+  "a11y.chart_pass_rate": "Gráfico de tasa de éxito",
+  "a11y.mock_preview": "Vista previa de la interfaz del producto (decorativo)"
 }

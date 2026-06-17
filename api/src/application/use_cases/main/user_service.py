@@ -1,3 +1,5 @@
+import asyncio
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from uuid import UUID, uuid4
 from application.ports.input.i_user_service import IUserService
@@ -49,10 +51,10 @@ class UserService(IUserService):
         if not user:
             raise EntityNotFoundError(f"Usuario no encontrado: {user_id}")
 
-        if not self._password_hasher.verify_password(current_password, user.hashed_password):
+        if not await asyncio.to_thread(self._password_hasher.verify_password, current_password, user.hashed_password):
             return False
 
-        user.hashed_password = self._password_hasher.hash_password(new_password)
+        user.hashed_password = await asyncio.to_thread(self._password_hasher.hash_password, new_password)
         await self._user_repo.update(user)
         return True
 
@@ -66,15 +68,22 @@ class UserService(IUserService):
         if not org:
             raise EntityNotFoundError(f"Organización no encontrada: {organization_id}")
 
+        now = datetime.now(timezone.utc)
+        activation_token = str(uuid4())
+        activation_token_expiry = now + timedelta(hours=24)
+
         existing = await self._user_repo.get_by_email(email)
         if existing:
             if existing.organization_id is not None:
                 raise DuplicateEntityError(f"El usuario {email} ya pertenece a una organización")
             existing.organization_id = organization_id
             existing.role = role
+            existing.activation_token = activation_token
+            existing.activation_token_expiry = activation_token_expiry
+            existing.is_active = False
             created = await self._user_repo.update(existing)
         else:
-            temp_password = self._password_hasher.hash_password(str(uuid4())[:8])
+            temp_password = await asyncio.to_thread(self._password_hasher.hash_password, str(uuid4())[:8])
             user = User(
                 id=uuid4(),
                 email=email,
@@ -83,6 +92,8 @@ class UserService(IUserService):
                 role=role,
                 organization_ids=[organization_id],
                 is_active=False,
+                activation_token=activation_token,
+                activation_token_expiry=activation_token_expiry,
             )
             created = await self._user_repo.create(user)
 
@@ -170,7 +181,7 @@ class UserService(IUserService):
         if existing:
             raise DuplicateEntityError(f"Ya existe un usuario con email: {email}")
 
-        hashed = self._password_hasher.hash_password(password)
+        hashed = await asyncio.to_thread(self._password_hasher.hash_password, password)
         user = User(
             id=uuid4(),
             email=email,
@@ -259,7 +270,7 @@ class UserService(IUserService):
         if not user:
             raise EntityNotFoundError(f"Usuario no encontrado: {user_id}")
 
-        if not self._password_hasher.verify_password(password, user.hashed_password):
+        if not await asyncio.to_thread(self._password_hasher.verify_password, password, user.hashed_password):
             raise AuthenticationError("Contraseña incorrecta")
 
         if user.organization_ids:

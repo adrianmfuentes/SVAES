@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -11,6 +11,8 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 interface Profile {
   id: string;
   name: string;
+  is_system?: boolean;
+  is_default?: boolean;
 }
 
 @Component({
@@ -39,76 +41,71 @@ interface Profile {
           }
 
           @if (!profilesLoading()) {
-            @if (profiles().length === 0) {
-              <div class="empty-notice">
-                {{ 'project_new.no_profiles' | t }}
-                <a routerLink="/app/profiles" class="inline-link">{{ 'project_new.no_profiles_link' | t }}</a>.
-              </div>
-            }
-
-            @if (profiles().length > 0) {
-              <form [formGroup]="form" (ngSubmit)="submit()">
-                <div class="form-group">
-                  <label for="proj-name">{{ 'project_new.name_label' | t }}</label>
-                  <input
-                    id="proj-name"
-                    type="text"
-                    formControlName="name"
-                    [placeholder]="'project_new.name_placeholder' | t"
-                    autocomplete="off"
-                  />
-                  @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
-                    <div class="field-error">{{ 'project_new.name_required' | t }}</div>
-                  }
-                  @if (form.get('name')?.hasError('maxlength') && form.get('name')?.touched) {
-                    <div class="field-error">{{ 'common.max_chars' | t : { max: 100 } }}</div>
-                  }
-                </div>
-
-                <div class="form-group">
-                  <label for="proj-description">
-                    {{ 'project_new.description_label' | t }}
-                    <span class="optional">({{ 'common.optional' | t }})</span>
-                  </label>
-                  <textarea
-                    id="proj-description"
-                    formControlName="description"
-                    rows="3"
-                    [placeholder]="'project_new.description_placeholder' | t"
-                  ></textarea>
-                  @if (form.get('description')?.hasError('maxlength') && form.get('description')?.touched) {
-                    <div class="field-error">{{ 'common.max_chars' | t : { max: 500 } }}</div>
-                  }
-                </div>
-
-                <div class="form-group">
-                  <label for="proj-profile">{{ 'project_new.profile_label' | t }}</label>
-                  <select id="proj-profile" formControlName="profile_id">
-                    <option value="">{{ 'project_new.profile_placeholder' | t }}</option>
-                    @for (p of profiles(); track p.id) {
-                      <option [value]="p.id">{{ p.name }}</option>
-                    }
-                  </select>
-                  @if (form.get('profile_id')?.hasError('required') && form.get('profile_id')?.touched) {
-                    <div class="field-error">{{ 'project_new.profile_required' | t }}</div>
-                  }
-                </div>
-
-                @if (submitError()) {
-                  <div class="alert-error">{{ submitError() }}</div>
+            <form [formGroup]="form" (ngSubmit)="submit()">
+              <div class="form-group">
+                <label for="proj-name">{{ 'project_new.name_label' | t }}</label>
+                <input
+                  id="proj-name"
+                  type="text"
+                  formControlName="name"
+                  [placeholder]="'project_new.name_placeholder' | t"
+                  autocomplete="off"
+                />
+                @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
+                  <div class="field-error">{{ 'project_new.name_required' | t }}</div>
                 }
+                @if (form.get('name')?.hasError('maxlength') && form.get('name')?.touched) {
+                  <div class="field-error">{{ 'common.max_chars' | t : { max: 100 } }}</div>
+                }
+              </div>
 
-                <div class="form-footer">
-                  <a routerLink="/app/projects" class="btn-secondary">{{ 'common.cancel' | t }}</a>
-                  <button
-                    type="submit"
-                    class="btn-primary"
-                    [disabled]="form.invalid || submitting()">
-                    {{ submitting() ? ('project_new.submitting' | t) : ('project_new.submit' | t) }}
-                  </button>
-                </div>
-              </form>
-            }
+              <div class="form-group">
+                <label for="proj-description">
+                  {{ 'project_new.description_label' | t }}
+                  <span class="optional">({{ 'common.optional' | t }})</span>
+                </label>
+                <textarea
+                  id="proj-description"
+                  formControlName="description"
+                  rows="3"
+                  [placeholder]="'project_new.description_placeholder' | t"
+                ></textarea>
+                @if (form.get('description')?.hasError('maxlength') && form.get('description')?.touched) {
+                  <div class="field-error">{{ 'common.max_chars' | t : { max: 500 } }}</div>
+                }
+              </div>
+
+              <div class="form-group">
+                <label for="proj-profile">{{ 'project_new.profile_label' | t }}</label>
+                <select id="proj-profile" formControlName="profile_id">
+                  @for (p of profiles(); track p.id) {
+                    <option [value]="p.id">
+                      {{ p.name }}{{ p.is_system ? (' — ' + ('project_new.profile_system_tag' | t)) : '' }}
+                    </option>
+                  }
+                </select>
+                @if (customProfiles().length === 0) {
+                  <div class="field-hint">{{ 'project_new.profile_default_hint' | t }}</div>
+                }
+                @if (form.get('profile_id')?.hasError('required') && form.get('profile_id')?.touched) {
+                  <div class="field-error">{{ 'project_new.profile_required' | t }}</div>
+                }
+              </div>
+
+              @if (submitError()) {
+                <div class="alert-error">{{ submitError() }}</div>
+              }
+
+              <div class="form-footer">
+                <a routerLink="/app/projects" class="btn-secondary">{{ 'common.cancel' | t }}</a>
+                <button
+                  type="submit"
+                  class="btn-primary"
+                  [disabled]="form.invalid || submitting()">
+                  {{ submitting() ? ('project_new.submitting' | t) : ('project_new.submit' | t) }}
+                </button>
+              </div>
+            </form>
           }
         </div>
       </div>
@@ -223,6 +220,12 @@ interface Profile {
     .field-error {
       font-size: 0.75rem;
       color: var(--verdict-invalid);
+      margin-top: var(--spacing-xs);
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
       margin-top: var(--spacing-xs);
     }
 
@@ -350,6 +353,8 @@ export class ProjectNewComponent implements OnInit {
   submitting = signal(false);
   submitError = signal<string | null>(null);
 
+  customProfiles = computed(() => this.profiles().filter(p => !p.is_system));
+
   form = this.fb.group({
     name: ['', [Validators.required, Validators.maxLength(100)]],
     description: ['', [Validators.maxLength(500)]],
@@ -366,6 +371,12 @@ export class ProjectNewComponent implements OnInit {
       .pipe(catchError(() => of([] as Profile[])))
       .subscribe(data => {
         this.profiles.set(data);
+        const systemProfile = data.find(p => p.is_system);
+        const defaultCustom = data.find(p => !p.is_system && p.is_default);
+        const autoSelect = defaultCustom ?? systemProfile;
+        if (autoSelect) {
+          this.form.patchValue({ profile_id: autoSelect.id });
+        }
         this.profilesLoading.set(false);
       });
   }

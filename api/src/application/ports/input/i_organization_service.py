@@ -35,7 +35,7 @@ class IOrganizationService(ABC):
         organization_id: UUID,
         name: str,
         description: str,
-        profile_id: UUID,
+        profile_id: Optional[UUID] = None,
     ) -> Project:
         pass
 

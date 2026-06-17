@@ -871,12 +871,14 @@ class TestBaseHttpConnector:
         assert "Bearer mytoken" in headers["Authorization"]
 
     def test_atlassian_auth_mixin_headers(self):
-        """Branch: AtlassianAuthMixin builds email + api_token headers"""
+        """Branch: AtlassianAuthMixin builds Basic Auth header with email:api_token"""
+        import base64
         from infrastructure.secondary.connectors.base_http_connector import AtlassianAuthMixin
         mixin = AtlassianAuthMixin()
         headers = mixin._build_headers({"email": "u@x.com", "api_token": "tok"})
-        assert headers["email"] == "u@x.com"
-        assert headers["api_token"] == "tok"
+        assert "Authorization" in headers
+        expected = base64.b64encode(b"u@x.com:tok").decode()
+        assert headers["Authorization"] == f"Basic {expected}"
 
     def test_api_key_auth_mixin_headers(self):
         """Branch: ApiKeyAuthMixin builds Bearer header"""

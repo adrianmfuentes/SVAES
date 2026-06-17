@@ -108,6 +108,16 @@
   color: var(--verdict-invalid);
 }
 
+.pass-rate-status {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
 /* ─── Status distribution badges ─────────────────────────────────────────── */
 
 .dist-badges {

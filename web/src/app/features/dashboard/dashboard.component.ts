@@ -54,6 +54,12 @@ export class DashboardComponent implements OnInit {
     return 'rate--invalid';
   }
 
+  passRateLabel(rate: number): string {
+    if (rate >= 80) return 'a11y.pass_rate_good';
+    if (rate >= 50) return 'a11y.pass_rate_fair';
+    return 'a11y.pass_rate_poor';
+  }
+
   private loadMetrics(): void {
     this.metricsLoading.set(true);
     this.metricsError.set(null);

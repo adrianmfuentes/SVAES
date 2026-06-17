@@ -1,3 +1,4 @@
+import asyncio
 import io
 import base64
 import logging
@@ -76,7 +77,10 @@ class AuthService(IAuthService):
             _log.warning("SECURITY ALERT: account locked out after max failed attempts — user_id=%s", user.id)
             raise ValidationError(f"Demasiados intentos fallidos. Cuenta bloqueada por {LOCKOUT_DURATION_MINUTES} minutos.")
 
-        if not self._password_hasher.verify_password(password, user.hashed_password):
+        password_ok = await asyncio.to_thread(
+            self._password_hasher.verify_password, password, user.hashed_password
+        )
+        if not password_ok:
             user.failed_login_attempts = user.failed_login_attempts + 1
             await self._user_repo.update(user)
             audit = get_audit_logger()
@@ -91,7 +95,13 @@ class AuthService(IAuthService):
             remaining = MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
             raise ValidationError(f"Credenciales inválidas. Intentos restantes: {remaining}")
 
-        if user.failed_login_attempts > 0 or user.locked_until:
+        needs_update = user.failed_login_attempts > 0 or user.locked_until is not None
+        if self._password_hasher.needs_rehash(user.hashed_password):
+            user.hashed_password = await asyncio.to_thread(
+                self._password_hasher.hash_password, password
+            )
+            needs_update = True
+        if needs_update:
             user.failed_login_attempts = 0
             user.locked_until = None
             await self._user_repo.update(user)

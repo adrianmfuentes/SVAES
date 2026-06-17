@@ -40,11 +40,11 @@ interface Project {
           <table class="data-table">
             <thead>
               <tr>
-                <th>{{ 'projects.col_name' | t }}</th>
-                <th>{{ 'projects.col_description' | t }}</th>
-                <th>{{ 'projects.col_status' | t }}</th>
-                <th>{{ 'projects.col_created' | t }}</th>
-                <th *ngIf="isManager" class="cell-actions-header">{{ 'common.actions' | t }}</th>
+                <th scope="col">{{ 'projects.col_name' | t }}</th>
+                <th scope="col">{{ 'projects.col_description' | t }}</th>
+                <th scope="col">{{ 'projects.col_status' | t }}</th>
+                <th scope="col">{{ 'projects.col_created' | t }}</th>
+                <th scope="col" *ngIf="isManager" class="cell-actions-header">{{ 'common.actions' | t }}</th>
               </tr>
             </thead>
             <tbody>

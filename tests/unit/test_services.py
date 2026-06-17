@@ -2537,7 +2537,7 @@ class TestConnectorServiceTestConnection:
         connector_repo.update = AsyncMock()
 
         mock_impl = MagicMock()
-        mock_impl.test_connection = MagicMock(return_value=True)
+        mock_impl.test_connection = AsyncMock(return_value=True)
         connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
 
         with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \

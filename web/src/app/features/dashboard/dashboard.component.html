@@ -9,6 +9,7 @@
       @if (metrics(); as m) {
         <span [class]="passRateClass(m.pass_rate)">
           {{ m.pass_rate | number:'1.1-1' }}%
+          <span class="pass-rate-status">{{ passRateLabel(m.pass_rate) | t }}</span>
         </span>
       }
     </app-kpi-card>

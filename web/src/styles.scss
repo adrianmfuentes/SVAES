@@ -218,6 +218,14 @@ label {
   background: var(--accent-dark);
 }
 
+.btn-accent:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--paper-secondary);
+  border-color: var(--border);
+  color: var(--muted);
+}
+
 .card {
   background: var(--surface-raised);
   border: 0.0625rem solid var(--border);
@@ -256,4 +264,54 @@ label {
 
 .full-width {
   width: 100%;
+}
+
+/* ── Accessibility utilities ──────────────────────────────────────────────── */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -3rem;
+  left: var(--spacing-md);
+  z-index: 9999;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.5rem 1rem;
+  border-radius: var(--rounded-md);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s ease;
+
+  &:focus {
+    top: var(--spacing-md);
+  }
+}
+
+/* Ensure keyboard focus is always visible on interactive elements */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 0.1875rem solid var(--accent-dark);
+  outline-offset: 0.125rem;
+}
+
+/* Error and alert regions announced by screen readers */
+.alert-error[role="alert"] {
+  /* visual style already defined above; role ensures SR announces it */
 }

@@ -70,6 +70,7 @@ async def list_profiles(
                 "name": p.name,
                 "description": p.description,
                 "is_default": p.is_default,
+                "is_system": p.is_system,
                 "rules_count": len(p.rules),
             }
             for p in profiles
@@ -175,6 +176,8 @@ async def delete_profile(
         await service.delete_profile(profile_id, requested_by=current_user.user_id)
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
@@ -208,6 +211,7 @@ async def get_profile(
             "name": profile.name,
             "description": profile.description,
             "is_default": profile.is_default,
+            "is_system": profile.is_system,
             "rules": [
                 {
                     "id": str(r.id),

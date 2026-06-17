@@ -98,13 +98,13 @@ interface AuditLogsResponse {
           <table class="data-table" *ngIf="paginated().length > 0; else emptyState">
             <thead>
               <tr>
-                <th>{{ 'logs.col_timestamp' | t }}</th>
-                <th>{{ 'logs.col_category' | t }}</th>
-                <th>{{ 'logs.col_action' | t }}</th>
-                <th>{{ 'logs.col_actor' | t }}</th>
-                <th>{{ 'logs.col_role' | t }}</th>
-                <th>{{ 'logs.col_result' | t }}</th>
-                <th>{{ 'logs.col_ip' | t }}</th>
+                <th scope="col">{{ 'logs.col_timestamp' | t }}</th>
+                <th scope="col">{{ 'logs.col_category' | t }}</th>
+                <th scope="col">{{ 'logs.col_action' | t }}</th>
+                <th scope="col">{{ 'logs.col_actor' | t }}</th>
+                <th scope="col">{{ 'logs.col_role' | t }}</th>
+                <th scope="col">{{ 'logs.col_result' | t }}</th>
+                <th scope="col">{{ 'logs.col_ip' | t }}</th>
               </tr>
             </thead>
             <tbody>

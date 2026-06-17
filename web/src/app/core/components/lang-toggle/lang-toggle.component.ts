@@ -5,9 +5,15 @@ import { TranslationService } from '../../i18n/translation.service';
   selector: 'app-lang-toggle',
   standalone: true,
   template: `
-    <div class="lt" [class.lt--dark]="theme === 'dark'">
-      <button class="lt-btn" [class.lt-btn--on]="currentLang === 'es'" (click)="setLang('es')">ES</button>
-      <button class="lt-btn" [class.lt-btn--on]="currentLang === 'en'" (click)="setLang('en')">EN</button>
+    <div class="lt" [class.lt--dark]="theme === 'dark'" role="group" [attr.aria-label]="ts.translateInstant('common.language')">
+      <button class="lt-btn" [class.lt-btn--on]="currentLang === 'es'"
+              [attr.aria-label]="ts.translateInstant('a11y.lang_es')"
+              [attr.aria-pressed]="currentLang === 'es'"
+              (click)="setLang('es')">ES</button>
+      <button class="lt-btn" [class.lt-btn--on]="currentLang === 'en'"
+              [attr.aria-label]="ts.translateInstant('a11y.lang_en')"
+              [attr.aria-pressed]="currentLang === 'en'"
+              (click)="setLang('en')">EN</button>
     </div>
   `,
   styles: [`
@@ -72,7 +78,7 @@ import { TranslationService } from '../../i18n/translation.service';
 export class LangToggleComponent {
   @Input() theme: 'dark' | 'light' = 'light';
 
-  private readonly ts = inject(TranslationService);
+  readonly ts = inject(TranslationService);
 
   get currentLang(): string {
     return this.ts.currentLang;

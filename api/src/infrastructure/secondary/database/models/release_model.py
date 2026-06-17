@@ -9,7 +9,7 @@ class ReleaseModel(Base):
     __tablename__ = "release"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     project_id = Column(PG_UUID(as_uuid=True), ForeignKey("project.id"), nullable=False)
-    profile_id = Column(PG_UUID(as_uuid=True), ForeignKey("verification_profile.id"), nullable=True)
+    profile_id = Column(PG_UUID(as_uuid=True), ForeignKey("verification_profile.id", ondelete="CASCADE"), nullable=True)
     version = Column(String(50), nullable=False)
     status = Column(SAEnum(ReleaseStatus, name='release_status', values_callable=lambda enums: [e.value for e in enums]), nullable=False, default=ReleaseStatus.BORRADOR)
     description = Column(String(1000), nullable=True, default="")

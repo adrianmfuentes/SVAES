@@ -73,6 +73,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'releases/:id/edit',
+        canActivate: [businessRouteGuard],
+        loadComponent: () =>
+          import('./features/releases/release-new/release-new.component').then(
+            (m) => m.ReleaseNewComponent,
+          ),
+      },
+      {
         path: 'projects',
         canActivate: [businessRouteGuard],
         loadComponent: () =>

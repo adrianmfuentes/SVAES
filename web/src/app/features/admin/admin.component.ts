@@ -86,8 +86,8 @@ interface AccessRequest {
           <table class="data-table" *ngIf="orgs().length > 0; else orgsEmpty">
             <thead>
               <tr>
-                <th>{{ 'admin.org_id_col' | t }}</th>
-                <th>{{ 'admin.org_anon_name' | t }}</th>
+                <th scope="col">{{ 'admin.org_id_col' | t }}</th>
+                <th scope="col">{{ 'admin.org_anon_name' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -120,10 +120,10 @@ interface AccessRequest {
           <table class="data-table" *ngIf="users().length > 0; else usersEmpty">
             <thead>
               <tr>
-                <th>{{ 'admin.org_id_col' | t }}</th>
-                <th>{{ 'admin.org_anon_name' | t }}</th>
-                <th>{{ 'common.role' | t }}</th>
-                <th>{{ 'admin.user_status_col' | t }}</th>
+                <th scope="col">{{ 'admin.org_id_col' | t }}</th>
+                <th scope="col">{{ 'admin.org_anon_name' | t }}</th>
+                <th scope="col">{{ 'common.role' | t }}</th>
+                <th scope="col">{{ 'admin.user_status_col' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -179,10 +179,10 @@ interface AccessRequest {
           <table class="data-table" *ngIf="accessRequests().length > 0; else arEmpty">
             <thead>
               <tr>
-                <th>Requester</th>
-                <th>Organization</th>
-                <th>Requested</th>
-                <th>Status</th>
+                <th scope="col">{{ 'admin.access_requester' | t }}</th>
+                <th scope="col">{{ 'admin.access_org' | t }}</th>
+                <th scope="col">{{ 'admin.access_created' | t }}</th>
+                <th scope="col">{{ 'common.status' | t }}</th>
               </tr>
             </thead>
             <tbody>

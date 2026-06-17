@@ -11,7 +11,7 @@ class TemplateModel(Base):
     organization_id = Column(PG_UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(String(500), nullable=True, default="")
-    profile_id = Column(PG_UUID(as_uuid=True), ForeignKey("verification_profile.id"), nullable=False)
+    profile_id = Column(PG_UUID(as_uuid=True), ForeignKey("verification_profile.id", ondelete="cascade"), nullable=False)
     created_by = Column(PG_UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
     project_name_template = Column(String(200), nullable=True)
     is_archived = Column(Boolean, nullable=False, default=False)

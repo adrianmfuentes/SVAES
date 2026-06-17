@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Annotated
+from typing import Optional, Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_organization_service import IOrganizationService
@@ -19,7 +19,7 @@ class ProjectCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     name: str = Field(..., min_length=1, max_length=100)
     description: str = Field(default="", max_length=500)
-    profile_id: UUID
+    profile_id: Optional[UUID] = None
 
 
 @router.get("/api/v1/organizations")

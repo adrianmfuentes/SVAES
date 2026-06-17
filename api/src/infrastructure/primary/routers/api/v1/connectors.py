@@ -123,9 +123,8 @@ def _get_config_schema(implementation: str) -> dict:
         "CONFLUENCE": {
             "email": {"type": "string", "label": _LABEL_EMAIL_ATLASSIAN, "required": True},
             "api_token": {"type": "string", "label": _LABEL_API_TOKEN, "required": True, "sensitive": True},
-            "cloud_id": {"type": "string", "label": "Cloud ID", "required": False},
+            "base_url": {"type": "string", "label": "Confluence URL", "required": True},
             "space_key": {"type": "string", "label": "Space Key", "required": False},
-            "base_url": {"type": "string", "label": _LABEL_BASE_URL, "required": False, "default": _URL_ATLASSIAN_API},
         },
         "NOTION": {
             "token": {"type": "string", "label": "Integration Token", "required": True, "sensitive": True},
@@ -212,6 +211,7 @@ async def list_connectors(
                 "name": c.name,
                 "status": c.status.value,
                 "created_at": c.created_at.isoformat(),
+                "last_tested_at": c.last_tested_at.isoformat() if c.last_tested_at else None,
             }
             for c in connectors
         ]
@@ -249,12 +249,19 @@ async def register_connector(
             config=payload.credentials,
             requested_by=current_user.user_id,
         )
-        return {"id": str(connector.id), "name": connector.name, "status": connector.status.value}
+        return {
+            "id": str(connector.id),
+            "name": connector.name,
+            "connector_type": connector.connector_type,
+            "status": connector.status.value,
+            "last_tested_at": connector.last_tested_at.isoformat() if connector.last_tested_at else None,
+        }
     except DuplicateEntityError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
     except Exception:
+
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
@@ -289,7 +296,13 @@ async def update_connector(
             config=payload.config,
             requested_by=current_user.user_id,
         )
-        return {"id": str(connector.id), "name": connector.name, "status": connector.status.value}
+        return {
+            "id": str(connector.id),
+            "name": connector.name,
+            "connector_type": connector.connector_type,
+            "status": connector.status.value,
+            "last_tested_at": connector.last_tested_at.isoformat() if connector.last_tested_at else None,
+        }
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:
@@ -333,7 +346,13 @@ async def toggle_connector_status(
             status=payload.status,
             requested_by=current_user.user_id,
         )
-        return {"id": str(connector.id), "name": connector.name, "status": connector.status.value}
+        return {
+            "id": str(connector.id),
+            "name": connector.name,
+            "connector_type": connector.connector_type,
+            "status": connector.status.value,
+            "last_tested_at": connector.last_tested_at.isoformat() if connector.last_tested_at else None,
+        }
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:
@@ -398,11 +417,17 @@ async def test_connector(
         - Lanza HTTPException con status 500 para cualquier otro error inesperado.
     """
     try:
-        result = await service.test_connector_connection(
+        connector = await service.test_connector_connection(
             connector_id=connector_id,
             requested_by=current_user.user_id,
         )
-        return {"success": result, "message": "Conexión exitosa" if result else "Conexión fallida"}
+        return {
+            "id": str(connector.id),
+            "name": connector.name,
+            "connector_type": connector.connector_type,
+            "status": connector.status.value,
+            "last_tested_at": connector.last_tested_at.isoformat() if connector.last_tested_at else None,
+        }
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ConnectorConnectionFailedError as e:

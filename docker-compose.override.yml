@@ -3,7 +3,8 @@
 # Requires a .env file at the project root — copy .env.example and fill in values.
 #
 # What this adds vs base:
-#   - Hot reload
+#   - Hot reload for api
+#   - Angular dev server with hot reload (web-dev service on port 4200)
 #   - Postgres port exposed (dev only — not in production)
 
 services:
@@ -25,6 +26,23 @@ services:
       SMTP_PASSWORD: hraxgbjgnnhvlhpd
       SMTP_FROM: amf13azul@gmail.com
     command: /app/.venv/bin/python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src
+
+  web-dev:
+    image: node:20-alpine
+    container_name: svaes-web-dev
+    working_dir: /app
+    volumes:
+      - ./web:/app
+    ports:
+      - "4200:4200"
+    environment:
+      API_URL: http://localhost:8000
+    command: >
+      sh -c "npm install && npx ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json"
+    networks:
+      - svaes-network
+    depends_on:
+      - api
 
   celery-worker:
     environment: {}

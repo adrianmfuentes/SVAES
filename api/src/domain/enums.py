@@ -95,7 +95,7 @@ class UserRole(str, Enum):
             ],
             UserRole.U2: [
                 Permission.VIEW_DASHBOARD,
-                Permission.VIEW_OWN_PROJECTS,
+                Permission.VIEW_ORG_PROJECTS,
                 Permission.CREATE_RELEASE,
                 Permission.UPDATE_OWN_RELEASES,
                 Permission.ARCHIVE_RELEASE,
@@ -123,6 +123,7 @@ class UserRole(str, Enum):
                 Permission.VIEW_ORG_DASHBOARD,
                 Permission.INVITE_USERS,
                 Permission.MANAGE_ROLES,
+                Permission.TRANSFER_OWNERSHIP,
             ],
             UserRole.U3: list(
                 Permission

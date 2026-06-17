@@ -5,7 +5,7 @@ from application.ports.output.i_verification_rule_repository import IVerificatio
 from domain.entities.verification_profile import VerificationProfile
 from domain.entities.verification_rule import VerificationRule
 from domain.enums import SeverityType
-from domain.exceptions import EntityNotFoundError
+from domain.exceptions import EntityNotFoundError, ValidationError
 
 """
 Este módulo define el caso de uso para gestionar los perfiles de verificación, que es responsable de crear, actualizar, obtener, listar, duplicar y 
@@ -118,7 +118,13 @@ class ManageProfileUseCase:
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
+        if profile.is_system:
+            raise ValidationError("El perfil del sistema no puede ser eliminado.")
         await self._profile_repo.delete(profile_id)
+
+
+    async def get_system_profile(self) -> Optional[VerificationProfile]:
+        return await self._profile_repo.get_system_profile()
 
 
     async def add_rule(

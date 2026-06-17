@@ -8,6 +8,7 @@ from application.ports.input.i_user_service import IUserService
 from application.ports.output.i_token_service import ITokenService
 from core.dependencies import get_user_service, get_current_user, CurrentUser, require_permission, require_role, get_jwt_handler
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.email import email_service
 from domain.enums import UserRole, Permission
 from domain.exceptions import ValidationError
 from . import ERROR_INTERNO
@@ -277,6 +278,14 @@ async def invite_user(
             role=payload.role,
             requested_by=current_user.user_id,
         )
+        try:
+            await email_service.send_activation_email(
+                to_email=user.email,
+                to_name=user.display_name,
+                token=user.activation_token,
+            )
+        except Exception:
+            _log.warning("Activation email failed for invited user %s", user.email)
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     return {

@@ -304,11 +304,11 @@ interface UserProfile {
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>{{ 'common.name' | t }}</th>
-                  <th>{{ 'profile_page.col_prefix' | t }}</th>
-                  <th>{{ 'profile_page.created_at_label' | t }}</th>
-                  <th>{{ 'profile_page.col_expires' | t }}</th>
-                  <th></th>
+                  <th scope="col">{{ 'common.name' | t }}</th>
+                  <th scope="col">{{ 'profile_page.col_prefix' | t }}</th>
+                  <th scope="col">{{ 'profile_page.created_at_label' | t }}</th>
+                  <th scope="col">{{ 'profile_page.col_expires' | t }}</th>
+                  <th scope="col"></th>
                 </tr>
               </thead>
               <tbody>

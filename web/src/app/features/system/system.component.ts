@@ -168,8 +168,8 @@ interface ProbeResult<T> {
         <table class="data-table" *ngIf="orgs().length > 0; else orgsEmpty">
           <thead>
             <tr>
-              <th>{{ 'system.org_name_col' | t }}</th>
-              <th>{{ 'system.org_id_col' | t }}</th>
+              <th scope="col">{{ 'system.org_name_col' | t }}</th>
+              <th scope="col">{{ 'system.org_id_col' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -196,9 +196,9 @@ interface ProbeResult<T> {
         <table class="data-table" *ngIf="users().length > 0; else usersEmpty">
           <thead>
             <tr>
-              <th>{{ 'system.user_id_partial_col' | t }}</th>
-              <th>{{ 'system.user_role_col' | t }}</th>
-              <th>{{ 'system.user_status_col' | t }}</th>
+              <th scope="col">{{ 'system.user_id_partial_col' | t }}</th>
+              <th scope="col">{{ 'system.user_role_col' | t }}</th>
+              <th scope="col">{{ 'system.user_status_col' | t }}</th>
             </tr>
           </thead>
           <tbody>

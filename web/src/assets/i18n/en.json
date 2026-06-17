@@ -70,7 +70,6 @@
   "common.build": "Build",
   "common.language": "Language",
   "common.project": "Project",
-
   "landing.aria_nav_main": "Main navigation",
   "landing.aria_nav_footer": "Footer navigation",
   "landing.tagline": "Automatic Software Delivery Verification System",
@@ -100,7 +99,6 @@
   "landing.footer_copy": "© 2026 Adrián Martínez. All rights reserved.",
   "landing.footer_privacy": "Privacy policy",
   "landing.footer_legal": "Legal notice",
-
   "login.back_home": "Back to home",
   "login.title": "Log in",
   "login.context_title_line1": "Automatic",
@@ -122,7 +120,6 @@
   "login.request_access": "Request access",
   "login.footer_privacy": "Privacy",
   "login.footer_legal": "Legal notice",
-
   "login.error.no_connection": "Unable to connect to the server. Check your internet connection.",
   "login.error.wrong_credentials": "The email or password is incorrect.",
   "login.error.pending_activation": "Your account is pending activation. Please check your email.",
@@ -133,7 +130,6 @@
   "login.error.auth_unavailable": "The authentication service is unavailable. Please try again later.",
   "login.error.unexpected": "An unexpected error occurred. Please try again.",
   "login.error.unexpected_response": "The server returned an unexpected response. Please try again.",
-
   "login.2fa_title": "Two-step verification",
   "login.2fa_hint": "Enter the 6-digit code from your authenticator app.",
   "login.2fa_code_label": "Verification code",
@@ -142,7 +138,6 @@
   "login.2fa_code_invalid": "Code must be 6 digits.",
   "login.2fa_verify": "Verify",
   "login.2fa_back": "Back to login",
-
   "activate.title": "Activate account",
   "activate.step1_title": "Activation code",
   "activate.step2_title": "Set password",
@@ -173,7 +168,6 @@
   "activate.back_login": "Back to login",
   "activate.error.invalid_code": "The activation code is invalid or has expired.",
   "activate.error.generic": "Error activating account. Please try again.",
-
   "access_request.title": "Request access",
   "access_request.subtitle": "Fill out the form to request access to SVAES",
   "access_request.step1": "About you",
@@ -205,7 +199,6 @@
   "access_request.generating": "Generating…",
   "access_request.error.submission": "Error submitting request. Please try again.",
   "access_request.error.conflict": "An account already exists with that email or organization identifier.",
-
   "shell.sidebar_logo": "SVAES",
   "shell.nav_system": "System",
   "shell.nav_overview": "Overview",
@@ -230,7 +223,6 @@
   "shell.logout": "Log out",
   "shell.toggle_nav": "Toggle navigation",
   "shell.nav_org_settings": "Members",
-
   "dashboard.title": "Dashboard",
   "dashboard.total_releases": "Total releases",
   "dashboard.success_rate": "Success rate",
@@ -242,7 +234,6 @@
   "dashboard.empty_data": "No data for the selected period",
   "dashboard.period": "Period",
   "dashboard.last_30_days": "Last 30 days",
-
   "releases.title": "Releases",
   "releases.global_view": "Global view",
   "releases.search_placeholder": "Search releases...",
@@ -266,7 +257,6 @@
   "releases.relative_minutes": "{{n}} min ago",
   "releases.relative_hours": "{{n}} h ago",
   "releases.relative_days": "{{n}} d ago",
-
   "release_detail.title": "Release detail",
   "release_detail.back": "Back to releases",
   "release_detail.verifying": "Verifying…",
@@ -297,7 +287,6 @@
   "release_detail.history_date": "Date",
   "release_detail.history_verdict": "Verdict",
   "release_detail.history_trigger": "Trigger",
-
   "release_new.title": "New release",
   "release_new.back": "Back to releases",
   "release_new.project_label": "Project",
@@ -313,7 +302,13 @@
   "release_new.submitting": "Creating…",
   "release_new.success": "Release created successfully",
   "release_new.error": "Error creating release",
-
+  "release_new.edit_title": "Edit release",
+  "release_new.save": "Save changes",
+  "release_new.saving": "Saving…",
+  "release_new.edit_error": "Error saving changes",
+  "releases.delete_confirm": "Are you sure you want to delete this release? This action cannot be undone.",
+  "releases.deleted_success": "Release deleted successfully",
+  "releases.delete_error": "Error deleting release",
   "connectors.title": "Connectors",
   "connectors.global": "Global connectors",
   "connectors.global_desc": "System connectors managed by the administrator",
@@ -346,7 +341,6 @@
   "connectors.new_connector": "New connector",
   "connectors.error.no_name": "Connector name is required",
   "connectors.error.no_type": "Connector type is required",
-
   "profiles.title": "Verification profiles",
   "profiles.templates": "Profile templates",
   "profiles.templates_desc": "Global templates managed by the administrator",
@@ -375,7 +369,6 @@
   "profiles.update_rule": "Update rule",
   "profiles.no_rules": "No rules configured for this profile",
   "profiles.rule_saving_error": "Error saving rule",
-
   "system.title": "System overview",
   "system.status": "Service status",
   "system.metrics": "System metrics",
@@ -407,7 +400,6 @@
   "system.no_users": "No users registered",
   "system.error.loading_status": "Error loading system status",
   "system.error.loading_metrics": "Error loading metrics",
-
   "logs.title": "Audit logs",
   "logs.unavailable": "The logging system is currently unavailable",
   "logs.filter_category": "Filter by category",
@@ -424,7 +416,6 @@
   "logs.no_logs": "No logs found",
   "logs.masked_user": "user-***",
   "logs.masked_ip": "ip-***",
-
   "admin.title": "Administration",
   "admin.tab_organizations": "Organizations",
   "admin.tab_users": "Users",
@@ -445,7 +436,6 @@
   "admin.access_slug": "Slug",
   "admin.access_created": "Requested",
   "admin.no_access_requests": "No pending requests",
-
   "profile_page.title": "My profile",
   "profile_page.info": "Profile information",
   "profile_page.name": "Name",
@@ -484,7 +474,6 @@
   "profile_page.error.loading": "Error loading profile",
   "profile_page.error.creating_org": "Error creating organization",
   "profile_page.error.api_keys": "Error loading API keys",
-
   "errors.403.title": "403",
   "errors.403.heading": "Access denied",
   "errors.403.message": "You do not have permission to access this page.",
@@ -494,12 +483,10 @@
   "errors.404.heading": "Page not found",
   "errors.404.message": "The page you are looking for does not exist or has been moved.",
   "errors.404.home": "Back to home",
-
   "legal.privacy.title": "Privacy Policy",
   "legal.privacy.last_updated": "Last updated: May 27, 2026",
   "legal.legal_notice.title": "Legal Notice",
   "legal.legal_notice.last_updated": "Last updated: May 27, 2026",
-
   "common.previous": "Previous",
   "common.next": "Next",
   "common.saving": "Saving…",
@@ -509,20 +496,17 @@
   "common.read_only": "Read only",
   "common.continue": "Continue",
   "common.testing": "Testing…",
-
   "dashboard.pass_rate": "Pass rate",
   "dashboard.verifications": "Verifications",
   "dashboard.release_status": "Release status",
   "dashboard.release_valid": "valid",
   "dashboard.release_invalid": "invalid",
   "dashboard.release_pending": "pending",
-
   "releases.filter_placeholder": "Filter by name or ID…",
   "releases.verdict_with_warnings": "With warnings",
   "releases.verdict_not_evaluated": "Not evaluated",
   "releases.loading_error": "Error loading releases",
   "releases.col_org": "Organisation",
-
   "release_detail.back_releases": "← Releases",
   "release_detail.verifying_label": "Verifying…",
   "release_detail.verify_label": "Verify",
@@ -541,18 +525,17 @@
   "release_detail.col_executed": "Executed",
   "release_detail.see_btn": "View",
   "release_detail.empty_desc": "This release has no artefacts or verifications yet.",
+  "release_detail.add_artifact_first": "Add at least one artefact before starting verification.",
   "release_detail.start_verification_btn": "Start verification",
   "release_detail.loading_error": "Error loading release",
   "release_detail.no_id_error": "Release ID not found in route.",
   "release_detail.verification_error": "Error launching verification",
-
   "release_new.back_link": "← Releases",
   "release_new.form_title": "Release details",
   "release_new.project_placeholder": "Select a project…",
   "release_new.no_projects": "No projects available.",
   "release_new.no_projects_manager": "Create a project first.",
   "release_new.no_projects_link": "Go to Projects",
-
   "projects.title": "Projects",
   "projects.new_btn": "New project",
   "projects.col_name": "Name",
@@ -567,7 +550,6 @@
   "projects.show_archived": "Show archived",
   "projects.hide_archived": "Hide archived",
   "projects.unarchive_btn": "Unarchive",
-
   "project_new.title": "New project",
   "project_new.back_link": "← Projects",
   "project_new.form_title": "Project details",
@@ -584,9 +566,7 @@
   "project_new.submit": "Create project",
   "project_new.submitting": "Creating…",
   "project_new.error": "Error creating project.",
-
   "shell.nav_projects": "Projects",
-
   "connectors.global_scope": "Global scope",
   "connectors.global_system": "System global connectors",
   "connectors.org_connectors_label": "Organisation connectors (read-only)",
@@ -611,7 +591,6 @@
   "connectors.select_category": "Select category",
   "connectors.system_label": "System",
   "connectors.select_system": "Select system",
-
   "profiles.global_scope": "Global view",
   "profiles.global_templates_section": "Global templates",
   "profiles.org_readonly_section": "Organisation profiles (read-only)",
@@ -628,7 +607,6 @@
   "profiles.no_org_profiles": "No verification profiles registered.",
   "profiles.loading_error": "Error loading profiles",
   "profiles.saving_error": "Error saving template",
-
   "admin.global_badge": "Global · U3",
   "admin.anonymized_title": "Anonymised data",
   "admin.anonymized_desc": "For regulatory compliance and data protection, information about organisations, users and requests is displayed in anonymised form. Administration of these entities is managed exclusively through the system's operational flows.",
@@ -649,7 +627,6 @@
   "admin.tab_rejected": "Rejected",
   "admin.access_requests_title": "Access requests",
   "admin.no_ar": "No access requests.",
-
   "org_settings.title": "Members",
   "org_settings.tab_members": "Members",
   "org_settings.tab_projects": "Projects",
@@ -671,10 +648,17 @@
   "org_settings.role_viewer": "Viewer",
   "org_settings.remove_member_title": "Remove member",
   "org_settings.remove_member_confirm": "Are you sure you want to remove {{name}} from the organization? They will lose access to this organization.",
+  "org_settings.transfer_btn": "Transfer",
+  "org_settings.transfer_title": "Transfer Ownership",
+  "org_settings.transfer_select_label": "New organization admin",
+  "org_settings.transfer_select_placeholder": "Select a member...",
+  "org_settings.transfer_warning": "The current owner will become an operator. This action cannot be undone.",
+  "org_settings.transfer_confirm_btn": "Transfer ownership",
+  "org_settings.transfer_success": "Ownership transferred successfully. Signing out...",
+  "org_settings.transfer_error": "Error transferring ownership.",
   "org_settings.archive_btn": "Archive",
   "org_settings.archive_project_title": "Archive project",
   "org_settings.archive_project_confirm": "Are you sure you want to archive the project \"{{name}}\"? Archived projects are read-only and cannot be used for new releases.",
-
   "system.system_badge": "System",
   "system.updated_ago": "Updated {{n}}s ago",
   "system.refresh_btn": "Refresh",
@@ -709,7 +693,6 @@
   "system.status_inactive": "Inactive",
   "system.no_system_orgs": "No organisations in the system.",
   "system.no_system_users": "No users in the system.",
-
   "logs.audit_badge": "Audit",
   "logs.unavailable_title": "Audit logs not available",
   "logs.unavailable_desc": "The audit endpoint is not implemented in this version of the backend. This feature will record:",
@@ -741,7 +724,6 @@
   "logs.previous": "Previous",
   "logs.next": "Next",
   "logs.count": "{{n}} logs",
-
   "profile_page.display_name_label": "Display name",
   "profile_page.display_name_placeholder": "Your name",
   "profile_page.name_required_error": "Name is required.",
@@ -782,7 +764,6 @@
   "profile_page.role_manager": "Manager",
   "profile_page.role_operator": "Operator",
   "profile_page.role_viewer": "Viewer",
-
   "profile_page.2fa_title": "Two-factor authentication (2FA)",
   "profile_page.2fa_status_label": "Status",
   "profile_page.2fa_enabled": "Enabled",
@@ -799,7 +780,6 @@
   "profile_page.2fa_disable_btn": "Disable 2FA",
   "profile_page.2fa_enabled_msg": "2FA enabled successfully!",
   "profile_page.2fa_disabled_msg": "2FA disabled.",
-
   "system.detail_responding": "Responding",
   "system.detail_no_response": "No response",
   "system.detail_accessible": "Accessible",
@@ -809,18 +789,15 @@
   "system.detail_inferred": "Inferred from API",
   "system.detail_not_verifiable": "Not verifiable",
   "system.reload_error": "Error reloading rules",
-
   "common.view_all": "View all",
   "dashboard.no_data": "No data available",
   "dashboard.no_failed_rules": "No failed rules in this period",
-
   "legal.common.doc_type": "Legal Document",
   "legal.common.jurisdiction": "Spain and European Union",
   "legal.common.toc_heading": "Contents",
   "legal.common.skip_link": "Skip to main content",
   "legal.common.back_home": "← Home",
   "legal.common.back_start": "← Back to start",
-
   "legal.privacy.nav_label": "Privacy policy table of contents",
   "legal.privacy.toc.1": "Data Controller",
   "legal.privacy.toc.2": "Data Processed and Purposes",
@@ -876,7 +853,6 @@
   "legal.privacy.s9.title": "Changes to this Policy",
   "legal.privacy.s9.p1": "The controller reserves the right to amend this privacy policy to adapt it to legislative or case-law developments. Changes will take effect from their publication on the platform. Periodic review of this page is recommended.",
   "legal.privacy.footer": "Document drafted in accordance with the <abbr title=\"General Data Protection Regulation (EU) 2016/679\">GDPR</abbr> and the <abbr title=\"Spanish Organic Law 3/2018 on Personal Data Protection and Digital Rights Guarantee\">LOPDGDD</abbr>. Competent supervisory authority: <abbr title=\"Agencia Española de Protección de Datos\">AEPD</abbr>.",
-
   "legal.notice.nav_label": "Legal notice table of contents",
   "legal.notice.toc.1": "Owner Information",
   "legal.notice.toc.2": "Purpose and Acceptance",
@@ -908,6 +884,16 @@
   "legal.notice.s6.p1": "The processing of users' personal data is governed by <strong>Regulation (EU) 2016/679 of the European Parliament and of the Council</strong> (<abbr title=\"General Data Protection Regulation\">GDPR</abbr>), <strong>Organic Law 3/2018 of 5 December on Personal Data Protection and Digital Rights Guarantee</strong> (<abbr title=\"Ley Orgánica de Protección de Datos Personales y garantía de los derechos digitales\">LOPDGDD</abbr>), and the <a href=\"/legal/privacidad\" class=\"legal-link\">Privacy Policy</a> available at all times on this platform.",
   "legal.notice.s7.title": "Applicable Law and Jurisdiction",
   "legal.notice.s7.p1": "These legal terms are governed by Spanish law. For the resolution of any dispute arising from the use of this platform, the parties submit to the Courts and Tribunals of <span class=\"legal-placeholder\">Oviedo</span>, expressly waiving any other jurisdiction that may apply.",
-  "legal.notice.footer": "Document drafted in accordance with the <abbr title=\"Spanish Information Society Services and Electronic Commerce Act\">LSSI-CE</abbr>, the <abbr title=\"General Data Protection Regulation (EU) 2016/679\">GDPR</abbr> and the <abbr title=\"Spanish Organic Law 3/2018 on Personal Data Protection and Digital Rights Guarantee\">LOPDGDD</abbr>."
-
+  "legal.notice.footer": "Document drafted in accordance with the <abbr title=\"Spanish Information Society Services and Electronic Commerce Act\">LSSI-CE</abbr>, the <abbr title=\"General Data Protection Regulation (EU) 2016/679\">GDPR</abbr> and the <abbr title=\"Spanish Organic Law 3/2018 on Personal Data Protection and Digital Rights Guarantee\">LOPDGDD</abbr>.",
+  "project_new.profile_system_tag": "Default",
+  "project_new.profile_default_hint": "The system default profile with all 10 standard verification rules will be used.",
+  "a11y.skip_to_main": "Skip to main content",
+  "a11y.lang_es": "Select Spanish",
+  "a11y.lang_en": "Select English",
+  "a11y.dismiss_notification": "Dismiss notification",
+  "a11y.pass_rate_good": "Good",
+  "a11y.pass_rate_fair": "Fair",
+  "a11y.pass_rate_poor": "Poor",
+  "a11y.chart_pass_rate": "Success rate chart",
+  "a11y.mock_preview": "Product interface preview (decorative)"
 }

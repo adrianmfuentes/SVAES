@@ -1,3 +1,4 @@
+import asyncio
 from uuid import UUID, uuid4
 from typing import Annotated, Optional
 from datetime import datetime, timezone, timedelta
@@ -91,7 +92,7 @@ async def create_access_request(
 
         from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
         hasher = BcryptPasswordHasher()
-        temp_password = hasher.hash_password(str(uuid4()))
+        temp_password = await asyncio.to_thread(hasher.hash_password, str(uuid4()))
 
         user = User(
             id=uuid4(),

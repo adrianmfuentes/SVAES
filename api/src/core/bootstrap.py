@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -6,11 +7,26 @@ from sqlalchemy import select
 
 from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
 from infrastructure.secondary.database.models.user_model import UserModel
+from infrastructure.secondary.database.models.profile_model import VerificationProfileModel
+from infrastructure.secondary.database.models.rule_model import VerificationRuleModel
 from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
-from domain.enums import UserRole
+from domain.enums import UserRole, SeverityType
 from core.config import Settings
 
 _log = logging.getLogger(__name__)
+
+_SYSTEM_RULES = [
+    ("RV-01", SeverityType.HIGH,   "Artefactos existentes"),
+    ("RV-02", SeverityType.HIGH,   "Coherencia IDs"),
+    ("RV-03", SeverityType.MEDIUM, "Estado de tareas"),
+    ("RV-04", SeverityType.MEDIUM, "Estimación esfuerzo"),
+    ("RV-05", SeverityType.HIGH,   "Documentos existentes"),
+    ("RV-06", SeverityType.MEDIUM, "Versión documentos"),
+    ("RV-07", SeverityType.HIGH,   "Release planificada"),
+    ("RV-08", SeverityType.HIGH,   "Coherencia planificación"),
+    ("RV-09", SeverityType.MEDIUM, "Referencias código"),
+    ("RV-10", SeverityType.HIGH,   "Informe pruebas"),
+]
 
 
 async def seed_admin_user(settings: Settings) -> None:
@@ -30,6 +46,20 @@ async def seed_admin_user(settings: Settings) -> None:
                     "Admin user (id=%s) had organization_id set — stripped to enforce invariant.",
                     existing_admin.id,
                 )
+            if hasher.needs_rehash(existing_admin.hashed_password):
+                password_matches = await asyncio.to_thread(
+                    hasher.verify_password, settings.admin_password, existing_admin.hashed_password
+                )
+                if password_matches:
+                    existing_admin.hashed_password = await asyncio.to_thread(
+                        hasher.hash_password, settings.admin_password
+                    )
+                    await session.commit()
+                    _log.info(
+                        "Admin password rehashed to rounds=%d (id=%s)",
+                        hasher.ROUNDS,
+                        existing_admin.id,
+                    )
             else:
                 _log.info("Admin user already exists (id=%s). Skipping seed.", existing_admin.id)
             return
@@ -48,7 +78,7 @@ async def seed_admin_user(settings: Settings) -> None:
             )
             return
 
-        hashed = hasher.hash_password(settings.admin_password)
+        hashed = await asyncio.to_thread(hasher.hash_password, settings.admin_password)
         now = datetime.now(timezone.utc)
 
         admin = UserModel(
@@ -66,3 +96,49 @@ async def seed_admin_user(settings: Settings) -> None:
         await session.commit()
         await session.refresh(admin)
         _log.info("Admin user seeded (id=%s, email=%s)", admin.id, settings.admin_email)
+
+
+async def seed_system_profile() -> None:
+    async with AsyncSessionLocal() as session:
+        existing = await session.execute(
+            select(VerificationProfileModel)
+            .where(VerificationProfileModel.is_system == True)
+            .limit(1)
+        )
+        if existing.scalar_one_or_none() is not None:
+            _log.info("System verification profile already exists. Skipping seed.")
+            return
+
+        now = datetime.now(timezone.utc)
+        profile_id = uuid.uuid4()
+
+        profile = VerificationProfileModel(
+            id=profile_id,
+            organization_id=None,
+            name="Perfil por defecto",
+            description="Perfil del sistema con las 10 reglas de verificación estándar. No puede ser eliminado.",
+            is_default=False,
+            is_system=True,
+            rules=[],
+            created_at=now,
+            updated_at=now,
+        )
+        session.add(profile)
+        await session.flush()
+
+        for order, (template, severity, _label) in enumerate(_SYSTEM_RULES):
+            rule = VerificationRuleModel(
+                id=uuid.uuid4(),
+                profile_id=profile_id,
+                rule_template=template,
+                severity=severity.value,
+                params={},
+                connector_instance_id=None,
+                display_order=order,
+                is_active=True,
+                created_at=now,
+            )
+            session.add(rule)
+
+        await session.commit()
+        _log.info("System verification profile seeded (id=%s) with %d rules.", profile_id, len(_SYSTEM_RULES))

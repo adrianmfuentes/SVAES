@@ -334,6 +334,9 @@ def require_profile_access():
             if not profile:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil no encontrado")
 
+            if profile.is_system:
+                return current_user
+
             if profile.organization_id != current_user.organization_id:
                 org = await org_repo.get_by_id(profile.organization_id)
                 if not (org and org.owner_id == current_user.user_id):
@@ -475,11 +478,13 @@ def get_organization_service(
     org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
     project_repo: SqlProjectRepository = Depends(get_project_repository),
     user_repo: SqlUserRepository = Depends(get_user_repository),
+    profile_repo: SqlProfileRepository = Depends(get_profile_repository),
 ) -> IOrganizationService:
     return OrganizationService(
         organization_repository=org_repo,
         project_repository=project_repo,
         user_repository=user_repo,
+        profile_repository=profile_repo,
     )
 
 

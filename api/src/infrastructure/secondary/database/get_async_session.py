@@ -12,7 +12,7 @@ if DATABASE_URL is None:
 
 # Crear el motor asíncrono
 _sql_echo = os.getenv("ENVIRONMENT", "production") == "development"
-engine = create_async_engine(DATABASE_URL, echo=_sql_echo)
+engine = create_async_engine(DATABASE_URL, echo=_sql_echo, pool_pre_ping=True)
 
 # Crear un sessionmaker asíncrono
 AsyncSessionLocal = async_sessionmaker(

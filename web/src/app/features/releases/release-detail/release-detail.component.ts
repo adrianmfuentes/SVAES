@@ -43,6 +43,15 @@ interface RuleResult {
   message?: string;
 }
 
+interface ConnectorApiItem {
+  id: string;
+  name: string;
+  connector_type: string;
+  status: string;
+  created_at: string;
+  last_tested_at?: string;
+}
+
 interface VerificationResult {
   id: string;
   release_id: string;
@@ -66,12 +75,6 @@ interface VerificationResult {
           <h1 class="page-title">{{ release()?.name || ('common.loading' | t) }}</h1>
         </div>
         <div class="page-header-actions">
-          <button
-            class="btn-accent"
-            [disabled]="verifying()"
-            (click)="launchVerification()">
-            @if (verifying()) { {{ 'release_detail.verifying_label' | t }} } @else { {{ 'release_detail.verify_label' | t }} }
-          </button>
           <button class="btn-secondary" (click)="exportPdf()">
             {{ 'release_detail.export_pdf' | t }}
           </button>
@@ -147,11 +150,11 @@ interface VerificationResult {
               <table class="data-table rules-table">
                 <thead>
                   <tr>
-                    <th class="col-id">{{ 'release_detail.rule_id' | t }}</th>
-                    <th class="col-name">{{ 'release_detail.rule_name' | t }}</th>
-                    <th class="col-connector">{{ 'release_detail.rule_connector' | t }}</th>
-                    <th class="col-result">{{ 'release_detail.rule_result' | t }}</th>
-                    <th class="col-evidence">{{ 'release_detail.rule_evidence' | t }}</th>
+                    <th scope="col" class="col-id">{{ 'release_detail.rule_id' | t }}</th>
+                    <th scope="col" class="col-name">{{ 'release_detail.rule_name' | t }}</th>
+                    <th scope="col" class="col-connector">{{ 'release_detail.rule_connector' | t }}</th>
+                    <th scope="col" class="col-result">{{ 'release_detail.rule_result' | t }}</th>
+                    <th scope="col" class="col-evidence">{{ 'release_detail.rule_evidence' | t }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -204,17 +207,31 @@ interface VerificationResult {
         }
 
         <!-- Artifacts section -->
-        @if (artifacts().length > 0) {
-          <div class="card artifacts-section">
+        <div class="card artifacts-section">
+          <div class="section-header">
             <h2 class="card-title">{{ 'release_detail.artifacts_title' | t : { n: artifacts().length } }}</h2>
+            <div class="section-actions">
+              @if (artifacts().length > 0) {
+                <button
+                  class="btn-accent"
+                  [disabled]="verifying()"
+                  (click)="launchVerification()">
+                  @if (verifying()) { {{ 'release_detail.verifying_label' | t }} } @else { {{ 'release_detail.verify_label' | t }} }
+                </button>
+              }
+              <button class="btn-secondary" (click)="openImportModal()">Importar Entregas</button>
+            </div>
+          </div>
+          @if (artifacts().length > 0) {
             <div class="data-table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>{{ 'release_detail.col_type' | t }}</th>
-                    <th>{{ 'release_detail.rule_connector' | t }}</th>
-                    <th>{{ 'release_detail.col_ext_ref' | t }}</th>
-                    <th>{{ 'common.description' | t }}</th>
+                    <th scope="col">{{ 'release_detail.col_type' | t }}</th>
+                    <th scope="col">{{ 'release_detail.rule_connector' | t }}</th>
+                    <th scope="col">{{ 'release_detail.col_ext_ref' | t }}</th>
+                    <th scope="col">{{ 'common.description' | t }}</th>
+                    <th scope="col" class="col-actions"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -226,10 +243,68 @@ interface VerificationResult {
                       <td class="cell-muted">{{ a.connector_implementation }}</td>
                       <td><code class="mono-sm">{{ a.external_ref }}</code></td>
                       <td class="cell-muted">{{ a.description || '—' }}</td>
+                      <td class="cell-actions">
+                        <button class="btn-icon btn-danger" (click)="deleteArtifact(a.id)" title="Eliminar">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2 4h10M5 4V3a1 1 0 011-1h2a1 1 0 011 1v1M11 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        </button>
+                      </td>
                     </tr>
                   }
                 </tbody>
               </table>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <p class="empty-state-text">No hay entregas asociadas a esta release.</p>
+              <button class="btn-accent" (click)="openImportModal()">Importar Primera Entrega</button>
+            </div>
+          }
+        </div>
+
+        <!-- Import Artifacts Modal -->
+        @if (showImportModal()) {
+          <div class="modal-overlay" (click)="closeImportModal()">
+            <div class="modal-panel" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h3 class="modal-title">Importar Entregas</h3>
+                <button class="modal-close" (click)="closeImportModal()">&times;</button>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Conector</label>
+                <select class="form-select" (change)="onConnectorSelect($any($event.target).value)">
+                  <option value="">Selecciona un conector...</option>
+                  @for (conn of orgConnectors(); track conn.id) {
+                    <option value="{{ conn.id }}">{{ conn.name }} ({{ conn.connector_type }})</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo de Entrega</label>
+                <select class="form-select" [value]="importArtifactType()" (change)="importArtifactType.set($any($event.target).value)">
+                  <option value="TAREA">Tarea</option>
+                  <option value="CODIGO">Código</option>
+                  <option value="DOCUMENTO">Documento</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Referencia Externa</label>
+                <input type="text" class="form-input" placeholder="Ej: SVAES-123, commit hash..." [value]="importExternalRef()" (input)="importExternalRef.set($any($event.target).value)" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Descripción (opcional)</label>
+                <input type="text" class="form-input" placeholder="Descripción de la entrega..." [value]="importDescription()" (input)="importDescription.set($any($event.target).value)" />
+              </div>
+              @if (importError()) {
+                <div class="error-banner error-banner-sm">{{ importError() }}</div>
+              }
+              <div class="modal-footer">
+                <button type="button" class="btn-secondary" (click)="closeImportModal()">Cancelar</button>
+                <button type="button" class="btn-accent" [disabled]="importing()" (click)="importArtifacts()">
+                  {{ importing() ? 'Importando...' : 'Importar' }}
+                </button>
+              </div>
             </div>
           </div>
         }
@@ -242,10 +317,10 @@ interface VerificationResult {
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>{{ 'release_detail.history_verdict' | t }}</th>
-                    <th>{{ 'release_detail.col_duration' | t }}</th>
-                    <th>{{ 'release_detail.col_executed' | t }}</th>
-                    <th></th>
+                    <th scope="col">{{ 'release_detail.history_verdict' | t }}</th>
+                    <th scope="col">{{ 'release_detail.col_duration' | t }}</th>
+                    <th scope="col">{{ 'release_detail.col_executed' | t }}</th>
+                    <th scope="col"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -272,8 +347,9 @@ interface VerificationResult {
         @if (!latestResult() && artifacts().length === 0) {
           <div class="card empty-card">
             <p class="empty-text">{{ 'release_detail.empty_desc' | t }}</p>
-            <button class="btn-accent" [disabled]="verifying()" (click)="launchVerification()">
-              @if (verifying()) { {{ 'release_detail.verifying_label' | t }} } @else { {{ 'release_detail.start_verification_btn' | t }} }
+            <p class="empty-hint">{{ 'release_detail.add_artifact_first' | t }}</p>
+            <button class="btn-accent" disabled>
+              {{ 'release_detail.start_verification_btn' | t }}
             </button>
           </div>
         }
@@ -698,6 +774,12 @@ interface VerificationResult {
     .empty-text {
       font-size: 0.9375rem;
       color: var(--muted);
+      margin: 0 0 var(--spacing-sm);
+    }
+
+    .empty-hint {
+      font-size: 0.8125rem;
+      color: var(--muted);
       margin: 0 0 var(--spacing-md);
     }
 
@@ -726,6 +808,169 @@ interface VerificationResult {
     @media (max-width: 30rem) {
       .info-grid { grid-template-columns: 1fr; }
     }
+
+    /* Section header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .section-header .card-title { margin: 0; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: var(--spacing-xl) var(--spacing-lg);
+    }
+
+    .empty-state-text {
+      font-size: 0.9375rem;
+      color: var(--muted);
+      margin: 0 0 var(--spacing-md);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-panel {
+      background: var(--surface-raised);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-lg);
+      padding: var(--spacing-lg);
+      width: 28rem;
+      max-width: calc(100vw - 3rem);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .modal-title {
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .modal-close {
+      font-size: 1.25rem;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0 0.25rem;
+      line-height: 1;
+    }
+
+    .modal-close:hover { color: var(--ink); }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-lg);
+      padding-top: var(--spacing-md);
+      border-top: 0.0625rem solid var(--border);
+    }
+
+    /* Form elements */
+    .form-group {
+      margin-bottom: var(--spacing-md);
+    }
+
+    .form-label {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .form-select,
+    .form-input {
+      width: 100%;
+      font-family: var(--font-sans);
+      font-size: 0.9375rem;
+      color: var(--ink);
+      background: var(--paper);
+      border: 0.0625rem solid var(--border-strong);
+      border-radius: var(--rounded-md);
+      padding: 0.5625rem 0.75rem;
+      box-sizing: border-box;
+    }
+
+    .form-select:focus,
+    .form-input:focus {
+      outline: none;
+      border-color: var(--ink);
+      background: var(--surface-raised);
+      box-shadow: 0 0 0 3px rgba(232, 213, 163, 0.4);
+    }
+
+    .error-banner-sm {
+      font-size: 0.8125rem;
+      padding: var(--spacing-sm) var(--spacing-md);
+      margin-top: var(--spacing-sm);
+    }
+
+    .section-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+      align-items: center;
+    }
+
+    .col-actions {
+      width: 3rem;
+      text-align: right;
+    }
+
+    .cell-actions {
+      text-align: right;
+    }
+
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: var(--rounded-md);
+      border: 0.0625rem solid var(--border);
+      background: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+    }
+
+    .btn-icon:hover {
+      color: var(--ink);
+      border-color: var(--border-strong);
+      background: var(--paper-secondary);
+    }
+
+    .btn-danger:hover {
+      color: var(--verdict-invalid);
+      border-color: var(--verdict-invalid-border);
+      background: var(--verdict-invalid-bg);
+    }
   `],
 })
 export class ReleaseDetailComponent implements OnInit {
@@ -742,7 +987,17 @@ export class ReleaseDetailComponent implements OnInit {
   verifying = signal(false);
   expandedRule = signal<number | null>(null);
 
+  showImportModal = signal(false);
+  orgConnectors = signal<ConnectorApiItem[]>([]);
+  importConnector = signal<ConnectorApiItem | null>(null);
+  importArtifactType = signal<string>('TAREA');
+  importExternalRef = signal('');
+  importDescription = signal('');
+  importing = signal(false);
+  importError = signal<string | null>(null);
+
   private releaseId = '';
+  private orgId = '';
 
   ngOnInit(): void {
     this.route.paramMap
@@ -777,6 +1032,13 @@ export class ReleaseDetailComponent implements OnInit {
         if (results.length > 0) {
           this.latestResult.set(results[0]);
         }
+        const orgId = (data.release as any)?.organization_id;
+        if (orgId) {
+          this.orgId = orgId;
+          this.http.get<ConnectorApiItem[]>(`/api/v1/organizations/${orgId}/connectors`)
+            .pipe(catchError(() => of([] as ConnectorApiItem[])))
+            .subscribe(connectors => this.orgConnectors.set(connectors));
+        }
         this.loading.set(false);
       });
   }
@@ -799,6 +1061,77 @@ export class ReleaseDetailComponent implements OnInit {
           this.loading.set(true);
           this.error.set(null);
           this.ngOnInit();
+        }
+      });
+  }
+
+  openImportModal(): void {
+    this.importConnector.set(null);
+    this.importArtifactType.set('TAREA');
+    this.importExternalRef.set('');
+    this.importDescription.set('');
+    this.importError.set(null);
+    this.showImportModal.set(true);
+  }
+
+  closeImportModal(): void {
+    this.showImportModal.set(false);
+  }
+
+  onConnectorSelect(connectorId: string): void {
+    const conn = this.orgConnectors().find(c => c.id === connectorId);
+    this.importConnector.set(conn || null);
+  }
+
+  importArtifacts(): void {
+    const connector = this.importConnector();
+    if (!connector || !this.importExternalRef()) {
+      this.importError.set('Selecciona un conector e introduce la referencia');
+      return;
+    }
+    this.importing.set(true);
+    this.importError.set(null);
+
+    const body = {
+      artifacts: [{
+        connector_instance_id: connector.id,
+        connector_implementation: connector.connector_type,
+        artifact_type: this.importArtifactType(),
+        external_ref: this.importExternalRef(),
+        description: this.importDescription(),
+      }],
+    };
+
+    this.http.post(`/api/v1/releases/${this.releaseId}/artifacts/import`, body)
+      .pipe(
+        catchError((err) => {
+          this.importError.set(err.error?.detail || 'Error al importar');
+          this.importing.set(false);
+          return of(null);
+        }),
+      )
+      .subscribe((result: any) => {
+        this.importing.set(false);
+        if (result) {
+          this.closeImportModal();
+          this.http.get<Artifact[]>(`/api/v1/releases/${this.releaseId}/artifacts`)
+            .pipe(catchError(() => of([] as Artifact[])))
+            .subscribe(artifacts => this.artifacts.set(artifacts));
+        }
+      });
+  }
+
+  deleteArtifact(artifactId: string): void {
+    if (!confirm('¿Eliminar esta entrega?')) return;
+    this.http.delete(`/api/v1/releases/${this.releaseId}/artifacts/${artifactId}`)
+      .pipe(
+        catchError((err) => {
+          return of(null);
+        }),
+      )
+      .subscribe((result) => {
+        if (result !== null) {
+          this.artifacts.update(list => list.filter(a => a.id !== artifactId));
         }
       });
   }

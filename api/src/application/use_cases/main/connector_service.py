@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
 from application.ports.input.i_connector_service import IConnectorService
@@ -101,7 +102,7 @@ class ConnectorService(IConnectorService):
         return updated
 
 
-    async def test_connector_connection(self, connector_id: UUID, requested_by: UUID) -> bool:
+    async def test_connector_connection(self, connector_id: UUID, requested_by: UUID) -> ConnectorInstance:
         connector = await self._connector_repo.get_by_id(connector_id)
         if not connector:
             raise EntityNotFoundError(f"Conector no encontrado: {connector_id}")
@@ -115,13 +116,14 @@ class ConnectorService(IConnectorService):
 
         from cryptography.fernet import Fernet
         fernet = Fernet(settings.encryption_key.encode())  # pyright: ignore[reportOptionalMemberAccess]
-        decrypted_config = eval(fernet.decrypt(connector.encrypted_credentials).decode())
 
         try:
-            result = connector_impl.test_connection(decrypted_config)
+            decrypted_config = eval(fernet.decrypt(connector.encrypted_credentials).decode())
+            result = await connector_impl.test_connection(decrypted_config)
+            connector.last_tested_at = datetime.now(timezone.utc)
             if result:
                 connector.status = ConnectorStatus.ACTIVO
-                await self._connector_repo.update(connector)
+            updated = await self._connector_repo.update(connector)
 
             audit = get_audit_logger()
             audit.log(AuditEntry(
@@ -134,11 +136,13 @@ class ConnectorService(IConnectorService):
             ))
             _log.info("Connector tested: id=%s org=%s result=%s", connector_id, connector.organization_id, result)
 
-            return result
-        except Exception:
+            return updated
+        except Exception as exc:
+            _log.exception("Connector test failed: id=%s org=%s error=%s", connector_id, connector.organization_id, exc)
             connector.status = ConnectorStatus.ERROR
+            connector.last_tested_at = datetime.now(timezone.utc)
             await self._connector_repo.update(connector)
-            raise ConnectorConnectionFailedError(f"Error al probar conexión del conector: {connector_id}")
+            raise ConnectorConnectionFailedError(f"Error al probar conexión del conector: {connector_id}") from exc
 
 
     def _get_connector_impl(self, connector_implementation: str):

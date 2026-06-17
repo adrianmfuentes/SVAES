@@ -7,7 +7,7 @@ from application.use_cases.main.manage_profile import ManageProfileUseCase
 from domain.entities.verification_profile import VerificationProfile
 from domain.entities.verification_rule import VerificationRule
 from domain.enums import SeverityType
-from domain.exceptions import EntityNotFoundError
+from domain.exceptions import EntityNotFoundError, ValidationError
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from core.logger import get_logger
 
@@ -73,6 +73,8 @@ class ProfileService(ManageProfileUseCase, IProfileService):
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
+        if profile.is_system:
+            raise ValidationError("El perfil del sistema no puede ser eliminado.")
         org_id = profile.organization_id
         await self._profile_repo.delete(profile_id)
         audit = get_audit_logger()

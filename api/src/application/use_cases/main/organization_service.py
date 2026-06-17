@@ -4,6 +4,7 @@ from application.ports.input.i_organization_service import IOrganizationService
 from application.ports.output.i_organization_repository import IOrganizationRepository
 from application.ports.output.i_project_repository import IProjectRepository
 from application.ports.output.i_user_repository import IUserRepository
+from application.ports.output.i_profile_repository import IProfileRepository
 from domain.entities.organization import Organization
 from domain.entities.project import Project
 from domain.enums import UserRole
@@ -20,10 +21,12 @@ class OrganizationService(IOrganizationService):
         organization_repository: IOrganizationRepository,
         project_repository: IProjectRepository,
         user_repository: Optional[IUserRepository] = None,
+        profile_repository: Optional[IProfileRepository] = None,
     ) -> None:
         self._org_repo = organization_repository
         self._project_repo = project_repository
         self._user_repo = user_repository
+        self._profile_repo = profile_repository
 
 
     async def create_organization(
@@ -151,14 +154,27 @@ class OrganizationService(IOrganizationService):
         if not org:
             raise EntityNotFoundError(f"Organización no encontrada: {organization_id}")
 
+        old_owner_id = org.owner_id
+        old_owner_user = None
+        new_owner_user = None
         if self._user_repo:
-            new_owner = await self._user_repo.get_by_id(new_owner_id)
-            if new_owner and new_owner.role == UserRole.U3:
+            new_owner_user = await self._user_repo.get_by_id(new_owner_id)
+            if not new_owner_user:
+                raise EntityNotFoundError(f"Usuario no encontrado: {new_owner_id}")
+            if new_owner_user.role == UserRole.U3:
                 raise ValidationError("El administrador global no puede ser propietario de una organización.")
+            if old_owner_id:
+                old_owner_user = await self._user_repo.get_by_id(old_owner_id)
 
-        old_owner = org.owner_id
         org.owner_id = new_owner_id
         updated = await self._org_repo.update(org)
+
+        if self._user_repo:
+            if old_owner_user and old_owner_user.role == UserRole.U4:
+                old_owner_user.role = UserRole.U2
+                await self._user_repo.update(old_owner_user)
+            new_owner_user.role = UserRole.U4  # type: ignore[union-attr]
+            await self._user_repo.update(new_owner_user)
 
         audit = get_audit_logger()
         audit.log(AuditEntry(
@@ -167,9 +183,9 @@ class OrganizationService(IOrganizationService):
             organization_id=organization_id,
             resource_type="organization",
             resource_id=organization_id,
-            details={"old_owner": str(old_owner), "new_owner": str(new_owner_id)},
+            details={"old_owner": str(old_owner_id), "new_owner": str(new_owner_id)},
         ))
-        _log.info("Org ownership transferred: by=%s org=%s %s->%s", requested_by, organization_id, old_owner, new_owner_id)
+        _log.info("Org ownership transferred: by=%s org=%s %s->%s", requested_by, organization_id, old_owner_id, new_owner_id)
 
         return updated
 

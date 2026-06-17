@@ -196,7 +196,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                   </div>
                 </div>
 
-                <div *ngIf="submitError" class="alert-error">{{ submitError }}</div>
+                <div *ngIf="submitError" class="alert-error" role="alert">{{ submitError }}</div>
 
                 <div class="step-footer step-footer--two">
                   <button type="button" class="btn-secondary" (click)="prevStep()">

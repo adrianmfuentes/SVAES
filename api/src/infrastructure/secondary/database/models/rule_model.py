@@ -9,7 +9,7 @@ from domain.enums import SeverityType
 class VerificationRuleModel(Base):
     __tablename__ = "verification_rule"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    profile_id = Column(PG_UUID(as_uuid=True), ForeignKey("verification_profile.id"), nullable=False)
+    profile_id = Column(PG_UUID(as_uuid=True), ForeignKey("verification_profile.id", ondelete="cascade"), nullable=False)
     rule_template = Column(String(100), nullable=False)
     severity = Column(SQLEnum(SeverityType, name='severity_type_new', create_type=False, native_enum=False), nullable=False, default=SeverityType.HIGH)
     params = Column(JSON, nullable=True, default=dict)

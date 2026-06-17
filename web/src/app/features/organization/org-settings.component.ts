@@ -44,10 +44,10 @@ interface OrgUser {
           <table class="data-table" *ngIf="members().length > 0; else membersEmpty">
             <thead>
               <tr>
-                <th>{{ 'common.name' | t }}</th>
-                <th>{{ 'common.email' | t }}</th>
-                <th>{{ 'common.role' | t }}</th>
-                <th>{{ 'common.actions' | t }}</th>
+                <th scope="col">{{ 'common.name' | t }}</th>
+                <th scope="col">{{ 'common.email' | t }}</th>
+                <th scope="col">{{ 'common.role' | t }}</th>
+                <th scope="col">{{ 'common.actions' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -72,6 +72,11 @@ interface OrgUser {
                   <span *ngIf="member.id === currentUserId && member.role !== 'MANAGER'" class="role-text">{{ 'org_settings.role_' + member.role.toLowerCase() | t }}</span>
                 </td>
                 <td class="cell-actions">
+                  <button
+                    *ngIf="member.role === 'MANAGER' && members().length > 1"
+                    class="btn-ghost btn-transfer"
+                    (click)="openTransferModal()"
+                  >{{ 'org_settings.transfer_btn' | t }}</button>
                   <button
                     *ngIf="member.id !== currentUserId && member.role !== 'MANAGER'"
                     class="btn-ghost btn-danger-ghost"
@@ -118,6 +123,34 @@ interface OrgUser {
           <button class="btn-ghost" (click)="closeInviteModal()">{{ 'common.cancel' | t }}</button>
           <button class="btn-primary" (click)="sendInvite()" [disabled]="inviting()">
             {{ inviting() ? ('common.loading' | t) : ('org_settings.send_invite' | t) }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSFER OWNERSHIP MODAL -->
+    <div *ngIf="showTransferModal()" class="modal-overlay" (click)="closeTransferModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'org_settings.transfer_title' | t }}</h3>
+          <button class="modal-close" (click)="closeTransferModal()">×</button>
+        </div>
+        <p class="modal-body-text transfer-warning">{{ 'org_settings.transfer_warning' | t }}</p>
+        <div class="form-group">
+          <label for="transfer-target">{{ 'org_settings.transfer_select_label' | t }}</label>
+          <select id="transfer-target" [(ngModel)]="transferTargetId" class="form-group select">
+            <option value="">{{ 'org_settings.transfer_select_placeholder' | t }}</option>
+            <option *ngFor="let m of nonOwnerMembers()" [value]="m.id">
+              {{ m.display_name }} ({{ 'org_settings.role_' + m.role.toLowerCase() | t }})
+            </option>
+          </select>
+        </div>
+        <div *ngIf="transferError()" class="error-banner error-sm">{{ transferError() }}</div>
+        <div *ngIf="transferSuccess()" class="success-banner">{{ transferSuccess() }}</div>
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="closeTransferModal()" [disabled]="transferring()">{{ 'common.cancel' | t }}</button>
+          <button class="btn-danger" (click)="confirmTransfer()" [disabled]="transferring() || !transferTargetId">
+            {{ transferring() ? ('common.loading' | t) : ('org_settings.transfer_confirm_btn' | t) }}
           </button>
         </div>
       </div>
@@ -243,6 +276,8 @@ interface OrgUser {
       height: 2.5rem;
     }
 
+    .data-table th:last-child { text-align: center; }
+
     .data-table td {
       font-size: 0.8125rem;
       color: var(--ink);
@@ -259,11 +294,10 @@ interface OrgUser {
     .cell-muted { color: var(--muted); }
 
     .cell-actions {
-      text-align: right;
       white-space: nowrap;
       display: flex;
       gap: var(--spacing-sm);
-      justify-content: flex-end;
+      justify-content: center;
       align-items: center;
     }
 
@@ -328,6 +362,11 @@ interface OrgUser {
 
     .btn-danger-ghost { color: var(--verdict-invalid); }
     .btn-danger-ghost:hover:not(:disabled) { background: var(--verdict-invalid-bg); border-color: var(--verdict-invalid-border); }
+
+    .btn-transfer { color: var(--verdict-warning); }
+    .btn-transfer:hover:not(:disabled) { background: rgba(232, 213, 163, 0.15); border-color: var(--verdict-warning); }
+
+    .transfer-warning { color: var(--verdict-warning); }
 
     .role-select {
       font-family: var(--font-sans);
@@ -587,6 +626,17 @@ export class OrgSettingsComponent implements OnInit {
   memberToRemove = signal<OrgUser | null>(null);
   removing = signal(false);
 
+  // Transfer ownership modal
+  showTransferModal = signal(false);
+  transferTargetId = '';
+  transferring = signal(false);
+  transferError = signal<string | null>(null);
+  transferSuccess = signal<string | null>(null);
+
+  nonOwnerMembers(): OrgUser[] {
+    return this.members().filter(m => m.role !== 'MANAGER');
+  }
+
   ngOnInit(): void {
     if (!this.orgId) {
       this.membersError.set('No organization found for current user');
@@ -683,5 +733,42 @@ export class OrgSettingsComponent implements OnInit {
         this.members.update(members => members.filter(m => m.id !== member.id));
         this.memberToRemove.set(null);
       });
+  }
+
+  openTransferModal(): void {
+    this.transferTargetId = '';
+    this.transferError.set(null);
+    this.transferSuccess.set(null);
+    this.showTransferModal.set(true);
+  }
+
+  closeTransferModal(): void {
+    if (!this.transferring()) {
+      this.showTransferModal.set(false);
+    }
+  }
+
+  confirmTransfer(): void {
+    if (!this.transferTargetId) return;
+    this.transferring.set(true);
+    this.transferError.set(null);
+
+    this.http.post(`/api/v1/organizations/${this.orgId}/transfer-ownership`, {
+      new_owner_id: this.transferTargetId,
+    }).pipe(
+      catchError(err => {
+        const msg = err.error?.detail || this.ts.translateInstant('org_settings.transfer_error');
+        this.transferError.set(msg);
+        this.transferring.set(false);
+        return of(null);
+      })
+    ).subscribe(res => {
+      if (res !== null) {
+        this.transferSuccess.set(this.ts.translateInstant('org_settings.transfer_success'));
+        setTimeout(() => {
+          this.authService.logout();
+        }, 2000);
+      }
+    });
   }
 }

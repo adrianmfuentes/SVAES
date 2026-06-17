@@ -61,10 +61,10 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
           <table class="data-table" *ngIf="orgProfiles().length > 0; else profilesEmpty">
             <thead>
               <tr>
-                <th>{{ 'profiles.table_name' | t }}</th>
-                <th>{{ 'common.description' | t }}</th>
-                <th>{{ 'profiles.table_rules' | t }}</th>
-                <th *ngIf="canManage"></th>
+                <th scope="col">{{ 'profiles.table_name' | t }}</th>
+                <th scope="col">{{ 'common.description' | t }}</th>
+                <th scope="col">{{ 'profiles.table_rules' | t }}</th>
+                <th scope="col" *ngIf="canManage"></th>
               </tr>
             </thead>
             <tbody>

@@ -127,10 +127,13 @@ class BearerAuthMixin:
 
 class AtlassianAuthMixin:
     def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
+        import base64
+        email = config.get("email", "") or ""
+        api_token = config.get("api_token", "") or ""
+        credentials = base64.b64encode(f"{email}:{api_token}".encode()).decode()
         return {
             "Accept": BaseHttpConnector.CONTENT_TYPE,
-            "email": config.get("email", "") or "",
-            "api_token": config.get("api_token", "") or "",
+            "Authorization": f"Basic {credentials}",
         }
 
 

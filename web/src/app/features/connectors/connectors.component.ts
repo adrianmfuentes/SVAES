@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { ToastService } from '../../core/services/toast.service';
 import { catchError, of } from 'rxjs';
 
 interface Connector {
@@ -24,6 +25,7 @@ interface ConnectorApiItem {
   connector_type: string;
   status: string;
   created_at: string;
+  last_tested_at?: string;
 }
 
 interface ConfigSchemaField {
@@ -71,17 +73,17 @@ interface ConnectorTypesResponse {
           <table class="data-table" *ngIf="globalConnectors().length > 0; else orgEmpty">
             <thead>
               <tr>
-                <th>{{ 'connectors.table_name' | t }}</th>
-                <th>{{ 'connectors.table_type' | t }}</th>
-                <th>{{ 'connectors.table_status' | t }}</th>
-                <th>{{ 'connectors.last_tested' | t }}</th>
-                <th *ngIf="canManage"></th>
+                <th scope="col">{{ 'connectors.table_name' | t }}</th>
+                <th scope="col">{{ 'connectors.table_type' | t }}</th>
+                <th scope="col">{{ 'connectors.table_status' | t }}</th>
+                <th scope="col">{{ 'connectors.last_tested' | t }}</th>
+                <th scope="col" *ngIf="canManage"></th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let c of globalConnectors()">
                 <td class="cell-primary">{{ c.name }}</td>
-                <td><span class="type-chip">{{ c.type }}</span></td>
+                <td><span class="type-chip">{{ typeLabel(c.type) }}</span></td>
                 <td>
                   <span class="status-dot" [ngClass]="'status-' + c.status"></span>
                   <span class="status-label">{{ statusLabel(c.status) }}</span>
@@ -359,6 +361,26 @@ interface ConnectorTypesResponse {
 
     .error-banner-sm { margin-bottom: 0; margin-top: var(--spacing-sm); }
 
+    .alert-success {
+      background: var(--verdict-valid-bg, #f0fdf4);
+      color: var(--verdict-valid, #166534);
+      border: 0.0625rem solid var(--verdict-valid-border, #bbf7d0);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: 0.8125rem;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .alert-error {
+      background: var(--verdict-invalid-bg);
+      color: var(--verdict-invalid);
+      border: 0.0625rem solid var(--verdict-invalid-border);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: 0.8125rem;
+      margin-bottom: var(--spacing-md);
+    }
+
     .skeleton-list { display: flex; flex-direction: column; gap: var(--spacing-sm); }
 
     .skeleton {
@@ -497,6 +519,7 @@ export class ConnectorsComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly ts = inject(TranslationService);
+  private readonly toast = inject(ToastService);
 
   private orgId: string | null = null;
   readonly canManage = this.authService.getUserRole() === 'MANAGER';
@@ -521,6 +544,7 @@ export class ConnectorsComponent implements OnInit {
   selectedImplementation = signal<string | null>(null);
   availableImplementations = signal<ConnectorImplementation[]>([]);
   currentConfigSchema = signal<Record<string, ConfigSchemaField>>({});
+  configFields = signal<{key: string, label: string, required: boolean, sensitive?: boolean}[]>([]);
 
   connectorForm = this.fb.group({
     name: ['', [Validators.required]],
@@ -554,14 +578,15 @@ export class ConnectorsComponent implements OnInit {
       });
   }
 
-  private mapApiConnector(c: ConnectorApiItem): Connector {
+  private mapApiConnector(c: ConnectorApiItem, existing?: Connector): Connector {
     return {
       id: c.id,
       name: c.name,
-      type: c.connector_type,
+      type: c.connector_type ?? existing?.type ?? 'UNKNOWN',
       status: this.normalizeStatus(c.status),
       global: false,
       organization_id: this.orgId ?? undefined,
+      last_tested_at: c.last_tested_at ?? existing?.last_tested_at ?? undefined,
     };
   }
 
@@ -579,6 +604,7 @@ export class ConnectorsComponent implements OnInit {
     this.selectedImplementation.set(null);
     this.availableImplementations.set([]);
     this.currentConfigSchema.set({});
+    this.configFields.set([]);
     this.connectorForm.reset({ name: '', connectorType: '', connectorImplementation: '' });
     this.removeConfigFields();
     this.modalError.set(null);
@@ -605,7 +631,7 @@ export class ConnectorsComponent implements OnInit {
       }
     }
     const body = editing
-      ? { name: this.connectorForm.value.name }
+      ? { name: this.connectorForm.value.name, config: credentials }
       : {
           connector_type: this.connectorForm.value.connectorType ?? '',
           connector_implementation: this.connectorForm.value.connectorImplementation ?? '',
@@ -621,11 +647,13 @@ export class ConnectorsComponent implements OnInit {
       return of(null);
     })).subscribe(raw => {
       if (raw) {
-        const mapped = this.mapApiConnector(raw);
+        const mapped = this.mapApiConnector(raw, editing ?? undefined);
         if (editing) {
           this.globalConnectors.update(list => list.map(x => x.id === mapped.id ? mapped : x));
+          this.toast.success(this.ts.translateInstant('common.updated_successfully'));
         } else {
           this.globalConnectors.update(list => [...list, mapped]);
+          this.toast.success(this.ts.translateInstant('common.created_successfully'));
         }
         this.showModal.set(false);
       }
@@ -635,21 +663,39 @@ export class ConnectorsComponent implements OnInit {
 
   toggleConnector(c: Connector): void {
     const newApiStatus = c.status === 'inactive' ? 'ACTIVO' : 'INACTIVO';
-    this.http.patch<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors/${c.id}`, { status: newApiStatus })
-      .pipe(catchError(() => of(null)))
+    this.http.post<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors/${c.id}/toggle`, { status: newApiStatus })
+      .pipe(catchError(() => {
+        this.toast.error(this.ts.translateInstant('common.error_occurred'));
+        return of(null);
+      }))
       .subscribe(raw => {
         if (raw) {
-          const mapped = this.mapApiConnector(raw);
+          const mapped = this.mapApiConnector(raw, c);
           this.globalConnectors.update(list => list.map(x => x.id === mapped.id ? mapped : x));
+          const msg = c.status === 'inactive'
+            ? this.ts.translateInstant('connectors.toggle_on')
+            : this.ts.translateInstant('connectors.toggle_off');
+          this.toast.success(msg);
         }
       });
   }
 
   testConnector(c: Connector): void {
     this.testingId.set(c.id);
-    this.http.post(`/api/v1/organizations/${this.orgId}/connectors/${c.id}/test`, {})
-      .pipe(catchError(() => of(null)))
-      .subscribe(() => this.testingId.set(null));
+    this.http.post<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors/${c.id}/test`, {})
+      .pipe(catchError(() => {
+        this.toast.error(this.ts.translateInstant('connectors.test_failure'));
+        this.testingId.set(null);
+        return of(null);
+      }))
+      .subscribe(raw => {
+        this.testingId.set(null);
+        if (raw) {
+          const mapped = this.mapApiConnector(raw, c);
+          this.globalConnectors.update(list => list.map(x => x.id === mapped.id ? mapped : x));
+          this.toast.success(this.ts.translateInstant('connectors.test_success'));
+        }
+      });
   }
 
   statusLabel(status: string): string {
@@ -695,17 +741,21 @@ export class ConnectorsComponent implements OnInit {
     if (implData) {
       this.currentConfigSchema.set(implData.config_schema);
       this.addConfigFields(implData.config_schema);
+      this.updateConfigFields(implData.config_schema);
     }
   }
 
-  getConfigFields(): {key: string, label: string, required: boolean, sensitive?: boolean}[] {
-    const schema = this.currentConfigSchema();
-    return Object.entries(schema).map(([key, field]) => ({
+  getConfigFields() {
+    return this.configFields();
+  }
+
+  private updateConfigFields(schema: Record<string, ConfigSchemaField>): void {
+    this.configFields.set(Object.entries(schema).map(([key, field]) => ({
       key,
       label: field.label,
       required: field.required,
       sensitive: field.sensitive,
-    }));
+    })));
   }
 
   shouldShowError(fieldKey: string): boolean {

@@ -46,6 +46,10 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
   if (err.status === 404) {
     return 'login.error.auth_unavailable';
   }
+  const detail = err.error?.detail ?? err.error?.message ?? '';
+  if (typeof detail === 'string' && detail.length > 0 && detail.length < 200) {
+    return detail;
+  }
   return 'login.error.unexpected';
 }
 
@@ -56,7 +60,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
   template: `
     <div class="login-page">
       <a routerLink="/" class="login-back">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" focusable="false">
           <path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         {{ 'login.back_home' | t }}
@@ -92,8 +96,8 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
             <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
               <h2 class="form-title">{{ 'login.title' | t }}</h2>
 
-              <div class="alert-error" *ngIf="errorKey">
-                <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <div class="alert-error" *ngIf="errorKey" role="alert">
+                <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
                   <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                   <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
@@ -155,8 +159,8 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
               <h2 class="form-title">{{ 'login.2fa_title' | t }}</h2>
               <p class="totp-hint">{{ 'login.2fa_hint' | t }}</p>
 
-              <div class="alert-error" *ngIf="errorKey">
-                <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <div class="alert-error" *ngIf="errorKey" role="alert">
+                <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
                   <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                   <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
@@ -600,7 +604,11 @@ export class LoginComponent implements OnInit {
       .login(email as string, password as string)
       .pipe(
         catchError((err) => {
-          this.errorKey = parseLoginErrorKey(err);
+          try {
+            this.errorKey = parseLoginErrorKey(err);
+          } catch {
+            this.errorKey = err?.error?.detail ?? err?.message ?? 'login.error.no_connection';
+          }
           this.loading = false;
           return of(null);
         }),
@@ -625,8 +633,12 @@ export class LoginComponent implements OnInit {
           const destination = this.authService.isAdmin() ? '/app/system' : '/app/dashboard';
           this.router.navigate([destination]);
         },
-        error: () => {
-          this.errorKey = 'login.error.unexpected';
+        error: (err) => {
+          try {
+            this.errorKey = parseLoginErrorKey(err);
+          } catch {
+            this.errorKey = err?.error?.detail ?? err?.message ?? 'login.error.unexpected';
+          }
           this.loading = false;
         },
       });
@@ -647,7 +659,11 @@ export class LoginComponent implements OnInit {
       .verify2fa(this.pendingTotpToken, code as string)
       .pipe(
         catchError((err) => {
-          this.errorKey = parseLoginErrorKey(err);
+          try {
+            this.errorKey = parseLoginErrorKey(err);
+          } catch {
+            this.errorKey = err?.error?.detail ?? err?.message ?? 'login.error.no_connection';
+          }
           this.loading = false;
           return of(null);
         }),
@@ -663,8 +679,12 @@ export class LoginComponent implements OnInit {
           const destination = this.authService.isAdmin() ? '/app/system' : '/app/dashboard';
           this.router.navigate([destination]);
         },
-        error: () => {
-          this.errorKey = 'login.error.unexpected';
+        error: (err) => {
+          try {
+            this.errorKey = parseLoginErrorKey(err);
+          } catch {
+            this.errorKey = err?.error?.detail ?? err?.message ?? 'login.error.unexpected';
+          }
           this.loading = false;
         },
       });

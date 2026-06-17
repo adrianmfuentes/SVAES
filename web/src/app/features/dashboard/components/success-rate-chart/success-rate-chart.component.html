@@ -12,7 +12,9 @@
       <canvas baseChart
         [type]="'bar'"
         [data]="chartData"
-        [options]="chartOptions">
+        [options]="chartOptions"
+        role="img"
+        [attr.aria-label]="'a11y.chart_pass_rate' | t">
       </canvas>
     </div>
   }
