@@ -590,7 +590,8 @@ export class ConnectorsComponent implements OnInit {
     };
   }
 
-  private normalizeStatus(s: string): 'active' | 'inactive' | 'error' {
+  private normalizeStatus(s: string | undefined | null): 'active' | 'inactive' | 'error' {
+    if (!s) return 'error';
     switch (s.toUpperCase()) {
       case 'ACTIVO': return 'active';
       case 'INACTIVO': return 'inactive';
