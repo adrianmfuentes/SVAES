@@ -120,7 +120,7 @@ describe('ConnectorsComponent', () => {
 
     it('should POST new connector', () => {
       component.openCreate();
-      component.connectorForm.setValue({ name: 'New Conn', type: 'gitlab', base_url: 'https://gl.com', token: 'tok' });
+      component.connectorForm.setValue({ name: 'New Conn', connectorType: 'REPO_CODIGO', connectorImplementation: 'gitlab' });
       component.submitConnector();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors');
       expect(req.request.method).toBe('POST');
@@ -133,7 +133,7 @@ describe('ConnectorsComponent', () => {
       const existing = { id: 'conn-1', name: 'Old', type: 'gitlab', status: 'active' as const, global: false };
       component.globalConnectors.set([existing]);
       component.openEdit(existing);
-      component.connectorForm.patchValue({ name: 'Updated', base_url: 'https://x.com', token: '' });
+      component.connectorForm.patchValue({ name: 'Updated', connectorType: 'REPO_CODIGO', connectorImplementation: 'gitlab' });
       component.submitConnector();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1');
       expect(req.request.method).toBe('PATCH');
@@ -143,7 +143,7 @@ describe('ConnectorsComponent', () => {
 
     it('should set modalError on failure', () => {
       component.openCreate();
-      component.connectorForm.setValue({ name: 'X', type: 'gitlab', base_url: 'https://x.com', token: '' });
+      component.connectorForm.setValue({ name: 'X', connectorType: 'REPO_CODIGO', connectorImplementation: 'gitlab' });
       component.submitConnector();
       httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors').flush(
         { detail: 'Token invalid' },
@@ -214,7 +214,7 @@ describe('ConnectorsComponent', () => {
 
     it('should map jira type to GESTOR_TAREAS', () => {
       component.openCreate();
-      component.connectorForm.setValue({ name: 'Jira Conn', type: 'jira', base_url: 'https://jira.io', token: 'tok' });
+      component.connectorForm.setValue({ name: 'Jira Conn', connectorType: 'GESTOR_TAREAS', connectorImplementation: 'jira' });
       component.submitConnector();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors');
       expect(req.request.body.connector_type).toBe('GESTOR_TAREAS');
@@ -223,7 +223,7 @@ describe('ConnectorsComponent', () => {
 
     it('should map unknown type to REPO_CODIGO', () => {
       component.openCreate();
-      component.connectorForm.setValue({ name: 'Unknown', type: 'unknown_tool', base_url: 'https://x.com', token: '' });
+      component.connectorForm.setValue({ name: 'Unknown', connectorType: 'REPO_CODIGO', connectorImplementation: 'unknown_tool' });
       component.submitConnector();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors');
       expect(req.request.body.connector_type).toBe('REPO_CODIGO');
@@ -232,7 +232,7 @@ describe('ConnectorsComponent', () => {
 
     it('should not submit if form is invalid', () => {
       component.openCreate();
-      component.connectorForm.setValue({ name: '', type: 'gitlab', base_url: '', token: '' });
+      component.connectorForm.setValue({ name: '', connectorType: 'REPO_CODIGO', connectorImplementation: 'gitlab' });
       component.submitConnector();
       httpCtrl.expectNone('/api/v1/organizations/org-abc/connectors');
     });
