@@ -11,6 +11,7 @@ describe('LangToggleComponent', () => {
     setLanguage: ReturnType<typeof vi.fn>;
     loadTranslationsWithCache: ReturnType<typeof vi.fn>;
     lang$: ReturnType<typeof vi.fn>;
+    translateInstant: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
@@ -20,6 +21,7 @@ describe('LangToggleComponent', () => {
       setLanguage: vi.fn(),
       loadTranslationsWithCache: vi.fn().mockReturnValue(of({})),
       lang$: vi.fn(),
+      translateInstant: vi.fn().mockImplementation((key: string) => key),
     };
 
     await TestBed.configureTestingModule({

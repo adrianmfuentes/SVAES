@@ -56,7 +56,7 @@ describe('businessRouteGuard', () => {
   it('TC-UNI-FE-GRD-07: VIEWER accessing dashboard -> allowed', () => {
     vi.mocked(authService.isAdmin).mockReturnValue(false);
     vi.mocked(authService.getUserRole).mockReturnValue('VIEWER');
-    route.routeConfig = { path: 'dashboard' } as any;
+    (route as any).routeConfig = { path: 'dashboard' };
 
     const result = TestBed.runInInjectionContext(() => businessRouteGuard(route, state));
 
@@ -66,7 +66,7 @@ describe('businessRouteGuard', () => {
   it('TC-UNI-FE-GRD-08: VIEWER accessing profile -> allowed', () => {
     vi.mocked(authService.isAdmin).mockReturnValue(false);
     vi.mocked(authService.getUserRole).mockReturnValue('VIEWER');
-    route.routeConfig = { path: 'profile' } as any;
+    (route as any).routeConfig = { path: 'profile' };
 
     const result = TestBed.runInInjectionContext(() => businessRouteGuard(route, state));
 
@@ -76,7 +76,7 @@ describe('businessRouteGuard', () => {
   it('TC-UNI-FE-GRD-09: VIEWER accessing releases -> denied', () => {
     vi.mocked(authService.isAdmin).mockReturnValue(false);
     vi.mocked(authService.getUserRole).mockReturnValue('VIEWER');
-    route.routeConfig = { path: 'releases' } as any;
+    (route as any).routeConfig = { path: 'releases' };
     const forbiddenUrl = {} as ReturnType<Router['parseUrl']>;
     vi.mocked(router.parseUrl).mockReturnValue(forbiddenUrl);
 

@@ -125,6 +125,8 @@ services:
   web:
     image: nginx:alpine
     container_name: svaes-web
+    profiles:
+      - prod
     ports:
       - "4200:80"
     volumes:

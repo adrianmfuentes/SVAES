@@ -51,14 +51,14 @@ describe('ReleaseNewComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/projects').flush(mockProjects);
       expect(component.projects()).toEqual(mockProjects);
-      expect(component.projectsLoading()).toBe(false);
+      expect(component.loading()).toBe(false);
     });
 
     it('should set empty array on project load error', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/projects').flush('', { status: 500, statusText: 'Error' });
       expect(component.projects()).toEqual([]);
-      expect(component.projectsLoading()).toBe(false);
+      expect(component.loading()).toBe(false);
     });
   });
 
