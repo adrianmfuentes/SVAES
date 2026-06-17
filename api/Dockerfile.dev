@@ -1,4 +1,4 @@
-# ── Stage 1: install dependencies ────────────────────────────────────────────
+# ── Stage 1: install dependencies ───────────────────────────────────────────
 FROM python:3.14-slim AS builder
 
 WORKDIR /app
@@ -8,8 +8,8 @@ COPY alembic.ini ./
 COPY alembic/ ./alembic/
 RUN pip install uv==0.11.11 && uv sync --frozen --no-install-project --no-build
 
-# ── Stage 2: production runtime ───────────────────────────────────────────────
-FROM python:3.14-slim AS runtime
+# ── Stage 2: development runtime ──────────────────────────────────────────────
+FROM python:3.14-slim AS development
 
 RUN groupadd --gid 1001 appgroup && \
     useradd --uid 1001 --gid appgroup --no-create-home appuser
@@ -21,12 +21,16 @@ COPY --from=builder /app/alembic.ini /app/alembic.ini
 COPY --from=builder /app/alembic/ /app/alembic/
 COPY src/ ./src/
 
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 RUN chown -R appuser:appgroup /app
 
 USER appuser
 
 ENV PYTHONPATH=/app/src
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONDONTWRITEBYTECODE=1
 
 EXPOSE 8000
 

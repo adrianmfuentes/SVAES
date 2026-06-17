@@ -1,0 +1,54 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# SVAES - Development docker-compose (hot reload enabled)
+# ═══════════════════════════════════════════════════════════════════════════════
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Required: .env file at project root with POSTGRES_USER, POSTGRES_PASSWORD, etc.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./api/src:/app/src
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: development
+      JWT_EXPIRE_MINUTES: "1440"
+    command: >
+      /app/.venv/bin/python -m uvicorn main:app
+      --host 0.0.0.0 --port 8000
+      --reload --reload-dir /app/src
+
+  web-dev:
+    image: node:20-alpine
+    container_name: svaes-web-dev
+    working_dir: /app
+    volumes:
+      - ./web:/app
+    ports:
+      - "4200:4200"
+    environment:
+      API_URL: http://api:8000
+    command: >
+      sh -c "npm install && npx ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json"
+    networks:
+      - svaes-network
+    depends_on:
+      - api
+
+  postgres:
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+  celery-worker:
+    environment:
+      ENVIRONMENT: development
+
+volumes:
+  postgres_dev_data:

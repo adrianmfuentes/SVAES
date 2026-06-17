@@ -1,16 +1,18 @@
-# ── PROD overrides ────────────────────────────────────────────────────────────
-# Run with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ═══════════════════════════════════════════════════════════════════════════════
+# SVAES - Production docker-compose
+# ═══════════════════════════════════════════════════════════════════════════════
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #
-# Required host env vars (never store in .env for production):
-#   POSTGRES_USER, POSTGRES_PASSWORD (strong, randomly generated)
-#   REDIS_PASSWORD (randomly generated, e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"`)
-#   JWT_SECRET_KEY, ENCRYPTION_KEY, ENGINE_API_KEY
-#   DATABASE_URL (full connection URL)
-#   ALLOWED_ORIGINS (production domain, e.g. https://app.yourdomain.com)
-#   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM (transactional email provider)
-#   APP_BASE_URL (production frontend URL, e.g. https://app.yourdomain.com)
-#
-# For Docker Secrets, mount secrets into containers and read from /run/secrets/<name>
+# Required env vars (set in .env or environment):
+#   - POSTGRES_USER, POSTGRES_PASSWORD (strong, randomly generated)
+#   - REDIS_PASSWORD
+#   - JWT_SECRET_KEY, ENCRYPTION_KEY
+#   - ENGINE_API_KEY
+#   - DATABASE_URL (full connection URL)
+#   - ALLOWED_ORIGINS (production domain)
+#   - SMTP_* (email provider)
+#   - ADMIN_EMAIL, ADMIN_PASSWORD
+# ═══════════════════════════════════════════════════════════════════════════════
 
 services:
   api:
@@ -18,43 +20,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_EXPIRE_MINUTES: "60"
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       ENVIRONMENT: production
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
-      ENGINE_API_KEY: ${ENGINE_API_KEY}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASSWORD: ${SMTP_PASSWORD}
-      SMTP_FROM: ${SMTP_FROM}
-      APP_BASE_URL: ${APP_BASE_URL}
 
   celery-worker:
     restart: always
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      ENVIRONMENT: production
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
-      ENGINE_API_KEY: ${ENGINE_API_KEY}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
 
   postgres:
     restart: always
-    # No port exposure in production — accessible only via svaes-network
     ports: []
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
@@ -64,7 +36,6 @@ services:
 
   engine:
     restart: always
-    # No port exposure in production — accessible only via svaes-network
     ports: []
 
 volumes:
