@@ -672,7 +672,7 @@ export class ProfilesComponent implements OnInit {
     this.http.get<ProfileWithRules>(`/api/v1/profiles/${profileId}`)
       .pipe(catchError(() => of(null)))
       .subscribe(data => {
-        if (data && data.rules) {
+        if (data?.rules) {
           this.profileRules.set(data.rules);
         }
       });

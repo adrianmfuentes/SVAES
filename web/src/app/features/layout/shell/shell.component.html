@@ -1,7 +1,7 @@
 <div class="app-layout">
   <a class="skip-link" href="#main-content">{{ 'a11y.skip_to_main' | t }}</a>
 
-  <div class="sidebar-overlay" [class.is-open]="sidebarOpen" (click)="closeSidebar()" aria-hidden="true"></div>
+  <button class="sidebar-overlay" [class.is-open]="sidebarOpen" (click)="closeSidebar()" aria-hidden="true" (keydown.escape)="closeSidebar()"></button>
 
   <aside class="sidebar" id="sidebar" [class.is-open]="sidebarOpen">
     <div class="sidebar-brand">

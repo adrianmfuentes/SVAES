@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -11,7 +11,7 @@ export interface Toast {
 
 @Injectable({ providedIn: 'root' })
 export class ToastService {
-  private _toasts = signal<Toast[]>([]);
+  private readonly _toasts = signal<Toast[]>([]);
   private counter = 0;
 
   readonly toasts = this._toasts.asReadonly();

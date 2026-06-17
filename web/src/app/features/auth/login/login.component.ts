@@ -13,44 +13,40 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../../core/components/lang-toggle/lang-toggle.component';
 import { catchError, of } from 'rxjs';
 
-function parseLoginErrorKey(err: HttpErrorResponse): string {
-  if (err.status === 0 || !err.status) {
-    return 'login.error.no_connection';
-  }
-  if (err.status === 401) {
-    const detail = err.error?.detail ?? '';
-    if (typeof detail === 'string' && detail.length > 0 && detail.length < 200) {
-      return detail;
-    }
-    return 'login.error.wrong_credentials';
-  }
-  if (err.status === 403) {
-    return 'login.error.pending_activation';
-  }
-  if (err.status === 429) {
-    return 'login.error.too_many';
-  }
-  if (err.status === 502 || err.status === 504) {
-    return 'login.error.server_unreachable';
-  }
-  if (err.status >= 500) {
-    return 'login.error.internal';
-  }
-  if (err.status === 400) {
-    const detail = err.error?.detail ?? err.error?.message ?? '';
-    if (typeof detail === 'string' && detail.length > 0 && detail.length < 200) {
-      return detail;
-    }
-    return 'login.error.invalid_data';
-  }
-  if (err.status === 404) {
-    return 'login.error.auth_unavailable';
-  }
+const STATUS_ERROR_MAP: Record<number, string> = {
+  400: 'login.error.invalid_data',
+  401: 'login.error.wrong_credentials',
+  403: 'login.error.pending_activation',
+  404: 'login.error.auth_unavailable',
+  429: 'login.error.too_many',
+  502: 'login.error.server_unreachable',
+  503: 'login.error.server_unreachable',
+  504: 'login.error.server_unreachable',
+};
+
+function extractDetail(err: HttpErrorResponse): string | null {
   const detail = err.error?.detail ?? err.error?.message ?? '';
   if (typeof detail === 'string' && detail.length > 0 && detail.length < 200) {
     return detail;
   }
-  return 'login.error.unexpected';
+  return null;
+}
+
+function parseLoginErrorKey(err: HttpErrorResponse): string {
+  if (err.status === 0 || !err.status) {
+    return 'login.error.no_connection';
+  }
+
+  if (err.status >= 500) {
+    return 'login.error.internal';
+  }
+
+  const mapped = STATUS_ERROR_MAP[err.status];
+  if (mapped) {
+    return extractDetail(err) ?? mapped;
+  }
+
+  return extractDetail(err) ?? 'login.error.unexpected';
 }
 
 @Component({

@@ -320,30 +320,21 @@
 
 .mock-table {
   width: 100%;
-  border-collapse: collapse;
-
-  th {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 0.5rem 1.25rem;
-    text-align: left;
-    border-bottom: 0.0625rem solid var(--border);
-  }
 }
 
 .mock-row {
+  display: flex;
+  align-items: center;
   border-bottom: 0.0625rem solid var(--border);
   opacity: 0;
   transition: background-color 0.18s ease, box-shadow 0.18s ease;
 
-  td {
+  > span {
     font-size: 0.8125rem;
     color: var(--ink);
     padding: 0.6875rem 1.25rem;
     white-space: nowrap;
+    flex: 1;
   }
 
   &:last-child { border-bottom: none; }
@@ -658,13 +649,11 @@
   .landing-stat-sep { display: none; }
 
   // Compact mock window columns on small phones
-  .mock-table th:nth-child(3),
-  .mock-row td:nth-child(3) { display: none; }
+  .mock-row > span:nth-child(3) { display: none; }
 
   .mock-window-bar { padding: 0.625rem 1rem; }
   .mock-verdict { padding: 0.75rem 1rem 0.75rem 1.25rem; }
-  .mock-table th { padding: 0.4375rem 0.75rem; }
-  .mock-row td { padding: 0.5625rem 0.75rem; }
+  .mock-row > span { padding: 0.5625rem 0.75rem; }
   .mock-footer { padding: 0.5rem 0.75rem; }
 
   .landing-access { padding: var(--spacing-lg) var(--spacing-md); }

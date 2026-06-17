@@ -13,7 +13,7 @@ import { LangToggleComponent } from '../../core/components/lang-toggle/lang-togg
 export class LandingComponent implements AfterViewInit {
   private readonly router = inject(Router);
 
-  @ViewChild('accessInner') private accessInnerRef!: ElementRef<HTMLElement>;
+  @ViewChild('accessInner') private readonly accessInnerRef!: ElementRef<HTMLElement>;
 
   navigateToRequestAccess(): void {
     this.router.navigate(['/request-access']);

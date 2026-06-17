@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
-const VIEWER_ALLOWED_ROUTES = ['dashboard', 'profile'];
+const VIEWER_ALLOWED_ROUTES = new Set(['dashboard', 'profile']);
 
 export const businessRouteGuard: CanActivateFn = (route) => {
   const authService = inject(AuthService);
@@ -15,7 +15,7 @@ export const businessRouteGuard: CanActivateFn = (route) => {
   const userRole = authService.getUserRole();
   const path = route.routeConfig?.path ?? '';
 
-  if (userRole === 'VIEWER' && !VIEWER_ALLOWED_ROUTES.includes(path)) {
+  if (userRole === 'VIEWER' && !VIEWER_ALLOWED_ROUTES.has(path)) {
     return router.parseUrl('/app/403');
   }
 

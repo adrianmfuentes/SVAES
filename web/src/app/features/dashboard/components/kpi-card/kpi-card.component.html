@@ -1,4 +1,4 @@
-<div class="kpi-card" role="region" [attr.aria-label]="label">
+<section class="kpi-card" [attr.aria-label]="label">
   @if (loading) {
     <div class="skeleton skeleton-label" aria-hidden="true"></div>
     <div class="skeleton skeleton-value" aria-hidden="true"></div>
@@ -12,4 +12,4 @@
       <ng-content></ng-content>
     </div>
   }
-</div>
+</section>

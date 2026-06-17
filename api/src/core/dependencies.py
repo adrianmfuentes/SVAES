@@ -328,14 +328,14 @@ def require_profile_access():
         current_user: CurrentUser = Depends(get_current_user),
         profile_repo: SqlProfileRepository = Depends(get_profile_repository),
         org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
-    ) -> CurrentUser:
+    ) -> None:
         if current_user.role != UserRole.U3:
             profile = await profile_repo.get_by_id(profile_id)
             if not profile:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil no encontrado")
 
             if profile.is_system:
-                return current_user
+                return
 
             if profile.organization_id != current_user.organization_id:
                 org = await org_repo.get_by_id(profile.organization_id)
@@ -344,7 +344,6 @@ def require_profile_access():
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="No tienes acceso a este perfil",
                     )
-        return current_user
     return dependency  # NOSONAR
 
 
