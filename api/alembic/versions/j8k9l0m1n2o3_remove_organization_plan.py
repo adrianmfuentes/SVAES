@@ -18,7 +18,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.drop_column("organization", "plan")
+    conn = op.get_bind()
+    result = conn.execute(sa.text("SELECT column_name FROM information_schema.columns WHERE table_name = 'organization' AND column_name = 'plan'"))
+    if result.fetchone() is not None:
+        op.drop_column("organization", "plan")
 
 
 def downgrade() -> None:
