@@ -26,15 +26,27 @@ web/
 │   │   ├── core/
 │   │   │   ├── api/              # Generated typed REST client (OpenAPI → TypeScript)
 │   │   │   ├── guards/           # auth.guard.ts, role.guard.ts
-│   │   │   ├── interceptors/     # jwt.interceptor.ts, error.interceptor.ts
-│   │   │   └── services/         # auth.service.ts
+│   │   │   ├── interceptors/     # jwt.interceptor.ts, error.interceptor.ts, timeout.interceptor.ts
+│   │   │   ├── services/         # auth.service.ts, toast.service.ts
+│   │   │   ├── i18n/             # TranslationService, TranslatePipe, locale JSON files
+│   │   │   └── components/       # Shared components (toast, lang-toggle)
 │   │   ├── features/
 │   │   │   ├── auth/login/       # Login page (public)
+│   │   │   ├── auth/activate/    # Account activation
 │   │   │   ├── layout/shell/     # AppShell with sidebar + router-outlet
-│   │   │   ├── dashboard/        # Placeholder
-│   │   │   ├── releases/         # Placeholder
-│   │   │   ├── connectors/       # Placeholder
-│   │   │   └── profiles/         # Placeholder
+│   │   │   ├── dashboard/        # Full dashboard with charts, KPIs, recent releases
+│   │   │   ├── releases/         # Full release management (list, detail, create)
+│   │   │   ├── connectors/       # Full connector management (CRUD + test)
+│   │   │   ├── profiles/         # Full profile management (CRUD + rules)
+│   │   │   ├── admin/            # Global admin panel (orgs, users, access requests)
+│   │   │   ├── profile/          # User profile with 2FA, password change
+│   │   │   ├── projects/         # Project management
+│   │   │   ├── logs/             # Audit log viewer
+│   │   │   ├── landing/          # Public landing page
+│   │   │   ├── legal/            # Legal pages (aviso-legal, privacidad)
+│   │   │   ├── access-request/   # Access request form
+│   │   │   ├── errors/           # Error pages (not-found, forbidden)
+│   │   │   └── system/           # System status page
 │   │   ├── app.config.ts         # Providers: HttpClient, interceptors, router, animations
 │   │   ├── app.routes.ts         # Lazy-loaded route tree
 │   │   └── app.ts                # Root component (<router-outlet>)
@@ -77,11 +89,15 @@ web/
 | **RoleGuard**              | Done    | `CanActivateFn` — checks route `data.role` against the user's role. |
 | **AppShell layout**        | Done    | Sidebar nav (Dashboard, Entregas, Conectores, Perfiles) + top bar with logout. |
 | **REST client**            | Done    | Typed API client generated from the backend OpenAPI 3.1 spec (63 endpoints). |
-| **Dashboard**              | Stub    | Placeholder component only. |
-| **Releases / Entregas**    | Stub    | Placeholder component only. |
-| **Connectors / Conectores**| Stub    | Placeholder component only. |
-| **Profiles / Perfiles**    | Stub    | Placeholder component only. |
-| **Admin panel**            | Stub    | Not yet wired. |
+| **Dashboard**              | Done    | Full dashboard with KPI cards, success rate chart, top failed rules, recent releases table. |
+| **Releases / Entregas**    | Done    | Full release management: list with filters, create, detail view, artifact management. |
+| **Connectors / Conectores**| Done    | Full connector management: list, create, test connection, edit, delete with form validation. |
+| **Profiles / Perfiles**    | Done    | Full profile management: list, create, duplicate, update, delete, rule configuration. |
+| **Admin panel**            | Done    | Global administration: organizations, users, access requests management. |
+| **Projects**               | Done    | Project management with create/archive functionality. |
+| **Audit logs**             | Done    | Audit log viewer with filtering. |
+| **Profile settings**       | Done    | User profile with 2FA setup, password change, data export. |
+| **i18n (ES/EN)**           | Done    | Full internationalization across all modules. |
 
 ---
 
@@ -151,7 +167,7 @@ User → /auth/login → POST /api/v1/auth/login → JWT (access + refresh token
                           On 401 → 401 interceptor clears token → redirect to login
 ```
 
-- **Public routes**: `/auth/login`, `/auth/register` (to be added).
+- **Public routes**: `/auth/login`, `/auth/register`, `/access-request`.
 - **Protected routes**: Everything else — guarded by `AuthGuard`.
 - **RBAC**: Role-based guards check route data for `role` (USER, MANAGER, ADMIN).
 

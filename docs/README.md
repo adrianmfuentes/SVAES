@@ -25,7 +25,7 @@ SVAES is an extensible, decoupled **Quality Gate platform** that automates the v
 | **Verification Engine** | Rust (Actix-web + Rayon) | Parallel rule evaluation and verdict computation  |
 | **Task Queue**          | Celery + Redis           | Async dispatch of verification jobs               |
 | **Database**            | PostgreSQL 16            | Persistent storage with UUIDs and JSONB support   |
-| **Frontend**            | Angular 21               | Web UI (implemented — auth, dashboard, releases, connectors, i18n, 2FA) |
+| **Frontend**            | Angular 21               | Full-featured SPA: auth, dashboard, releases, connectors, profiles, admin, i18n, 2FA |
 | **Infrastructure**      | Docker + Docker Compose  | Containerized multi-service deployment            |
 
 The system follows a **Hexagonal (Ports & Adapters)** and **Clean Architecture** approach, ensuring the domain core has zero external dependencies.

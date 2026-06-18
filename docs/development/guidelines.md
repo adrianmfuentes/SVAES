@@ -74,13 +74,13 @@ svaes/
 
 **Current status:**
 - FastAPI backend complete in `api/src/`
-- Celery worker implemented (`api/src/infrastructure/workers/verification_worker.py`)
+- Celery worker implemented (`api/src/infrastructure/secondary/queue/celery_app.py`)
 - Rust verification engine complete (`engine/src/` — evaluator, aggregator, 10 rules RV-01 to RV-10)
 - Angular frontend implemented (`web/`) — features: auth (login + 2FA + activate), dashboard, releases, connectors, profiles, admin, logs, profile, landing, legal, access-request, system
 - i18n: ES/EN via `TranslationService` + `TranslatePipe`; JSON files in `web/src/assets/i18n/`
 - TOTP 2FA: pyotp + segno; migration `m1n2o3p4q5r6`; two-step login flow in frontend
 - GDPR compliance: audit_log table, consent fields, pseudonymiser in verification worker
-- Routers registered: auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin
+- Routers registered: auth, users, organizations, projects, releases, connectors, profiles, tasks, custom_roles, dashboard, api_keys, templates, notifications, admin, audit, access_requests
 
 ---
 

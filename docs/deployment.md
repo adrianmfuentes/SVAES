@@ -7,6 +7,7 @@
 | Python | 3.11+ |
 | PostgreSQL | 16 |
 | Redis | 7.x |
+| Rust | 1.77+ (for engine builds) |
 | Docker | 25.x |
 | Docker Compose | 2.x |
 
@@ -79,7 +80,7 @@ services:
 
   worker:
     build: ./api
-    command: celery -A src.infrastructure.workers.verification_worker worker --loglevel=info
+    command: celery -A src.infrastructure.secondary.queue.celery_app worker --loglevel=info
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=redis://redis:6379/0
@@ -107,17 +108,6 @@ services:
 volumes:
   pgdata:
 ```
-
-### Required Environment Variables
-
-| Component | Minimum Version |
-|------------|----------------|
-| Python | 3.11+ |
-| PostgreSQL | 16 |
-| Redis | 7.x |
-| Rust | 1.77+ |
-| Docker | 25.x |
-| Docker Compose | 2.x |
 
 ### Option 1: Reverse Proxy (Nginx/Traefik)
 

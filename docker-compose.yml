@@ -1,9 +1,17 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# SVAES - Base docker-compose (shared config)
+# SVAES - Docker Compose (Production-ready, single file)
 # ═══════════════════════════════════════════════════════════════════════════════
-# Usage:
-#   Dev:    docker compose -f docker-compose.yml -f docker-compose.dev.yml up
-#   Prod:   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Usage: docker compose up -d
+#
+# Required env vars (set in .env):
+#   - POSTGRES_USER, POSTGRES_PASSWORD
+#   - REDIS_PASSWORD
+#   - JWT_SECRET_KEY, ENCRYPTION_KEY
+#   - ENGINE_API_KEY
+#   - ALLOWED_ORIGINS
+#   - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM
+#   - ADMIN_EMAIL, ADMIN_PASSWORD
+#   - DATABASE_URL (full connection URL)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 name: svaes
@@ -12,6 +20,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: svaes-postgres
+    restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-svaes}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -29,6 +38,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: svaes-redis
+    restart: always
     command: redis-server --requirepass ${REDIS_PASSWORD}
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
@@ -38,20 +48,12 @@ services:
     networks:
       - svaes-network
 
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: svaes-mailhog
-    ports:
-      - "127.0.0.1:1025:1025"
-      - "127.0.0.1:8025:8025"
-    networks:
-      - svaes-network
-
   engine:
     build:
       context: ./engine
       dockerfile: Dockerfile
     container_name: svaes-engine
+    restart: always
     environment:
       ENGINE_HOST: 0.0.0.0
       ENGINE_PORT: 8081
@@ -65,11 +67,14 @@ services:
     networks:
       - svaes-network
 
-  api: &api
+  api:
     build:
       context: ./api
       dockerfile: Dockerfile
     container_name: svaes-api
+    restart: always
+    ports:
+      - "8000:8000"
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-svaes}:${POSTGRES_PASSWORD}@postgres:5432/svaes
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -79,16 +84,18 @@ services:
       JWT_ALGORITHM: HS256
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:4200}
+      ENVIRONMENT: production
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
       ENGINE_URL: http://engine:8081
       ENGINE_API_KEY: ${ENGINE_API_KEY}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      SMTP_HOST: ${SMTP_HOST:-mailhog}
-      SMTP_PORT: ${SMTP_PORT:-1025}
-      SMTP_FROM: ${SMTP_FROM:-noreply@svaes.local}
-      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:4200}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      APP_BASE_URL: ${APP_BASE_URL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,20 +105,45 @@ services:
       - svaes-network
 
   celery-worker:
-    <<: *api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
     container_name: svaes-celery
+    restart: always
     command: celery -A src.infrastructure.secondary.queue.celery_app worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-svaes}:${POSTGRES_PASSWORD}@postgres:5432/svaes
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ENVIRONMENT: production
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      ENGINE_URL: http://engine:8081
+      ENGINE_API_KEY: ${ENGINE_API_KEY}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      APP_BASE_URL: ${APP_BASE_URL}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - svaes-network
 
   web:
     image: nginx:alpine
     container_name: svaes-web
-    profiles:
-      - prod
+    restart: always
     ports:
       - "4200:80"
     volumes:
@@ -124,6 +156,8 @@ services:
       retries: 3
     networks:
       - svaes-network
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
