@@ -75,6 +75,47 @@ class Settings(BaseSettings):
             )
         return self
 
+    @model_validator(mode="after")
+    def _reject_unsafe_production_config(self) -> "Settings":
+        if not self.is_production:
+            return self
+
+        errors: list[str] = []
+
+        _UNSAFE_ADMIN_EMAILS = {"admin@example.com", "admin@svaes.local", "admin@test.local"}
+        if self.admin_email.lower() in _UNSAFE_ADMIN_EMAILS:
+            errors.append(f"ADMIN_EMAIL is set to a placeholder value ({self.admin_email!r}). Use a real address.")
+
+        if len(self.admin_password) < 16:
+            errors.append("ADMIN_PASSWORD must be at least 16 characters in production.")
+
+        _UNSAFE_SMTP = {"localhost", "mailhog", "127.0.0.1", ""}
+        if self.smtp_host.lower() in _UNSAFE_SMTP:
+            errors.append(f"SMTP_HOST ({self.smtp_host!r}) is not a real SMTP relay. Emails will not be delivered.")
+
+        if not self.smtp_from or self.smtp_from.endswith("@svaes.local"):
+            errors.append(f"SMTP_FROM ({self.smtp_from!r}) must be a real sender address.")
+
+        _UNSAFE_ORIGINS = {"http://localhost", "http://localhost:4200", "http://localhost:3000"}
+        origins = self.allowed_origins_list
+        if not origins or any(o in _UNSAFE_ORIGINS for o in origins):
+            errors.append(f"ALLOWED_ORIGINS ({self.allowed_origins!r}) contains localhost — set to the production domain.")
+
+        if self.app_base_url.startswith("http://localhost"):
+            errors.append(f"APP_BASE_URL ({self.app_base_url!r}) must be set to the production HTTPS URL.")
+
+        _KNOWN_TEST_KEYS = {"ci-test-secret-key-not-used-in-production"}
+        if self.jwt_secret_key in _KNOWN_TEST_KEYS or len(self.jwt_secret_key) < 32:
+            errors.append("JWT_SECRET_KEY is too short or is a known test value. Generate a secure random key.")
+
+        if errors:
+            bullet_list = "\n  - ".join(errors)
+            raise ValueError(
+                f"Production boot refused — fix the following configuration errors:\n  - {bullet_list}"
+            )
+
+        return self
+
     @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"

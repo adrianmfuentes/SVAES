@@ -1,5 +1,5 @@
 # ── Stage 1: install dependencies ────────────────────────────────────────────
-FROM python:3.14-slim AS builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
@@ -9,10 +9,11 @@ COPY alembic/ ./alembic/
 RUN pip install uv==0.11.11 && uv sync --frozen --no-install-project --no-build
 
 # ── Stage 2: production runtime ───────────────────────────────────────────────
-FROM python:3.14-slim AS runtime
+FROM python:3.13-slim AS runtime
 
 RUN groupadd --gid 1001 appgroup && \
-    useradd --uid 1001 --gid appgroup --no-create-home appuser
+    useradd --uid 1001 --gid appgroup --no-create-home appuser && \
+    apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
