@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from domain.entities.connector_instance import ConnectorInstance
@@ -52,4 +52,10 @@ class IConnectorService(ABC):
     async def toggle_connector_status(
         self, connector_id: UUID, status: ConnectorStatus, requested_by: UUID
     ) -> ConnectorInstance:
+        pass
+
+    @abstractmethod
+    async def browse_connector_items(
+        self, connector_id: UUID, query: str = ""
+    ) -> List[Dict[str, Any]]:
         pass

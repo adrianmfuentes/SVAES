@@ -101,6 +101,8 @@ class ProfileService(ManageProfileUseCase, IProfileService):
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
+        if profile.is_default:
+            raise ValidationError("No se pueden agregar reglas al perfil por defecto.")
 
         rule = VerificationRule(
             profile_id=profile_id,
@@ -133,6 +135,12 @@ class ProfileService(ManageProfileUseCase, IProfileService):
         is_active: Optional[bool] = None,
         requested_by: Optional[UUID] = None,
     ) -> VerificationRule:
+        rule = await self._rule_repo.get_by_id(rule_id)
+        if not rule:
+            raise EntityNotFoundError(f"Regla no encontrada: {rule_id}")
+        profile = await self._profile_repo.get_by_id(rule.profile_id)
+        if profile and profile.is_default:
+            raise ValidationError("No se pueden modificar reglas del perfil por defecto.")
         updated = await super().update_rule(rule_id, severity, connector_instance_id, params, display_order, is_active)
         audit = get_audit_logger()
         audit.log(AuditEntry(
@@ -147,4 +155,10 @@ class ProfileService(ManageProfileUseCase, IProfileService):
         return updated
 
     async def delete_rule(self, rule_id: UUID, requested_by: UUID) -> None:
+        rule = await self._rule_repo.get_by_id(rule_id)
+        if not rule:
+            raise EntityNotFoundError(f"Regla no encontrada: {rule_id}")
+        profile = await self._profile_repo.get_by_id(rule.profile_id)
+        if profile and profile.is_default:
+            raise ValidationError("No se pueden eliminar reglas del perfil por defecto.")
         await super().delete_rule(rule_id)

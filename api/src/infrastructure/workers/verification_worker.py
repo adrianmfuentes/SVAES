@@ -8,6 +8,7 @@ from celery import shared_task
 from infrastructure.secondary.queue.celery_app import celery_app
 from core.config import settings
 from core.pseudonymizer import pseudonymize
+from core.email import email_service
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from application.ports.output.i_release_repository import IReleaseRepository
 from application.ports.output.i_profile_repository import IProfileRepository
@@ -16,11 +17,22 @@ from domain.enums import ReleaseStatus, VerdictType, SeverityType, severity_to_r
 from infrastructure.secondary.database.repositories.release_repository import SqlReleaseRepository
 from infrastructure.secondary.database.repositories.verification_result_repository import SqlVerificationResultRepository
 from infrastructure.secondary.database.repositories.profile_repository import SqlProfileRepository
+from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
 from infrastructure.secondary.connectors import create_registered_connector_registry
 
 
 def _map_severity_to_engine(severity: SeverityType) -> str:
     return rule_severity_to_string(severity_to_rule_severity(severity))
+
+
+def _report_progress(celery_task: Any, current: int, total: int, stage: str) -> None:
+    pct = min(99, int(current / total * 100)) if total > 0 else 0
+    celery_task.update_state(state='PROGRESS', meta={
+        'current': current,
+        'total': total,
+        'stage': stage,
+        'pct': pct,
+    })
 
 
 async def _call_verification_engine(
@@ -47,16 +59,18 @@ async def _call_verification_engine(
 def run_verification(self, release_id: str) -> Dict[str, Any]:
     release_uuid = uuid.UUID(release_id)
 
+    _report_progress(self, current=0, total=1, stage='loading')
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        result = loop.run_until_complete(_run_verification_async(release_uuid, self.request.id))
+        result = loop.run_until_complete(_run_verification_async(release_uuid, self.request.id, self))
         return result
     finally:
         loop.close()
 
 
-async def _run_verification_async(release_id: uuid.UUID, task_id: str) -> Dict[str, Any]:
+async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_task: Any) -> Dict[str, Any]:
     release_repo = SqlReleaseRepository()
     verification_repo = SqlVerificationResultRepository()
     profile_repo = SqlProfileRepository()
@@ -70,9 +84,16 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str) -> Dict[s
     if not profile:
         return {"error": f"Profile {release.profile_id} not found"}
 
+    artifact_count = len(release.artifacts) if release.artifacts else 0
+    # Stages: loading(1) + artifacts(N) + engine(1) + save(1) + notify(1) = N + 4
+    total_stages = artifact_count + 4
+
+    _report_progress(celery_task, current=1, total=total_stages, stage='loading')
+
     artifacts_data = []
     if release.artifacts:
-        for artifact in release.artifacts:
+        for i, artifact in enumerate(release.artifacts):
+            _report_progress(celery_task, current=2 + i, total=total_stages, stage='fetching_artifacts')
             try:
                 connector_impl = connector_registry.get_by_implementation(artifact.connector_implementation)
                 if connector_impl:
@@ -96,7 +117,23 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str) -> Dict[s
                 "params": rule.params,
             })
 
-    result_data = await _call_verification_engine(artifacts_data, rules_data)
+    engine_stage = 2 + artifact_count
+    _report_progress(celery_task, current=engine_stage, total=total_stages, stage='calling_engine')
+
+    try:
+        result_data = await _call_verification_engine(artifacts_data, rules_data)
+    except Exception as exc:
+        await release_repo.update_status(release_id, ReleaseStatus.PENDIENTE)
+        raise exc
+
+    verdict_to_status = {
+        VerdictType.VALID: ReleaseStatus.VALIDA,
+        VerdictType.VALID_WITH_WARNINGS: ReleaseStatus.CON_ADVERTENCIAS,
+        VerdictType.INVALID: ReleaseStatus.NO_VALIDA,
+    }
+
+    save_stage = engine_stage + 1
+    _report_progress(celery_task, current=save_stage, total=total_stages, stage='saving_results')
 
     verification_result = VerificationResult(
         id=uuid.uuid4(),
@@ -108,7 +145,25 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str) -> Dict[s
     )
 
     saved_result = await verification_repo.save(verification_result)
-    await release_repo.update_status(release_id, ReleaseStatus.EN_VERIFICACION)
+    final_status = verdict_to_status.get(saved_result.verdict, ReleaseStatus.NO_VALIDA)
+    await release_repo.update_status(release_id, final_status)
+
+    notify_stage = save_stage + 1
+    _report_progress(celery_task, current=notify_stage, total=total_stages, stage='notifying')
+
+    user_repo = SqlUserRepository()
+    user = await user_repo.get_by_id(release.created_by)
+    if user:
+        try:
+            await email_service.send_verification_result_email(
+                to_email=user.email,
+                to_name=user.display_name or user.email,
+                release_name=release.name,
+                verdict=saved_result.verdict.value,
+                release_id=str(release_id),
+            )
+        except Exception:
+            pass
 
     return {
         "result_id": str(saved_result.id),

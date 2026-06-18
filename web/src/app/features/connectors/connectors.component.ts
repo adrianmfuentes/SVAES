@@ -118,7 +118,7 @@ interface ConnectorTypesResponse {
         <form [formGroup]="connectorForm" (ngSubmit)="submitConnector()">
           <div class="form-group">
             <label for="conn-name">{{ 'connectors.name_label' | t }}</label>
-            <input id="conn-name" type="text" formControlName="name" placeholder="Mi conector Jira" />
+            <input id="conn-name" type="text" formControlName="name" [placeholder]="'connectors.name_placeholder' | t" />
           </div>
           <div class="form-group" *ngIf="connectorTypes()">
             <label for="conn-type">{{ 'connectors.category_label' | t }}</label>
@@ -523,7 +523,6 @@ export class ConnectorsComponent implements OnInit {
 
   private orgId: string | null = null;
   readonly canManage = this.authService.getUserRole() === 'MANAGER';
-  /** @deprecated keep for template compat — always false on this route */
   readonly isAdmin = false;
 
   connectors = signal<Connector[]>([]);
@@ -604,10 +603,11 @@ export class ConnectorsComponent implements OnInit {
     this.selectedType.set(null);
     this.selectedImplementation.set(null);
     this.availableImplementations.set([]);
+    const oldSchema = this.currentConfigSchema();
     this.currentConfigSchema.set({});
     this.configFields.set([]);
     this.connectorForm.reset({ name: '', connectorType: '', connectorImplementation: '' });
-    this.removeConfigFields();
+    this.removeConfigFieldsForSchema(oldSchema);
     this.modalError.set(null);
     this.showModal.set(true);
   }
@@ -714,25 +714,21 @@ export class ConnectorsComponent implements OnInit {
   }
 
   typeLabel(type: string): string {
-    const labels: Record<string, string> = {
-      GESTOR_TAREAS: 'Gestor de Tareas',
-      REPO_CODIGO: 'Repositorio de Código',
-      SISTEMA_DOCUMENTAL: 'Sistema de Gestor Documental',
-      HERRAMIENTA_PLANIFICACION: 'Herramienta de Planificación',
-      GESTION_CAMBIOS: 'Gestión de Cambios',
-    };
-    return labels[type] ?? type;
+    const translated = this.ts.translateInstant('connector_type.' + type);
+    return translated !== 'connector_type.' + type ? translated : type;
   }
 
   onTypeChange(event: Event): void {
     const type = (event.target as HTMLSelectElement).value;
     this.selectedType.set(type);
     this.selectedImplementation.set(null);
-    this.currentConfigSchema.set({});
     const impls = this.connectorTypes()?.by_type[type] ?? [];
     this.availableImplementations.set(impls);
     this.connectorForm.patchValue({ connectorImplementation: '' });
-    this.removeConfigFields();
+    const oldSchema = this.currentConfigSchema();
+    this.currentConfigSchema.set({});
+    this.removeConfigFieldsForSchema(oldSchema);
+    this.configFields.set([]);
   }
 
   onImplementationChange(event: Event): void {
@@ -740,9 +736,12 @@ export class ConnectorsComponent implements OnInit {
     this.selectedImplementation.set(impl);
     const implData = this.availableImplementations().find(i => i.implementation === impl);
     if (implData) {
-      this.currentConfigSchema.set(implData.config_schema);
-      this.addConfigFields(implData.config_schema);
-      this.updateConfigFields(implData.config_schema);
+      const newSchema = implData.config_schema ?? {};
+      const oldSchema = this.currentConfigSchema();
+      this.currentConfigSchema.set(newSchema);
+      this.removeConfigFieldsForSchema(oldSchema);
+      this.addConfigFields(newSchema);
+      this.updateConfigFields(newSchema);
     }
   }
 
@@ -778,15 +777,13 @@ export class ConnectorsComponent implements OnInit {
   }
 
   private addConfigFields(schema: Record<string, ConfigSchemaField>): void {
-    this.removeConfigFields();
     for (const [key, field] of Object.entries(schema)) {
       const validators = field.required ? [Validators.required] : [];
       (this.connectorForm as any).addControl(key, this.fb.control(field.default ?? '', validators));
     }
   }
 
-  private removeConfigFields(): void {
-    const schema = this.currentConfigSchema();
+  private removeConfigFieldsForSchema(schema: Record<string, ConfigSchemaField>): void {
     for (const key of Object.keys(schema)) {
       if (this.connectorForm.contains(key)) {
         (this.connectorForm as any).removeControl(key);

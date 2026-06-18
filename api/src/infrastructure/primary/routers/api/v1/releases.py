@@ -28,7 +28,6 @@ RELEASE_OR_VERIFICATION_NOT_FOUND = "Release o verificación no encontradas"
 # Quitamos el prefix global para poder manejar tanto rutas de proyectos como de releases directas
 router = APIRouter(tags=["Releases"])
 
-# --- ESQUEMAS PYDANTIC > Sirven para validar y documentar las solicitudes y respuestas de la API. ---
 class ReleaseCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     name: str = Field(..., min_length=1, max_length=100)
@@ -420,6 +419,35 @@ async def verify_release(
         }
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.post("/api/v1/releases/{id}/cancel", status_code=status.HTTP_200_OK)
+async def cancel_verification(
+    id: UUID,
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.EXECUTE_VERIFICATION))],
+    _: Annotated[None, Depends(require_release_access())],
+    service: Annotated[IVerificationService, Depends(get_verification_service)],
+):
+    """ Cancela una verificación en curso y revierte la release a su estado anterior.
+
+    Atributos:
+        - id: ID de la release cuya verificación se quiere cancelar.
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: Instancia del servicio de verificaciones (inyección de dependencias).
+
+    Retorna:
+        - 200 OK si la verificación se cancela exitosamente
+        - 403 Forbidden si el usuario no tiene permiso
+        - 404 Not Found si la release no se encuentra
+        - 409 Conflict si la release no está en verificación
+    """
+    try:
+        cancelled = await service.cancel_verification(release_id=id)
+        return {"cancelled": cancelled}
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.get("/api/v1/releases/{id}/results")

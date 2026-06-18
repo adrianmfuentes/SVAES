@@ -10,6 +10,7 @@ from infrastructure.secondary.database.repositories.artifact_repository import _
 import uuid
 from typing import Optional, cast
 from infrastructure.secondary.database.models.project_model import ProjectModel
+from infrastructure.secondary.database.models.organization_model import OrganizationModel
 
 
 class SqlReleaseRepository(IReleaseRepository):
@@ -24,6 +25,8 @@ class SqlReleaseRepository(IReleaseRepository):
             profile_id=uuid.UUID(str(row.profile_id)) if row.profile_id else None,
             created_by=uuid.UUID(str(row.created_by)) if row.created_by else None,
             created_at=row.created_at,
+            pending_task_id=row.pending_task_id,
+            previous_status=ReleaseStatus(row.previous_status) if row.previous_status else None,
         )
 
     async def create(self, release: Release) -> None:
@@ -48,7 +51,23 @@ class SqlReleaseRepository(IReleaseRepository):
             release_row = result.scalar_one_or_none()
             if not release_row:
                 return None
+            proj_result = await session.execute(
+                select(ProjectModel.organization_id, ProjectModel.name)
+                .where(ProjectModel.id == release_row.project_id)
+            )
+            proj_row = proj_result.one_or_none()
+            org_id = proj_row.organization_id if proj_row else None
+            project_name = proj_row.name if proj_row else None
+            org_name = None
+            if org_id:
+                org_result = await session.execute(
+                    select(OrganizationModel.name).where(OrganizationModel.id == org_id)
+                )
+                org_name = org_result.scalar_one_or_none()
             release = self._release_from_row(release_row)
+            release.organization_id = uuid.UUID(str(org_id)) if org_id else None
+            release.organization_name = org_name
+            release.project_name = project_name
             artifact_result = await session.execute(
                 select(ArtifactModel).where(ArtifactModel.release_id == release_id)
             )
@@ -119,6 +138,25 @@ class SqlReleaseRepository(IReleaseRepository):
             return self._release_from_row(release_row)
 
 
+    async def update_pending_task(
+        self,
+        release_id: uuid.UUID,
+        task_id: Optional[str],
+        previous_status: Optional[ReleaseStatus] = None,
+    ) -> None:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(select(ReleaseModel).where(ReleaseModel.id == release_id))
+            release_row = result.scalar_one_or_none()
+            if not release_row:
+                raise EntityNotFoundError("Release no encontrado")
+
+            setattr(release_row, "pending_task_id", task_id)
+            if previous_status is not None:
+                setattr(release_row, "previous_status", previous_status.value if hasattr(previous_status, 'value') else previous_status)
+
+            await session.commit()
+
+
     async def delete(self, release_id: uuid.UUID) -> None:
         async with AsyncSessionLocal() as session:
             result = await session.execute(select(ReleaseModel).where(ReleaseModel.id == release_id))
@@ -126,7 +164,7 @@ class SqlReleaseRepository(IReleaseRepository):
             if not release_row:
                 raise EntityNotFoundError("Release no encontrado")
 
-            session.delete(release_row)
+            await session.delete(release_row)
             await session.commit()
 
 

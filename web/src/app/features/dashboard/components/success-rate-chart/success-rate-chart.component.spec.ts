@@ -5,7 +5,15 @@ import { SuccessRateChartComponent } from './success-rate-chart.component';
 import { TranslationService } from '../../../../core/i18n/translation.service';
 
 const tsMock = {
-  translateInstant: vi.fn((key: string) => key),
+  translateInstant: vi.fn((key: string) => {
+    const translations: Record<string, string> = {
+      'verdict.VALID': 'VALID',
+      'verdict.VALID_WITH_WARNINGS': 'WITH_WARNINGS',
+      'verdict.INVALID': 'INVALID',
+      'verdict.NOT_EVALUATED': 'NOT_EVALUATED',
+    };
+    return translations[key] ?? key;
+  }),
   currentLang: 'es',
   lang$: of('es'),
 };

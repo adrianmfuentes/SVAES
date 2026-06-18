@@ -36,6 +36,15 @@ class IReleaseRepository(ABC):
         pass
 
     @abstractmethod
+    async def update_pending_task(
+        self,
+        release_id: uuid.UUID,
+        task_id: Optional[str],
+        previous_status: Optional[ReleaseStatus] = None,
+    ) -> None:
+        pass
+
+    @abstractmethod
     async def delete(self, release_id: uuid.UUID) -> None:
         pass
 

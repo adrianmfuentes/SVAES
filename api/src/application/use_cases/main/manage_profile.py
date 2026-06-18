@@ -120,6 +120,8 @@ class ManageProfileUseCase:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
         if profile.is_system:
             raise ValidationError("El perfil del sistema no puede ser eliminado.")
+        if profile.is_default:
+            raise ValidationError("El perfil por defecto no puede ser eliminado.")
         await self._profile_repo.delete(profile_id)
 
 

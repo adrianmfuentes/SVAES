@@ -27,13 +27,13 @@ class JiraConnector(AtlassianAuthMixin, BaseHttpConnector):
         return None
 
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
-        return f"{self._get_base_url(config)}/rest/api/3/search"
+        return f"{self._get_base_url(config)}/rest/api/3/search/jql"
 
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
     ) -> Dict[str, Any] | None:
         return {
-            "jql": filter_params.get("jql", "updated >= -1d"),
+            "jql": filter_params.get("jql", "order by updated desc"),
             "maxResults": filter_params.get("max_results", 50),
         }
 

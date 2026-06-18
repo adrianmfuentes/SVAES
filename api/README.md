@@ -50,3 +50,5 @@ uvicorn src.main:app --reload
 | Templates | `/api/v1/templates` | Release templates |
 | Notifications | `/api/v1/notifications` | Channel config and preferences |
 | Admin | `/api/v1/admin` | User management, rules reload (U4 only) |
+| Audit | `/api/v1/audit` | Audit log viewer (MANAGER+) |
+| Access Requests | `/api/v1/access-requests` | Access request submissions and approval |

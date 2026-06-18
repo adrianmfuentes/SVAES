@@ -1,8 +1,9 @@
-import { Component, Input, OnChanges } from '@angular/core';
+import { Component, Input, OnChanges, inject } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartData, ChartOptions } from 'chart.js';
 import { TemporalPoint } from '../../services/dashboard.service';
 import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../../core/i18n/translation.service';
 
 @Component({
   selector: 'app-success-rate-chart',
@@ -12,6 +13,8 @@ import { TranslatePipe } from '../../../../core/i18n/translate.pipe';
   styleUrls: ['./success-rate-chart.component.scss'],
 })
 export class SuccessRateChartComponent implements OnChanges {
+  private readonly ts = inject(TranslationService);
+
   @Input() data: TemporalPoint[] = [];
   @Input() loading = false;
   @Input() error: string | null = null;
@@ -47,19 +50,19 @@ export class SuccessRateChartComponent implements OnChanges {
         labels: this.data.map((d) => d.date),
         datasets: [
           {
-            label: 'VALID',
+            label: this.ts.translateInstant('verdict.VALID'),
             data: this.data.map((d) => d.valid),
             backgroundColor: '#2A6B3C',
             borderWidth: 0,
           },
           {
-            label: 'WITH_WARNINGS',
+            label: this.ts.translateInstant('verdict.VALID_WITH_WARNINGS'),
             data: this.data.map((d) => d.with_warnings),
             backgroundColor: '#8B5E00',
             borderWidth: 0,
           },
           {
-            label: 'INVALID',
+            label: this.ts.translateInstant('verdict.INVALID'),
             data: this.data.map((d) => d.invalid),
             backgroundColor: '#8B1A1A',
             borderWidth: 0,

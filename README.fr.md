@@ -46,7 +46,7 @@ Concevoir et implémenter un système extensible et découplé capable de vérif
 | Composant        | État           |
 | ---------------- | ---------------- |
 | Backend FastAPI  | API REST complète avec tous les endpoints                 |
-| Frontend Angular | SPA avec authentification, dashboard, releases, connecteurs, profil, admin, i18n ES/EN, 2FA |
+| Frontend Angular | SPA avec authentification, dashboard, releases, connecteurs, profil, admin, i18n ES/EN, 2FA, design responsive, accessibilité WCAG 2.1 AA |
 | Moteur Rust      | Moteur complet dans engine/, évaluateur parallèle + 10 règles |
 | Worker Celery    | Worker réel dans verification_worker.py                     |
 | Connecteurs      | 20 connecteurs dans 5 catégories fonctionnelles                 |
@@ -340,6 +340,8 @@ Le système est pleinement opérationnel avec :
 - 20 implémentations de connecteurs dans 5 types fonctionnels
 - Frontend Angular avec authentification 2FA, dashboard, gestion des releases et connecteurs
 - Internationalisation ES/EN dans tous les modules frontend
+- Design responsive : sidebar hamburger ≤1024px, scroll horizontal sur les tableaux, grille collapssable ≤768px
+- Accessibilité WCAG 2.1 AA : skip links, ARIA, indicateurs couleur+texte, focus-visible
 - Isolation multi-tenant complète avec piste d'audit RGPD
 - RBAC avec rôles prédéfinis et personnalisés
 

@@ -182,6 +182,7 @@ interface Project {
     .cell-primary { font-weight: 500; }
     .cell-muted { color: var(--muted); }
     .data-table th.cell-actions-header, .data-table td.cell-actions { text-align: right !important; }
+    .data-table th.cell-actions-header { text-align: center !important; }
     .cell-actions { padding-right: var(--spacing-md); }
 
     .status-badge {
@@ -244,11 +245,10 @@ interface Project {
     }
 
     .cell-actions {
-      text-align: right;
       white-space: nowrap;
       display: flex;
       gap: var(--spacing-sm);
-      justify-content: flex-end;
+      justify-content: center;
       align-items: center;
     }
 

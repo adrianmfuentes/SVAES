@@ -10,6 +10,10 @@ class IVerificationService(ABC):
         pass
 
     @abstractmethod
+    async def cancel_verification(self, release_id: UUID) -> bool:
+        pass
+
+    @abstractmethod
     async def fetch_artifacts_via_connectors(self, release_id: UUID) -> List[dict]:
         pass
 

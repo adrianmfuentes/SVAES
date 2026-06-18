@@ -230,7 +230,7 @@ SVAES/
 │   └── deployment.md            # Production deployment guide
 ├── scripts/                     # Utility scripts
 ├── docker-compose.yml           # Base compose (6 services)
-├── docker-compose.override.yml  # Dev overrides
+├── docker-compose.dev.yml       # Dev overrides
 └── docker-compose.prod.yml      # Production overrides
 ```
 

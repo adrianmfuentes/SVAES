@@ -35,7 +35,10 @@ class GitLabConnector(BaseHttpConnector, BearerAuthMixin):
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
     ) -> Dict[str, Any] | None:
-        return {"state": filter_params.get("state", "opened"), "per_page": 50}
+        params: Dict[str, Any] = {"state": filter_params.get("state", "all"), "per_page": 50}
+        if filter_params.get("search"):
+            params["search"] = filter_params["search"]
+        return params
 
     def _get_list_json(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

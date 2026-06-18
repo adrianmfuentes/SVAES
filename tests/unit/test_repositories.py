@@ -61,7 +61,8 @@ _SENTINEL = object()
 # ── row builders ─────────────────────────────────────────────────────────────
 
 def _make_release_row(release_id=None, name="v1.0", version="1.0.0",
-                      project_id=None, status="BORRADOR", profile_id=_SENTINEL):
+                      project_id=None, status="BORRADOR", profile_id=_SENTINEL,
+                      previous_status=None):
     """Create a mock row resembling ReleaseModel.
     If profile_id is _SENTINEL (default), a random UUID str is assigned.
     Use profile_id=None explicitly to get None.
@@ -76,6 +77,7 @@ def _make_release_row(release_id=None, name="v1.0", version="1.0.0",
         row.profile_id = str(uuid4())
     else:
         row.profile_id = profile_id
+    row.previous_status = previous_status
     row.created_by = str(uuid4())
     row.created_at = datetime.now(timezone.utc)
     return row
@@ -358,12 +360,18 @@ class TestSqlReleaseRepository:
         rel_row = _make_release_row()
         art_row = _make_artifact_row()
         rel_result = _make_scalar_result(rel_row)
+        proj_row = MagicMock()
+        proj_row.organization_id = str(uuid4())
+        proj_row.name = "Test Project"
+        proj_result = MagicMock()
+        proj_result.one_or_none = MagicMock(return_value=proj_row)
+        org_result = _make_scalar_result("Test Org")
         art_scalars = MagicMock()
         art_scalars.all = MagicMock(return_value=[art_row])
         art_result = MagicMock()
         art_result.scalars = MagicMock(return_value=art_scalars)
 
-        session.execute = AsyncMock(side_effect=[rel_result, art_result])
+        session.execute = AsyncMock(side_effect=[rel_result, proj_result, org_result, art_result])
         with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_id(uuid4())
         assert result is not None
@@ -490,6 +498,7 @@ class TestSqlReleaseRepository:
         rel_row = _make_release_row()
         result = _make_scalar_result(rel_row)
         session.execute = AsyncMock(return_value=result)
+        session.delete = AsyncMock()
         with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once_with(rel_row)

@@ -204,7 +204,7 @@ interface ProbeResult<T> {
           <tbody>
             <tr *ngFor="let u of users()">
               <td><code class="mono-sm">{{ maskId(u.id) }}</code></td>
-              <td class="cell-muted">{{ u.role }}</td>
+              <td class="cell-muted">{{ ts.translateInstant('user_role.' + u.role) }}</td>
               <td>
                 <span class="status-badge" [class.badge-active]="u.is_active" [class.badge-inactive]="!u.is_active">
                   {{ u.is_active ? ('system.status_active' | t) : ('system.status_inactive' | t) }}
@@ -624,7 +624,7 @@ interface ProbeResult<T> {
 })
 export class SystemComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
-  private readonly ts = inject(TranslationService);
+  readonly ts = inject(TranslationService);
 
   loading = signal(true);
   apiVersion = signal<string | null>(null);

@@ -72,7 +72,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                 <td class="cell-primary">{{ p.name }}</td>
                 <td class="cell-muted">{{ p.description ?? '—' }}</td>
                 <td>{{ p.rules_count ?? '—' }}</td>
-                <td *ngIf="canManage" class="cell-actions">
+                <td *ngIf="canManage && !p.is_default" class="cell-actions">
                   <button class="btn-ghost" (click)="openEdit(p)">{{ 'common.edit' | t }}</button>
                   <button
                     class="btn-ghost btn-danger-ghost"
@@ -81,6 +81,9 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                   >
                     {{ deletingId() === p.id ? ('profiles.deleting' | t) : ('common.delete' | t) }}
                   </button>
+                </td>
+                <td *ngIf="canManage && p.is_default" class="cell-muted">
+                  {{ 'profiles.default_profile' | t }}
                 </td>
               </tr>
             </tbody>
@@ -111,7 +114,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
             </div>
           </div>
 
-          <div *ngIf="editingProfile()" class="rules-section">
+          <div *ngIf="editingProfile() && !editingProfile()!.is_default" class="rules-section">
             <div class="rules-section-header">
               <h4>{{ 'profiles.rules_label' | t }}</h4>
               <button type="button" class="btn-ghost btn-sm" (click)="openAddRule()">
@@ -125,7 +128,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                   <label for="rule-template">{{ 'profiles.rule_template' | t }}</label>
                   <select id="rule-template" [formControl]="ruleFormControl('rule_template')">
                     <option value="">-- {{ 'profiles.select_rule' | t }} --</option>
-                    <option *ngFor="let tmpl of ruleTemplates()" [value]="tmpl">{{ tmpl }}</option>
+                    <option *ngFor="let tmpl of ruleTemplates()" [value]="tmpl">{{ formatRuleName(tmpl) }}</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -150,10 +153,10 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
             <div class="rules-list" *ngIf="profileRules().length > 0">
               <div class="rule-item" *ngFor="let rule of profileRules()">
                 <div class="rule-info">
-                  <span class="rule-template">{{ rule.rule_template }}</span>
+                  <span class="rule-template">{{ formatRuleName(rule.rule_template) }}</span>
                   <span class="severity-badge" [ngClass]="'severity-' + rule.severity.toLowerCase()">{{ rule.severity }}</span>
                 </div>
-                <div class="rule-actions">
+                <div class="rule-actions" *ngIf="!editingProfile()!.is_default">
                   <button type="button" class="btn-ghost btn-xs" (click)="openEditRule(rule)">{{ 'common.edit' | t }}</button>
                   <button type="button" class="btn-ghost btn-danger-ghost btn-xs" (click)="deleteRule(rule)">{{ 'common.delete' | t }}</button>
                 </div>
@@ -591,7 +594,6 @@ export class ProfilesComponent implements OnInit {
 
   private orgId: string | null = null;
   readonly canManage = this.authService.getUserRole() === 'MANAGER';
-  /** @deprecated keep for template compat — always false on this route */
   readonly isAdmin = false;
 
   allProfiles = signal<Profile[]>([]);
@@ -701,6 +703,20 @@ export class ProfilesComponent implements OnInit {
 
   ruleFormControl(name: string): any {
     return this.ruleForm.get(name);
+  }
+
+  formatRuleName(template: string): string {
+    const translated = this.ts.translateInstant('rules.' + template);
+    if (translated && !translated.startsWith('rules.')) {
+      return translated;
+    }
+    return template
+      .replace(/_/g, ' ')
+      .replace(/has_/i, '')
+      .replace(/meets_/i, '')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   }
 
   submitRule(): void {

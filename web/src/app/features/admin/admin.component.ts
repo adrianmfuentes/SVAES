@@ -135,7 +135,7 @@ interface AccessRequest {
                 </td>
                 <td>
                   <span *ngIf="user.role === 'ADMIN'" class="role-fixed">{{ 'admin.global_admin_role' | t }}</span>
-                  <span *ngIf="user.role !== 'ADMIN'" class="role-text">{{ user.role }}</span>
+                  <span *ngIf="user.role !== 'ADMIN'" class="role-text">{{ ts.translateInstant('user_role.' + user.role) }}</span>
                 </td>
                 <td>
                   <span class="badge" [class.badge-active]="user.is_active" [class.badge-inactive]="!user.is_active">
@@ -197,7 +197,7 @@ interface AccessRequest {
                 <td class="cell-muted">{{ relativeDate(ar.created_at) }}</td>
                 <td>
                   <span class="badge" [class.badge-pending]="ar.status === 'PENDING'" [class.badge-approved]="ar.status === 'APPROVED'" [class.badge-rejected]="ar.status === 'REJECTED'">
-                    {{ ar.status === 'PENDING' ? 'Pending' : ar.status === 'APPROVED' ? 'Approved' : 'Rejected' }}
+                    {{ ts.translateInstant('access_request.' + ar.status) }}
                   </span>
                 </td>
               </tr>
@@ -707,7 +707,7 @@ interface AccessRequest {
 export class AdminComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
-  private readonly ts = inject(TranslationService);
+  readonly ts = inject(TranslationService);
 
   readonly currentUserId = this.authService.getUser()?.id ?? '';
 
@@ -841,7 +841,7 @@ export class AdminComponent implements OnInit {
       .get<AccessRequest[]>(`/api/v1/access-requests?status=${this.arStatus()}`)
       .pipe(
         catchError(() => {
-          this.arError.set('Error loading access requests');
+          this.arError.set(this.ts.translateInstant('admin.error_loading_access_requests'));
           return of([]);
         }),
       )

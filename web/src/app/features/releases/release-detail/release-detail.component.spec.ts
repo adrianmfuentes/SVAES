@@ -7,7 +7,31 @@ import { ReleaseDetailComponent } from './release-detail.component';
 import { TranslationService } from '../../../core/i18n/translation.service';
 
 const tsMock = {
-  translateInstant: vi.fn((key: string) => key),
+  translateInstant: vi.fn((key: string) => {
+    const translations: Record<string, string> = {
+      'verdict.VALID': 'VALID',
+      'verdict.VALID_WITH_WARNINGS': 'WITH_WARNINGS',
+      'verdict.INVALID': 'INVALID',
+      'verdict.NOT_EVALUATED': 'NOT_EVALUATED',
+      'verdict.WITH_WARNINGS': 'WITH_WARNINGS',
+      'verdict.WARNING': 'WARNING',
+      'verdict.FAILED': 'FAILED',
+      'verdict.PASSED': 'PASSED',
+      'verdict.ERROR': 'ERROR',
+      'verdict.SKIPPED': 'SKIPPED',
+      'rule_result.VALID': 'PASSED',
+      'rule_result.WITH_WARNINGS': 'WITH_WARNINGS',
+      'rule_result.INVALID': 'FAILED',
+      'rule_result.NOT_EVALUATED': 'NOT_EVALUATED',
+      'rule_result.WARNING': 'WARNING',
+      'rule_result.FAILED': 'FAILED',
+      'rule_result.PASSED': 'PASSED',
+      'rule_result.ERROR': 'ERROR',
+      'rule_result.SKIPPED': 'SKIPPED',
+      'admin.error_loading_access_requests': 'Error loading access requests',
+    };
+    return translations[key] ?? key;
+  }),
   currentLang: 'es',
   lang$: of('es'),
 };
@@ -241,7 +265,17 @@ describe('ReleaseDetailComponent', () => {
   });
 
   describe('launchVerification', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
     it('should POST verify and reload on success', () => {
+      vi.useFakeTimers();
+
+      const mockNotification = { permission: 'default', requestPermission: vi.fn().mockResolvedValue('granted') };
+      vi.stubGlobal('Notification', mockNotification);
+
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
       httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([]);
@@ -249,13 +283,18 @@ describe('ReleaseDetailComponent', () => {
 
       component.launchVerification();
       expect(component.verifying()).toBe(true);
-      httpCtrl.expectOne('/api/v1/releases/release-abc/verify').flush({ task_id: 't1', status: 'pending' });
-      expect(component.verifying()).toBe(false);
-      expect(component.loading()).toBe(true);
 
-      httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/verify').flush({ task_id: 't1', status: 'pending' });
+      httpCtrl.expectOne('/api/v1/tasks/t1').flush({});
+      httpCtrl.expectOne('/api/v1/releases/release-abc').flush({ ...mockRelease, status: 'valida' });
+
       httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([]);
       httpCtrl.expectOne('/api/v1/releases/release-abc/results').flush([mockResult]);
+      httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
+
+      expect(component.verifying()).toBe(false);
+
+      vi.useRealTimers();
     });
 
     it('should set error and stop verifying on failure', () => {

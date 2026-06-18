@@ -46,7 +46,7 @@ Design and implement an extensible, decoupled system capable of automatically ve
 | Component        | Status         |
 | ---------------- | -------------- |
 | FastAPI Backend  | Full REST API with all endpoints                          |
-| Angular Frontend | SPA with auth, dashboard, releases, connectors, profile, admin, i18n ES/EN, 2FA |
+| Angular Frontend | SPA with auth, dashboard, releases, connectors, profile, admin, i18n ES/EN, 2FA, responsive design, WCAG 2.1 AA accessibility |
 | Rust Engine      | Complete engine in engine/, parallel evaluator + 10 rules |
 | Celery Worker    | Real worker in verification_worker.py                     |
 | Connectors       | 20 connectors in 5 functional categories                  |
@@ -340,6 +340,8 @@ The system is fully operational with:
 - 20 connector implementations across 5 functional types
 - Angular frontend with 2FA authentication, dashboard, release and connector management
 - ES/EN internationalisation across all frontend modules
+- Responsive design: hamburger sidebar ≤1024px, horizontal table scroll, grid collapse at ≤768px
+- WCAG 2.1 AA accessibility: skip links, ARIA roles, colour+text status indicators, focus-visible
 - Complete multi-tenant isolation with GDPR audit trail
 - RBAC with predefined and custom roles
 

@@ -54,8 +54,11 @@ class VerificationService(IVerificationService):
         if not release.artifacts or len(release.artifacts) == 0:
             raise ValidationError("No se puede verificar una release sin artefactos asociados.")
 
+        previous_status = release.status
+        await self._release_repo.update_pending_task(release_id, None, previous_status)
         await self._release_repo.update_status(release_id, ReleaseStatus.EN_VERIFICACION)
         task_id = await self._task_queue.enqueue_verification_task(release_id)
+        await self._release_repo.update_pending_task(release_id, task_id, None)
 
         audit = get_audit_logger()
         audit.log(AuditEntry(
@@ -69,6 +72,28 @@ class VerificationService(IVerificationService):
         _log.info("Verification launched: release=%s task=%s", release_id, task_id)
 
         return task_id
+
+
+    async def cancel_verification(self, release_id: UUID) -> bool:
+        release = await self._release_repo.get_by_id(release_id)
+        if not release:
+            raise ValidationError(_RELEASE_NOT_FOUND)
+
+        if release.status != ReleaseStatus.EN_VERIFICACION:
+            raise ValidationError(
+                f"No se puede cancelar la verificación. La release está en estado {release.status.value}."
+            )
+
+        task_id = release.pending_task_id
+        if task_id:
+            await self._task_queue.cancel_task(task_id)
+
+        previous_status = release.previous_status or ReleaseStatus.PENDIENTE
+        await self._release_repo.update_status(release_id, previous_status)
+        await self._release_repo.update_pending_task(release_id, None, None)
+
+        _log.info("Verification cancelled: release=%s", release_id)
+        return True
 
 
     async def fetch_artifacts_via_connectors(self, release_id: UUID) -> List[dict]:

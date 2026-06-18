@@ -98,6 +98,8 @@ web/
 | **Audit logs**             | Done    | Audit log viewer with filtering. |
 | **Profile settings**       | Done    | User profile with 2FA setup, password change, data export. |
 | **i18n (ES/EN)**           | Done    | Full internationalization across all modules. |
+| **Responsive design**      | Done    | Hamburger sidebar ≤1024px, horizontal table scroll, grid collapse at ≤768px across all components. |
+| **Accessibility (WCAG 2.1 AA)** | Done | Skip links, ARIA roles/labels, `scope=col` on tables, `role=alert` on live regions, focus-visible, sr-only helpers, colour+text status indicators. |
 
 ---
 

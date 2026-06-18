@@ -14,11 +14,6 @@ from core.logger import get_logger
 
 _log = get_logger(__name__)
 
-"""
-Este módulo define el servicio de usuario, que es responsable de gestionar los usuarios dentro del sistema. Incluye la lógica de negocio para obtener 
-un usuario por ID, actualizar el perfil de un usuario, cambiar la contraseña, listar los usuarios de una organización, invitar a un nuevo usuario a 
-una organización, actualizar el rol de un usuario dentro de una organización, y eliminar a un usuario de una organización.
-"""
 class UserService(IUserService):
     def __init__(
         self,

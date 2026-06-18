@@ -74,11 +74,11 @@ interface Release {
               class="clickable-row"
             >
               <td><code class="mono-sm">{{ r.id | slice:0:8 }}</code></td>
-              <td class="cell-primary">{{ r.name ?? '—' }}</td>
-              <td *ngIf="isAdmin" class="cell-muted">{{ r.organization_name ?? '—' }}</td>
+              <td class="cell-primary">{{ r.name || ('common.dash' | t) }}</td>
+              <td *ngIf="isAdmin" class="cell-muted">{{ r.organization_name || ('common.dash' | t) }}</td>
               <td>
                 <span class="verdict-badge" [ngClass]="verdictClass(r.verdict)">
-                  {{ r.verdict || 'NOT_EVALUATED' }}
+                  {{ (r.verdict ? ('verdict.' + r.verdict | t) : ('verdict.NOT_EVALUATED' | t)) }}
                 </span>
               </td>
               <td class="cell-muted">{{ r.created_at | date:'dd MMM yyyy, HH:mm' }}</td>

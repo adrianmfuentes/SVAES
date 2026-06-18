@@ -192,3 +192,173 @@ class ConnectorService(IConnectorService):
             raise EntityNotFoundError(f"Conector no encontrado: {connector_id}")
         connector.status = status
         return await self._connector_repo.update(connector)
+
+
+    async def browse_connector_items(
+        self, connector_id: UUID, query: str = ""
+    ) -> List[dict]:
+        from cryptography.fernet import Fernet
+        connector = await self._connector_repo.get_by_id(connector_id)
+        if not connector:
+            raise EntityNotFoundError(f"Conector no encontrado: {connector_id}")
+
+        try:
+            connector_impl = self._connector_registry.get_by_implementation(
+                connector.connector_implementation
+            )
+        except KeyError:
+            raise ValidationError(
+                f"Implementación '{connector.connector_implementation}' no soportada"
+            )
+
+        fernet = Fernet(settings.encryption_key.encode())  # pyright: ignore[reportOptionalMemberAccess]
+        try:
+            config = eval(fernet.decrypt(connector.encrypted_credentials).decode())
+        except Exception as exc:
+            _log.error("browse: credential decrypt failed connector_id=%s: %s", connector_id, exc)
+            return []
+
+        filter_params: dict = {}
+        if query:
+            impl_upper = connector.connector_implementation.upper()
+            escaped = query.replace('"', '\\"')
+            if impl_upper in ("JIRA", "JIRA_SM"):
+                filter_params["jql"] = (
+                    f'text ~ "{escaped}" OR fixVersion = "{escaped}" ORDER BY updated DESC'
+                )
+            elif impl_upper == "CONFLUENCE":
+                filter_params["cql"] = f'text ~ "{escaped}" order by lastmodified desc'
+            elif impl_upper in ("GITLAB", "GITHUB", "GITEA", "BITBUCKET"):
+                filter_params["search"] = query
+            elif impl_upper in ("CLICKUP", "PLANE", "TAIGA"):
+                filter_params["query_text"] = query
+            else:
+                filter_params["query"] = query
+
+        try:
+            raw_items = await connector_impl.list_artifacts(filter_params, config)
+        except Exception as exc:
+            _log.warning(
+                "browse: list_artifacts failed connector_id=%s impl=%s: %s",
+                connector_id, connector.connector_implementation, exc,
+            )
+            return []
+
+        try:
+            return _normalize_browse_items(raw_items, connector.connector_implementation, config)
+        except Exception as exc:
+            _log.warning(
+                "browse: normalization failed connector_id=%s impl=%s: %s",
+                connector_id, connector.connector_implementation, exc,
+            )
+            return []
+
+
+def _normalize_browse_items(items: list, implementation: str, config: dict) -> list:
+    impl = implementation.upper()
+    result = []
+    for item in items:
+        try:
+            entry = _map_item(item, impl, config)
+            if entry and entry.get("ref"):
+                result.append(entry)
+        except Exception:
+            continue
+    return result
+
+
+def _map_item(item: dict, impl: str, config: dict) -> dict:
+    if impl == "JIRA":
+        fields = item.get("fields", {})
+        return {
+            "ref": item.get("key", ""),
+            "title": fields.get("summary", ""),
+            "subtitle": (fields.get("status") or {}).get("name", ""),
+        }
+    if impl == "JIRA_SM":
+        fields = item.get("fields", {})
+        return {
+            "ref": item.get("key", ""),
+            "title": fields.get("summary", ""),
+            "subtitle": (fields.get("status") or {}).get("name", ""),
+        }
+    if impl in ("GITHUB", "GITEA"):
+        owner = config.get("owner", "")
+        repo = config.get("repo", "")
+        number = item.get("number", "")
+        return {
+            "ref": f"{owner}/{repo}/{number}",
+            "title": item.get("title", ""),
+            "subtitle": item.get("state", ""),
+        }
+    if impl == "GITLAB":
+        project_id = config.get("project_id", "")
+        return {
+            "ref": f"{project_id}/{item.get('iid', '')}",
+            "title": item.get("title", ""),
+            "subtitle": item.get("state", ""),
+        }
+    if impl == "BITBUCKET":
+        owner = config.get("owner", "")
+        repo = config.get("repo", "")
+        pr_id = item.get("id", "")
+        return {
+            "ref": f"{owner}/{repo}/{pr_id}",
+            "title": item.get("title", ""),
+            "subtitle": (item.get("state") or "").lower(),
+        }
+    if impl == "CONFLUENCE":
+        return {
+            "ref": item.get("id", ""),
+            "title": item.get("title", ""),
+            "subtitle": item.get("type", ""),
+        }
+    if impl == "LINEAR":
+        state = item.get("state") or {}
+        return {
+            "ref": item.get("identifier", ""),
+            "title": item.get("title", ""),
+            "subtitle": state.get("name", "") if isinstance(state, dict) else "",
+        }
+    if impl == "ASANA":
+        return {
+            "ref": item.get("gid", ""),
+            "title": item.get("name", ""),
+            "subtitle": "",
+        }
+    if impl == "TRELLO":
+        return {
+            "ref": item.get("id", ""),
+            "title": item.get("name", ""),
+            "subtitle": "",
+        }
+    if impl in ("CLICKUP", "PLANE", "TAIGA"):
+        status = item.get("status", "")
+        subtitle = status.get("status", "") if isinstance(status, dict) else str(status)
+        return {
+            "ref": str(item.get("id", "")),
+            "title": item.get("name", "") or item.get("title", ""),
+            "subtitle": subtitle,
+        }
+    if impl == "NOTION":
+        props = item.get("properties", {})
+        title_prop = props.get("Name", props.get("title", {}))
+        title_arr = title_prop.get("title", []) if isinstance(title_prop, dict) else []
+        title = title_arr[0].get("text", {}).get("content", "") if title_arr else ""
+        return {"ref": item.get("id", ""), "title": title, "subtitle": ""}
+    if impl in ("WIKIJS", "BOOKSTACK"):
+        return {
+            "ref": str(item.get("id", "")),
+            "title": item.get("title", "") or item.get("name", ""),
+            "subtitle": "",
+        }
+    if impl in ("GLPI", "ZAMMAD", "REDMINE"):
+        return {
+            "ref": str(item.get("id", "")),
+            "title": item.get("name", "") or item.get("title", "") or item.get("subject", ""),
+            "subtitle": str(item.get("status", "")),
+        }
+    # Generic fallback
+    ref = str(item.get("id", "") or item.get("key", "") or item.get("ref", ""))
+    title = str(item.get("name", "") or item.get("title", "") or item.get("summary", "") or ref)
+    return {"ref": ref, "title": title, "subtitle": ""}

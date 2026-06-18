@@ -1,7 +1,7 @@
 # Security & Compliance Audit Report — SVAES
 
 **Scope:** Full application (`api/`, `engine/`, `web/`, `tests/`, `docs/`, CI/CD, configuration)  
-**Date:** 2026-05-18 (updated 2026-06-02)  
+**Date:** 2026-05-18 (updated 2026-06-18)  
 **Status:** Active  
 
 ---

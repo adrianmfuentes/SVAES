@@ -11,8 +11,21 @@
 }
 
 @keyframes rowReveal {
-  from { opacity: 0; transform: translateX(-0.5rem); }
-  to   { opacity: 1; transform: translateX(0); }
+  0%   { opacity: 0; transform: translateX(-0.75rem); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes progressFill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+@keyframes windowScanPulse {
+  0%   { box-shadow: 0 1.5rem 3rem rgba(13, 15, 18, 0.08), 0 0.375rem 1rem rgba(13, 15, 18, 0.05); }
+  22%  { box-shadow: 0 1.5rem 3rem rgba(13, 15, 18, 0.1), 0 0.375rem 1rem rgba(13, 15, 18, 0.06), 0 0 0 0.125rem rgba(232, 213, 163, 0.65), 0 0 2.5rem rgba(232, 213, 163, 0.22); }
+  44%  { box-shadow: 0 1.5rem 3rem rgba(13, 15, 18, 0.08), 0 0.375rem 1rem rgba(13, 15, 18, 0.05); }
+  65%  { box-shadow: 0 1.5rem 3rem rgba(13, 15, 18, 0.09), 0 0.375rem 1rem rgba(13, 15, 18, 0.05), 0 0 0 0.125rem rgba(232, 213, 163, 0.4), 0 0 1.75rem rgba(232, 213, 163, 0.15); }
+  100% { box-shadow: 0 1.5rem 3rem rgba(13, 15, 18, 0.08), 0 0.375rem 1rem rgba(13, 15, 18, 0.05); }
 }
 
 @keyframes shimmer {
@@ -214,7 +227,9 @@
   box-shadow:
     0 1.5rem 3rem rgba(13, 15, 18, 0.08),
     0 0.375rem 1rem rgba(13, 15, 18, 0.05);
-  animation: float 7s ease-in-out infinite 1.8s;
+  animation:
+    float 7s ease-in-out infinite 1.8s,
+    windowScanPulse 2.6s ease-in-out 0.5s 1;
 }
 
 .mock-window-bar {
@@ -224,6 +239,19 @@
   padding: 0.75rem 1.25rem;
   border-bottom: 0.0625rem solid var(--border);
   background: var(--paper-secondary);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 0.1875rem;
+    width: 0;
+    background: linear-gradient(to right, var(--accent-dark) 0%, rgba(232, 213, 163, 0.45) 100%);
+    animation: progressFill 1.3s cubic-bezier(0.4, 0, 0.2, 1) both 0.5s;
+    z-index: 1;
+  }
 }
 
 .mock-window-title {
@@ -308,9 +336,11 @@
     background: linear-gradient(
       to bottom,
       transparent 0%,
-      rgba(232, 213, 163, 0.1) 25%,
-      rgba(232, 213, 163, 0.22) 50%,
-      rgba(232, 213, 163, 0.1) 75%,
+      rgba(232, 213, 163, 0.04) 25%,
+      rgba(232, 213, 163, 0.32) 47%,
+      rgba(232, 213, 163, 0.55) 50%,
+      rgba(232, 213, 163, 0.32) 53%,
+      rgba(232, 213, 163, 0.04) 75%,
       transparent 100%
     );
     pointer-events: none;
@@ -332,9 +362,14 @@
   > span {
     font-size: 0.8125rem;
     color: var(--ink);
-    padding: 0.6875rem 1.25rem;
+    padding: 0.6875rem 0.875rem;
     white-space: nowrap;
-    flex: 1;
+    flex: 0 0 auto;
+    min-width: 0;
+
+    &:first-child  { padding-left: 1.25rem; }
+    &:last-child   { padding-right: 1.25rem; }
+    &:nth-child(2) { flex: 1; overflow: hidden; text-overflow: ellipsis; }
   }
 
   &:last-child { border-bottom: none; }
@@ -686,6 +721,7 @@
 
   .mock-window { animation: none !important; }
   .mock-verdict-badge { animation: none !important; }
+  .mock-window-bar::after { animation: none !important; width: 100% !important; opacity: 0.3 !important; }
 
   .landing-access-text,
   .access-step {

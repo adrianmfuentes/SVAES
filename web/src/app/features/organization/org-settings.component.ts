@@ -66,7 +66,6 @@ interface OrgUser {
                   >
                     <option value="VIEWER">{{ 'org_settings.role_viewer' | t }}</option>
                     <option value="OPERATOR">{{ 'org_settings.role_operator' | t }}</option>
-                    <option value="MANAGER">{{ 'org_settings.role_manager' | t }}</option>
                   </select>
                   <span *ngIf="member.role === 'MANAGER'" class="role-owner">{{ 'org_settings.role_owner' | t }}</span>
                   <span *ngIf="member.id === currentUserId && member.role !== 'MANAGER'" class="role-text">{{ 'org_settings.role_' + member.role.toLowerCase() | t }}</span>
@@ -639,7 +638,7 @@ export class OrgSettingsComponent implements OnInit {
 
   ngOnInit(): void {
     if (!this.orgId) {
-      this.membersError.set('No organization found for current user');
+      this.membersError.set(this.ts.translateInstant('org_settings.no_organization'));
       this.membersLoading.set(false);
       return;
     }

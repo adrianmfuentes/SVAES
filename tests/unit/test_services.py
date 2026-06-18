@@ -2881,11 +2881,14 @@ class TestProfileServiceWrappers:
         """Branch: ProfileService.update_rule → delegates + audits"""
         service, profile_repo, rule_repo = svc
         from domain.entities.verification_rule import VerificationRule
+        from domain.entities.verification_profile import VerificationProfile
         from domain.enums import SeverityType
 
         rule = VerificationRule(profile_id=uuid4(), rule_template="RV01", severity=SeverityType.HIGH)
+        profile = VerificationProfile(id=rule.profile_id, organization_id=uuid4(), name="test", is_default=False)
         rule_repo.get_by_id = AsyncMock(return_value=rule)
         rule_repo.update = AsyncMock(return_value=rule)
+        profile_repo.get_by_id = AsyncMock(return_value=profile)
 
         result = await service.update_rule(rule.id, severity=SeverityType.LOW)
         assert result.severity == SeverityType.LOW
@@ -2894,11 +2897,14 @@ class TestProfileServiceWrappers:
         """Branch: ProfileService.delete_rule → delegates"""
         service, profile_repo, rule_repo = svc
         from domain.entities.verification_rule import VerificationRule
+        from domain.entities.verification_profile import VerificationProfile
         from domain.enums import SeverityType
 
         rule = VerificationRule(profile_id=uuid4(), rule_template="RV01", severity=SeverityType.HIGH)
+        profile = VerificationProfile(id=rule.profile_id, organization_id=uuid4(), name="test", is_default=False)
         rule_repo.get_by_id = AsyncMock(return_value=rule)
         rule_repo.delete = AsyncMock()
+        profile_repo.get_by_id = AsyncMock(return_value=profile)
 
         await service.delete_rule(rule.id, uuid4())
         rule_repo.delete.assert_awaited_once()

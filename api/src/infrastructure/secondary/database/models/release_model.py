@@ -17,6 +17,8 @@ class ReleaseModel(Base):
     created_by = Column(PG_UUID(as_uuid=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    pending_task_id = Column(String(100), nullable=True)
+    previous_status = Column(String(50), nullable=True)
 
     __table_args__ = (
         # Asegura que no haya dos releases con la misma versión dentro del mismo proyecto

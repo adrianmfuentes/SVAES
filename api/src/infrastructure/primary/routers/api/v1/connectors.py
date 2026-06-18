@@ -208,6 +208,7 @@ async def list_connectors(
             {
                 "id": str(c.id),
                 "connector_type": c.connector_type,
+                "connector_implementation": c.connector_implementation,
                 "name": c.name,
                 "status": c.status.value,
                 "created_at": c.created_at.isoformat(),
@@ -434,3 +435,21 @@ async def test_connector(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
+@router.get("/api/v1/organizations/{org_id}/connectors/{connector_id}/browse")
+async def browse_connector_items(
+    org_id: UUID,
+    connector_id: UUID,
+    current_user: Annotated[CurrentUser, Depends(require_org_access())],
+    _: Annotated[None, Depends(require_connector_access())],
+    service: Annotated[IConnectorService, Depends(get_connector_service)],
+    q: str = "",
+):
+    """Lista items del sistema externo del conector para facilitar la selección en formularios."""
+    try:
+        return await service.browse_connector_items(connector_id=connector_id, query=q)
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))

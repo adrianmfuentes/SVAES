@@ -114,7 +114,10 @@ class BaseHttpConnector(ABC):
             response = await self._get(url, config, self._get_list_params(filter_params, config))
         response.raise_for_status()
         data = response.json()
-        return data.get(self._get_results_key(), [])
+        key = self._get_results_key()
+        if not key:
+            return data if isinstance(data, list) else []
+        return data.get(key, []) if isinstance(data, dict) else []
 
 
 class BearerAuthMixin:

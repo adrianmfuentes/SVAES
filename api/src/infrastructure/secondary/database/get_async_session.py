@@ -22,7 +22,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
-        yield session # yield permite que el consumidor use la sesión y luego se asegura de cerrarla después de su uso.
+        yield session
         
 
     

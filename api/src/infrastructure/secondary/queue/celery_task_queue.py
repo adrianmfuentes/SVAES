@@ -11,7 +11,6 @@ class CeleryTaskQueue(ITaskQueue):
         result = celery_app.send_task(
             "infrastructure.workers.verification_worker.run_verification",
             args=[str(release_id)],
-            queue="verification",
         )
         return result.id
 

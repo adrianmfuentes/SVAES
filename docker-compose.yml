@@ -146,6 +146,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      engine:
+        condition: service_healthy
     networks:
       - svaes-network
 

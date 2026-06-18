@@ -37,9 +37,10 @@ class ClickUpConnector(BaseHttpConnector):
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
     ) -> Dict[str, Any] | None:
         list_id = config.get("list_id")
-        if list_id:
-            return {"subtasks": "false"}
-        return {"include_subtasks": "false"}
+        params: Dict[str, Any] = {"subtasks": "false"} if list_id else {"include_subtasks": "false"}
+        if filter_params.get("query_text"):
+            params["query"] = filter_params["query_text"]
+        return params
 
     def _get_list_json(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

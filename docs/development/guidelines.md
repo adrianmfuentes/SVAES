@@ -232,6 +232,8 @@ The following routers are connected in `api/src/main.py`:
 | templates_router | v1/templates | Release templates |
 | notifications_router | v1/notifications | Notification configuration |
 | admin_router | v1/admin | Administration operations |
+| audit_router | v1/audit | Audit log queries (MANAGER+) |
+| access_requests_router | v1/access_requests | Access request submissions and approval |
 
 ---
 

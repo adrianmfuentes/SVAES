@@ -25,10 +25,7 @@ pub fn check_api_key(req: &HttpRequest, state: &web::Data<AppState>) -> bool {
 }
 
 #[get("/health")]
-pub async fn health_handler(req: HttpRequest, state: web::Data<AppState>) -> impl Responder {
-    if !check_api_key(&req, &state) {
-        return HttpResponse::Unauthorized().json(serde_json::json!({"error": "Unauthorized"}));
-    }
+pub async fn health_handler(state: web::Data<AppState>) -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "healthy",
         "service": "svaes-engine",

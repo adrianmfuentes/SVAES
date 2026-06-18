@@ -12,15 +12,8 @@ from domain.exceptions import ValidationError
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from core.logger import get_logger
 
-_log = get_logger(__name__) 
+_log = get_logger(__name__)
 
-"""
-Clase de servicio (Use Case) que implementa la lógica de negocio para gestionar releases y sus artifacts.
-Se encarga de validar datos, interactuar con los repositorios para persistencia y aplicar las reglas de negocio relacionadas con releases.
-
-Recibe datos desde el controlador (API) y utiliza los repositorios para acceder a la base de datos
-Implementa el puerto de entrada IReleaseService, que define las operaciones disponibles para gestionar releases.
-"""
 class CreateReleaseUseCase(IReleaseService):
     def __init__(self, release_repository: IReleaseRepository, project_repository: IProjectRepository, profile_repository: IProfileRepository):
         self.release_repository = release_repository
@@ -37,7 +30,7 @@ class CreateReleaseUseCase(IReleaseService):
         profile_id: Optional[UUID] = None,
     ) -> Release:
         if not self._is_valid_semver(version):
-            raise ValidationError("La versión debe cumplir SemVer 2.0.0") # Semver es un estándar de versionado
+            raise ValidationError("La versión debe cumplir SemVer 2.0.0")
 
         project = await self.project_repository.get_by_id(project_id)
         if not project:
@@ -152,7 +145,7 @@ class CreateReleaseUseCase(IReleaseService):
         if not release:
             raise ValidationError("No se encontró el release asociado al artifact.")
         
-        release.artifacts = [a for a in release.artifacts if a.id != artifact_id] # Creamos una nueva lista sin el artifact a eliminar
+        release.artifacts = [a for a in release.artifacts if a.id != artifact_id]
         await self.release_repository.update(release)
         await self.release_repository.delete_artifact(artifact_id)
     

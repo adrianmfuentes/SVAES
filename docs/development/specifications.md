@@ -36,16 +36,16 @@ Role hierarchy: `VIEWER < OPERATOR < MANAGER < ADMIN`.
 - Fully isolated organizations (`organization_id` mandatory on all queries).
 - Stateless JWT authentication with refresh token in DB.
 - RBAC enforced at the HTTP adapter.
-- AES-256-GCM encryption of connector credentials.
+- Fernet (AES-128-CBC) authenticated encryption of connector credentials at rest.
 - GDPR and OWASP Top 10 (2021) compliance.
 
 ### Epic 2 — Release Management (FEAT-03)
-- Lifecycle: `DRAFT → PENDING → IN_VERIFICATION → COMPLETED | REJECTED`.
+- Lifecycle: `BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA | NO_VALIDA | CON_ADVERTENCIAS | ARCHIVADA`.
 - Typed artifacts: `TASK`, `CODE`, `DOCUMENT`.
 - Reusable release templates per organization.
 
 ### Epic 3 — Connectors (FEAT-04)
-- `IConnector` port with operations: `get_artifact`, `check_connectivity`, `list_artifacts`.
+- `IConnector` port with operations: `fetch_artifact`, `list_artifacts`, `test_connection`, `get_metadata`.
 - Reference connectors: generic task manager, generic code repository,
   generic documentation system.
 - Configurable timeout per connector. Rules on `INACTIVE` connector → `NOT_EVALUATED`.
@@ -90,20 +90,20 @@ as a secondary indicator.
 
 ## 5. Verification Rule Catalog (RV-01 to RV-10)
 
-| ID | Name | Default Severity | Required Connector |
+| ID | Name | Default Severity | Description |
 |---|---|---|---|
-| RV-01 | Artifact existence | ERROR | Any active connector |
-| RV-02 | Task states | ERROR | Task manager |
-| RV-03 | Documentation coverage | ERROR | Documentation connector |
-| RV-04 | Version coherence | ERROR | All active connectors |
-| RV-05 | Absence of blocking items | ERROR | Task manager |
-| RV-06 | Metadata completeness | WARNING | Any active connector |
-| RV-07 | Bidirectional traceability | WARNING | Task manager |
-| RV-08 | Artifact age | WARNING | Any active connector |
-| RV-09 | External reference uniqueness | ERROR | Any active connector |
-| RV-10 | Customizable rule (JSONPath/JMESPath) | Configurable | Configurable |
+| RV-01 | Artifact Existence | BLOCKING | Artifact list must not be empty |
+| RV-02 | Artifact Traceability | BLOCKING | Code artifacts (`CODIGO`) must reference existing tasks (`TAREA`) |
+| RV-03 | Artifact State | BLOCKING | All artifacts of a given type must have an allowed status (e.g. `DONE`, `CLOSED`) |
+| RV-04 | Numeric Field Integrity | BLOCKING | Numeric fields (e.g. `effort`, `estimation`) must be non-null and ≥ 0 |
+| RV-05 | Document Accessibility | BLOCKING | At least one artifact of a given type must have an accessibility flag set to `true` |
+| RV-06 | Attribute Coherence | NON_BLOCKING | Compares a metadata attribute (e.g. `version`) across artifacts of the same type against an expected value |
+| RV-07 | External Registration | BLOCKING | A marker artifact indicating external registration is complete must be present |
+| RV-08 | List Alignment | BLOCKING | IDs declared in a master artifact must match actual artifact IDs in the payload |
+| RV-09 | Reference Validation | NON_BLOCKING | Validates URL and branch name format correctness |
+| RV-10 | Final Approval | BLOCKING | At least one artifact must have an approval status (e.g. `APPROVED`, `VALIDATED`) |
 
-New rules can be added without modifying the engine (NFR-33).
+Severity levels: `BLOCKING` (mandatory — failure → `INVALID`), `NON_BLOCKING` (optional — failure → `WITH_WARNINGS`), `EXCLUDED` (skipped → `NOT_EVALUATED`).
 
 ---
 
@@ -114,7 +114,7 @@ New rules can be added without modifying the engine (NFR-33).
 | NFR-01 | Usable user interface without specific training. |
 | NFR-03 | API documented with OpenAPI; auto-generated client. |
 | NFR-04 | JWT authentication + RBAC + rate limiting. |
-| NFR-05 | GDPR compliance; AES-256-GCM credential encryption. |
+| NFR-05 | GDPR compliance; Fernet (AES-128-CBC) credential encryption. |
 | NFR-06 | Verification time < 5 s for standard profiles (10 rules, 3 connectors). |
 | NFR-07 | Reliability: engine must not produce false negatives in deterministic rules. |
 | NFR-08 | Reproducible deployment with Docker Compose. |
@@ -166,8 +166,8 @@ can be found in section 4.8 of the SRS.
 
 All tests follow the **Plan de Pruebas** structured according to **ISO 29119-4** with unique test case identifiers. See `docs/development/testing.md` for the complete test case catalog.
 
-**Connected Routers (14 total):**
-- auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin
+**Connected Routers (15 total):**
+- auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin, audit, access_requests
 
 **Endpoints per router:** 65+ endpoints implemented
 

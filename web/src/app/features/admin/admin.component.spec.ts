@@ -8,7 +8,12 @@ import { TranslationService } from '../../core/i18n/translation.service';
 import { provideRouter } from '@angular/router';
 
 const tsMock = {
-  translateInstant: vi.fn((key: string) => key),
+  translateInstant: vi.fn((key: string) => {
+    const translations: Record<string, string> = {
+      'admin.error_loading_access_requests': 'Error loading access requests',
+    };
+    return translations[key] ?? key;
+  }),
   currentLang: 'es',
   lang$: of('es'),
 };
