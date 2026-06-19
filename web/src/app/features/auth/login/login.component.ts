@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
@@ -558,6 +558,7 @@ export class LoginComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -602,6 +603,7 @@ export class LoginComponent implements OnInit {
       .pipe(
         finalize(() => {
           this.loading = false;
+          this.cdr.detectChanges();
         }),
         catchError((err: HttpErrorResponse) => {
           this.errorKey = parseLoginErrorKey(err);
@@ -617,11 +619,13 @@ export class LoginComponent implements OnInit {
           if (response.requires_2fa) {
             this.pendingTotpToken = response.totp_token ?? null;
             this.totpRequired = true;
+            this.cdr.detectChanges();
             return;
           }
 
           if (!response.access_token) {
             this.errorKey = 'login.error.unexpected_response';
+            this.cdr.detectChanges();
             return;
           }
 
@@ -648,6 +652,7 @@ export class LoginComponent implements OnInit {
       .pipe(
         finalize(() => {
           this.loading = false;
+          this.cdr.detectChanges();
         }),
         catchError((err: HttpErrorResponse) => {
           this.errorKey = parseLoginErrorKey(err);
@@ -658,6 +663,7 @@ export class LoginComponent implements OnInit {
         next: (response) => {
           if (!response?.access_token) {
             this.errorKey = 'login.error.unexpected_response';
+            this.cdr.detectChanges();
             return;
           }
           this.authService.storeTokens(response, this.pendingEmail);
