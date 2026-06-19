@@ -9,6 +9,7 @@ class Artifact:
     connector_implementation: str
     artifact_type: str
     external_ref: str
+    description: str = ""
     metadata: dict = field(default_factory=dict)
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

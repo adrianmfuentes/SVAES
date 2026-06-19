@@ -14,5 +14,6 @@ class ArtifactModel(Base):
     connector_implementation = Column(String(50), nullable=False)
     artifact_type = Column(String(20), nullable=False, default=ArtifactType.TAREA.value)
     external_ref = Column(String(500), nullable=False)
+    description = Column(String(1000), nullable=True, default="")
     artifact_metadata = Column('metadata', JSON, nullable=True, default=dict)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))

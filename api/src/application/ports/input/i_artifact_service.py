@@ -19,6 +19,7 @@ class IArtifactService(ABC):
         connector_implementation: str,
         artifact_type: ArtifactType,
         external_ref: str,
+        description: str = "",
         metadata: Optional[dict] = None,
     ) -> Artifact:
         pass

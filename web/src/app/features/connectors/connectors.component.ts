@@ -604,10 +604,10 @@ export class ConnectorsComponent implements OnInit {
     this.selectedImplementation.set(null);
     this.availableImplementations.set([]);
     const oldSchema = this.currentConfigSchema();
+    this.removeConfigFieldsForSchema(oldSchema);
     this.currentConfigSchema.set({});
     this.configFields.set([]);
     this.connectorForm.reset({ name: '', connectorType: '', connectorImplementation: '' });
-    this.removeConfigFieldsForSchema(oldSchema);
     this.modalError.set(null);
     this.showModal.set(true);
   }
@@ -615,6 +615,19 @@ export class ConnectorsComponent implements OnInit {
   openEdit(c: Connector): void {
     this.editingConnector.set(c);
     this.modalError.set(null);
+    const oldSchema = this.currentConfigSchema();
+    this.removeConfigFieldsForSchema(oldSchema);
+    this.currentConfigSchema.set({});
+    this.configFields.set([]);
+    this.connectorForm.reset({ name: c.name, connectorType: '', connectorImplementation: '' });
+    this.selectedType.set(c.type);
+    this.selectedImplementation.set(null);
+    this.availableImplementations.set([]);
+    this.connectorForm.patchValue({ connectorType: c.type });
+    const types = this.connectorTypes()?.by_type;
+    if (types?.[c.type]) {
+      this.availableImplementations.set(types[c.type]);
+    }
     this.showModal.set(true);
   }
 

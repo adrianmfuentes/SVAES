@@ -2,10 +2,7 @@
   <a class="skip-link" href="#main-content">{{ 'a11y.skip_to_main' | t }}</a>
 
   <header class="landing-header">
-    <div class="landing-logo">
-      SVAES
-      <span class="landing-logo-badge">beta</span>
-    </div>
+    <div class="landing-logo">SVAES</div>
     <nav class="landing-nav" aria-label="{{ 'landing.aria_nav_main' | t }}">
       <span class="landing-nav-tagline">{{ 'landing.tagline' | t }}</span>
       <app-lang-toggle theme="light" />
@@ -65,31 +62,31 @@
                 <span class="mock-id">RV-01</span>
                 <span>Artifact count</span>
                 <span class="mock-connector">GitLab</span>
-                <span class="mock-badge mock-valid">✓ VALID</span>
+                <span class="mock-cell-result"><span class="mock-badge mock-valid">✓ VALID</span></span>
               </div>
               <div class="mock-row mock-row-2">
                 <span class="mock-id">RV-02</span>
                 <span>Build status</span>
                 <span class="mock-connector">Jenkins</span>
-                <span class="mock-badge mock-valid">✓ VALID</span>
+                <span class="mock-cell-result"><span class="mock-badge mock-valid">✓ VALID</span></span>
               </div>
               <div class="mock-row mock-row-3">
                 <span class="mock-id">RV-03</span>
                 <span>Code coverage</span>
                 <span class="mock-connector">SonarQube</span>
-                <span class="mock-badge mock-invalid">✕ INVALID</span>
+                <span class="mock-cell-result"><span class="mock-badge mock-invalid">✕ INVALID</span></span>
               </div>
               <div class="mock-row mock-row-4">
                 <span class="mock-id">RV-04</span>
                 <span>Security scan</span>
                 <span class="mock-connector">Trivy</span>
-                <span class="mock-badge mock-warning">⚠ WARNING</span>
+                <span class="mock-cell-result"><span class="mock-badge mock-warning">⚠ WARNING</span></span>
               </div>
               <div class="mock-row mock-row-5">
                 <span class="mock-id">RV-05</span>
                 <span>Approval gate</span>
                 <span class="mock-connector">GitHub</span>
-                <span class="mock-badge mock-checking">● CHECKING</span>
+                <span class="mock-cell-result"><span class="mock-badge mock-checking">● CHECKING</span></span>
               </div>
             </div>
           </div>

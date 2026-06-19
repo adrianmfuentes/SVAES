@@ -17,6 +17,7 @@ def _artifact_from_row(row: ArtifactModel) -> Artifact:
         connector_implementation=cast(str, row.connector_implementation),
         artifact_type=cast(str, row.artifact_type),
         external_ref=cast(str, row.external_ref),
+        description=cast(str, row.description) or "",
         metadata=cast(dict, row.artifact_metadata) or {},
         created_at=cast(datetime, row.created_at),
     )
@@ -32,6 +33,7 @@ class SqlArtifactRepository(IArtifactRepository):
                 connector_implementation=artifact.connector_implementation,
                 artifact_type=getattr(artifact.artifact_type, 'value', artifact.artifact_type),
                 external_ref=artifact.external_ref,
+                description=artifact.description,
                 metadata=artifact.metadata,
                 created_at=artifact.created_at,
             )

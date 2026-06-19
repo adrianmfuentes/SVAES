@@ -9,13 +9,15 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { setAccessToken } from '../../../core/services/auth.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { finalize, Subscription } from 'rxjs';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../core/i18n/translation.service';
 
 interface ActivateResponse {
   access_token: string;
+  refresh_token?: string;
+  token_type?: string;
 }
 
 interface PasswordChecks {
@@ -146,7 +148,14 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                       (click)="showPassword.set(!showPassword())"
                       [attr.aria-label]="showPassword() ? 'Ocultar' : 'Mostrar'"
                     >
-                      {{ showPassword() ? '🙈' : '👁' }}
+                      <svg *ngIf="!showPassword()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                      <svg *ngIf="showPassword()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -185,7 +194,14 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                       (click)="showConfirm.set(!showConfirm())"
                       [attr.aria-label]="showConfirm() ? 'Ocultar' : 'Mostrar'"
                     >
-                      {{ showConfirm() ? '🙈' : '👁' }}
+                      <svg *ngIf="!showConfirm()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                      <svg *ngIf="showConfirm()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                      </svg>
                     </button>
                   </div>
                   <div
@@ -629,6 +645,7 @@ export class ActivateAccountComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly ts = inject(TranslationService);
+  private readonly authService = inject(AuthService);
 
   readonly activateForm = this.fb.group(
     {
@@ -706,7 +723,7 @@ export class ActivateAccountComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.activationSuccess = true;
-          setAccessToken(response.access_token);
+          this.authService.storeTokens({ requires_2fa: false, ...response }, '');
           setTimeout(() => this.router.navigate(['/app/dashboard']), 300);
         },
         error: (err: HttpErrorResponse) => {

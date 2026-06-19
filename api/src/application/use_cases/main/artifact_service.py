@@ -38,6 +38,7 @@ class ArtifactService(IArtifactService):
         connector_implementation: str,
         artifact_type: ArtifactType,
         external_ref: str,
+        description: str = "",
         metadata: Optional[dict] = None,
     ) -> Artifact:
         release = await self._release_repo.get_by_id(release_id)
@@ -50,6 +51,7 @@ class ArtifactService(IArtifactService):
             connector_implementation=connector_implementation,
             artifact_type=artifact_type.value if hasattr(artifact_type, "value") else artifact_type,
             external_ref=external_ref,
+            description=description,
             metadata=metadata or {},
         )
         return await self._artifact_repo.save(artifact)

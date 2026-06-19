@@ -341,7 +341,8 @@ async def add_artifact(
             connector_implementation=payload.connector_implementation,
             artifact_type=payload.artifact_type,
             external_ref=payload.external_ref,
-            metadata=payload.metadata or ({"description": payload.description} if payload.description else None)
+            description=payload.description,
+            metadata=payload.metadata,
         )
         return {"id": artifact.id}
     except ValidationError as e:
@@ -655,7 +656,8 @@ async def import_artifacts(
                 connector_implementation=artifact_data.connector_implementation,
                 artifact_type=artifact_data.artifact_type,
                 external_ref=artifact_data.external_ref,
-                metadata=artifact_data.metadata or ({"description": artifact_data.description} if artifact_data.description else None),
+                description=artifact_data.description,
+                metadata=artifact_data.metadata,
             )
             imported.append({"id": str(artifact.id), "external_ref": artifact.external_ref})
         return {"imported": imported, "count": len(imported)}
