@@ -8,7 +8,7 @@ import { timeoutInterceptor } from './core/interceptors/timeout.interceptor';
 import { TranslationService } from './core/i18n/translation.service';
 import { firstValueFrom } from 'rxjs';
 
-function initializeTranslations(): Promise<void> {
+export function initializeTranslations(): Promise<void> {
   const ts = inject(TranslationService);
   return firstValueFrom(ts.loadTranslationsWithCache(ts.currentLang)).then(() => undefined);
 }
