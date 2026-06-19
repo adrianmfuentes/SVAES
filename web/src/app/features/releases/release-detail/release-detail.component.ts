@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogComponent } from '../../../core/components/confirm-dialog/confirm-dialog.component';
 import { catchError, debounceTime, distinctUntilChanged, forkJoin, of, Subject, Subscription, switchMap } from 'rxjs';
 
 interface ReleaseDetail {
@@ -90,7 +91,7 @@ interface VerificationResult {
 @Component({
   selector: 'app-release-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslatePipe],
+  imports: [CommonModule, RouterModule, TranslatePipe, ConfirmDialogComponent],
   template: `
     <div class="detail-page">
       <div class="page-header">
@@ -544,6 +545,17 @@ interface VerificationResult {
         </div>
       }
     </div>
+
+    @if (artifactToDelete()) {
+      <app-confirm-dialog
+        [title]="ts.translateInstant('release.confirm_delete_artifact_title')"
+        [message]="ts.translateInstant('release.confirm_delete_artifact_message')"
+        [confirmText]="ts.translateInstant('common.delete')"
+        [cancelText]="ts.translateInstant('common.cancel')"
+        (confirmed)="confirmDeleteArtifact()"
+        (cancelled)="artifactToDelete.set(null)">
+      </app-confirm-dialog>
+    }
   `,
   styles: [`
     :host { display: block; }
@@ -1577,6 +1589,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   release = signal<ReleaseDetail | null>(null);
   artifacts = signal<Artifact[]>([]);
+  artifactToDelete = signal<string | null>(null);
   latestResult = signal<VerificationResult | null>(null);
   verificationHistory = signal<VerificationResult[]>([]);
   loading = signal(true);
@@ -1933,16 +1946,25 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   }
 
   deleteArtifact(artifactId: string): void {
-    if (!confirm(this.ts.translateInstant('release.confirm_delete_artifact'))) return;
+    this.artifactToDelete.set(artifactId);
+  }
+
+  confirmDeleteArtifact(): void {
+    const artifactId = this.artifactToDelete();
+    if (!artifactId) return;
+    this.artifactToDelete.set(null);
+    
     this.http.delete(`/api/v1/releases/${this.releaseId}/artifacts/${artifactId}`)
       .pipe(
         catchError((err) => {
+          this.toast.error(this.ts.translateInstant('release.artifact_delete_error'));
           return of(null);
         }),
       )
       .subscribe((result) => {
         if (result !== null) {
           this.artifacts.update(list => list.filter(a => a.id !== artifactId));
+          this.toast.success(this.ts.translateInstant('release.artifact_delete_success'));
         }
       });
   }

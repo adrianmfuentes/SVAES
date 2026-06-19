@@ -98,11 +98,12 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                 <p class="step-desc">{{ 'activate.step1_desc' | t }}</p>
 
                 <div class="form-group">
-                  <label for="activationCode">{{ 'activate.code_label' | t }}</label>
+                  <label for="activationCode">{{ 'activate.code_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                   <input
                     id="activationCode"
                     type="text"
                     formControlName="activation_code"
+                    aria-required="true"
                     [placeholder]="'activate.code_placeholder' | t"
                     autocomplete="off"
                     spellcheck="false"
@@ -134,13 +135,14 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                 <p class="step-desc">{{ 'activate.step2_desc' | t }}</p>
 
                 <div class="form-group">
-                  <label for="password">{{ 'activate.password_label' | t }}</label>
+                  <label for="password">{{ 'activate.password_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                   <div class="input-wrap">
                     <input
                       id="password"
                       [type]="showPassword() ? 'text' : 'password'"
                       formControlName="password"
                       autocomplete="new-password"
+                      aria-required="true"
                     />
                     <button
                       type="button"
@@ -180,13 +182,14 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                 </div>
 
                 <div class="form-group">
-                  <label for="passwordConfirm">{{ 'activate.confirm_label' | t }}</label>
+                  <label for="passwordConfirm">{{ 'activate.confirm_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                   <div class="input-wrap">
                     <input
                       id="passwordConfirm"
                       [type]="showConfirm() ? 'text' : 'password'"
                       formControlName="password_confirm"
                       autocomplete="new-password"
+                      aria-required="true"
                     />
                     <button
                       type="button"
@@ -410,6 +413,12 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--ink);
+    }
+
+    .required-star {
+      color: var(--verdict-invalid);
+      margin-left: 0.25rem;
+      font-size: 0.75rem;
     }
 
     .input-wrap {

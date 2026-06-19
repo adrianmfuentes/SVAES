@@ -43,11 +43,12 @@ interface Profile {
           @if (!profilesLoading()) {
             <form [formGroup]="form" (ngSubmit)="submit()">
               <div class="form-group">
-                <label for="proj-name">{{ 'project_new.name_label' | t }}</label>
+                <label for="proj-name">{{ 'project_new.name_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                 <input
                   id="proj-name"
                   type="text"
                   formControlName="name"
+                  aria-required="true"
                   [placeholder]="'project_new.name_placeholder' | t"
                   autocomplete="off"
                 />
@@ -76,8 +77,8 @@ interface Profile {
               </div>
 
               <div class="form-group">
-                <label for="proj-profile">{{ 'project_new.profile_label' | t }}</label>
-                <select id="proj-profile" formControlName="profile_id">
+                <label for="proj-profile">{{ 'project_new.profile_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                <select id="proj-profile" formControlName="profile_id" aria-required="true">
                   @for (p of profiles(); track p.id) {
                     <option [value]="p.id">
                       {{ p.name }}{{ p.is_system ? (' — ' + ('project_new.profile_system_tag' | t)) : '' }}
@@ -184,6 +185,12 @@ interface Profile {
       text-transform: none;
       letter-spacing: 0;
       color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .required-star {
+      color: var(--verdict-invalid);
+      margin-left: 0.25rem;
       font-size: 0.75rem;
     }
 

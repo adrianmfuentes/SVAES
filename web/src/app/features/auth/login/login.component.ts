@@ -102,12 +102,13 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
               </div>
 
               <div class="form-group">
-                <label for="email">{{ 'login.email_label' | t }}</label>
+                <label for="email">{{ 'login.email_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                 <input
                   id="email"
                   type="email"
                   formControlName="email"
                   autocomplete="email"
+                  aria-required="true"
                   [placeholder]="'login.email_placeholder' | t"
                   [class.input-error]="fieldHasError('email')"
                 />
@@ -120,12 +121,13 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
               </div>
 
               <div class="form-group">
-                <label for="password">{{ 'login.password_label' | t }}</label>
+                <label for="password">{{ 'login.password_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                 <input
                   id="password"
                   type="password"
                   formControlName="password"
                   autocomplete="current-password"
+                  aria-required="true"
                   [placeholder]="'login.password_placeholder' | t"
                   [class.input-error]="fieldHasError('password')"
                 />
@@ -165,13 +167,14 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
               </div>
 
               <div class="form-group">
-                <label for="totp-code">{{ 'login.2fa_code_label' | t }}</label>
+                <label for="totp-code">{{ 'login.2fa_code_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                 <input
                   id="totp-code"
                   type="text"
                   inputmode="numeric"
                   formControlName="code"
                   autocomplete="one-time-code"
+                  aria-required="true"
                   [placeholder]="'login.2fa_code_placeholder' | t"
                   [class.input-error]="totpForm.get('code')?.invalid && totpForm.get('code')?.touched"
                   maxlength="6"
@@ -388,6 +391,12 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
         text-transform: uppercase;
         color: var(--ink);
         margin-bottom: var(--spacing-xs);
+      }
+
+      .required-star {
+        color: var(--verdict-invalid);
+        margin-left: 0.25rem;
+        font-size: 0.75rem;
       }
 
       .form-group input {

@@ -1023,7 +1023,16 @@
   "release.select_connector_error": "Select a connector and enter the reference",
   "release.import_error": "Error importing",
   "release.confirm_delete_artifact": "Delete this delivery?",
+  "release.confirm_delete_artifact_title": "Delete artifact",
+  "release.confirm_delete_artifact_message": "Are you sure you want to delete this artifact? This action cannot be undone.",
+  "release.artifact_delete_success": "Artifact deleted successfully",
+  "release.artifact_delete_error": "Failed to delete artifact",
   "release.description_label": "Description",
   "common.dash": "—",
-  "common.placeholder_dash": "—"
+  "common.placeholder_dash": "—",
+  "common.delete": "Delete",
+  "common.confirm": "Confirm",
+  "common.cancel": "Cancel",
+  "a11y.cancel_and_close": "Cancel and close dialog",
+  "a11y.confirm_action": "Confirm action"
 }

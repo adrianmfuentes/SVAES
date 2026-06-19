@@ -101,12 +101,13 @@ function generateSlug(name: string): string {
                 <h2 class="card-title">{{ 'access_request.step1' | t }}</h2>
 
                 <div class="form-group">
-                  <label for="requester-name">{{ 'access_request.first_name' | t }}</label>
+                  <label for="requester-name">{{ 'access_request.first_name' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                   <input
                     id="requester-name"
                     type="text"
                     formControlName="requester_name"
                     autocomplete="name"
+                    aria-required="true"
                     placeholder="Jane Smith"
                     [class.input-error]="fieldHasError('requester_name')"
                   />
@@ -116,12 +117,13 @@ function generateSlug(name: string): string {
                 </div>
 
                 <div class="form-group">
-                  <label for="requester-email">{{ 'access_request.email' | t }}</label>
+                  <label for="requester-email">{{ 'access_request.email' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                   <input
                     id="requester-email"
                     type="email"
                     formControlName="requester_email"
                     autocomplete="email"
+                    aria-required="true"
                     [placeholder]="'login.email_placeholder' | t"
                     [class.input-error]="fieldHasError('requester_email')"
                   />
@@ -143,12 +145,13 @@ function generateSlug(name: string): string {
                 <h2 class="card-title">{{ 'access_request.step2' | t }}</h2>
 
                 <div class="form-group">
-                  <label for="org-name">{{ 'access_request.org_name' | t }}</label>
+                  <label for="org-name">{{ 'access_request.org_name' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                   <input
                     id="org-name"
                     type="text"
                     formControlName="organization_name"
                     placeholder="Acme Corp"
+                    aria-required="true"
                     (input)="updateSlug()"
                     [class.input-error]="fieldHasError('organization_name')"
                   />
@@ -427,6 +430,12 @@ function generateSlug(name: string): string {
         color: var(--muted);
         opacity: 0.8;
         margin-left: 0.25rem;
+      }
+
+      .required-star {
+        color: var(--verdict-invalid);
+        margin-left: 0.25rem;
+        font-size: 0.75rem;
       }
 
       .form-group input,

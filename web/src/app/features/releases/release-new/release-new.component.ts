@@ -53,8 +53,8 @@ interface Project {
               <form [formGroup]="form" (ngSubmit)="submit()">
                 @if (!isEditMode()) {
                   <div class="form-group">
-                    <label for="project-id">{{ 'release_new.project_label' | t }}</label>
-                    <select id="project-id" formControlName="project_id">
+                    <label for="project-id">{{ 'release_new.project_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                    <select id="project-id" formControlName="project_id" aria-required="true">
                       <option value="">{{ 'release_new.project_placeholder' | t }}</option>
                       @for (p of projects(); track p.id) {
                         <option [value]="p.id">{{ p.name }}</option>
@@ -67,11 +67,12 @@ interface Project {
                 }
 
                 <div class="form-group">
-                  <label for="name">{{ 'release_new.name_label' | t }}</label>
+                  <label for="name">{{ 'release_new.name_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                   <input
                     id="name"
                     type="text"
                     formControlName="name"
+                    aria-required="true"
                     [placeholder]="'release_new.name_placeholder' | t"
                     autocomplete="off"
                   />
@@ -84,11 +85,12 @@ interface Project {
                 </div>
 
                 <div class="form-group">
-                  <label for="version">{{ 'release_new.version_label' | t }}</label>
+                  <label for="version">{{ 'release_new.version_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                   <input
                     id="version"
                     type="text"
                     formControlName="version"
+                    aria-required="true"
                     placeholder="1.4.2"
                     autocomplete="off"
                   />
@@ -207,6 +209,12 @@ interface Project {
       text-transform: none;
       letter-spacing: 0;
       color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .required-star {
+      color: var(--verdict-invalid);
+      margin-left: 0.25rem;
       font-size: 0.75rem;
     }
 

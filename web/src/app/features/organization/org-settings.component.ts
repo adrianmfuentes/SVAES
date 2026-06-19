@@ -100,17 +100,18 @@ interface OrgUser {
           <button class="modal-close" (click)="closeInviteModal()">×</button>
         </div>
         <div class="form-group">
-          <label for="invite-email">{{ 'common.email' | t }}</label>
+          <label for="invite-email">{{ 'common.email' | t }}<span class="required-star" aria-hidden="true">*</span></label>
           <input
             id="invite-email"
             type="email"
             [(ngModel)]="inviteEmail"
+            aria-required="true"
             [placeholder]="'login.email_placeholder' | t"
           />
         </div>
         <div class="form-group">
-          <label for="invite-role">{{ 'common.role' | t }}</label>
-          <select id="invite-role" [(ngModel)]="inviteRole" class="form-group select">
+          <label for="invite-role">{{ 'common.role' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+          <select id="invite-role" [(ngModel)]="inviteRole" class="form-group select" aria-required="true">
             <option value="VIEWER">{{ 'org_settings.role_viewer' | t }}</option>
             <option value="OPERATOR">{{ 'org_settings.role_operator' | t }}</option>
             <option value="MANAGER">{{ 'org_settings.role_manager' | t }}</option>
@@ -136,8 +137,8 @@ interface OrgUser {
         </div>
         <p class="modal-body-text transfer-warning">{{ 'org_settings.transfer_warning' | t }}</p>
         <div class="form-group">
-          <label for="transfer-target">{{ 'org_settings.transfer_select_label' | t }}</label>
-          <select id="transfer-target" [(ngModel)]="transferTargetId" class="form-group select">
+          <label for="transfer-target">{{ 'org_settings.transfer_select_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+          <select id="transfer-target" [(ngModel)]="transferTargetId" class="form-group select" aria-required="true">
             <option value="">{{ 'org_settings.transfer_select_placeholder' | t }}</option>
             <option *ngFor="let m of nonOwnerMembers()" [value]="m.id">
               {{ m.display_name }} ({{ 'org_settings.role_' + m.role.toLowerCase() | t }})
@@ -549,6 +550,12 @@ interface OrgUser {
       text-transform: uppercase;
       color: var(--ink);
       margin-bottom: var(--spacing-xs);
+    }
+
+    .required-star {
+      color: var(--verdict-invalid);
+      margin-left: 0.25rem;
+      font-size: 0.75rem;
     }
 
     .form-group input[type=text],

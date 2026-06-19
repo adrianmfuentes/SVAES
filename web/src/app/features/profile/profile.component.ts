@@ -59,11 +59,12 @@ interface UserProfile {
 
           <form [formGroup]="nameForm" (ngSubmit)="saveName()">
             <div class="form-group">
-              <label for="display-name">{{ 'profile_page.display_name_label' | t }}</label>
+              <label for="display-name">{{ 'profile_page.display_name_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
               <input
                 id="display-name"
                 type="text"
                 formControlName="display_name"
+                aria-required="true"
                 [placeholder]="'profile_page.display_name_placeholder' | t"
               />
               <div class="field-error" *ngIf="nameForm.get('display_name')?.hasError('required') && nameForm.get('display_name')?.touched">
@@ -95,11 +96,12 @@ interface UserProfile {
 
           <form *ngIf="!orgCreated()" [formGroup]="orgForm" (ngSubmit)="createOrg()">
             <div class="form-group">
-              <label for="org-name">{{ 'common.name' | t }}</label>
+              <label for="org-name">{{ 'common.name' | t }}<span class="required-star" aria-hidden="true">*</span></label>
               <input
                 id="org-name"
                 type="text"
                 formControlName="name"
+                aria-required="true"
                 [placeholder]="'profile_page.org_name_placeholder' | t"
                 (input)="autoSlug()"
               />
@@ -109,11 +111,12 @@ interface UserProfile {
             </div>
 
             <div class="form-group">
-              <label for="org-slug">{{ 'profile_page.slug_label' | t }}</label>
+              <label for="org-slug">{{ 'profile_page.slug_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
               <input
                 id="org-slug"
                 type="text"
                 formControlName="slug"
+                aria-required="true"
                 [placeholder]="'profile_page.slug_placeholder' | t"
               />
               <div class="field-hint">{{ 'profile_page.slug_hint' | t }}</div>
@@ -141,23 +144,25 @@ interface UserProfile {
 
           <form [formGroup]="pwForm" (ngSubmit)="savePassword()">
             <div class="form-group">
-              <label for="current-pw">{{ 'profile_page.current_password' | t }}</label>
+              <label for="current-pw">{{ 'profile_page.current_password' | t }}<span class="required-star" aria-hidden="true">*</span></label>
               <input
                 id="current-pw"
                 type="password"
                 formControlName="current_password"
                 autocomplete="current-password"
+                aria-required="true"
                 [placeholder]="'profile_page.current_pw_placeholder' | t"
               />
             </div>
 
             <div class="form-group">
-              <label for="new-pw">{{ 'profile_page.new_password' | t }}</label>
+              <label for="new-pw">{{ 'profile_page.new_password' | t }}<span class="required-star" aria-hidden="true">*</span></label>
               <input
                 id="new-pw"
                 type="password"
                 formControlName="new_password"
                 autocomplete="new-password"
+                aria-required="true"
                 [placeholder]="'profile_page.new_pw_placeholder' | t"
               />
               <div class="field-error" *ngIf="pwForm.get('new_password')?.hasError('minlength') && pwForm.get('new_password')?.touched">
@@ -166,12 +171,13 @@ interface UserProfile {
             </div>
 
             <div class="form-group">
-              <label for="confirm-pw">{{ 'profile_page.confirm_password' | t }}</label>
+              <label for="confirm-pw">{{ 'profile_page.confirm_password' | t }}<span class="required-star" aria-hidden="true">*</span></label>
               <input
                 id="confirm-pw"
                 type="password"
                 formControlName="confirm_password"
                 autocomplete="new-password"
+                aria-required="true"
                 [placeholder]="'profile_page.confirm_pw_placeholder' | t"
               />
               <div class="field-error" *ngIf="pwForm.errors?.['mismatch'] && pwForm.get('confirm_password')?.touched">
@@ -223,12 +229,13 @@ interface UserProfile {
               </div>
               <form [formGroup]="totpEnableForm" (ngSubmit)="enableTotp()">
                 <div class="form-group" style="margin-top: var(--spacing-md);">
-                  <label for="totp-enable-code">{{ 'profile_page.2fa_code_label' | t }}</label>
+                  <label for="totp-enable-code">{{ 'profile_page.2fa_code_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                   <input
                     id="totp-enable-code"
                     type="text"
                     inputmode="numeric"
                     formControlName="code"
+                    aria-required="true"
                     maxlength="6"
                     [placeholder]="'profile_page.2fa_code_placeholder' | t"
                   />
@@ -254,12 +261,13 @@ interface UserProfile {
           <div *ngIf="profile()?.totp_enabled">
             <form [formGroup]="totpDisableForm" (ngSubmit)="disableTotp()">
               <div class="form-group" style="margin-top: var(--spacing-md);">
-                <label for="totp-disable-code">{{ 'profile_page.2fa_code_label' | t }}</label>
+                <label for="totp-disable-code">{{ 'profile_page.2fa_code_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                 <input
                   id="totp-disable-code"
                   type="text"
                   inputmode="numeric"
                   formControlName="code"
+                  aria-required="true"
                   maxlength="6"
                   [placeholder]="'profile_page.2fa_code_placeholder' | t"
                 />
@@ -334,11 +342,12 @@ interface UserProfile {
             <form [formGroup]="keyForm" (ngSubmit)="createKey()">
               <div class="key-form-row">
                 <div class="form-group form-group-flex">
-                  <label for="key-name">{{ 'profile_page.key_name' | t }}</label>
+                  <label for="key-name">{{ 'profile_page.key_name' | t }}<span class="required-star" aria-hidden="true">*</span></label>
                   <input
                     id="key-name"
                     type="text"
                     formControlName="name"
+                    aria-required="true"
                     [placeholder]="'profile_page.key_name_placeholder' | t"
                     autocomplete="off"
                   />
@@ -690,6 +699,12 @@ interface UserProfile {
       text-transform: none;
       letter-spacing: 0;
       color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .required-star {
+      color: var(--verdict-invalid);
+      margin-left: 0.25rem;
       font-size: 0.75rem;
     }
 

@@ -105,8 +105,8 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
         <form [formGroup]="profileForm" (ngSubmit)="submitProfile()">
           <div class="form-row">
             <div class="form-group">
-              <label for="prof-name">{{ 'profiles.name_label' | t }}</label>
-              <input id="prof-name" type="text" formControlName="name" [placeholder]="'profiles.template_placeholder' | t" />
+              <label for="prof-name">{{ 'profiles.name_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+              <input id="prof-name" type="text" formControlName="name" aria-required="true" [placeholder]="'profiles.template_placeholder' | t" />
             </div>
             <div class="form-group">
               <label for="prof-desc">{{ 'common.description' | t }}</label>
@@ -125,15 +125,15 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
             <div *ngIf="showRuleForm()" class="rule-form">
               <div class="form-row">
                 <div class="form-group">
-                  <label for="rule-template">{{ 'profiles.rule_template' | t }}</label>
-                  <select id="rule-template" [formControl]="ruleFormControl('rule_template')">
+                  <label for="rule-template">{{ 'profiles.rule_template' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                  <select id="rule-template" [formControl]="ruleFormControl('rule_template')" aria-required="true">
                     <option value="">-- {{ 'profiles.select_rule' | t }} --</option>
                     <option *ngFor="let tmpl of ruleTemplates()" [value]="tmpl">{{ formatRuleName(tmpl) }}</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label for="rule-severity">{{ 'profiles.severity_label' | t }}</label>
-                  <select id="rule-severity" [formControl]="ruleFormControl('severity')">
+                  <label for="rule-severity">{{ 'profiles.severity_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                  <select id="rule-severity" [formControl]="ruleFormControl('severity')" aria-required="true">
                     <option value="INFO">INFO</option>
                     <option value="LOW">LOW</option>
                     <option value="MEDIUM">MEDIUM</option>
@@ -556,6 +556,12 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
       text-transform: uppercase;
       color: var(--ink);
       margin-bottom: var(--spacing-xs);
+    }
+
+    .required-star {
+      color: var(--verdict-invalid);
+      margin-left: 0.25rem;
+      font-size: 0.75rem;
     }
 
     .form-group input {

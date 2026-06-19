@@ -1023,7 +1023,16 @@
   "release.select_connector_error": "Selecciona un conector e introduce la referencia",
   "release.import_error": "Error al importar",
   "release.confirm_delete_artifact": "Eliminar esta entrega?",
+  "release.confirm_delete_artifact_title": "Eliminar artefacto",
+  "release.confirm_delete_artifact_message": "Estas seguro de que quieres eliminar este artefacto? Esta accion no se puede deshacer.",
+  "release.artifact_delete_success": "Artofacto eliminado correctamente",
+  "release.artifact_delete_error": "Error al eliminar el artefacto",
   "release.description_label": "Descripcion",
   "common.dash": "—",
-  "common.placeholder_dash": "—"
+  "common.placeholder_dash": "—",
+  "common.delete": "Eliminar",
+  "common.confirm": "Confirmar",
+  "common.cancel": "Cancelar",
+  "a11y.cancel_and_close": "Cancelar y cerrar dialogo",
+  "a11y.confirm_action": "Confirmar accion"
 }
