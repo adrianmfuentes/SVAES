@@ -19,17 +19,6 @@ acceptance/     E2E acceptance tests — 10 Cypress cases (TC-ACP-*): visual, mu
 | TC-ACP | 10 | Cypress E2E + Usability |
 | Engine | 8 HTTP + inline | Rust `#[cfg(test)]` in all 11 source files |
 
-## Cobertura actual: 70%
-
-Configuracion de exclusiones en `.coveragerc`, `api/pyproject.toml` y `sonar-project.properties`:
-- Puntos de entrada (`main.py`, `celery_app.py`)
-- Ficheros de configuracion (`core/config.py`, `infrastructure/config/*`, `infrastructure/settings*`)
-- `__init__.py` que solo reexportan simbolos
-- Migraciones (`*/alembic/versions/*`, `*/alembic/env.py`, `*/migrations/*`)
-- Ficheros auto-generados (`*.egg-info/*`)
-
-Para el motor Rust: `--ignore-filename-regex "main\.rs$"` en `cargo llvm-cov` (script: `scripts/run_rust_coverage.ps1`).
-
 ## Run
 
 ### Python

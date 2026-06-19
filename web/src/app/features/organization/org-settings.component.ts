@@ -702,7 +702,8 @@ export class OrgSettingsComponent implements OnInit {
         select.value = member.role;
         return of(null);
       }))
-      .subscribe(() => {
+      .subscribe(res => {
+        if (res === null) return;
         this.members.update(members => members.map(m =>
           m.id === member.id ? { ...m, role: newRole } : m
         ));
@@ -748,7 +749,7 @@ export class OrgSettingsComponent implements OnInit {
   }
 
   confirmTransfer(): void {
-    if (!this.transferTargetId) return;
+    if (!this.transferTargetId || this.transferring()) return;
     this.transferring.set(true);
     this.transferError.set(null);
 

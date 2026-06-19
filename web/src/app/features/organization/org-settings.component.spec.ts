@@ -8,6 +8,8 @@ import { TranslationService } from '../../core/i18n/translation.service';
 
 const tsMock = {
   translateInstant: vi.fn((key: string) => key),
+  currentLang: 'es',
+  lang$: of('es'),
 };
 
 interface MockUser {
@@ -71,7 +73,7 @@ describe('OrgSettingsComponent', () => {
 
   describe('ngOnInit', () => {
     it('should load members on init', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-1/users');
       expect(req.request.method).toBe('GET');
       req.flush(mockMembers);
@@ -83,35 +85,45 @@ describe('OrgSettingsComponent', () => {
     });
 
     it('should set error when orgId is missing', () => {
-      authService.getUser.mockReturnValueOnce({ ...userWithOrg, organization_id: '' });
-      component.ngOnInit();
-      fixture.detectChanges();
+      const noOrgAuth = createMockAuthService({ ...userWithOrg, organization_id: '' });
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: AuthService, useValue: noOrgAuth },
+          { provide: TranslationService, useValue: tsMock },
+        ],
+      });
+      const localFixture = TestBed.createComponent(OrgSettingsComponent);
+      const localComponent = localFixture.componentInstance;
+      const localCtrl = TestBed.inject(HttpTestingController);
+      localFixture.detectChanges();
 
-      expect(component.membersError()).toBe('org_settings.no_organization');
-      expect(component.membersLoading()).toBe(false);
-      httpCtrl.expectNone('/api/v1/organizations//users');
+      expect(localComponent.membersError()).toBe('org_settings.no_organization');
+      expect(localComponent.membersLoading()).toBe(false);
+      localCtrl.expectNone('/api/v1/organizations//users');
     });
 
     it('should set error on HTTP failure', () => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush('', { status: 500, statusText: 'Error' });
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush('', { status: 500, statusText: 'Error' });
 
       expect(component.membersError()).toBe('org_settings.loading_members_error');
       expect(component.membersLoading()).toBe(false);
     });
 
     it('should show skeleton while loading', () => {
-      component.ngOnInit();
       fixture.detectChanges();
 
       expect(component.membersLoading()).toBe(true);
       const skeletonRows = fixture.nativeElement.querySelectorAll('.skeleton-row');
       expect(skeletonRows.length).toBe(3);
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush([]);
     });
 
     it('should show error banner when error occurs', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush('', { status: 500, statusText: 'Error' });
       fixture.detectChanges();
 
@@ -148,6 +160,9 @@ describe('OrgSettingsComponent', () => {
     });
 
     it('should send invite and show success', () => {
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush([]);
+
       component.inviteEmail = 'new@test.com';
       component.inviteRole = 'OPERATOR';
       component.sendInvite();
@@ -163,6 +178,9 @@ describe('OrgSettingsComponent', () => {
     });
 
     it('should handle invite error', () => {
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush([]);
+
       component.inviteEmail = 'bad@test.com';
       component.sendInvite();
 
@@ -178,6 +196,9 @@ describe('OrgSettingsComponent', () => {
 
     it('should close modal after successful invite with timeout', () => {
       vi.useFakeTimers();
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush([]);
+
       component.inviteEmail = 'new@test.com';
       component.sendInvite();
 
@@ -194,9 +215,8 @@ describe('OrgSettingsComponent', () => {
 
   describe('role change', () => {
     it('should update member role on role change', () => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
 
       const member = mockMembers[1];
       const event = { target: { value: 'ADMIN' } } as unknown as Event;
@@ -211,9 +231,8 @@ describe('OrgSettingsComponent', () => {
     });
 
     it('should revert role on error', () => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
 
       const member = mockMembers[1];
       const event = { target: { value: 'ADMIN' } } as unknown as Event;
@@ -240,9 +259,8 @@ describe('OrgSettingsComponent', () => {
     });
 
     it('should remove member successfully', () => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
 
       component.confirmRemoveMember(mockMembers[1]);
       component.removeMember();
@@ -258,9 +276,8 @@ describe('OrgSettingsComponent', () => {
     });
 
     it('should handle remove error', () => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
 
       component.confirmRemoveMember(mockMembers[1]);
       component.removeMember();
@@ -307,6 +324,10 @@ describe('OrgSettingsComponent', () => {
     });
 
     it('should transfer ownership and logout on success', () => {
+      vi.useFakeTimers();
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush([]);
+
       component.transferTargetId = 'user-2';
       component.confirmTransfer();
 
@@ -314,13 +335,17 @@ describe('OrgSettingsComponent', () => {
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual({ new_owner_id: 'user-2' });
       req.flush({});
-      fixture.detectChanges();
 
       expect(component.transferSuccess()).toBe('org_settings.transfer_success');
+      vi.advanceTimersByTime(2000);
       expect(authService.logout).toHaveBeenCalled();
+      vi.useRealTimers();
     });
 
     it('should handle transfer error', () => {
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush([]);
+
       component.transferTargetId = 'user-2';
       component.confirmTransfer();
 
@@ -328,7 +353,6 @@ describe('OrgSettingsComponent', () => {
         { detail: 'Transfer failed' },
         { status: 400, statusText: 'Bad Request' }
       );
-      fixture.detectChanges();
 
       expect(component.transferError()).toBe('Transfer failed');
       expect(component.transferring()).toBe(false);
@@ -344,9 +368,8 @@ describe('OrgSettingsComponent', () => {
 
   describe('nonOwnerMembers', () => {
     it('should return only non-owner members', () => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
 
       const nonOwners = component.nonOwnerMembers();
       expect(nonOwners).toHaveLength(2);

@@ -55,7 +55,7 @@ describe('ReleasesComponent', () => {
 
   describe('ngOnInit / HTTP', () => {
     it('should load releases on init', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/releases').flush(mockReleases);
       expect(component.releases()).toEqual(mockReleases);
       expect(component.filtered()).toEqual(mockReleases);
@@ -63,7 +63,7 @@ describe('ReleasesComponent', () => {
     });
 
     it('should set error on HTTP failure', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/releases').flush('', { status: 500, statusText: 'Error' });
       expect(component.error()).toBe('releases.loading_error');
       expect(component.loading()).toBe(false);
@@ -96,7 +96,7 @@ describe('ReleasesComponent', () => {
 
   describe('onFilterChange', () => {
     beforeEach(() => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/releases').flush(mockReleases);
     });
 

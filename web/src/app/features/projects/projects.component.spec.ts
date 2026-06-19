@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { ProjectsComponent } from './projects.component';
 import { AuthService } from '../../core/services/auth.service';
@@ -8,6 +9,8 @@ import { TranslationService } from '../../core/i18n/translation.service';
 
 const tsMock = {
   translateInstant: vi.fn((key: string) => key),
+  currentLang: 'es',
+  lang$: of('es'),
 };
 
 interface MockUser {
@@ -66,6 +69,7 @@ describe('ProjectsComponent', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authService },
@@ -85,11 +89,10 @@ describe('ProjectsComponent', () => {
 
   describe('ngOnInit', () => {
     it('should load projects on init', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-1/projects');
       expect(req.request.method).toBe('GET');
       req.flush(mockProjects);
-      fixture.detectChanges();
 
       expect(component.projects()).toEqual(mockProjects);
       expect(component.loading()).toBe(false);
@@ -97,25 +100,25 @@ describe('ProjectsComponent', () => {
     });
 
     it('should set error on HTTP failure', () => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush('', { status: 500, statusText: 'Error' });
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush('', { status: 500, statusText: 'Error' });
 
       expect(component.error()).toBe('projects.load_error');
       expect(component.loading()).toBe(false);
     });
 
     it('should show skeleton while loading', () => {
-      component.ngOnInit();
       fixture.detectChanges();
 
       expect(component.loading()).toBe(true);
       const skeletons = fixture.nativeElement.querySelectorAll('.skeleton-row');
       expect(skeletons.length).toBe(4);
+
+      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush([]);
     });
 
     it('should show error banner when error occurs', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush('', { status: 500, statusText: 'Error' });
       fixture.detectChanges();
 
@@ -127,9 +130,9 @@ describe('ProjectsComponent', () => {
   describe('isManager', () => {
     it('should be true when user role is MANAGER', () => {
       authService.getUserRole.mockReturnValue('MANAGER');
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush(mockProjects);
       fixture.detectChanges();
+      const req = httpCtrl.expectOne('/api/v1/organizations/org-1/projects');
+      req.flush(mockProjects);
 
       expect(component.isManager).toBe(true);
       const newBtn = fixture.nativeElement.querySelector('.btn-primary');
@@ -141,6 +144,7 @@ describe('ProjectsComponent', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         providers: [
+          provideRouter([]),
           provideHttpClient(),
           provideHttpClientTesting(),
           { provide: AuthService, useValue: authService },
@@ -152,9 +156,9 @@ describe('ProjectsComponent', () => {
       component = fixture.componentInstance;
       httpCtrl = TestBed.inject(HttpTestingController);
 
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush(mockProjects);
       fixture.detectChanges();
+      const req = httpCtrl.expectOne('/api/v1/organizations/org-1/projects');
+      req.flush(mockProjects);
 
       expect(component.isManager).toBe(false);
     });
@@ -162,7 +166,7 @@ describe('ProjectsComponent', () => {
 
   describe('projects table', () => {
     beforeEach(() => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush(mockProjects);
       fixture.detectChanges();
     });
@@ -183,8 +187,7 @@ describe('ProjectsComponent', () => {
     });
 
     it('should show empty state when no projects', () => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush([]);
+      component.projects.set([]);
       fixture.detectChanges();
 
       const emptyState = fixture.nativeElement.querySelector('.empty-state');
@@ -200,9 +203,8 @@ describe('ProjectsComponent', () => {
 
   describe('archive modal', () => {
     beforeEach(() => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush(mockProjects);
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush(mockProjects);
     });
 
     it('should open archive confirmation modal', () => {
@@ -249,9 +251,8 @@ describe('ProjectsComponent', () => {
 
   describe('unarchive', () => {
     beforeEach(() => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush(mockProjects);
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush(mockProjects);
     });
 
     it('should unarchive project successfully', () => {
@@ -277,7 +278,7 @@ describe('ProjectsComponent', () => {
 
   describe('action buttons visibility', () => {
     it('should show archive button for non-archived projects when manager', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush(mockProjects);
       fixture.detectChanges();
 
@@ -286,7 +287,7 @@ describe('ProjectsComponent', () => {
     });
 
     it('should show unarchive button for archived projects when manager', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush(mockProjects);
       fixture.detectChanges();
 

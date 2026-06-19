@@ -123,13 +123,13 @@ describe('ToastComponent', () => {
     fixture.detectChanges();
 
     const closeBtn = fixture.nativeElement.querySelector('.toast-close');
-    const stopPropagationSpy = vi.fn();
-    closeBtn.addEventListener('click', stopPropagationSpy);
+    const parentClickSpy = vi.fn();
+    closeBtn.parentElement?.addEventListener('click', parentClickSpy);
 
     closeBtn.click();
     fixture.detectChanges();
 
-    expect(stopPropagationSpy).not.toHaveBeenCalled();
+    expect(parentClickSpy).not.toHaveBeenCalled();
   });
 
   it('should render aria-label on close button', () => {

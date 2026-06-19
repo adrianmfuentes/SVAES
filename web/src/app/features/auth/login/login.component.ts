@@ -11,7 +11,8 @@ import { AuthService } from '../../../core/services/auth.service';
 
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../../core/components/lang-toggle/lang-toggle.component';
-import { catchError, of } from 'rxjs';
+import { catchError, finalize, of } from 'rxjs';
+
 
 const STATUS_ERROR_MAP: Record<number, string> = {
   400: 'login.error.invalid_data',
@@ -599,20 +600,19 @@ export class LoginComponent implements OnInit {
     this.authService
       .login(email as string, password as string)
       .pipe(
-        catchError((err) => {
-          try {
-            this.errorKey = parseLoginErrorKey(err);
-          } catch {
-            this.errorKey = err?.error?.detail ?? err?.message ?? 'login.error.no_connection';
-          }
+        finalize(() => {
           this.loading = false;
+        }),
+        catchError((err: HttpErrorResponse) => {
+          this.errorKey = parseLoginErrorKey(err);
           return of(null);
         }),
       )
       .subscribe({
         next: (response) => {
-          this.loading = false;
-          if (!response) return;
+          if (!response) {
+            return;
+          }
 
           if (response.requires_2fa) {
             this.pendingTotpToken = response.totp_token ?? null;
@@ -628,14 +628,6 @@ export class LoginComponent implements OnInit {
           this.authService.storeTokens(response, this.pendingEmail);
           const destination = this.authService.isAdmin() ? '/app/system' : '/app/dashboard';
           this.router.navigate([destination]);
-        },
-        error: (err) => {
-          try {
-            this.errorKey = parseLoginErrorKey(err);
-          } catch {
-            this.errorKey = err?.error?.detail ?? err?.message ?? 'login.error.unexpected';
-          }
-          this.loading = false;
         },
       });
   }
@@ -654,19 +646,16 @@ export class LoginComponent implements OnInit {
     this.authService
       .verify2fa(this.pendingTotpToken, code as string)
       .pipe(
-        catchError((err) => {
-          try {
-            this.errorKey = parseLoginErrorKey(err);
-          } catch {
-            this.errorKey = err?.error?.detail ?? err?.message ?? 'login.error.no_connection';
-          }
+        finalize(() => {
           this.loading = false;
+        }),
+        catchError((err: HttpErrorResponse) => {
+          this.errorKey = parseLoginErrorKey(err);
           return of(null);
         }),
       )
       .subscribe({
         next: (response) => {
-          this.loading = false;
           if (!response?.access_token) {
             this.errorKey = 'login.error.unexpected_response';
             return;
@@ -674,14 +663,6 @@ export class LoginComponent implements OnInit {
           this.authService.storeTokens(response, this.pendingEmail);
           const destination = this.authService.isAdmin() ? '/app/system' : '/app/dashboard';
           this.router.navigate([destination]);
-        },
-        error: (err) => {
-          try {
-            this.errorKey = parseLoginErrorKey(err);
-          } catch {
-            this.errorKey = err?.error?.detail ?? err?.message ?? 'login.error.unexpected';
-          }
-          this.loading = false;
         },
       });
   }

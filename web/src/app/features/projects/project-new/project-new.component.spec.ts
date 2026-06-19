@@ -1,14 +1,25 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
 import { ProjectNewComponent } from './project-new.component';
 import { AuthService } from '../../../core/services/auth.service';
 import { TranslationService } from '../../../core/i18n/translation.service';
 
 const tsMock = {
   translateInstant: vi.fn((key: string) => key),
+  currentLang: 'es',
+  lang$: of('es'),
 };
+
+const createMockActivatedRoute = (releaseId: string | null = null) => ({
+  snapshot: {
+    paramMap: {
+      get: vi.fn().mockReturnValue(releaseId),
+    },
+  },
+});
 
 interface MockUser {
   id: string;
@@ -63,6 +74,7 @@ describe('ProjectNewComponent', () => {
         { provide: AuthService, useValue: authService },
         { provide: TranslationService, useValue: tsMock },
         { provide: Router, useValue: routerMock },
+        { provide: ActivatedRoute, useValue: createMockActivatedRoute() },
       ],
     });
 
@@ -83,7 +95,6 @@ describe('ProjectNewComponent', () => {
       const req = httpCtrl.expectOne('/api/v1/organizations/org-1/profiles');
       expect(req.request.method).toBe('GET');
       req.flush(mockProfiles);
-      fixture.detectChanges();
 
       expect(component.profiles()).toEqual(mockProfiles);
       expect(component.profilesLoading()).toBe(false);
@@ -92,7 +103,6 @@ describe('ProjectNewComponent', () => {
     it('should set loading false when orgId is missing', () => {
       authService.getUser.mockReturnValueOnce({ ...userWithOrg, organization_id: '' });
       component.ngOnInit();
-      fixture.detectChanges();
 
       expect(component.profilesLoading()).toBe(false);
       httpCtrl.expectNone('/api/v1/organizations//profiles');
@@ -101,7 +111,6 @@ describe('ProjectNewComponent', () => {
     it('should set empty profiles on error', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush('', { status: 500, statusText: 'Error' });
-      fixture.detectChanges();
 
       expect(component.profiles()).toEqual([]);
       expect(component.profilesLoading()).toBe(false);
@@ -110,7 +119,6 @@ describe('ProjectNewComponent', () => {
     it('should auto-select default custom profile', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush(mockProfiles);
-      fixture.detectChanges();
 
       expect(component.form.get('profile_id')?.value).toBe('prof-2');
     });
@@ -122,13 +130,14 @@ describe('ProjectNewComponent', () => {
       ];
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush(profilesWithoutDefault);
-      fixture.detectChanges();
 
       expect(component.form.get('profile_id')?.value).toBe('prof-1');
     });
 
     it('should show skeleton while loading', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush(mockProfiles);
+      component.profilesLoading.set(true);
       fixture.detectChanges();
 
       expect(component.profilesLoading()).toBe(true);
@@ -139,9 +148,9 @@ describe('ProjectNewComponent', () => {
 
   describe('customProfiles computed', () => {
     it('should return only non-system profiles', () => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush(mockProfiles);
+      vi.spyOn(component, 'ngOnInit').mockImplementation(() => {});
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush(mockProfiles);
 
       const custom = component.customProfiles();
       expect(custom).toHaveLength(2);
@@ -151,7 +160,8 @@ describe('ProjectNewComponent', () => {
 
   describe('submit', () => {
     beforeEach(() => {
-      component.ngOnInit();
+      vi.spyOn(component, 'ngOnInit').mockImplementation(() => {});
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush(mockProfiles);
     });
 
@@ -219,8 +229,6 @@ describe('ProjectNewComponent', () => {
     it('should not submit if no orgId', () => {
       authService.getUser.mockReturnValueOnce({ ...userWithOrg, organization_id: '' });
       component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush(mockProfiles);
-      fixture.detectChanges();
 
       component.form.setValue({ name: 'Test', description: '', profile_id: 'prof-1' });
       component.submit();
@@ -230,9 +238,9 @@ describe('ProjectNewComponent', () => {
 
   describe('form validation', () => {
     beforeEach(() => {
-      component.ngOnInit();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush(mockProfiles);
+      vi.spyOn(component, 'ngOnInit').mockImplementation(() => {});
       fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush(mockProfiles);
     });
 
     it('should show required error when name is empty and touched', () => {

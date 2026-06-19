@@ -3,7 +3,7 @@
     Ejecuta todos los tests del proyecto SVAES y genera informes en tests/results/.
 .DESCRIPTION
     Crea la carpeta tests/results/, ejecuta cada suite de tests redirigiendo la
-    salida a un .txt, y después lanza check_tests_trazability.py con todos ellos.
+    salida a un .txt, y después lanza trace.ps1 con todos ellos.
 .NOTES
     Requiere: Python 3.11+, Rust (cargo), Docker, Node.js (pnpm)
 #>
@@ -113,7 +113,7 @@ Write-Host "  -> acceptance_results.txt" -ForegroundColor Green
 # ------------------------------------------------------------------
 # Trazabilidad
 # ------------------------------------------------------------------
-Write-Host "`n===== Ejecutando check_tests_trazability.py =====" -ForegroundColor Cyan
+Write-Host "`n===== Generando informe de trazabilidad =====" -ForegroundColor Cyan
 & "$ProjectRoot\scripts\trace.ps1" `
     "$ResultsDir\unit_results.txt" `
     "$ResultsDir\security_results.txt" `

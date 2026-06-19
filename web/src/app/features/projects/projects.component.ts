@@ -401,7 +401,8 @@ export class ProjectsComponent implements OnInit {
   unarchive(project: Project): void {
     this.http.post(`/api/v1/organizations/${this.orgId}/projects/${project.id}/unarchive`, {})
       .pipe(catchError(() => of(null)))
-      .subscribe(() => {
+      .subscribe(res => {
+        if (res === null) return;
         this.projects.update(projects => projects.map(p =>
           p.id === project.id ? { ...p, is_archived: false } : p
         ));

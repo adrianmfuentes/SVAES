@@ -24,4 +24,4 @@ tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_t
 tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_07_archivada_modification_rejected SKIPPED [ 93%]
 tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_08_archivada_restore SKIPPED [100%]
 
-============================= 16 skipped in 3.30s =============================
+============================= 16 skipped in 3.36s =============================

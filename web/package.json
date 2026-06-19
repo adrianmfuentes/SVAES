@@ -21,7 +21,8 @@
       "js-yaml": ">=3.13.1",
       "@babel/core": ">=7.26.10",
       "esbuild": ">=0.25.1",
-      "undici": ">=7.37.0"
+      "undici": ">=7.37.0",
+      "jsdom>undici": "^7.28.0"
     }
   },
   "dependencies": {

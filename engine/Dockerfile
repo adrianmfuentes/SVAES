@@ -12,7 +12,8 @@ WORKDIR /app
 FROM chef AS planner
 
 COPY Cargo.toml Cargo.lock* ./
-RUN cargo chef prepare --recipe-file recipe.json
+COPY src ./src
+RUN cargo chef prepare --recipe-path recipe.json
 
 # === STAGE 3: Build dependencias (cached) ===
 FROM chef AS builder
@@ -25,7 +26,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY --from=planner /app/recipe.json .
-RUN cargo chef cook --release --recipe-file recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
 
 COPY src ./src
 

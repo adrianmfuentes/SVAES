@@ -1,2 +1,122 @@
-Error: Schema validation failed with the following errors:
-  Data path "" must NOT have additional properties(maxWorkers).
+ÔØ» Building...
+Ô£ö Building...
+Initial chunk files                                                                             | Names                                                                                        |  Raw size
+chunk-WFGV46PO.js                                                                               | -                                                                                            | 162.83 kB | 
+chunk-3FCMDUNH.js                                                                               | -                                                                                            |  96.71 kB | 
+chunk-ODCYARS3.js                                                                               | -                                                                                            |  68.24 kB | 
+chunk-KMXSFUTC.js                                                                               | -                                                                                            |  65.61 kB | 
+chunk-L4ILHR63.js                                                                               | -                                                                                            |  65.38 kB | 
+chunk-3QV4HOBY.js                                                                               | -                                                                                            |  64.06 kB | 
+chunk-535EI5PX.js                                                                               | -                                                                                            |  63.93 kB | 
+chunk-4XSQLO5A.js                                                                               | -                                                                                            |  63.05 kB | 
+chunk-YZBSP553.js                                                                               | -                                                                                            |  60.34 kB | 
+chunk-KZYISCYJ.js                                                                               | -                                                                                            |  50.37 kB | 
+chunk-BYOQUD4M.js                                                                               | -                                                                                            |  49.90 kB | 
+chunk-RQQDUKUN.js                                                                               | -                                                                                            |  46.84 kB | 
+chunk-CPS3QUSI.js                                                                               | -                                                                                            |  43.60 kB | 
+chunk-GLUNOOQM.js                                                                               | -                                                                                            |  40.03 kB | 
+chunk-FEDMBK33.js                                                                               | -                                                                                            |  35.98 kB | 
+chunk-RKNTLQRF.js                                                                               | -                                                                                            |  34.95 kB | 
+chunk-TFZS7M74.js                                                                               | -                                                                                            |  34.57 kB | 
+chunk-GMZXPCCI.js                                                                               | -                                                                                            |  30.58 kB | 
+spec-app-features-profile-profile.component.js                                                  | spec-app-features-profile-profile.component                                                  |  21.13 kB | 
+chunk-2N27HHBS.js                                                                               | -                                                                                            |  18.76 kB | 
+spec-app-features-releases-release-detail-release-detail.component.js                           | spec-app-features-releases-release-detail-release-detail.component                           |  17.58 kB | 
+spec-app-features-releases-release-new-release-new.component.js                                 | spec-app-features-releases-release-new-release-new.component                                 |  12.85 kB | 
+chunk-46VBZN2A.js                                                                               | -                                                                                            |  12.77 kB | 
+spec-app-features-connectors-connectors.component.js                                            | spec-app-features-connectors-connectors.component                                            |  12.24 kB | 
+spec-app-features-organization-org-settings.component.js                                        | spec-app-features-organization-org-settings.component                                        |  12.01 kB | 
+spec-app-core-services-auth.service.js                                                          | spec-app-core-services-auth.service                                                          |  11.48 kB | 
+spec-app-features-system-system.component.js                                                    | spec-app-features-system-system.component                                                    |  10.24 kB | 
+spec-app-features-admin-admin.component.js                                                      | spec-app-features-admin-admin.component                                                      |  10.22 kB | 
+spec-app-features-projects-projects.component.js                                                | spec-app-features-projects-projects.component                                                |   9.72 kB | 
+spec-app-features-projects-project-new-project-new.component.js                                 | spec-app-features-projects-project-new-project-new.component                                 |   9.48 kB | 
+spec-app-features-auth-login-login.component.js                                                 | spec-app-features-auth-login-login.component                                                 |   8.88 kB | 
+chunk-SIIYXYYY.js                                                                               | -                                                                                            |   8.54 kB | 
+spec-app-features-dashboard-services-dashboard.service.js                                       | spec-app-features-dashboard-services-dashboard.service                                       |   7.85 kB | 
+chunk-VTIO63DZ.js                                                                               | -                                                                                            |   7.56 kB | 
+spec-app-features-profiles-profiles.component.js                                                | spec-app-features-profiles-profiles.component                                                |   7.10 kB | 
+spec-app-features-access-request-access-request-form.component.js                               | spec-app-features-access-request-access-request-form.component                               |   6.84 kB | 
+spec-app-features-releases-releases.component.js                                                | spec-app-features-releases-releases.component                                                |   6.71 kB | 
+chunk-SGDCINT2.js                                                                               | -                                                                                            |   6.49 kB | 
+styles.css                                                                                      | styles                                                                                       |   6.38 kB | 
+spec-app-features-logs-logs.component.js                                                        | spec-app-features-logs-logs.component                                                        |   6.27 kB | 
+chunk-25TJPFL4.js                                                                               | -                                                                                            |   6.27 kB | 
+spec-app-core-components-toast-toast.component.js                                               | spec-app-core-components-toast-toast.component                                               |   5.79 kB | 
+spec-app-core-i18n-translation.service.js                                                       | spec-app-core-i18n-translation.service                                                       |   4.89 kB | 
+spec-app-features-auth-activate-activate-account.component.js                                   | spec-app-features-auth-activate-activate-account.component                                   |   4.85 kB | 
+chunk-RSTWSNOR.js                                                                               | -                                                                                            |   4.75 kB | 
+chunk-PX2QBZ2T.js                                                                               | -                                                                                            |   4.20 kB | 
+chunk-T3JK7AKX.js                                                                               | -                                                                                            |   3.77 kB | 
+spec-app-features-dashboard-components-recent-releases-table-recent-releases-table.component.js | spec-app-features-dashboard-components-recent-releases-table-recent-releases-table.component |   3.48 kB | 
+spec-app-app.config.js                                                                          | spec-app-app.config                                                                          |   3.43 kB | 
+spec-app-features-dashboard-dashboard.component.js                                              | spec-app-features-dashboard-dashboard.component                                              |   3.24 kB | 
+spec-app-app.js                                                                                 | spec-app-app                                                                                 |   3.19 kB | 
+spec-app-app.routes.js                                                                          | spec-app-app.routes                                                                          |   3.10 kB | 
+spec-app-core-interceptors-error.interceptor.js                                                 | spec-app-core-interceptors-error.interceptor                                                 |   3.04 kB | 
+chunk-7P4DPJSV.js                                                                               | -                                                                                            |   3.01 kB | 
+spec-app-core-guards-business-route.guard.js                                                    | spec-app-core-guards-business-route.guard                                                    |   3.00 kB | 
+spec-app-features-releases-release.service.js                                                   | spec-app-features-releases-release.service                                                   |   2.98 kB | 
+spec-app-core-components-lang-toggle-lang-toggle.component.js                                   | spec-app-core-components-lang-toggle-lang-toggle.component                                   |   2.87 kB | 
+spec-app-features-dashboard-components-success-rate-chart-success-rate-chart.component.js       | spec-app-features-dashboard-components-success-rate-chart-success-rate-chart.component       |   2.69 kB | 
+spec-app-features-releases-verify.service.js                                                    | spec-app-features-releases-verify.service                                                    |   2.17 kB | 
+spec-app-core-i18n-translate.pipe.js                                                            | spec-app-core-i18n-translate.pipe                                                            |   2.13 kB | 
+spec-app-core-interceptors-jwt.interceptor.js                                                   | spec-app-core-interceptors-jwt.interceptor                                                   |   2.10 kB | 
+spec-app-core-guards-auth.guard.js                                                              | spec-app-core-guards-auth.guard                                                              |   1.98 kB | 
+chunk-IMDLTIVG.js                                                                               | -                                                                                            |   1.93 kB | 
+spec-app-core-guards-role.guard.js                                                              | spec-app-core-guards-role.guard                                                              |   1.93 kB | 
+spec-app-features-layout-shell-shell.component.js                                               | spec-app-features-layout-shell-shell.component                                               |   1.91 kB | 
+spec-app-core-interceptors-timeout.interceptor.js                                               | spec-app-core-interceptors-timeout.interceptor                                               |   1.77 kB | 
+chunk-LBUFXENL.js                                                                               | -                                                                                            |   1.72 kB | 
+spec-app-features-errors-forbidden.component.js                                                 | spec-app-features-errors-forbidden.component                                                 |   1.71 kB | 
+chunk-INNCRMJO.js                                                                               | -                                                                                            |   1.62 kB | 
+init-testbed.js                                                                                 | init-testbed                                                                                 |   1.21 kB | 
+spec-app-features-landing-landing.component.js                                                  | spec-app-features-landing-landing.component                                                  |   1.20 kB | 
+vitest-mock-patch.js                                                                            | vitest-mock-patch                                                                            | 974 bytes | 
+spec-app-features-errors-not-found.component.js                                                 | spec-app-features-errors-not-found.component                                                 | 933 bytes | 
+chunk-PBW6CM3G.js                                                                               | -                                                                                            | 849 bytes | 
+chunk-GMWLCQA4.js                                                                               | -                                                                                            | 752 bytes | 
+chunk-BITMEOVD.js                                                                               | -                                                                                            | 578 bytes | 
+chunk-7HXMRPTP.js                                                                               | -                                                                                            | 445 bytes | 
+chunk-UBK3J5RD.js                                                                               | -                                                                                            | 428 bytes | 
+chunk-NP462JYX.js                                                                               | -                                                                                            | 276 bytes | 
+
+                                                                                                | Initial total                                                                                |   1.41 MB
+
+Lazy chunk files                                                                                | Names                                                                                        |  Raw size
+chunk-PJQGOYWC.js                                                                               | privacidad-component                                                                         |  47.82 kB | 
+chunk-63A3WXJ7.js                                                                               | aviso-legal-component                                                                        |  38.96 kB | 
+chunk-BFEIBNBV.js                                                                               | shell-component                                                                              | 338 bytes | 
+chunk-PN3RYNVE.js                                                                               | dashboard-component                                                                          | 316 bytes | 
+chunk-MS3LSREN.js                                                                               | connectors-component                                                                         | 288 bytes | 
+chunk-Q4J6SJ7P.js                                                                               | login-component                                                                              | 278 bytes | 
+chunk-OLNU2ONO.js                                                                               | activate-account-component                                                                   | 268 bytes | 
+chunk-6QGVRSD2.js                                                                               | release-detail-component                                                                     | 264 bytes | 
+chunk-VQXRNKNN.js                                                                               | org-settings-component                                                                       | 260 bytes | 
+chunk-VBBGNOTQ.js                                                                               | project-new-component                                                                        | 258 bytes | 
+chunk-SJIORA5Z.js                                                                               | release-new-component                                                                        | 258 bytes | 
+chunk-635PVNBX.js                                                                               | forbidden-component                                                                          | 256 bytes | 
+chunk-FD44ASMX.js                                                                               | projects-component                                                                           | 254 bytes | 
+chunk-T6PQIJRN.js                                                                               | profiles-component                                                                           | 254 bytes | 
+chunk-2JQILXSM.js                                                                               | releases-component                                                                           | 254 bytes | 
+...and 7 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [8.900 seconds] - 2026-06-19T10:04:51.005Z
+
+
+ RUN  v4.1.9 D:/34644/Documents/GitHub/SVAES/web
+
+node:events:486
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: Worker exited unexpectedly
+    at ChildProcess.emitUnexpectedExit (file:///D:/34644/Documents/GitHub/SVAES/web/node_modules/.pnpm/vitest@4.1.9_@types+node@20_1972df045a9f27fcf18c674e26c07a42/node_modules/vitest/dist/chunks/cli-api.24X8XwN1.js:3023:33)
+    at ChildProcess.emit (node:events:520:35)
+    at Process.ChildProcess._handle.onexit (node:internal/child_process:294:12)
+Emitted 'error' event at:
+    at ChildProcess.emitUnexpectedExit (file:///D:/34644/Documents/GitHub/SVAES/web/node_modules/.pnpm/vitest@4.1.9_@types+node@20_1972df045a9f27fcf18c674e26c07a42/node_modules/vitest/dist/chunks/cli-api.24X8XwN1.js:3025:22)
+    at ChildProcess.emit (node:events:520:35)
+    at Process.ChildProcess._handle.onexit (node:internal/child_process:294:12)
+
+Node.js v24.14.0

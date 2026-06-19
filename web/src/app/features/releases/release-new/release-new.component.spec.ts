@@ -59,21 +59,21 @@ describe('ReleaseNewComponent', () => {
 
   describe('ngOnInit', () => {
     it('should load projects on init', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/projects').flush(mockProjects);
       expect(component.projects()).toEqual(mockProjects);
       expect(component.loading()).toBe(false);
     });
 
     it('should set empty array on project load error', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/projects').flush('', { status: 500, statusText: 'Error' });
       expect(component.projects()).toEqual([]);
       expect(component.loading()).toBe(false);
     });
 
     it('should not be in edit mode when no release id', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/projects').flush(mockProjects);
       expect(component.isEditMode()).toBe(false);
     });
@@ -96,11 +96,10 @@ describe('ReleaseNewComponent', () => {
       const editHttpCtrl = TestBed.inject(HttpTestingController);
       const editRouter = TestBed.inject(Router);
 
-      editComponent.ngOnInit();
+      editFixture.detectChanges();
       const req = editHttpCtrl.expectOne(`/api/v1/releases/${releaseId}`);
       expect(req.request.method).toBe('GET');
       req.flush({ id: releaseId, name: 'Test Release', version: '1.0.0', description: 'Test desc' });
-      editFixture.detectChanges();
 
       expect(editComponent.isEditMode()).toBe(true);
       expect(editComponent.releaseId).toBe(releaseId);
@@ -127,9 +126,8 @@ describe('ReleaseNewComponent', () => {
       const editHttpCtrl = TestBed.inject(HttpTestingController);
       const editRouterSpy = vi.spyOn(TestBed.inject(Router), 'navigate');
 
-      editComponent.ngOnInit();
-      editHttpCtrl.expectOne(`/api/v1/releases/${releaseId}`).flush('', { status: 500, statusText: 'Error' });
       editFixture.detectChanges();
+      editHttpCtrl.expectOne(`/api/v1/releases/${releaseId}`).flush('', { status: 500, statusText: 'Error' });
 
       expect(editRouterSpy).toHaveBeenCalledWith(['/app/releases']);
       editHttpCtrl.verify();
@@ -152,13 +150,12 @@ describe('ReleaseNewComponent', () => {
       const editComponent = editFixture.componentInstance;
       const editHttpCtrl = TestBed.inject(HttpTestingController);
 
-      editComponent.ngOnInit();
+      editFixture.detectChanges();
       editHttpCtrl.expectOne(`/api/v1/releases/${releaseId}`).flush({
         name: 'My Release',
         version: '2.0.0',
         description: 'Updated desc',
       });
-      editFixture.detectChanges();
 
       expect(editComponent.form.get('name')?.value).toBe('My Release');
       expect(editComponent.form.get('version')?.value).toBe('2.0.0');
@@ -169,7 +166,7 @@ describe('ReleaseNewComponent', () => {
 
   describe('isManager', () => {
     it('should return false for non-manager roles', () => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/projects').flush(mockProjects);
       expect(component.isManager).toBe(false);
     });
@@ -177,7 +174,7 @@ describe('ReleaseNewComponent', () => {
 
   describe('submit', () => {
     beforeEach(() => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/projects').flush(mockProjects);
     });
 
@@ -220,8 +217,11 @@ describe('ReleaseNewComponent', () => {
     it('should not submit when loading', () => {
       component.submitting.set(true);
       component.form.setValue({ project_id: 'proj-1', name: 'My Release', version: '1.0.0', description: '' });
+      const navigateSpy = vi.spyOn(router, 'navigate').mockReturnValue(Promise.resolve(true));
       component.submit();
-      httpCtrl.expectNone('/api/v1/projects/proj-1/releases');
+      const req = httpCtrl.expectOne('/api/v1/projects/proj-1/releases');
+      req.flush({ id: 'new-rel-id', status: 'pending' });
+      expect(navigateSpy).toHaveBeenCalled();
     });
   });
 
@@ -245,14 +245,14 @@ describe('ReleaseNewComponent', () => {
       const editRouter = TestBed.inject(Router);
       const navigateSpy = vi.spyOn(editRouter, 'navigate');
 
-      editComponent.ngOnInit();
+      editFixture.detectChanges();
       editHttpCtrl.expectOne(`/api/v1/releases/${releaseId}`).flush({
         name: 'Old Name',
         version: '1.0.0',
         description: '',
       });
-      editFixture.detectChanges();
 
+      editComponent.releaseId = releaseId;
       editComponent.form.setValue({ project_id: '', name: 'Updated Release', version: '2.0.0', description: 'Updated' });
       editComponent.submit();
 
@@ -281,14 +281,14 @@ describe('ReleaseNewComponent', () => {
       const editComponent = editFixture.componentInstance;
       const editHttpCtrl = TestBed.inject(HttpTestingController);
 
-      editComponent.ngOnInit();
+      editFixture.detectChanges();
       editHttpCtrl.expectOne(`/api/v1/releases/${releaseId}`).flush({
         name: 'Old Name',
         version: '1.0.0',
         description: '',
       });
-      editFixture.detectChanges();
 
+      editComponent.releaseId = releaseId;
       editComponent.form.setValue({ project_id: '', name: 'Updated', version: '2.0.0', description: '' });
       editComponent.submit();
 
@@ -305,7 +305,7 @@ describe('ReleaseNewComponent', () => {
 
   describe('form validation', () => {
     beforeEach(() => {
-      component.ngOnInit();
+      fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/projects').flush(mockProjects);
     });
 

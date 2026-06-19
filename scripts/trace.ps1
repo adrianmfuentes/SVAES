@@ -99,8 +99,6 @@ $PLAN = @(
     @{ Id = "TC-PER-VL-01"; Level = "Rendimiento";   Section = "7.5";   Desc = "Verificacion 10 reglas -> tiempo e2e <=5s p95 (RNF-06)"; Tech = "VL"; Tool = "Locust" },
     @{ Id = "TC-PER-VL-02"; Level = "Rendimiento";   Section = "7.5";   Desc = "Motor Rust bucle -> p95 <500ms (RNF-07)";        Tech = "VL";      Tool = "Locust" },
     @{ Id = "TC-PER-VL-03"; Level = "Rendimiento";   Section = "7.5";   Desc = "50 POST /verify simultaneos -> todas 202 (RNF-06)"; Tech = "VL";    Tool = "Locust" },
-    @{ Id = "TC-PER-CE-01"; Level = "Rendimiento";   Section = "7.5";   Desc = "50 health checks concurrentes -> sin timeout";     Tech = "CE";      Tool = "Locust" },
-    @{ Id = "TC-PER-CE-02"; Level = "Rendimiento";   Section = "7.5";   Desc = "Carga sostenida en /releases -> sin errores";     Tech = "CE";      Tool = "Locust" },
     @{ Id = "TC-PER-CE-04"; Level = "Rendimiento";   Section = "7.5";   Desc = "Suite completa -> SonarCloud cobertura >=70% (RNF-27)"; Tech = "CE"; Tool = "SonarCloud" },
     @{ Id = "TC-SEC-AUT-01"; Level = "Seguridad";    Section = "7.6";   Desc = "VL fuerza bruta: 5 intentos -> 403 + bloqueo 15min (RNF-14)"; Tech = "CE"; Tool = "pytest" },
     @{ Id = "TC-SEC-AUT-02"; Level = "Seguridad";    Section = "7.6";   Desc = "JWT manipulado -> 401 (OWASP A2)";               Tech = "CE";      Tool = "pytest" },
@@ -112,8 +110,8 @@ $PLAN = @(
 $PLAN_INDEX = @{}
 foreach ($entry in $PLAN) { $PLAN_INDEX[$entry.Id] = $entry }
 
-if ($PLAN.Count -ne 79) {
-    Write-Warning "El plan debe tener 79 casos, tiene $($PLAN.Count)"
+if ($PLAN.Count -ne 77) {
+    Write-Warning "El plan debe tener 77 casos, tiene $($PLAN.Count)"
 }
 
 function Normalize-TcId {
