@@ -715,7 +715,7 @@ export class ConnectorsComponent implements OnInit {
 
   typeLabel(type: string): string {
     const translated = this.ts.translateInstant('connector_type.' + type);
-    return translated !== 'connector_type.' + type ? translated : type;
+    return translated === 'connector_type.' + type ? type : translated;
   }
 
   onTypeChange(event: Event): void {

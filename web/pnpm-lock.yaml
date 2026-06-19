@@ -14,6 +14,7 @@ overrides:
   js-yaml: '>=3.13.1'
   '@babel/core': '>=7.26.10'
   esbuild: '>=0.25.1'
+  undici: '>=7.37.0'
 
 importers:
 
@@ -3154,17 +3155,9 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici@6.27.0:
-    resolution: {integrity: sha512-YmfV3YnEDzXRC5lZ2jWtWWHKGUm1zIt8AhesR1tens+HTNv+YZlN/dp6G727LOvMJ8xjP9Be7Y2Sdr96LDm+pg==}
-    engines: {node: '>=18.17'}
-
-  undici@7.24.4:
-    resolution: {integrity: sha512-BM/JzwwaRXxrLdElV2Uo6cTLEjhSb3WXboncJamZ15NgUURmvlXvxa6xkwIOILIjPNo9i8ku136ZvWV0Uly8+w==}
-    engines: {node: '>=20.18.1'}
-
-  undici@7.28.0:
-    resolution: {integrity: sha512-cRZYrTDwWznlnRiPjggAGxZXanty6M8RV1ff8Wm4LWXBp7/IG8v5DnOm74DtUBp9OONpK75YlPnIjQqX0dBDtA==}
-    engines: {node: '>=20.18.1'}
+  undici@8.5.0:
+    resolution: {integrity: sha512-xamtWoB1EshgjpmlXd7GGm2VfdDtw1+rD8uhry8pSNW3If6S8E0m2T2+orSKeZXEn/aPJMviCpDBA65WJt8zhg==}
+    engines: {node: '>=22.19.0'}
 
   universalify@2.0.1:
     resolution: {integrity: sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw==}
@@ -3532,7 +3525,7 @@ snapshots:
       tinyglobby: 0.2.15
       tslib: 2.8.1
       typescript: 5.9.3
-      undici: 7.24.4
+      undici: 8.5.0
       vite: 8.0.16(@types/node@20.19.43)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.97.3)
       watchpack: 2.5.1
     optionalDependencies:
@@ -5600,7 +5593,7 @@ snapshots:
       saxes: 6.0.0
       symbol-tree: 3.2.4
       tough-cookie: 6.0.1
-      undici: 7.28.0
+      undici: 8.5.0
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -5883,7 +5876,7 @@ snapshots:
       semver: 7.7.4
       tar: 7.5.16
       tinyglobby: 0.2.17
-      undici: 6.27.0
+      undici: 8.5.0
       which: 6.0.1
 
   node-releases@2.0.48: {}
@@ -6487,11 +6480,7 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici@6.27.0: {}
-
-  undici@7.24.4: {}
-
-  undici@7.28.0: {}
+  undici@8.5.0: {}
 
   universalify@2.0.1: {}
 

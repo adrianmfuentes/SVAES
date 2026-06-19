@@ -711,7 +711,7 @@ export class ProfilesComponent implements OnInit {
       return translated;
     }
     return template
-      .replace(/_/g, ' ')
+      .replaceAll('_', ' ')
       .replace(/has_/i, '')
       .replace(/meets_/i, '')
       .split(' ')

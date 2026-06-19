@@ -1620,7 +1620,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   private releaseId = '';
   private orgId = '';
-  private browseSearchSubject = new Subject<string>();
+  private readonly browseSearchSubject = new Subject<string>();
   private browseSearchSub?: Subscription;
   private activeBrowseConn: ConnectorApiItem | null = null;
   private pollingInterval?: ReturnType<typeof setInterval>;
@@ -1681,7 +1681,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   launchVerification(): void {
     if (!this.releaseId || this.verifying()) return;
     this.verifying.set(true);
-    if ('Notification' in window && Notification.permission === 'default') {
+    if ('Notification' in globalThis && Notification.permission === 'default') {
       Notification.requestPermission();
     }
     this.http
@@ -1805,7 +1805,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   }
 
   private showBrowserNotification(release: ReleaseDetail): void {
-    if ('Notification' in window && Notification.permission === 'granted') {
+    if ('Notification' in globalThis && Notification.permission === 'granted') {
       new Notification(this.ts.translateInstant('release_detail.verify_notif_title'), {
         body: this.ts.translateInstant('release_detail.verify_notif_body', { name: release.name }),
       });

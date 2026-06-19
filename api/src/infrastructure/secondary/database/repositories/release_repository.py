@@ -12,6 +12,8 @@ from typing import Optional, cast
 from infrastructure.secondary.database.models.project_model import ProjectModel
 from infrastructure.secondary.database.models.organization_model import OrganizationModel
 
+_RELEASE_NOT_FOUND = _RELEASE_NOT_FOUND
+
 
 class SqlReleaseRepository(IReleaseRepository):
 
@@ -109,7 +111,7 @@ class SqlReleaseRepository(IReleaseRepository):
             result = await session.execute(select(ReleaseModel).where(ReleaseModel.id == release.id))
             release_row = result.scalar_one_or_none()
             if not release_row:
-                raise EntityNotFoundError("Release no encontrado")
+                raise EntityNotFoundError(_RELEASE_NOT_FOUND)
 
             setattr(release_row, "name", str(release.name))
             setattr(release_row, "version", str(release.version))
@@ -148,7 +150,7 @@ class SqlReleaseRepository(IReleaseRepository):
             result = await session.execute(select(ReleaseModel).where(ReleaseModel.id == release_id))
             release_row = result.scalar_one_or_none()
             if not release_row:
-                raise EntityNotFoundError("Release no encontrado")
+                raise EntityNotFoundError(_RELEASE_NOT_FOUND)
 
             setattr(release_row, "pending_task_id", task_id)
             if previous_status is not None:
@@ -162,7 +164,7 @@ class SqlReleaseRepository(IReleaseRepository):
             result = await session.execute(select(ReleaseModel).where(ReleaseModel.id == release_id))
             release_row = result.scalar_one_or_none()
             if not release_row:
-                raise EntityNotFoundError("Release no encontrado")
+                raise EntityNotFoundError(_RELEASE_NOT_FOUND)
 
             await session.delete(release_row)
             await session.commit()
