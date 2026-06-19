@@ -12,7 +12,7 @@ COPY . .
 RUN pnpm exec ng build --configuration=production
 
 # ── Stage 2: serve with nginx ─────────────────────────────────────────────────
-FROM nginx:alpine AS runtime
+FROM nginx:stable-alpine AS runtime
 
 COPY --from=builder /app/dist/web/browser /usr/share/nginx/html
 

@@ -19,7 +19,7 @@ name: svaes
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: svaes-postgres
     restart: always
     environment:
@@ -63,10 +63,10 @@ services:
       ENGINE_API_KEY: ${ENGINE_API_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
-      interval: 30s
+      interval: 10s
       timeout: 3s
       retries: 3
-      start_period: 5s
+      start_period: 3s
     networks:
       - svaes-network
 
@@ -104,7 +104,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 10s
     depends_on:
       postgres:
         condition: service_healthy
@@ -165,9 +165,10 @@ services:
       - ${TLS_CERT_PATH:-./certs}:/etc/nginx/certs:ro
     healthcheck:
       test: ["CMD", "curl", "-kf", "https://localhost/"]
-      interval: 30s
+      interval: 10s
       timeout: 3s
       retries: 3
+      start_period: 5s
     networks:
       - svaes-network
     depends_on:

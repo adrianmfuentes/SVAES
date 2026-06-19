@@ -114,7 +114,7 @@ Write-Host "  -> acceptance_results.txt" -ForegroundColor Green
 # Trazabilidad
 # ------------------------------------------------------------------
 Write-Host "`n===== Ejecutando check_tests_trazability.py =====" -ForegroundColor Cyan
-python "$ProjectRoot\scripts\check_tests_trazability.py" `
+& "$ProjectRoot\scripts\trace.ps1" `
     "$ResultsDir\unit_results.txt" `
     "$ResultsDir\security_results.txt" `
     "$ResultsDir\integration_results.txt" `
