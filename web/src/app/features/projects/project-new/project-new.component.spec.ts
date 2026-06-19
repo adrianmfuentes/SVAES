@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
 import { Router } from '@angular/router';
 import { ProjectNewComponent } from './project-new.component';
 import { AuthService } from '../../../core/services/auth.service';
@@ -43,6 +42,7 @@ describe('ProjectNewComponent', () => {
   let httpCtrl: HttpTestingController;
   let router: Router;
   let authService: ReturnType<typeof createMockAuthService>;
+  const routerMock = { navigate: vi.fn() } as unknown as Router;
 
   const userWithOrg: MockUser = {
     id: 'user-1',
@@ -58,11 +58,11 @@ describe('ProjectNewComponent', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authService },
         { provide: TranslationService, useValue: tsMock },
+        { provide: Router, useValue: routerMock },
       ],
     });
 

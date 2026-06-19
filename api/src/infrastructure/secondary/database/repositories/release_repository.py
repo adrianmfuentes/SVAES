@@ -12,7 +12,7 @@ from typing import Optional, cast
 from infrastructure.secondary.database.models.project_model import ProjectModel
 from infrastructure.secondary.database.models.organization_model import OrganizationModel
 
-_RELEASE_NOT_FOUND = _RELEASE_NOT_FOUND
+_RELEASE_NOT_FOUND = "Release no encontrada"
 
 
 class SqlReleaseRepository(IReleaseRepository):

@@ -463,7 +463,7 @@ class TestSqlReleaseRepository:
         )
         from domain.exceptions import EntityNotFoundError
         with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
-            with pytest.raises(EntityNotFoundError, match="Release no encontrado"):
+            with pytest.raises(EntityNotFoundError, match="Release no encontrada"):
                 await repo.update(release)
 
     # -- update_status -------------------------------------------------------
@@ -511,7 +511,7 @@ class TestSqlReleaseRepository:
         session.execute = AsyncMock(return_value=result)
         from domain.exceptions import EntityNotFoundError
         with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
-            with pytest.raises(EntityNotFoundError, match="Release no encontrado"):
+            with pytest.raises(EntityNotFoundError, match="Release no encontrada"):
                 await repo.delete(uuid4())
 
     # -- get_artifact_by_id / delete_artifact ---------------------------------

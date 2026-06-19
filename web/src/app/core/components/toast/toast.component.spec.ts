@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { of } from 'rxjs';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ToastComponent } from './toast.component';
 import { ToastService, Toast } from '../../services/toast.service';
 import { TranslationService } from '../../i18n/translation.service';
@@ -112,8 +111,6 @@ describe('ToastComponent', () => {
     fixture.detectChanges();
 
     const firstToast = fixture.nativeElement.querySelector('.toast');
-    const secondToast = fixture.nativeElement.querySelectorAll('.toast')[1];
-
     firstToast.click();
     fixture.detectChanges();
 
