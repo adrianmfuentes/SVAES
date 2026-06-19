@@ -625,9 +625,7 @@ export class ConnectorsComponent implements OnInit {
     this.availableImplementations.set([]);
     this.connectorForm.patchValue({ connectorType: c.type });
     const types = this.connectorTypes()?.by_type;
-    if (types?.[c.type]) {
-      this.availableImplementations.set(types[c.type]);
-    }
+    this.availableImplementations.set(types?.[c.type] ?? []);
     this.showModal.set(true);
   }
 
