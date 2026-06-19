@@ -75,7 +75,6 @@ async def _fetch_artifacts(
     connector_registry: Any,
     celery_task: Any,
     total_stages: int,
-    artifact_count: int,
 ) -> list:
     artifacts_data = []
     for i, artifact in enumerate(artifacts):
@@ -96,7 +95,7 @@ async def _fetch_artifacts(
     return artifacts_data
 
 
-async def _build_rules_data(profile: Any) -> list:
+def _build_rules_data(profile: Any) -> list:
     rules_data = []
     for rule in profile.rules:
         if rule.is_active:
@@ -144,10 +143,10 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
     _report_progress(celery_task, current=1, total=total_stages, stage='loading')
 
     artifacts_data = await _fetch_artifacts(
-        release.artifacts or [], connector_registry, celery_task, total_stages, artifact_count
+        release.artifacts or [], connector_registry, celery_task, total_stages
     )
 
-    rules_data = await _build_rules_data(profile)
+    rules_data = _build_rules_data(profile)
 
     engine_stage = 2 + artifact_count
     _report_progress(celery_task, current=engine_stage, total=total_stages, stage='calling_engine')
@@ -158,6 +157,12 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
         await release_repo.update_status(release_id, ReleaseStatus.PENDIENTE)
         raise exc
 
+    # Engine returns Spanish verdict strings; map them to the domain VerdictType
+    _engine_verdict_map = {
+        "VALIDA": VerdictType.VALID,
+        "CON_ADVERTENCIAS": VerdictType.VALID_WITH_WARNINGS,
+        "NO_VALIDA": VerdictType.INVALID,
+    }
     verdict_to_status = {
         VerdictType.VALID: ReleaseStatus.VALIDA,
         VerdictType.VALID_WITH_WARNINGS: ReleaseStatus.CON_ADVERTENCIAS,
@@ -167,18 +172,25 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
     save_stage = engine_stage + 1
     _report_progress(celery_task, current=save_stage, total=total_stages, stage='saving_results')
 
+    raw_verdict = result_data.get("verdict", "NO_VALIDA")
+    domain_verdict = _engine_verdict_map.get(raw_verdict, VerdictType.INVALID)
+
     verification_result = VerificationResult(
         id=uuid.uuid4(),
         release_id=release_id,
-        verdict=result_data["verdict"],
-        rule_results=result_data["rule_results"],
+        verdict=domain_verdict,
+        rule_results=result_data.get("rule_results", []),
         summary=result_data.get("summary", ""),
         executed_at=datetime.now(timezone.utc),
     )
 
-    saved_result = await verification_repo.save(verification_result)
-    final_status = verdict_to_status.get(saved_result.verdict, ReleaseStatus.NO_VALIDA)
-    await release_repo.update_status(release_id, final_status)
+    try:
+        saved_result = await verification_repo.save(verification_result)
+        final_status = verdict_to_status.get(saved_result.verdict, ReleaseStatus.NO_VALIDA)
+        await release_repo.update_status(release_id, final_status)
+    except Exception as exc:
+        await release_repo.update_status(release_id, ReleaseStatus.PENDIENTE)
+        raise exc
 
     notify_stage = save_stage + 1
     _report_progress(celery_task, current=notify_stage, total=total_stages, stage='notifying')

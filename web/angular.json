@@ -77,13 +77,15 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "reporters": ["verbose"]
+            "reporters": ["verbose"],
+            "maxWorkers": 1
           },
           "configurations": {
             "ci": {
               "coverage": true,
               "coverageReporters": ["lcov", "text-summary"],
-              "coverageExclude": ["**/*.gen.ts", "src/main.ts"]
+              "coverageExclude": ["**/*.gen.ts", "src/main.ts"],
+              "maxWorkers": 1
             }
           }
         }

@@ -72,6 +72,8 @@
     "postgresql",
     "prefs",
     "producci",
+    "pseudonymize",
+    "pseudonymizer",
     "psycopg",
     "pycache",
     "pydantic",
