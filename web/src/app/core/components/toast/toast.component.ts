@@ -70,8 +70,7 @@ import { TranslationService } from '../../i18n/translation.service';
       align-items: center;
       gap: 0.75rem;
       padding: 0.875rem 1rem;
-      border-radius: 0.5rem;
-      box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15), 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.1);
+      border-radius: var(--rounded-lg);
       min-width: 17.5rem;
       max-width: 25rem;
       pointer-events: auto;
@@ -94,27 +93,27 @@ import { TranslationService } from '../../i18n/translation.service';
     }
 
     .toast-success {
-      background: #ECFDF5;
-      color: #065F46;
-      border: 0.0625rem solid #A7F3D0;
+      background: var(--verdict-valid-bg);
+      color: var(--verdict-valid);
+      border: 0.0625rem solid var(--verdict-valid-border);
     }
 
     .toast-error {
-      background: #FEF2F2;
-      color: #991B1B;
-      border: 0.0625rem solid #FECACA;
+      background: var(--verdict-invalid-bg);
+      color: var(--verdict-invalid);
+      border: 0.0625rem solid var(--verdict-invalid-border);
     }
 
     .toast-warning {
-      background: #FFFBEB;
-      color: #92400E;
-      border: 0.0625rem solid #FDE68A;
+      background: var(--verdict-warning-bg);
+      color: var(--verdict-warning);
+      border: 0.0625rem solid var(--verdict-warning-border);
     }
 
     .toast-info {
-      background: #EFF6FF;
-      color: #1E40AF;
-      border: 0.0625rem solid #BFDBFE;
+      background: var(--paper-secondary);
+      color: var(--ink);
+      border: 0.0625rem solid var(--border);
     }
 
     .toast-icon {
@@ -139,6 +138,7 @@ import { TranslationService } from '../../i18n/translation.service';
       display: flex;
       align-items: center;
       justify-content: center;
+      color: inherit;
     }
 
     .toast-close:hover {

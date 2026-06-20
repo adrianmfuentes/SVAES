@@ -5,7 +5,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -89,12 +89,12 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
           </div>
 
           <!-- Step 1: email + password -->
-          <div class="login-form" *ngIf="!totpRequired">
+          <div class="login-form" *ngIf="!totpRequired && !forgotMode">
             <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
               <h2 class="form-title">{{ 'login.title' | t }}</h2>
 
               <div class="alert-error" *ngIf="errorKey" role="alert">
-                <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
+                <svg class="alert-error-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
                   <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                   <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
@@ -150,16 +150,21 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
               {{ 'login.no_account' | t }}
               <a routerLink="/request-access">{{ 'login.request_access' | t }}</a>
             </p>
+            <p class="form-footer-link" style="margin-top:0.5rem;">
+              <button type="button" class="btn-link" (click)="goToForgot()">
+                {{ 'login.forgot_password' | t }}
+              </button>
+            </p>
           </div>
 
           <!-- Step 2: TOTP code -->
-          <div class="login-form" *ngIf="totpRequired">
+          <div class="login-form" *ngIf="totpRequired && !forgotMode">
             <form [formGroup]="totpForm" (ngSubmit)="onSubmitTotp()" novalidate>
               <h2 class="form-title">{{ 'login.2fa_title' | t }}</h2>
               <p class="totp-hint">{{ 'login.2fa_hint' | t }}</p>
 
               <div class="alert-error" *ngIf="errorKey" role="alert">
-                <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
+                <svg class="alert-error-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
                   <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                   <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
@@ -200,6 +205,59 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
             <p class="form-footer-link">
               <button type="button" class="btn-link" (click)="backToLogin()">
                 {{ 'login.2fa_back' | t }}
+              </button>
+            </p>
+          </div>
+
+          <!-- Step: Forgot password -->
+          <div class="login-form" *ngIf="forgotMode && !forgotSent">
+            <h2 class="form-title">{{ 'forgot_password.title' | t }}</h2>
+            <p class="totp-hint">{{ 'forgot_password.desc' | t }}</p>
+
+            <form [formGroup]="forgotForm" (ngSubmit)="onSubmitForgot()" novalidate>
+              <div class="form-group">
+                <label for="forgot-email">{{ 'forgot_password.email_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                <input
+                  id="forgot-email"
+                  type="email"
+                  formControlName="email"
+                  autocomplete="email"
+                  aria-required="true"
+                  [placeholder]="'login.email_placeholder' | t"
+                  [class.input-error]="forgotForm.get('email')?.invalid && forgotForm.get('email')?.touched"
+                />
+                <div class="field-error" *ngIf="forgotForm.get('email')?.hasError('required') && forgotForm.get('email')?.touched">
+                  {{ 'forgot_password.email_required' | t }}
+                </div>
+                <div class="field-error" *ngIf="forgotForm.get('email')?.hasError('email') && forgotForm.get('email')?.touched">
+                  {{ 'forgot_password.email_invalid' | t }}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                class="btn-primary full-width btn-submit"
+                [disabled]="forgotForm.invalid || loading"
+                [class.btn-loading]="loading"
+              >
+                <span *ngIf="!loading">{{ 'forgot_password.submit' | t }}</span>
+                <span *ngIf="loading">{{ 'forgot_password.sending' | t }}</span>
+              </button>
+            </form>
+            <p class="form-footer-link">
+              <button type="button" class="btn-link" (click)="backFromForgot()">
+                {{ 'forgot_password.back' | t }}
+              </button>
+            </p>
+          </div>
+
+          <!-- Step: Forgot password — sent -->
+          <div class="login-form" *ngIf="forgotMode && forgotSent">
+            <h2 class="form-title">{{ 'forgot_password.sent_title' | t }}</h2>
+            <p class="totp-hint">{{ 'forgot_password.sent_desc' | t }}</p>
+            <p class="form-footer-link">
+              <button type="button" class="btn-link" (click)="backFromForgot()">
+                {{ 'forgot_password.back' | t }}
               </button>
             </p>
           </div>
@@ -448,26 +506,6 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
         cursor: wait;
       }
 
-      .alert-error {
-        display: flex;
-        align-items: flex-start;
-        gap: var(--spacing-sm);
-        background: var(--verdict-invalid-bg);
-        color: var(--verdict-invalid);
-        border: 0.0625rem solid var(--verdict-invalid-border);
-        border-radius: var(--rounded-md);
-        padding: var(--spacing-sm) var(--spacing-md);
-        font-family: var(--font-sans);
-        font-size: 0.8125rem;
-        line-height: 1.5;
-        margin-bottom: var(--spacing-md);
-      }
-
-      .alert-icon {
-        flex-shrink: 0;
-        margin-top: 0.125rem;
-      }
-
       .form-footer-link {
         font-family: var(--font-sans);
         font-size: 0.8125rem;
@@ -568,6 +606,7 @@ export class LoginComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly http = inject(HttpClient);
 
   readonly loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -578,9 +617,15 @@ export class LoginComponent implements OnInit {
     code: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
   });
 
+  readonly forgotForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+  });
+
   loading = false;
   errorKey: string | null = null;
   totpRequired = false;
+  forgotMode = false;
+  forgotSent = false;
   private pendingTotpToken: string | null = null;
   private pendingEmail = '';
 
@@ -687,5 +732,53 @@ export class LoginComponent implements OnInit {
     this.pendingTotpToken = null;
     this.errorKey = null;
     this.totpForm.reset();
+  }
+
+  goToForgot(): void {
+    this.forgotMode = true;
+    this.forgotSent = false;
+    this.errorKey = null;
+    this.forgotForm.reset();
+    this.cdr.detectChanges();
+  }
+
+  backFromForgot(): void {
+    this.forgotMode = false;
+    this.forgotSent = false;
+    this.errorKey = null;
+    this.forgotForm.reset();
+    this.cdr.detectChanges();
+  }
+
+  onSubmitForgot(): void {
+    if (this.forgotForm.invalid || this.loading) {
+      this.forgotForm.markAllAsTouched();
+      return;
+    }
+
+    this.loading = true;
+    this.errorKey = null;
+
+    const { email } = this.forgotForm.value;
+
+    this.http
+      .post('/api/v1/auth/forgot-password', { email })
+      .pipe(
+        finalize(() => {
+          this.loading = false;
+          this.cdr.detectChanges();
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.forgotSent = true;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          // Always show success to prevent enumeration
+          this.forgotSent = true;
+          this.cdr.detectChanges();
+        },
+      });
   }
 }

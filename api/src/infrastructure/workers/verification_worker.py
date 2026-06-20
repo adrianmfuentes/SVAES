@@ -1,5 +1,6 @@
 import uuid
 import asyncio
+import logging
 import httpx
 from datetime import datetime, timezone
 from typing import Any, Dict, List
@@ -107,20 +108,25 @@ def _build_rules_data(profile: Any) -> list:
     return rules_data
 
 
+_wlog = logging.getLogger(__name__)
+
+
 async def _notify_user(release_id: uuid.UUID, release: Any, saved_result: Any) -> None:
     user_repo = SqlUserRepository()
     user = await user_repo.get_by_id(release.created_by)
-    if user:
-        try:
-            await email_service.send_verification_result_email(
-                to_email=user.email,
-                to_name=user.display_name or user.email,
-                release_name=release.name,
-                verdict=saved_result.verdict.value,
-                release_id=str(release_id),
-            )
-        except Exception:
-            pass
+    if not user:
+        _wlog.warning("Cannot notify: user not found for release %s (created_by=%s)", release_id, release.created_by)
+        return
+    try:
+        await email_service.send_verification_result_email(
+            to_email=user.email,
+            to_name=user.display_name or user.email,
+            release_name=release.name,
+            verdict=saved_result.verdict.value,
+            release_id=str(release_id),
+        )
+    except Exception:
+        _wlog.exception("Failed to send verification email for release %s to %s", release_id, user.email)
 
 
 async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_task: Any) -> Dict[str, Any]:

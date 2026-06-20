@@ -50,6 +50,10 @@ async def get_task_status(
                 )
             except Exception:
                 pass
+        elif celery_result.state == 'SUCCESS':
+            progress = TaskProgressInfo(current=1, total=1, stage='complete', pct=100)
+        elif celery_result.state in ('FAILURE', 'REVOKED'):
+            progress = TaskProgressInfo(current=0, total=1, stage='failed', pct=0)
 
         return TaskStatusResponse(
             task_id=task_id,

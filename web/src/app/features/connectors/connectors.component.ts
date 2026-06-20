@@ -361,26 +361,6 @@ interface ConnectorTypesResponse {
 
     .error-banner-sm { margin-bottom: 0; margin-top: var(--spacing-sm); }
 
-    .alert-success {
-      background: var(--verdict-valid-bg, #f0fdf4);
-      color: var(--verdict-valid, #166534);
-      border: 0.0625rem solid var(--verdict-valid-border, #bbf7d0);
-      border-radius: var(--rounded-md);
-      padding: var(--spacing-sm) var(--spacing-md);
-      font-size: 0.8125rem;
-      margin-bottom: var(--spacing-md);
-    }
-
-    .alert-error {
-      background: var(--verdict-invalid-bg);
-      color: var(--verdict-invalid);
-      border: 0.0625rem solid var(--verdict-invalid-border);
-      border-radius: var(--rounded-md);
-      padding: var(--spacing-sm) var(--spacing-md);
-      font-size: 0.8125rem;
-      margin-bottom: var(--spacing-md);
-    }
-
     .skeleton-list { display: flex; flex-direction: column; gap: var(--spacing-sm); }
 
     .skeleton {

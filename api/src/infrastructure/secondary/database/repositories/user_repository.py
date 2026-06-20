@@ -30,6 +30,8 @@ class SqlUserRepository(IUserRepository):
             activation_token_expiry=cast(datetime | None, row.activation_token_expiry),
             totp_secret=cast(str | None, row.totp_secret),
             totp_enabled=cast(bool, row.totp_enabled) if row.totp_enabled is not None else False,
+            password_reset_token=cast(str | None, row.password_reset_token),
+            password_reset_token_expiry=cast(datetime | None, row.password_reset_token_expiry),
         )
 
     async def create(self, user: User) -> User:
@@ -101,10 +103,18 @@ class SqlUserRepository(IUserRepository):
             user_model.activation_token_expiry = user.activation_token_expiry  # pyright: ignore[reportAttributeAccessIssue]
             user_model.totp_secret = user.totp_secret  # pyright: ignore[reportAttributeAccessIssue]
             user_model.totp_enabled = user.totp_enabled  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.password_reset_token = user.password_reset_token  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.password_reset_token_expiry = user.password_reset_token_expiry  # pyright: ignore[reportAttributeAccessIssue]
             user_model.updated_at = datetime.now(timezone.utc)
             await session.commit()
             await session.refresh(user_model)
             return self._model_to_entity(user_model)
+
+    async def get_by_password_reset_token(self, token: str) -> Optional[User]:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(select(UserModel).where(UserModel.password_reset_token == token))
+            row = result.scalar_one_or_none()
+            return self._model_to_entity(row) if row else None
 
     async def get_by_activation_token(self, token: str) -> Optional[User]:
         async with AsyncSessionLocal() as session:

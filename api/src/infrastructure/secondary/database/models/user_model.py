@@ -25,3 +25,5 @@ class UserModel(Base):
     activation_token_expiry = Column(DateTime(timezone=True), nullable=True)
     totp_secret = Column(String(64), nullable=True)
     totp_enabled = Column(Boolean, nullable=False, default=False)
+    password_reset_token = Column(String(255), nullable=True, index=True)
+    password_reset_token_expiry = Column(DateTime(timezone=True), nullable=True)

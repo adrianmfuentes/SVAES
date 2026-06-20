@@ -6,7 +6,7 @@ import { TranslationService } from '../../../core/i18n/translation.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../../core/components/confirm-dialog/confirm-dialog.component';
-import { catchError, debounceTime, distinctUntilChanged, forkJoin, of, Subject, Subscription, switchMap } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, EMPTY, forkJoin, of, Subject, Subscription, switchMap } from 'rxjs';
 
 interface ReleaseDetail {
   id: string;
@@ -1636,6 +1636,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   private readonly browseSearchSubject = new Subject<string>();
   private browseSearchSub?: Subscription;
   private activeBrowseConn: ConnectorApiItem | null = null;
+  private seenEnVerificacion = false;
   private pollingInterval?: ReturnType<typeof setInterval>;
   private progressInterval?: ReturnType<typeof setInterval>;
 
@@ -1685,6 +1686,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
         }
         if (data.release?.status === 'EN_VERIFICACION' && data.release.pending_task_id && !this.pollingInterval) {
           this.taskId.set(data.release.pending_task_id);
+          this.seenEnVerificacion = true;
           this.refreshAndPoll();
         }
         this.loading.set(false);
@@ -1709,9 +1711,12 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
       .subscribe((result) => {
         if (result) {
           this.taskId.set(result.task_id);
+          this.verificationProgress.set({ current: 0, total: 1, stage: 'loading', pct: 0 });
+          this.seenEnVerificacion = true;
           this.showVerifyNotice.set(true);
           this.refreshAndPoll();
         } else {
+          this.verificationProgress.set(null);
           this.verifying.set(false);
         }
       });
@@ -1733,6 +1738,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
       )
       .subscribe((result) => {
         if (result?.cancelled) {
+          this.seenEnVerificacion = false;
           this.stopPolling();
           this.verifying.set(false);
           this.showVerifyNotice.set(false);
@@ -1769,14 +1775,22 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
         if (!release) return;
         this.release.set(release);
         if (release.status === 'EN_VERIFICACION') {
+          this.seenEnVerificacion = true;
           return;
         }
+        if (!this.seenEnVerificacion) return;
+        this.seenEnVerificacion = false;
         this.stopPolling();
         this.verifying.set(false);
         this.showVerifyNotice.set(false);
         this.reloadData();
-        this.toast.info(this.ts.translateInstant('release_detail.verify_complete_toast'), 6000);
-        this.showBrowserNotification(release);
+        const TERMINAL = ['VALIDA', 'NO_VALIDA', 'CON_ADVERTENCIAS'];
+        if (TERMINAL.includes(release.status)) {
+          this.toast.info(this.ts.translateInstant('release_detail.verify_complete_toast'), 6000);
+          this.showBrowserNotification(release);
+        } else {
+          this.toast.error(this.ts.translateInstant('release_detail.verify_failed_toast'), 6000);
+        }
       });
   }
 
@@ -1956,16 +1970,14 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     
     this.http.delete(`/api/v1/releases/${this.releaseId}/artifacts/${artifactId}`)
       .pipe(
-        catchError((err) => {
+        catchError(() => {
           this.toast.error(this.ts.translateInstant('release.artifact_delete_error'));
-          return of(null);
+          return EMPTY;
         }),
       )
-      .subscribe((result) => {
-        if (result !== null) {
-          this.artifacts.update(list => list.filter(a => a.id !== artifactId));
-          this.toast.success(this.ts.translateInstant('release.artifact_delete_success'));
-        }
+      .subscribe(() => {
+        this.artifacts.update(list => list.filter(a => a.id !== artifactId));
+        this.toast.success(this.ts.translateInstant('release.artifact_delete_success'));
       });
   }
 

@@ -173,7 +173,7 @@ interface AccessRequest {
 
         <div *ngIf="arError() && !arLoading()" class="error-banner">{{ arError() }}</div>
 
-        <div *ngIf="arSuccess()" class="success-banner">{{ arSuccess() }}</div>
+        <div *ngIf="arSuccess()" class="alert-success">{{ arSuccess() }}</div>
 
         <div *ngIf="!arLoading() && !arError()" class="data-table-wrap">
           <table class="data-table" *ngIf="accessRequests().length > 0; else arEmpty">
@@ -633,16 +633,6 @@ interface AccessRequest {
       color: var(--muted);
       line-height: 1.65;
       margin: 0 0 var(--spacing-sm);
-    }
-
-    .success-banner {
-      background: var(--verdict-valid-bg);
-      color: var(--verdict-valid);
-      border: 0.0625rem solid var(--verdict-valid-border);
-      border-radius: var(--rounded-md);
-      padding: var(--spacing-sm) var(--spacing-md);
-      font-size: 0.8125rem;
-      margin-bottom: var(--spacing-md);
     }
 
     .ar-status-tabs {

@@ -299,6 +299,99 @@ async def activate_account(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
+class ForgotPasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: str = Field(..., min_length=1, max_length=255)
+
+
+class ResetPasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    token: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=8, max_length=255)
+    password_confirm: str = Field(..., min_length=1, max_length=255)
+
+    @field_validator("password")
+    @classmethod
+    def password_complexity(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("La contraseña debe contener al menos una letra mayúscula")
+        if not any(c.islower() for c in v):
+            raise ValueError("La contraseña debe contener al menos una letra minúscula")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("La contraseña debe contener al menos un número")
+        if not any(not c.isalnum() for c in v):
+            raise ValueError("La contraseña debe contener al menos un carácter especial")
+        return v
+
+    @model_validator(mode="after")
+    def passwords_match(self) -> "ResetPasswordRequest":
+        if self.password != self.password_confirm:
+            raise ValueError("Las contraseñas no coinciden")
+        return self
+
+
+@router.post("/api/v1/auth/forgot-password")
+@rate_limit_auth()
+async def forgot_password(
+    request: Request,
+    payload: ForgotPasswordRequest,
+):
+    import secrets
+    from datetime import timedelta
+    from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
+    from core.email import email_service
+
+    _ALWAYS_OK = {"message": "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña."}
+    try:
+        user_repo = SqlUserRepository()
+        user = await user_repo.get_by_email(payload.email)
+        if user and user.is_active:
+            token = secrets.token_urlsafe(32)
+            from datetime import timedelta
+            user.password_reset_token = token
+            user.password_reset_token_expiry = datetime.now(timezone.utc) + timedelta(hours=1)
+            await user_repo.update(user)
+            try:
+                await email_service.send_password_reset_email(
+                    to_email=user.email,
+                    to_name=user.display_name or user.email,
+                    token=token,
+                )
+            except Exception:
+                _log.exception("Failed to send password reset email for hash=%s", _hash_email(payload.email))
+    except Exception:
+        _log.exception("Forgot-password error for hash=%s", _hash_email(payload.email))
+    return _ALWAYS_OK
+
+
+@router.post("/api/v1/auth/reset-password")
+async def reset_password(payload: ResetPasswordRequest):
+    from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
+    from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+
+    user_repo = SqlUserRepository()
+    hasher = BcryptPasswordHasher()
+
+    user = await user_repo.get_by_password_reset_token(payload.token)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token de restablecimiento inválido.")
+
+    now = datetime.now(timezone.utc)
+    expiry = user.password_reset_token_expiry
+    if expiry and expiry.tzinfo is None:
+        from datetime import timezone as tz
+        expiry = expiry.replace(tzinfo=tz.utc)
+    if not expiry or expiry < now:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="El token de restablecimiento ha expirado.")
+
+    user.hashed_password = await asyncio.to_thread(hasher.hash_password, payload.password)
+    user.password_reset_token = None
+    user.password_reset_token_expiry = None
+    await user_repo.update(user)
+
+    return {"message": "Contraseña actualizada correctamente."}
+
+
 @router.post("/api/v1/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())],

@@ -40,7 +40,7 @@ import { TranslationService } from '../../i18n/translation.service';
     .dialog-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.5);
+      background: var(--overlay);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -54,12 +54,12 @@ import { TranslationService } from '../../i18n/translation.service';
     }
 
     .dialog {
-      background: var(--color-surface, #ffffff);
-      border-radius: 0.75rem;
-      padding: 1.5rem;
+      background: var(--surface-raised);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-lg);
+      padding: var(--spacing-lg);
       max-width: 24rem;
       width: 90%;
-      box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.2);
       animation: scaleIn 0.15s ease-out;
       text-align: center;
     }
@@ -79,19 +79,20 @@ import { TranslationService } from '../../i18n/translation.service';
       display: flex;
       justify-content: center;
       margin-bottom: 1rem;
-      color: var(--color-warning, #D97706);
+      color: var(--verdict-warning);
     }
 
     .dialog-title {
-      font-size: 1.125rem;
+      font-size: 1rem;
       font-weight: 600;
-      color: var(--color-text, #1F2937);
+      color: var(--ink);
       margin: 0 0 0.5rem 0;
+      line-height: 1.4;
     }
 
     .dialog-message {
       font-size: 0.875rem;
-      color: var(--color-text-secondary, #6B7280);
+      color: var(--muted);
       margin: 0 0 1.5rem 0;
       line-height: 1.5;
     }
@@ -103,56 +104,47 @@ import { TranslationService } from '../../i18n/translation.service';
     }
 
     .btn {
-      padding: 0.625rem 1.25rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      border-radius: 0.5rem;
-      border: none;
+      padding: 0.5625rem 1.125rem;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: var(--rounded-md);
+      border: 0.0625rem solid;
       cursor: pointer;
       transition: all 0.15s ease;
-      font-family: inherit;
+      font-family: var(--font-sans);
     }
 
     .btn:focus-visible {
-      outline: 2px solid var(--color-focus, #3B82F6);
-      outline-offset: 2px;
+      outline: 0.1875rem solid var(--accent-dark);
+      outline-offset: 0.125rem;
     }
 
     .btn-secondary {
-      background: var(--color-surface-secondary, #F3F4F6);
-      color: var(--color-text, #1F2937);
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--border-strong);
     }
 
-    .btn-secondary:hover {
-      background: var(--color-surface-hover, #E5E7EB);
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--paper-secondary);
     }
 
     .btn-danger {
-      background: var(--color-error, #DC2626);
-      color: white;
+      background: var(--verdict-invalid);
+      color: var(--paper);
+      border-color: var(--verdict-invalid);
     }
 
-    .btn-danger:hover {
-      background: var(--color-error-dark, #B91C1C);
+    .btn-danger:hover:not(:disabled) {
+      background: var(--verdict-invalid-bg);
+      color: var(--verdict-invalid);
     }
 
-    @media (prefers-color-scheme: dark) {
-      .dialog {
-        background: var(--color-surface-dark, #1F2937);
-      }
-      .dialog-title {
-        color: var(--color-text-dark, #F9FAFB);
-      }
-      .dialog-message {
-        color: var(--color-text-secondary-dark, #9CA3AF);
-      }
-      .btn-secondary {
-        background: var(--color-surface-secondary-dark, #374151);
-        color: var(--color-text-dark, #F9FAFB);
-      }
-      .btn-secondary:hover {
-        background: var(--color-surface-hover-dark, #4B5563);
-      }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
   `],
 })

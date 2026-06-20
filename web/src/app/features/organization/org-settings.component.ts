@@ -118,7 +118,7 @@ interface OrgUser {
           </select>
         </div>
         <div *ngIf="inviteError()" class="error-banner error-sm">{{ inviteError() }}</div>
-        <div *ngIf="inviteSuccess()" class="success-banner">{{ inviteSuccess() }}</div>
+        <div *ngIf="inviteSuccess()" class="alert-success">{{ inviteSuccess() }}</div>
         <div class="modal-footer">
           <button class="btn-ghost" (click)="closeInviteModal()">{{ 'common.cancel' | t }}</button>
           <button class="btn-primary" (click)="sendInvite()" [disabled]="inviting()">
@@ -146,7 +146,7 @@ interface OrgUser {
           </select>
         </div>
         <div *ngIf="transferError()" class="error-banner error-sm">{{ transferError() }}</div>
-        <div *ngIf="transferSuccess()" class="success-banner">{{ transferSuccess() }}</div>
+        <div *ngIf="transferSuccess()" class="alert-success">{{ transferSuccess() }}</div>
         <div class="modal-footer">
           <button class="btn-ghost" (click)="closeTransferModal()" [disabled]="transferring()">{{ 'common.cancel' | t }}</button>
           <button class="btn-danger" (click)="confirmTransfer()" [disabled]="transferring() || !transferTargetId">
@@ -461,17 +461,7 @@ interface OrgUser {
       margin-bottom: var(--spacing-md);
     }
 
-    .error-sm { margin-bottom: 0; margin-top: var(--spacing-sm); }
-
-    .success-banner {
-      background: var(--verdict-valid-bg);
-      color: var(--verdict-valid);
-      border: 0.0625rem solid var(--verdict-valid-border);
-      border-radius: var(--rounded-md);
-      padding: var(--spacing-sm) var(--spacing-md);
-      font-size: 0.8125rem;
-      margin-bottom: var(--spacing-md);
-    }
+    .error-sm { margin-bottom: 0; margin-top: var(--spacing-sm);     }
 
     .modal-overlay {
       position: fixed;

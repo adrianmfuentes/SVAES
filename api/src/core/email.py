@@ -152,5 +152,53 @@ class EmailService:
         except Exception:
             _log.exception("Failed to send verification result email to %s", to_email)
 
+    async def send_password_reset_email(self, to_email: str, to_name: str, token: str) -> None:
+        reset_url = f"{settings.app_base_url}/auth/reset-password?token={token}"
+        subject = "Restablece tu contraseña en SVAES"
+
+        plain = (
+            f"Hola {to_name},\n\n"
+            "Has solicitado restablecer tu contraseña en SVAES. "
+            "Haz clic en el siguiente enlace para establecer una nueva contraseña:\n\n"
+            f"{reset_url}\n\n"
+            "Este enlace expira en 1 hora.\n\n"
+            "Si no solicitaste este cambio, ignora este mensaje. Tu contraseña no cambiará.\n\n"
+            "— Equipo SVAES"
+        )
+
+        html = f"""
+        <html>
+          <body style="font-family:IBM Plex Sans,Arial,sans-serif;background:#F6F4F0;padding:40px;">
+            <div style="max-width:540px;margin:0 auto;background:#fff;border:1px solid #D4CFC7;border-radius:6px;padding:32px;">
+              <h1 style="font-family:DM Serif Display,Georgia,serif;font-size:1.75rem;font-weight:400;color:#0D0F12;margin:0 0 16px;">
+                Restablecer contraseña
+              </h1>
+              <p style="color:#7A7670;font-size:0.9375rem;line-height:1.65;margin:0 0 24px;">
+                Hola <strong style="color:#0D0F12;">{to_name}</strong>,<br><br>
+                Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en <strong>SVAES</strong>.
+                Haz clic en el botón para establecer una nueva contraseña.
+              </p>
+              <a href="{reset_url}"
+                 style="display:inline-block;background:#0D0F12;color:#F6F4F0;
+                        text-decoration:none;padding:9px 18px;border-radius:4px;
+                        font-size:0.6875rem;font-weight:600;letter-spacing:0.08em;
+                        text-transform:uppercase;">
+                Restablecer contraseña
+              </a>
+              <p style="color:#7A7670;font-size:0.75rem;margin:24px 0 0;">
+                Este enlace expira en 1 hora. Si no solicitaste este cambio, ignora este mensaje y tu contraseña no cambiará.
+              </p>
+            </div>
+          </body>
+        </html>
+        """
+
+        try:
+            await asyncio.to_thread(_send_smtp, to_email, subject, html, plain)
+            _log.info("Password reset email sent to %s", to_email)
+        except Exception:
+            _log.exception("Failed to send password reset email to %s", to_email)
+            raise
+
 
 email_service = EmailService()
