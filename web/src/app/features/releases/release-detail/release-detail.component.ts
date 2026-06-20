@@ -46,12 +46,13 @@ interface Artifact {
 
 interface RuleResult {
   rule_id: string;
-  rule_name: string;
+  rule_name?: string;
   connector?: string;
-  result: string;
+  status?: string;
+  result?: string;
+  message?: string;
   evidence?: string;
   severity?: string;
-  message?: string;
 }
 
 interface ConnectorApiItem {
@@ -82,7 +83,7 @@ interface VerificationResult {
   release_id: string;
   verdict: string;
   rule_results: RuleResult[];
-  summary: Record<string, number>;
+  summary: Record<string, number> | string;
   profile_snapshot?: Record<string, unknown>;
   duration_ms: number;
   executed_at: string;
@@ -208,17 +209,18 @@ interface VerificationResult {
                       [class.expanded]="expandedRule() === i"
                       (click)="toggleEvidence(i)">
                       <td><code class="mono-sm">{{ rule.rule_id | slice:0:8 }}</code></td>
-                      <td class="cell-primary">{{ rule.rule_name }}</td>
+                      <td class="cell-primary">{{ rule.rule_name || ('common.dash' | t) }}</td>
                       <td class="cell-muted">{{ rule.connector || ('common.dash' | t) }}</td>
                       <td>
-                        <span class="verdict-badge" [ngClass]="ruleResultClass(rule.result)">
-                          {{ translateRuleResult(rule.result) }}
+                        <span class="verdict-badge" [ngClass]="ruleResultClass(rule.status ?? rule.result ?? '')">
+                          {{ translateRuleResult(rule.status ?? rule.result ?? '') }}
                         </span>
                       </td>
                       <td class="cell-evidence" (click)="$event.stopPropagation()">
-                        @if (rule.evidence) {
-                          <span>{{ rule.evidence | slice:0:100 }}{{ rule.evidence.length > 100 ? '…' : '' }}</span>
-                          @if (rule.evidence.length > 100) {
+                        @let evidenceText = rule.evidence ?? rule.message;
+                        @if (evidenceText) {
+                          <span>{{ evidenceText | slice:0:100 }}{{ evidenceText.length > 100 ? '…' : '' }}</span>
+                          @if (evidenceText.length > 100) {
                             <button class="btn-expand" (click)="toggleEvidence(i)">{{ 'release_detail.see_more_btn' | t }}</button>
                           }
                         } @else {
@@ -226,10 +228,11 @@ interface VerificationResult {
                         }
                       </td>
                     </tr>
-                    @if (expandedRule() === i && rule.evidence) {
+                    @let expandedEvidence = rule.evidence ?? rule.message;
+                    @if (expandedRule() === i && expandedEvidence) {
                       <tr class="evidence-row">
                         <td colspan="5">
-                          <pre class="evidence-block">{{ rule.evidence }}</pre>
+                          <pre class="evidence-block">{{ expandedEvidence }}</pre>
                         </td>
                       </tr>
                     }
@@ -240,10 +243,14 @@ interface VerificationResult {
             @if (result.summary) {
               <div class="summary-bar">
                 <span class="summary-label">{{ 'release_detail.summary_label' | t }}</span>
-                @for (item of summaryItems(result.summary); track item[0]) {
-                  <span class="summary-chip" [ngClass]="ruleResultClass(item[0])">
-                    {{ item[1] }} {{ translateRuleResult(item[0]) }}
-                  </span>
+                @if (isSummaryString(result.summary)) {
+                  <span class="summary-text cell-muted">{{ result.summary }}</span>
+                } @else {
+                  @for (item of summaryItems(result.summary); track item[0]) {
+                    <span class="summary-chip" [ngClass]="ruleResultClass(item[0])">
+                      {{ item[1] }} {{ translateRuleResult(item[0]) }}
+                    </span>
+                  }
                 }
                 <span class="summary-duration text-muted">{{ result.duration_ms }}ms</span>
               </div>
@@ -2054,7 +2061,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   ruleResultClass(result: string): Record<string, boolean> {
     const r = result?.toUpperCase() || '';
     return {
-      'result-valid': r === 'VALID' || r === 'PASSED' || r === 'SUCCESS',
+      'result-valid': r === 'VALID' || r === 'PASSED' || r === 'SUCCESS' || r === 'OK',
       'result-warning': r === 'WITH_WARNINGS' || r === 'WARNING' || r === 'VALID_WITH_WARNINGS',
       'result-invalid': r === 'INVALID' || r === 'FAILED' || r === 'ERROR',
       'result-unevaluated': !r || r === 'NOT_EVALUATED' || r === 'SKIPPED',
@@ -2079,7 +2086,12 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     return this.ts.translateInstant('rule_result.' + result);
   }
 
-  summaryItems(summary: Record<string, number>): [string, number][] {
+  isSummaryString(summary: Record<string, number> | string): summary is string {
+    return typeof summary === 'string';
+  }
+
+  summaryItems(summary: Record<string, number> | string): [string, number][] {
+    if (typeof summary !== 'object' || summary === null) return [];
     return Object.entries(summary).sort((a, b) => b[1] - a[1]);
   }
 }

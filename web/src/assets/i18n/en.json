@@ -964,6 +964,7 @@
   "verdict.INVALID": "Invalid",
   "verdict.NOT_EVALUATED": "Not evaluated",
   "rule_result.PASSED": "Passed",
+  "rule_result.OK": "OK",
   "rule_result.FAILED": "Failed",
   "rule_result.SKIPPED": "Skipped",
   "rule_result.WARNING": "Warning",

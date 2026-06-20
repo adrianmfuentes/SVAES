@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -298,6 +298,7 @@ export class ResetPasswordComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   token: string | null = null;
   loading = false;
@@ -333,10 +334,11 @@ export class ResetPasswordComponent implements OnInit {
         password,
         password_confirm,
       })
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(finalize(() => { this.loading = false; this.cdr.detectChanges(); }))
       .subscribe({
         next: () => {
           this.done = true;
+          this.cdr.detectChanges();
         },
         error: (err: HttpErrorResponse) => {
           if (err.status === 410) {
@@ -346,6 +348,7 @@ export class ResetPasswordComponent implements OnInit {
           } else {
             this.errorKey = 'reset_password.error.internal';
           }
+          this.cdr.detectChanges();
         },
       });
   }
