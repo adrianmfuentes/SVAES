@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config';
 // Sequential execution (fileParallelism: false) caps concurrent listeners to 3.
 export default defineConfig({
   test: {
+    globals: true,
     fileParallelism: false,
   },
 });

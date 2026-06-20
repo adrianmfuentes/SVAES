@@ -102,21 +102,30 @@ describe('ActivateAccountComponent', () => {
   });
 
   describe('onSubmit', () => {
-    beforeEach(() => {
+    const fillValid = () => {
       component.activateForm.patchValue({
         activation_code: 'TOKEN123',
         password: 'Secure1!',
         password_confirm: 'Secure1!',
       });
-    });
+    };
 
     it('should not submit if form is invalid', () => {
+      fillValid();
       component.activateForm.patchValue({ password: '' });
       component.onSubmit();
       httpCtrl.expectNone('/api/v1/auth/activate');
     });
 
+    it('should not submit if loading is true', () => {
+      fillValid();
+      component.loading = true;
+      component.onSubmit();
+      httpCtrl.expectNone('/api/v1/auth/activate');
+    });
+
     it('should POST and set activationSuccess on success', () => {
+      fillValid();
       component.onSubmit();
       const req = httpCtrl.expectOne('/api/v1/auth/activate');
       expect(req.request.method).toBe('POST');
@@ -124,7 +133,18 @@ describe('ActivateAccountComponent', () => {
       expect(component.activationSuccess).toBe(true);
     });
 
+    it('should set tokenExpired on 400 error', () => {
+      fillValid();
+      component.onSubmit();
+      httpCtrl.expectOne('/api/v1/auth/activate').flush(
+        { detail: 'Bad request' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+      expect(component.tokenExpired).toBe(true);
+    });
+
     it('should set tokenExpired on 410 error', () => {
+      fillValid();
       component.onSubmit();
       httpCtrl.expectOne('/api/v1/auth/activate').flush(
         { detail: 'Token expired' },
@@ -134,9 +154,51 @@ describe('ActivateAccountComponent', () => {
     });
 
     it('should set submitError on generic error', () => {
+      fillValid();
       component.onSubmit();
       httpCtrl.expectOne('/api/v1/auth/activate').flush({}, { status: 500, statusText: 'Error' });
       expect(component.submitError).toBe('activate.error.generic');
+    });
+  });
+
+  describe('showPassword / showConfirm toggles', () => {
+    it('should toggle showPassword', () => {
+      expect(component.showPassword()).toBe(false);
+      component.showPassword.set(true);
+      expect(component.showPassword()).toBe(true);
+    });
+
+    it('should toggle showConfirm', () => {
+      expect(component.showConfirm()).toBe(false);
+      component.showConfirm.set(true);
+      expect(component.showConfirm()).toBe(true);
+    });
+  });
+
+  describe('password subscription', () => {
+    it('should update passwordChecks when password value changes', () => {
+      component.activateForm.get('password')!.setValue('Abcd1234!');
+      expect(component.passwordChecks.minLength).toBe(true);
+      expect(component.passwordChecks.uppercase).toBe(true);
+      expect(component.passwordChecks.number).toBe(true);
+      expect(component.passwordChecks.specialChar).toBe(true);
+    });
+
+    it('should update passwordChecks for weak password via valueChanges', () => {
+      component.activateForm.get('password')!.setValue('abc');
+      expect(component.passwordChecks.minLength).toBe(false);
+      expect(component.passwordChecks.uppercase).toBe(false);
+      expect(component.passwordChecks.number).toBe(false);
+      expect(component.passwordChecks.specialChar).toBe(false);
+    });
+  });
+
+  describe('ngOnDestroy', () => {
+    it('should unsubscribe from password subscription', () => {
+      const sub = (component as any).passwordSub;
+      const spy = vi.spyOn(sub, 'unsubscribe');
+      component.ngOnDestroy();
+      expect(spy).toHaveBeenCalled();
     });
   });
 });

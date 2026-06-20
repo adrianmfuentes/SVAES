@@ -14,6 +14,10 @@ from domain.exceptions import ValidationError, DuplicateEntityError
 from domain.enums import UserRole
 from . import ERROR_INTERNO
 
+_PASSWORD_UPPER_MSG = "La contraseña debe contener al menos una letra mayúscula"
+_PASSWORD_LOWER_MSG = "La contraseña debe contener al menos una letra minúscula"
+_PASSWORD_DIGIT_MSG = "La contraseña debe contener al menos un número"
+
 _log = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Auth"])
@@ -46,11 +50,11 @@ class RegisterRequest(BaseModel):
     @classmethod
     def password_complexity(cls, v: str) -> str:
         if not any(c.isupper() for c in v):
-            raise ValueError("La contraseña debe contener al menos una letra mayúscula")
+            raise ValueError(_PASSWORD_UPPER_MSG)
         if not any(c.islower() for c in v):
-            raise ValueError("La contraseña debe contener al menos una letra minúscula")
+            raise ValueError(_PASSWORD_LOWER_MSG)
         if not any(c.isdigit() for c in v):
-            raise ValueError("La contraseña debe contener al menos un número")
+            raise ValueError(_PASSWORD_DIGIT_MSG)
         return v
 
     @model_validator(mode="after")
@@ -240,11 +244,11 @@ class ActivateRequest(BaseModel):
     @classmethod
     def password_complexity(cls, v: str) -> str:
         if not any(c.isupper() for c in v):
-            raise ValueError("La contraseña debe contener al menos una letra mayúscula")
+            raise ValueError(_PASSWORD_UPPER_MSG)
         if not any(c.islower() for c in v):
-            raise ValueError("La contraseña debe contener al menos una letra minúscula")
+            raise ValueError(_PASSWORD_LOWER_MSG)
         if not any(c.isdigit() for c in v):
-            raise ValueError("La contraseña debe contener al menos un número")
+            raise ValueError(_PASSWORD_DIGIT_MSG)
         if not any(not c.isalnum() for c in v):
             raise ValueError("La contraseña debe contener al menos un carácter especial")
         return v
@@ -314,11 +318,11 @@ class ResetPasswordRequest(BaseModel):
     @classmethod
     def password_complexity(cls, v: str) -> str:
         if not any(c.isupper() for c in v):
-            raise ValueError("La contraseña debe contener al menos una letra mayúscula")
+            raise ValueError(_PASSWORD_UPPER_MSG)
         if not any(c.islower() for c in v):
-            raise ValueError("La contraseña debe contener al menos una letra minúscula")
+            raise ValueError(_PASSWORD_LOWER_MSG)
         if not any(c.isdigit() for c in v):
-            raise ValueError("La contraseña debe contener al menos un número")
+            raise ValueError(_PASSWORD_DIGIT_MSG)
         if not any(not c.isalnum() for c in v):
             raise ValueError("La contraseña debe contener al menos un carácter especial")
         return v

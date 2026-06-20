@@ -63,6 +63,16 @@ describe('AccessRequestFormComponent', () => {
       component.requestForm.get('requester_name')?.markAsTouched();
       expect(component.fieldHasError('requester_name')).toBe(true);
     });
+
+    it('should return false for valid touched field', () => {
+      component.requestForm.patchValue({ requester_name: 'Jane Smith' });
+      component.requestForm.get('requester_name')?.markAsTouched();
+      expect(component.fieldHasError('requester_name')).toBe(false);
+    });
+
+    it('should return false for non-existent field', () => {
+      expect(component.fieldHasError('nonexistent_field')).toBe(false);
+    });
   });
 
   describe('updateSlug', () => {
@@ -76,6 +86,18 @@ describe('AccessRequestFormComponent', () => {
       component.requestForm.patchValue({ organization_name: '' });
       component.updateSlug();
       expect(component.slugPreview()).toBe('');
+    });
+
+    it('should remove special characters from slug', () => {
+      component.requestForm.patchValue({ organization_name: 'Hola & Mundo!' });
+      component.updateSlug();
+      expect(component.slugPreview()).toBe('hola-mundo');
+    });
+
+    it('should strip non-alphanumeric chars and collapse hyphens', () => {
+      component.requestForm.patchValue({ organization_name: 'Test   Org___Name' });
+      component.updateSlug();
+      expect(component.slugPreview()).toBe('test-orgname');
     });
   });
 
@@ -115,11 +137,32 @@ describe('AccessRequestFormComponent', () => {
       expect(component.currentStep()).toBe(1);
     });
 
+    it('should mark step 1 fields as touched when invalid', () => {
+      component.currentStep.set(1);
+      component.handleFormSubmit();
+      expect(component.requestForm.get('requester_name')?.touched).toBe(true);
+      expect(component.requestForm.get('requester_email')?.touched).toBe(true);
+    });
+
     it('should advance to step 3 when step 2 is valid', () => {
       component.requestForm.patchValue({ organization_name: 'Valid Org', organization_description: '' });
       component.currentStep.set(2);
       component.handleFormSubmit();
       expect(component.currentStep()).toBe(3);
+    });
+
+    it('should stay on step 2 if step 2 invalid', () => {
+      component.currentStep.set(2);
+      component.requestForm.patchValue({ organization_name: '' });
+      component.handleFormSubmit();
+      expect(component.currentStep()).toBe(2);
+    });
+
+    it('should mark step 2 fields as touched when invalid', () => {
+      component.currentStep.set(2);
+      component.handleFormSubmit();
+      expect(component.requestForm.get('organization_name')?.touched).toBe(true);
+      expect(component.requestForm.get('organization_description')?.touched).toBe(true);
     });
   });
 
@@ -164,6 +207,15 @@ describe('AccessRequestFormComponent', () => {
     });
 
     it('should not submit if form is invalid (markAllAsTouched)', () => {
+      const spy = vi.spyOn(component.requestForm, 'markAllAsTouched');
+      component.onSubmit();
+      expect(spy).toHaveBeenCalled();
+      httpCtrl.expectNone('/api/v1/access-requests');
+    });
+
+    it('should not submit if loading is true', () => {
+      fillValid(component);
+      component.loading.set(true);
       const spy = vi.spyOn(component.requestForm, 'markAllAsTouched');
       component.onSubmit();
       expect(spy).toHaveBeenCalled();
