@@ -58,37 +58,37 @@ describe('ResetPasswordComponent', () => {
   describe('form validators', () => {
     describe('passwordStrengthValidator', () => {
       it('should return null for a strong password', () => {
-        const ctrl = component.form.get('password')!;
+        const ctrl = component.form.controls.password;
         ctrl.setValue('Abcd1234!');
         expect(ctrl.errors).toBeNull();
       });
 
       it('should return error for too short password', () => {
-        const ctrl = component.form.get('password')!;
+        const ctrl = component.form.controls.password;
         ctrl.setValue('Ab1!');
         expect(ctrl.errors).toEqual({ passwordStrength: true });
       });
 
       it('should return error for password without uppercase', () => {
-        const ctrl = component.form.get('password')!;
+        const ctrl = component.form.controls.password;
         ctrl.setValue('abcd1234!');
         expect(ctrl.errors).toEqual({ passwordStrength: true });
       });
 
       it('should return error for password without number', () => {
-        const ctrl = component.form.get('password')!;
+        const ctrl = component.form.controls.password;
         ctrl.setValue('Abcdefgh!');
         expect(ctrl.errors).toEqual({ passwordStrength: true });
       });
 
       it('should return error for password without special char', () => {
-        const ctrl = component.form.get('password')!;
+        const ctrl = component.form.controls.password;
         ctrl.setValue('Abcd1234');
         expect(ctrl.errors).toEqual({ passwordStrength: true });
       });
 
       it('should return both required and passwordStrength errors for empty value', () => {
-        const ctrl = component.form.get('password')!;
+        const ctrl = component.form.controls.password;
         ctrl.setValue('');
         expect(ctrl.errors).toEqual({ required: true, passwordStrength: true });
       });

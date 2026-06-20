@@ -14,9 +14,9 @@ from domain.exceptions import ValidationError, DuplicateEntityError
 from domain.enums import UserRole
 from . import ERROR_INTERNO
 
-_PASSWORD_UPPER_MSG = "La contraseña debe contener al menos una letra mayúscula"
-_PASSWORD_LOWER_MSG = "La contraseña debe contener al menos una letra minúscula"
-_PASSWORD_DIGIT_MSG = "La contraseña debe contener al menos un número"
+_PASSWORD_UPPER_MSG = "La contraseña debe contener al menos una letra mayúscula" # NOSONAR
+_PASSWORD_LOWER_MSG = "La contraseña debe contener al menos una letra minúscula" # NOSONAR
+_PASSWORD_DIGIT_MSG = "La contraseña debe contener al menos un número" # NOSONAR
 
 _log = logging.getLogger(__name__)
 
@@ -91,6 +91,8 @@ async def login(
         )
         if result.requires_2fa:
             return {"requires_2fa": True, "totp_token": result.totp_token}
+        if result.tokens is None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
         return {
             "access_token": str(result.tokens.access_token),
             "refresh_token": str(result.tokens.refresh_token),
@@ -114,6 +116,8 @@ async def verify_2fa(
 ):
     try:
         result = await service.verify_totp(payload.totp_token, payload.code)
+        if result.tokens is None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
         return {
             "access_token": str(result.tokens.access_token),
             "refresh_token": str(result.tokens.refresh_token),
