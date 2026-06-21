@@ -12,20 +12,21 @@ from infrastructure.secondary.database.models.rule_model import VerificationRule
 from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
 from domain.enums import UserRole, SeverityType
 from core.config import Settings
+from core.rule_names import RULE_NAMES
 
 _log = logging.getLogger(__name__)
 
 _SYSTEM_RULES = [
-    ("RV-01", SeverityType.HIGH,   "Artefactos existentes"),
-    ("RV-02", SeverityType.HIGH,   "Coherencia IDs"),
-    ("RV-03", SeverityType.MEDIUM, "Estado de tareas"),
-    ("RV-04", SeverityType.MEDIUM, "Estimación esfuerzo"),
-    ("RV-05", SeverityType.HIGH,   "Documentos existentes"),
-    ("RV-06", SeverityType.MEDIUM, "Versión documentos"),
-    ("RV-07", SeverityType.HIGH,   "Release planificada"),
-    ("RV-08", SeverityType.HIGH,   "Coherencia planificación"),
-    ("RV-09", SeverityType.MEDIUM, "Referencias código"),
-    ("RV-10", SeverityType.HIGH,   "Informe pruebas"),
+    ("RV-01", SeverityType.HIGH,   RULE_NAMES["RV-01"]),
+    ("RV-02", SeverityType.HIGH,   RULE_NAMES["RV-02"]),
+    ("RV-03", SeverityType.MEDIUM, RULE_NAMES["RV-03"]),
+    ("RV-04", SeverityType.MEDIUM, RULE_NAMES["RV-04"]),
+    ("RV-05", SeverityType.HIGH,   RULE_NAMES["RV-05"]),
+    ("RV-06", SeverityType.MEDIUM, RULE_NAMES["RV-06"]),
+    ("RV-07", SeverityType.HIGH,   RULE_NAMES["RV-07"]),
+    ("RV-08", SeverityType.HIGH,   RULE_NAMES["RV-08"]),
+    ("RV-09", SeverityType.MEDIUM, RULE_NAMES["RV-09"]),
+    ("RV-10", SeverityType.HIGH,   RULE_NAMES["RV-10"]),
 ]
 
 

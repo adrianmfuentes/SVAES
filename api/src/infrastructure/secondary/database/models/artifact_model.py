@@ -9,7 +9,7 @@ from domain.enums import ArtifactType
 class ArtifactModel(Base):
     __tablename__ = "artifact"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    release_id = Column(PG_UUID(as_uuid=True), ForeignKey("release.id"), nullable=False)
+    release_id = Column(PG_UUID(as_uuid=True), ForeignKey("release.id", ondelete="CASCADE"), nullable=False)
     connector_instance_id = Column(PG_UUID(as_uuid=True), nullable=False)
     connector_implementation = Column(String(50), nullable=False)
     artifact_type = Column(String(20), nullable=False, default=ArtifactType.TAREA.value)

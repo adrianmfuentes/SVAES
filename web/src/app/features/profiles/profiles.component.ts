@@ -77,6 +77,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                   <button
                     class="btn-ghost btn-danger-ghost"
                     [disabled]="deletingId() === p.id"
+                    [title]="deletingId() === p.id ? ('common.disabled_tooltip.operation_in_progress' | t) : ''"
                     (click)="deleteProfile(p)"
                   >
                     {{ deletingId() === p.id ? ('profiles.deleting' | t) : ('common.delete' | t) }}
@@ -144,7 +145,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
               </div>
               <div class="rule-form-actions">
                 <button type="button" class="btn-secondary btn-sm" (click)="cancelRuleForm()">{{ 'common.cancel' | t }}</button>
-                <button type="button" class="btn-primary btn-sm" [disabled]="savingRule()" (click)="submitRule()">
+                <button type="button" class="btn-primary btn-sm" [disabled]="savingRule()" [title]="savingRule() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''" (click)="submitRule()">
                   {{ savingRule() ? ('profiles.saving' | t) : (editingRule() ? ('profiles.update_rule' | t) : ('profiles.add_rule' | t)) }}
                 </button>
               </div>
@@ -170,7 +171,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
           <div *ngIf="modalError()" class="error-banner error-banner-sm">{{ modalError() }}</div>
           <div class="modal-footer">
             <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.cancel' | t }}</button>
-            <button type="submit" class="btn-primary" [disabled]="saving()">
+            <button type="submit" class="btn-primary" [disabled]="saving()" [title]="saving() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
               {{ saving() ? ('profiles.saving' | t) : (editingProfile() ? ('profiles.save_changes' | t) : ('profiles.create_button' | t)) }}
             </button>
           </div>

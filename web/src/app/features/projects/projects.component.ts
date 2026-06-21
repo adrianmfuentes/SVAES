@@ -95,7 +95,7 @@ interface Project {
         <p class="modal-body-text">{{ 'org_settings.archive_project_confirm' | t: { name: projectToArchive()!.name } }}</p>
         <div class="modal-footer">
           <button class="btn-ghost" (click)="cancelArchive()">{{ 'common.cancel' | t }}</button>
-          <button class="btn-primary" (click)="archive()" [disabled]="archiving()">
+          <button class="btn-primary" (click)="archive()" [disabled]="archiving()" [title]="archiving() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
             {{ archiving() ? ('common.loading' | t) : ('org_settings.archive_btn' | t) }}
           </button>
         </div>

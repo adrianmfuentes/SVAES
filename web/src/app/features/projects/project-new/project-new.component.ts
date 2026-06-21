@@ -102,7 +102,8 @@ interface Profile {
                 <button
                   type="submit"
                   class="btn-primary"
-                  [disabled]="form.invalid || submitting()">
+                  [disabled]="form.invalid || submitting()"
+                  [title]="form.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
                   {{ submitting() ? ('project_new.submitting' | t) : ('project_new.submit' | t) }}
                 </button>
               </div>

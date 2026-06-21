@@ -58,7 +58,7 @@ interface ProbeResult<T> {
         </div>
         <div class="refresh-controls">
           <span class="refresh-label" *ngIf="!loading()">{{ 'system.updated_ago' | t : { n: secondsSince() } }}</span>
-          <button class="btn-refresh" (click)="loadAll()" [disabled]="loading()">
+          <button class="btn-refresh" (click)="loadAll()" [disabled]="loading()" [title]="loading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none" [class.spinning]="loading()">
               <path d="M10.5 6A4.5 4.5 0 1 1 6 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
               <path d="M6.5 1L9 3.5 6.5 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -143,16 +143,16 @@ interface ProbeResult<T> {
         </div>
         <div class="action-controls">
           <ng-container *ngIf="!confirmingReload()">
-            <button class="btn-secondary" (click)="confirmingReload.set(true)" [disabled]="reloading()">
+            <button class="btn-secondary" (click)="confirmingReload.set(true)" [disabled]="reloading()" [title]="reloading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
               {{ 'system.reload_btn' | t }}
             </button>
           </ng-container>
           <ng-container *ngIf="confirmingReload()">
             <span class="confirm-label">{{ 'system.confirm_reload_label' | t }}</span>
-            <button class="btn-primary" (click)="executeReload()" [disabled]="reloading()">
+            <button class="btn-primary" (click)="executeReload()" [disabled]="reloading()" [title]="reloading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
               {{ reloading() ? ('system.reloading_label' | t) : ('system.confirm_btn' | t) }}
             </button>
-            <button class="btn-ghost-sm" (click)="confirmingReload.set(false)" [disabled]="reloading()">
+            <button class="btn-ghost-sm" (click)="confirmingReload.set(false)" [disabled]="reloading()" [title]="reloading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
               {{ 'system.cancel_btn' | t }}
             </button>
           </ng-container>

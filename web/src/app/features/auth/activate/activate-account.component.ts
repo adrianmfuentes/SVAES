@@ -122,6 +122,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                     type="button"
                     class="btn-primary btn-full"
                     [disabled]="activateForm.get('activation_code')?.invalid"
+                    [title]="activateForm.get('activation_code')?.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ''"
                     (click)="nextStep()"
                   >
                     {{ 'common.continue' | t }}
@@ -228,6 +229,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                                 activateForm.get('password_confirm')?.invalid ||
                                 activateForm.hasError('mismatch') ||
                                 loading"
+                    [title]="(activateForm.get('password')?.invalid || activateForm.get('password_confirm')?.invalid || activateForm.hasError('mismatch')) ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
                   >
                     <span *ngIf="loading" class="spinner"></span>
                     <span *ngIf="!loading">{{ 'activate.step2_button' | t }}</span>

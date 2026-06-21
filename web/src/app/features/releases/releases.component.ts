@@ -104,11 +104,11 @@ interface Release {
         </ng-template>
 
         <div class="pagination" *ngIf="filtered().length > pageSize">
-          <button class="btn-ghost" [disabled]="page() === 0" (click)="prevPage()">{{ 'common.previous' | t }}</button>
+          <button class="btn-ghost" [disabled]="page() === 0" [title]="page() === 0 ? ('common.disabled_tooltip.first_page' | t) : ''" (click)="prevPage()">{{ 'common.previous' | t }}</button>
           <span class="page-info">
             {{ page() + 1 }} / {{ totalPages() }}
           </span>
-          <button class="btn-ghost" [disabled]="page() >= totalPages() - 1" (click)="nextPage()">{{ 'common.next' | t }}</button>
+          <button class="btn-ghost" [disabled]="page() >= totalPages() - 1" [title]="page() >= totalPages() - 1 ? ('common.disabled_tooltip.last_page' | t) : ''" (click)="nextPage()">{{ 'common.next' | t }}</button>
         </div>
       </div>
 
@@ -119,7 +119,7 @@ interface Release {
             <p class="modal-message">{{ 'releases.delete_confirm' | t }}</p>
             <div class="modal-footer">
               <button class="btn-secondary" (click)="cancelDelete()">{{ 'common.cancel' | t }}</button>
-              <button class="btn-danger" [disabled]="deleting()" (click)="executeDelete()">
+              <button class="btn-danger" [disabled]="deleting()" [title]="deleting() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''" (click)="executeDelete()">
                 {{ deleting() ? ('common.deleting' | t) : ('common.delete' | t) }}
               </button>
             </div>

@@ -101,7 +101,7 @@ interface VerificationResult {
           <h1 class="page-title">{{ release()?.name || ('common.loading' | t) }}</h1>
         </div>
         <div class="page-header-actions">
-          <button class="btn-secondary" (click)="exportPdf()">
+          <button class="btn-secondary" [disabled]="!latestResult()" [title]="!latestResult() ? ('common.disabled_tooltip.no_verification' | t) : ''" (click)="exportPdf()">
             {{ 'release_detail.export_pdf' | t }}
           </button>
         </div>
@@ -206,7 +206,6 @@ interface VerificationResult {
                 <tbody>
                   @for (rule of result.rule_results; track rule.rule_id; let i = $index) {
                     <tr
-                      [class.expanded]="expandedRule() === i"
                       (click)="toggleEvidence(i)">
                       <td><code class="mono-sm">{{ rule.rule_id | slice:0:8 }}</code></td>
                       <td class="cell-primary">{{ rule.rule_name || ('common.dash' | t) }}</td>
@@ -228,18 +227,19 @@ interface VerificationResult {
                         }
                       </td>
                     </tr>
-                    @let expandedEvidence = rule.evidence ?? rule.message;
-                    @if (expandedRule() === i && expandedEvidence) {
-                      <tr class="evidence-row">
-                        <td colspan="5">
-                          <pre class="evidence-block">{{ expandedEvidence }}</pre>
-                        </td>
-                      </tr>
-                    }
                   }
                 </tbody>
               </table>
             </div>
+            @if (expandedEvidence(); as evidence) {
+              <div class="evidence-popover">
+                <div class="evidence-popover-header">
+                  <span class="evidence-popover-title">{{ 'release_detail.rule_evidence' | t }}</span>
+                  <button class="evidence-popover-close" (click)="expandedRule.set(null)">&times;</button>
+                </div>
+                <pre class="evidence-popover-body">{{ evidence }}</pre>
+              </div>
+            }
             @if (result.summary) {
               <div class="summary-bar">
                 <span class="summary-label">{{ 'release_detail.summary_label' | t }}</span>
@@ -272,6 +272,7 @@ interface VerificationResult {
                   <button
                     class="btn-accent"
                     [disabled]="verifying()"
+                    [title]="verifying() ? ('common.disabled_tooltip.verification_in_progress' | t) : ''"
                     (click)="launchVerification()">
                     @if (verifying()) { {{ 'release_detail.verifying_label' | t }} } @else { {{ 'release_detail.verify_label' | t }} }
                   </button>
@@ -445,6 +446,7 @@ interface VerificationResult {
                 <button type="button" class="btn-secondary" (click)="closeImportModal()">{{ 'common.cancel' | t }}</button>
                 <button type="button" class="btn-accent"
                   [disabled]="importing() || !importConnector() || !importExternalRef()"
+                  [title]="(!importConnector() || !importExternalRef()) ? ('common.disabled_tooltip.no_connector' | t) : importing() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''"
                   (click)="importArtifacts()">
                   {{ importing() ? ('release.importing' | t) : ('release.import' | t) }}
                 </button>
@@ -855,26 +857,56 @@ interface VerificationResult {
 
     .btn-expand:hover { color: var(--ink); }
 
-    .evidence-row td {
-      padding: 0 var(--spacing-md) var(--spacing-md);
-      border-bottom: 0.0625rem solid var(--border);
-      height: auto;
+    .evidence-popover {
+      margin-top: var(--spacing-sm);
+      background: var(--surface-raised);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-md);
+      overflow: hidden;
     }
 
-    .evidence-block {
+    .evidence-popover-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-bottom: 0.0625rem solid var(--border);
+      background: var(--paper-secondary);
+    }
+
+    .evidence-popover-title {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .evidence-popover-close {
+      font-size: 1.125rem;
+      line-height: 1;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0 0.25rem;
+    }
+
+    .evidence-popover-close:hover { color: var(--ink); }
+
+    .evidence-popover-body {
       font-family: var(--font-mono);
       font-size: 0.8125rem;
       line-height: 1.6;
       color: var(--ink);
-      background: var(--paper);
-      border: 0.0625rem solid var(--border);
-      border-radius: var(--rounded-md);
       padding: var(--spacing-md);
       margin: 0;
       white-space: pre-wrap;
       word-break: break-word;
-      max-height: 25rem;
+      max-height: 20rem;
       overflow-y: auto;
+      background: var(--paper);
     }
 
     /* Summary bar */
@@ -1631,6 +1663,14 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     );
   });
 
+  expandedEvidence = computed(() => {
+    const idx = this.expandedRule();
+    if (idx === null) return null;
+    const results = this.latestResult()?.rule_results;
+    if (!results || idx >= results.length) return null;
+    return results[idx].evidence ?? results[idx].message ?? null;
+  });
+
   stageLabel = computed(() => {
     const p = this.verificationProgress();
     if (!p) return this.ts.translateInstant('release_detail.verify_stage_loading');
@@ -2002,7 +2042,22 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   exportPdf(): void {
     const result = this.latestResult();
     if (!result) return;
-    window.open(`/api/v1/releases/${this.releaseId}/results/${result.id}/export?format=pdf`, '_blank');
+    this.http.get(
+      `/api/v1/releases/${this.releaseId}/results/${result.id}/export?format=pdf&lang=${this.ts.currentLang ?? 'es'}`,
+      { responseType: 'blob' }
+    ).pipe(
+      catchError(() => {
+        this.toast.error(this.ts.translateInstant('release_detail.export_error'));
+        return EMPTY;
+      })
+    ).subscribe(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `verification_${result.id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
   }
 
   toggleEvidence(index: number): void {

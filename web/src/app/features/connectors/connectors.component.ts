@@ -91,7 +91,7 @@ interface ConnectorTypesResponse {
                 <td class="cell-muted">{{ c.last_tested_at ? (c.last_tested_at | date:'dd MMM yyyy') : '—' }}</td>
                 <td *ngIf="canManage" class="cell-actions">
                   <button class="btn-ghost" (click)="openEdit(c)">{{ 'connectors.edit_label' | t }}</button>
-                  <button class="btn-ghost" (click)="testConnector(c)" [disabled]="testingId() === c.id">
+                  <button class="btn-ghost" (click)="testConnector(c)" [disabled]="testingId() === c.id" [title]="testingId() === c.id ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
                     {{ testingId() === c.id ? ('connectors.testing_label' | t) : ('connectors.test_label' | t) }}
                   </button>
                   <button class="btn-ghost" (click)="toggleConnector(c)">
@@ -152,7 +152,7 @@ interface ConnectorTypesResponse {
           <div *ngIf="modalError()" class="error-banner error-banner-sm">{{ modalError() }}</div>
           <div class="modal-footer">
             <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.cancel' | t }}</button>
-            <button type="submit" class="btn-primary" [disabled]="saving() || !isFormValid()">
+            <button type="submit" class="btn-primary" [disabled]="saving() || !isFormValid()" [title]="!isFormValid() ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
               {{ saving() ? ('connectors.saving' | t) : (editingConnector() ? ('connectors.save_changes' | t) : ('connectors.create' | t)) }}
             </button>
           </div>

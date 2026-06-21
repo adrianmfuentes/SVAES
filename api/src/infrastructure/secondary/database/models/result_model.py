@@ -9,7 +9,7 @@ from domain.enums import VerdictType
 class VerificationResultModel(Base):
     __tablename__ = "verification_result"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    release_id = Column(PG_UUID(as_uuid=True), ForeignKey("release.id"), nullable=False)
+    release_id = Column(PG_UUID(as_uuid=True), ForeignKey("release.id", ondelete="CASCADE"), nullable=False)
     verdict = Column(String(30), nullable=False, default=VerdictType.INVALID.value)
     duration_ms = Column(Integer, nullable=False, default=0)
     summary = Column(JSON, nullable=True, default=dict)

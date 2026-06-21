@@ -140,6 +140,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
                 type="submit"
                 class="btn-primary full-width btn-submit"
                 [disabled]="loginForm.invalid || loading"
+                [title]="loginForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
                 [class.btn-loading]="loading"
               >
                 <span *ngIf="!loading">{{ 'login.submit' | t }}</span>
@@ -196,6 +197,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
                 type="submit"
                 class="btn-primary full-width btn-submit"
                 [disabled]="totpForm.invalid || loading"
+                [title]="totpForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
                 [class.btn-loading]="loading"
               >
                 <span *ngIf="!loading">{{ 'login.2fa_verify' | t }}</span>
@@ -238,6 +240,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
                 type="submit"
                 class="btn-primary full-width btn-submit"
                 [disabled]="forgotForm.invalid || loading"
+                [title]="forgotForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
                 [class.btn-loading]="loading"
               >
                 <span *ngIf="!loading">{{ 'forgot_password.submit' | t }}</span>

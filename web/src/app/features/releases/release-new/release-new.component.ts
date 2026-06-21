@@ -121,7 +121,8 @@ interface Project {
                   <button
                     type="submit"
                     class="btn-primary"
-                    [disabled]="form.invalid || submitting()">
+                    [disabled]="form.invalid || submitting()"
+                    [title]="form.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
                     {{ submitting() ? (isEditMode() ? ('release_new.saving' | t) : ('release_new.submitting' | t)) : (isEditMode() ? ('release_new.save' | t) : ('release_new.submit' | t)) }}
                   </button>
                 </div>

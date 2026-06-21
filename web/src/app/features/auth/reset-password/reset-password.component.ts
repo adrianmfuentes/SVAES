@@ -119,6 +119,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
                 type="submit"
                 class="btn-primary full-width"
                 [disabled]="form.invalid || loading"
+                [title]="form.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
                 [class.btn-loading]="loading"
               >
                 <span *ngIf="!loading">{{ 'reset_password.submit' | t }}</span>

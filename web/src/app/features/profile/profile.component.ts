@@ -76,7 +76,7 @@ interface UserProfile {
 
             <div class="form-footer">
               <span class="save-confirm" *ngIf="nameSaved()">{{ 'profile_page.name_saved_msg' | t }}</span>
-              <button type="submit" class="btn-primary" [disabled]="nameForm.invalid || nameSaving()">
+              <button type="submit" class="btn-primary" [disabled]="nameForm.invalid || nameSaving()" [title]="nameForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
                 {{ nameSaving() ? ('profile_page.saving' | t) : ('profile_page.save_name_btn' | t) }}
               </button>
             </div>
@@ -131,7 +131,7 @@ interface UserProfile {
             <div *ngIf="orgError()" class="alert-error">{{ orgError() }}</div>
 
             <div class="form-footer">
-              <button type="submit" class="btn-primary" [disabled]="orgForm.invalid || orgCreating()">
+              <button type="submit" class="btn-primary" [disabled]="orgForm.invalid || orgCreating()" [title]="orgForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
                 {{ orgCreating() ? ('profile_page.creating' | t) : ('profile_page.create_org_btn' | t) }}
               </button>
             </div>
@@ -189,7 +189,7 @@ interface UserProfile {
 
             <div class="form-footer">
               <span class="save-confirm" *ngIf="pwSaved()">{{ 'profile_page.pw_saved_msg' | t }}</span>
-              <button type="submit" class="btn-primary" [disabled]="pwForm.invalid || pwSaving()">
+              <button type="submit" class="btn-primary" [disabled]="pwForm.invalid || pwSaving()" [title]="pwForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
                 {{ pwSaving() ? ('profile_page.saving' | t) : ('profile_page.change_pw_btn' | t) }}
               </button>
             </div>
@@ -213,7 +213,7 @@ interface UserProfile {
           <!-- Setup / QR code section (only when not yet enabled) -->
           <div *ngIf="!profile()?.totp_enabled">
             <div *ngIf="!totpSetupData()" class="form-footer" style="border-top:none; padding-top:0; margin-top: var(--spacing-md);">
-              <button class="btn-primary" [disabled]="totpLoading()" (click)="setupTotp()">
+              <button class="btn-primary" [disabled]="totpLoading()" [title]="totpLoading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''" (click)="setupTotp()">
                 {{ totpLoading() ? ('common.loading' | t) : ('profile_page.2fa_setup_btn' | t) }}
               </button>
             </div>
@@ -249,7 +249,7 @@ interface UserProfile {
                 <div *ngIf="totpError()" class="alert-error">{{ totpError() }}</div>
                 <div class="form-footer">
                   <span class="save-confirm" *ngIf="totpSuccess()">{{ 'profile_page.2fa_enabled_msg' | t }}</span>
-                  <button type="submit" class="btn-primary" [disabled]="totpEnableForm.invalid || totpLoading()">
+                  <button type="submit" class="btn-primary" [disabled]="totpEnableForm.invalid || totpLoading()" [title]="totpEnableForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
                     {{ totpLoading() ? ('common.loading' | t) : ('profile_page.2fa_enable_btn' | t) }}
                   </button>
                 </div>
@@ -281,7 +281,7 @@ interface UserProfile {
               <div *ngIf="totpError()" class="alert-error">{{ totpError() }}</div>
               <div class="form-footer">
                 <span class="save-confirm" *ngIf="totpSuccess()">{{ 'profile_page.2fa_disabled_msg' | t }}</span>
-                <button type="submit" class="btn-danger-sm" style="padding: 0.5625rem 1rem;" [disabled]="totpDisableForm.invalid || totpLoading()">
+                <button type="submit" class="btn-danger-sm" style="padding: 0.5625rem 1rem;" [disabled]="totpDisableForm.invalid || totpLoading()" [title]="totpDisableForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
                   {{ totpLoading() ? ('common.loading' | t) : ('profile_page.2fa_disable_btn' | t) }}
                 </button>
               </div>
@@ -370,7 +370,7 @@ interface UserProfile {
               <div *ngIf="keyCreateError()" class="alert-error">{{ keyCreateError() }}</div>
 
               <div class="form-footer">
-                <button type="submit" class="btn-primary" [disabled]="keyForm.invalid || keyCreating()">
+                <button type="submit" class="btn-primary" [disabled]="keyForm.invalid || keyCreating()" [title]="keyForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
                   {{ keyCreating() ? ('profile_page.creating_key' | t) : ('profile_page.create_key_btn' | t) }}
                 </button>
               </div>

@@ -219,11 +219,12 @@ function generateSlug(name: string): string {
                 </div>
 
                 <div class="step-nav">
-                  <button type="button" class="btn-secondary" (click)="prevStep()" [disabled]="loading()">{{ 'access_request.back' | t }}</button>
+                  <button type="button" class="btn-secondary" (click)="prevStep()" [disabled]="loading()" [title]="loading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">{{ 'access_request.back' | t }}</button>
                   <button
                     type="submit"
                     class="btn-primary btn-submit"
                     [disabled]="loading()"
+                    [title]="loading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''"
                     [class.btn-loading]="loading()"
                   >
                     <span *ngIf="!loading()">{{ 'access_request.submit' | t }}</span>

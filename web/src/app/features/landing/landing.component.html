@@ -47,46 +47,53 @@
         <div class="mock-window">
           <div class="mock-window-bar">
             <span class="mock-window-title">{{ 'landing.mock_verification' | t }} · release/2024-Q3-hotfix</span>
-            <span class="mock-window-id">a3f2c1d9</span>
           </div>
 
           <div class="mock-verdict">
-            <span class="mock-verdict-badge">✕ INVALID</span>
+            <span class="mock-verdict-icon">✕</span>
+            <span class="mock-verdict-badge">INVALID</span>
             <span class="mock-verdict-release">release/2024-Q3-hotfix</span>
+            <span class="mock-verdict-sep" aria-hidden="true">·</span>
             <span class="mock-verdict-meta">2 min ago</span>
+            <span class="mock-verdict-hash">a3f2c1d9</span>
           </div>
 
           <div class="mock-scan-area">
             <div class="mock-table">
               <div class="mock-row mock-row-1">
                 <span class="mock-id">RV-01</span>
-                <span>Artifact count</span>
+                <span class="mock-name">Artifact count</span>
                 <span class="mock-connector">GitLab</span>
-                <span class="mock-cell-result"><span class="mock-badge mock-valid">✓ VALID</span></span>
+                <span class="mock-result"><span class="mock-badge mock-valid">✓ VALID</span></span>
+                <span class="mock-evidence"></span>
               </div>
               <div class="mock-row mock-row-2">
                 <span class="mock-id">RV-02</span>
-                <span>Build status</span>
+                <span class="mock-name">Build status</span>
                 <span class="mock-connector">Jenkins</span>
-                <span class="mock-cell-result"><span class="mock-badge mock-valid">✓ VALID</span></span>
+                <span class="mock-result"><span class="mock-badge mock-valid">✓ VALID</span></span>
+                <span class="mock-evidence"></span>
               </div>
               <div class="mock-row mock-row-3">
                 <span class="mock-id">RV-03</span>
-                <span>Code coverage</span>
+                <span class="mock-name">Code coverage</span>
                 <span class="mock-connector">SonarQube</span>
-                <span class="mock-cell-result"><span class="mock-badge mock-invalid">✕ INVALID</span></span>
+                <span class="mock-result"><span class="mock-badge mock-invalid">✕ INVALID</span></span>
+                <span class="mock-evidence"></span>
               </div>
               <div class="mock-row mock-row-4">
                 <span class="mock-id">RV-04</span>
-                <span>Security scan</span>
+                <span class="mock-name">Security scan</span>
                 <span class="mock-connector">Trivy</span>
-                <span class="mock-cell-result"><span class="mock-badge mock-warning">⚠ WARNING</span></span>
+                <span class="mock-result"><span class="mock-badge mock-warning">⚠ WARNING</span></span>
+                <span class="mock-evidence"></span>
               </div>
               <div class="mock-row mock-row-5">
                 <span class="mock-id">RV-05</span>
-                <span>Approval gate</span>
+                <span class="mock-name">Approval gate</span>
                 <span class="mock-connector">GitHub</span>
-                <span class="mock-cell-result"><span class="mock-badge mock-checking">● CHECKING</span></span>
+                <span class="mock-result"><span class="mock-badge mock-unevaluated">— NOT_EVALUATED</span></span>
+                <span class="mock-evidence"></span>
               </div>
             </div>
           </div>

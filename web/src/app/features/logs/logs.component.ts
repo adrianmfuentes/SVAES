@@ -130,9 +130,9 @@ interface AuditLogsResponse {
           <div class="table-footer" *ngIf="filtered().length > 0">
             <span class="count-label">{{ 'logs.count' | t : { n: filtered().length } }}</span>
             <div class="pagination" *ngIf="filtered().length > pageSize">
-              <button class="btn-ghost" [disabled]="page() === 0" (click)="prevPage()">{{ 'logs.previous' | t }}</button>
+              <button class="btn-ghost" [disabled]="page() === 0" [title]="page() === 0 ? ('common.disabled_tooltip.first_page' | t) : ''" (click)="prevPage()">{{ 'logs.previous' | t }}</button>
               <span class="page-info">{{ page() + 1 }} / {{ totalPages() }}</span>
-              <button class="btn-ghost" [disabled]="page() >= totalPages() - 1" (click)="nextPage()">{{ 'logs.next' | t }}</button>
+              <button class="btn-ghost" [disabled]="page() >= totalPages() - 1" [title]="page() >= totalPages() - 1 ? ('common.disabled_tooltip.last_page' | t) : ''" (click)="nextPage()">{{ 'logs.next' | t }}</button>
             </div>
           </div>
         </div>

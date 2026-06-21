@@ -551,6 +551,7 @@ async def export_verification_result_pdf(
     service: Annotated[IVerificationService, Depends(get_verification_service)],
     export_service: Annotated[IExportService, Depends(get_export_service)],
     format: Annotated[Literal["pdf"], Query(description="Formato de exportación")] = "pdf",
+    lang: Annotated[str, Query(description="Idioma del informe (es/en)")] = "es",
 ):
     """Exporta el resultado de una verificación a formato PDF.
 
@@ -575,7 +576,8 @@ async def export_verification_result_pdf(
         result = await service.get_verification_result(release_id=id, result_id=rid)
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verificación no encontrada")
-        pdf_path = await export_service.export_verification_to_pdf(release_id=id, result_id=rid)
+        safe_lang = lang if lang in ("es", "en") else "es"
+        pdf_path = await export_service.export_verification_to_pdf(release_id=id, result_id=rid, lang=safe_lang)
         return FileResponse(pdf_path, media_type="application/pdf", filename=f"verification_{rid}.pdf")
     except HTTPException:
         raise

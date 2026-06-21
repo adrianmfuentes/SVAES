@@ -20,6 +20,8 @@ from infrastructure.secondary.database.repositories.verification_result_reposito
 from infrastructure.secondary.database.repositories.profile_repository import SqlProfileRepository
 from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
 from infrastructure.secondary.connectors import create_registered_connector_registry
+from infrastructure.secondary.database.repositories.connector_repository import SqlConnectorRepository
+from core.rule_names import RULE_NAMES
 
 
 def _map_severity_to_engine(severity: SeverityType) -> str:
@@ -162,6 +164,26 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
     except Exception as exc:
         await release_repo.update_status(release_id, ReleaseStatus.PENDIENTE)
         raise exc
+
+    rule_lookup = {rule.rule_template: rule for rule in profile.rules}
+
+    connector_repo = SqlConnectorRepository()
+    connector_names: dict[uuid.UUID, str] = {}
+    for rule in profile.rules:
+        if rule.connector_instance_id and rule.connector_instance_id not in connector_names:
+            connector = await connector_repo.get_by_id(rule.connector_instance_id)
+            if connector:
+                connector_names[rule.connector_instance_id] = connector.name
+
+    for rule_result in result_data.get("rule_results", []):
+        rid = rule_result.get("rule_id", "")
+        rule_result["rule_name"] = RULE_NAMES.get(rid, rid)
+        profile_rule = rule_lookup.get(rid)
+        if profile_rule and profile_rule.connector_instance_id:
+            rule_result["connector"] = connector_names.get(profile_rule.connector_instance_id, "")
+        else:
+            rule_result["connector"] = ""
+        rule_result["evidence"] = rule_result.get("message", "")
 
     # Engine returns Spanish verdict strings; map them to the domain VerdictType
     _engine_verdict_map = {

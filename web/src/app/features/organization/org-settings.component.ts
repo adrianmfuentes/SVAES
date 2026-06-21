@@ -121,7 +121,7 @@ interface OrgUser {
         <div *ngIf="inviteSuccess()" class="alert-success">{{ inviteSuccess() }}</div>
         <div class="modal-footer">
           <button class="btn-ghost" (click)="closeInviteModal()">{{ 'common.cancel' | t }}</button>
-          <button class="btn-primary" (click)="sendInvite()" [disabled]="inviting()">
+          <button class="btn-primary" (click)="sendInvite()" [disabled]="inviting()" [title]="inviting() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
             {{ inviting() ? ('common.loading' | t) : ('org_settings.send_invite' | t) }}
           </button>
         </div>
@@ -148,8 +148,8 @@ interface OrgUser {
         <div *ngIf="transferError()" class="error-banner error-sm">{{ transferError() }}</div>
         <div *ngIf="transferSuccess()" class="alert-success">{{ transferSuccess() }}</div>
         <div class="modal-footer">
-          <button class="btn-ghost" (click)="closeTransferModal()" [disabled]="transferring()">{{ 'common.cancel' | t }}</button>
-          <button class="btn-danger" (click)="confirmTransfer()" [disabled]="transferring() || !transferTargetId">
+          <button class="btn-ghost" (click)="closeTransferModal()" [disabled]="transferring()" [title]="transferring() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">{{ 'common.cancel' | t }}</button>
+          <button class="btn-danger" (click)="confirmTransfer()" [disabled]="transferring() || !transferTargetId" [title]="!transferTargetId ? ('common.disabled_tooltip.no_target' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
             {{ transferring() ? ('common.loading' | t) : ('org_settings.transfer_confirm_btn' | t) }}
           </button>
         </div>
@@ -166,7 +166,7 @@ interface OrgUser {
         <p class="modal-body-text">{{ 'org_settings.remove_member_confirm' | t: { name: memberToRemove()!.display_name } }}</p>
         <div class="modal-footer">
           <button class="btn-ghost" (click)="cancelRemoveMember()">{{ 'common.cancel' | t }}</button>
-          <button class="btn-danger" (click)="removeMember()" [disabled]="removing()">
+          <button class="btn-danger" (click)="removeMember()" [disabled]="removing()" [title]="removing() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
             {{ removing() ? ('common.loading' | t) : ('common.delete' | t) }}
           </button>
         </div>
