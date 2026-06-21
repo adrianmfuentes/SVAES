@@ -2506,7 +2506,7 @@ class TestSqlOrganizationRepository:
 
 # ── helpers for verification_result repository ────────────────────────────
 
-def _make_verification_result_row(result_id=None, release_id=None, verdict="VALIDA",
+def _make_verification_result_row(result_id=None, release_id=None, verdict="VALID",
                                    duration_ms=150, summary=None, rule_results=None,
                                    profile_snapshot=None):
     row = MagicMock()
@@ -2549,7 +2549,7 @@ class TestSqlVerificationResultRepository:
     async def test_find_by_id_found(self, repo):
         session, mgr = _make_mock_session()
         rid = uuid4()
-        row = _make_verification_result_row(result_id=rid, verdict="VALIDA")
+        row = _make_verification_result_row(result_id=rid, verdict="VALID")
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
         with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
@@ -2568,7 +2568,7 @@ class TestSqlVerificationResultRepository:
     async def test_find_by_release_with_results(self, repo):
         session, mgr = _make_mock_session()
         rel_id = uuid4()
-        rows = [_make_verification_result_row(release_id=rel_id, verdict="NO_VALIDA")]
+        rows = [_make_verification_result_row(release_id=rel_id, verdict="INVALID")]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
         with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):

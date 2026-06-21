@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter, ActivatedRoute, Router } from '@angular/router';
+import { provideRouter, ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { ActivateAccountComponent } from './activate-account.component';
 import { TranslationService } from '../../../core/i18n/translation.service';
@@ -26,6 +26,14 @@ const routeMock = {
 describe('ActivateAccountComponent', () => {
   let component: ActivateAccountComponent;
   let httpCtrl: HttpTestingController;
+
+  const fillValid = () => {
+    component.activateForm.patchValue({
+      activation_code: 'TOKEN123',
+      password: 'Secure1!',
+      password_confirm: 'Secure1!',
+    });
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -108,14 +116,6 @@ describe('ActivateAccountComponent', () => {
   });
 
   describe('onSubmit', () => {
-    const fillValid = () => {
-      component.activateForm.patchValue({
-        activation_code: 'TOKEN123',
-        password: 'Secure1!',
-        password_confirm: 'Secure1!',
-      });
-    };
-
     it('should not submit if form is invalid', () => {
       fillValid();
       component.activateForm.patchValue({ password: '' });
@@ -237,14 +237,6 @@ describe('ActivateAccountComponent', () => {
   });
 
   describe('authService interaction', () => {
-    const fillValid = () => {
-      component.activateForm.patchValue({
-        activation_code: 'TOKEN123',
-        password: 'Secure1!',
-        password_confirm: 'Secure1!',
-      });
-    };
-
     it('should call authService.storeTokens on successful activation', () => {
       fillValid();
       component.onSubmit();
@@ -258,14 +250,6 @@ describe('ActivateAccountComponent', () => {
   });
 
   describe('onSubmit', () => {
-    const fillValid = () => {
-      component.activateForm.patchValue({
-        activation_code: 'TOKEN123',
-        password: 'Secure1!',
-        password_confirm: 'Secure1!',
-      });
-    };
-
     it('should clear submitError before sending', () => {
       fillValid();
       component.submitError = 'previous error';

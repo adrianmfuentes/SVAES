@@ -2487,7 +2487,7 @@ class TestProfilesRouter:
         resp = client.post(
             f"/api/v1/profiles/{uuid4()}/rules",
             json={"rule_template": "RV01", "severity": "HIGH"},
-            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id, 'ADMIN')}"},
         )
         assert resp.status_code == 500
 
