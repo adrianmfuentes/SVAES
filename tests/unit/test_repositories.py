@@ -14,7 +14,7 @@ from uuid import uuid4, UUID
 from datetime import datetime, timezone
 
 from domain.entities.access_request import AccessRequest
-from domain.enums import AccessRequestStatus
+from domain.enums import AccessRequestStatus, VerdictType
 
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("ENVIRONMENT", "test")
@@ -2502,3 +2502,84 @@ class TestSqlOrganizationRepository:
         with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Organization not found"):
                 await repo.update(org)
+
+
+# ── helpers for verification_result repository ────────────────────────────
+
+def _make_verification_result_row(result_id=None, release_id=None, verdict="VALIDA",
+                                   duration_ms=150, summary=None, rule_results=None,
+                                   profile_snapshot=None):
+    row = MagicMock()
+    row.id = result_id or uuid4()
+    row.release_id = release_id or uuid4()
+    row.verdict = verdict
+    row.duration_ms = duration_ms
+    row.summary = summary or {}
+    row.rule_results = rule_results or []
+    row.profile_snapshot = profile_snapshot or {}
+    row.executed_at = datetime.now(timezone.utc)
+    return row
+
+
+# ── SqlVerificationResultRepository ───────────────────────────────────────
+
+class TestSqlVerificationResultRepository:
+    @pytest.fixture
+    def repo(self):
+        from infrastructure.secondary.database.repositories.verification_result_repository import SqlVerificationResultRepository
+        return SqlVerificationResultRepository()
+
+    async def test_save_success(self, repo):
+        session, mgr = _make_mock_session()
+        from domain.entities.verification_result import VerificationResult
+        result = VerificationResult(
+            id=uuid4(), release_id=uuid4(), verdict=VerdictType.VALID,
+            duration_ms=150, summary={"key": "val"},
+            rule_results=[{"rule_id": "RV01", "message": "ok"}],
+            profile_snapshot={},
+            executed_at=datetime.now(timezone.utc),
+        )
+        with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
+            saved = await repo.save(result)
+        session.add.assert_called_once()
+        session.commit.assert_awaited_once()
+        session.refresh.assert_awaited_once()
+        assert saved is not None
+
+    async def test_find_by_id_found(self, repo):
+        session, mgr = _make_mock_session()
+        rid = uuid4()
+        row = _make_verification_result_row(result_id=rid, verdict="VALIDA")
+        result = _make_scalar_result(row)
+        session.execute = AsyncMock(return_value=result)
+        with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
+            entity = await repo.find_by_id(rid)
+        assert entity is not None
+        assert entity.verdict == VerdictType.VALID
+
+    async def test_find_by_id_not_found(self, repo):
+        session, mgr = _make_mock_session()
+        result = _make_scalar_result(None)
+        session.execute = AsyncMock(return_value=result)
+        with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
+            entity = await repo.find_by_id(uuid4())
+        assert entity is None
+
+    async def test_find_by_release_with_results(self, repo):
+        session, mgr = _make_mock_session()
+        rel_id = uuid4()
+        rows = [_make_verification_result_row(release_id=rel_id, verdict="NO_VALIDA")]
+        result = _make_scalars_result(rows)
+        session.execute = AsyncMock(return_value=result)
+        with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
+            entities = await repo.find_by_release(rel_id)
+        assert len(entities) == 1
+        assert entities[0].verdict == VerdictType.INVALID
+
+    async def test_find_by_release_empty(self, repo):
+        session, mgr = _make_mock_session()
+        result = _make_scalars_result([])
+        session.execute = AsyncMock(return_value=result)
+        with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
+            entities = await repo.find_by_release(uuid4())
+        assert entities == []

@@ -1,15 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter, ActivatedRoute } from '@angular/router';
+import { provideRouter, ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { ActivateAccountComponent } from './activate-account.component';
 import { TranslationService } from '../../../core/i18n/translation.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 const tsMock = {
   translateInstant: vi.fn((key: string) => key),
   currentLang: 'es',
   lang$: of('es'),
+};
+
+const authMock = {
+  storeTokens: vi.fn(),
 };
 
 const routeMock = {
@@ -32,6 +37,7 @@ describe('ActivateAccountComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TranslationService, useValue: tsMock },
+        { provide: AuthService, useValue: authMock },
         { provide: ActivatedRoute, useValue: routeMock },
       ],
     });
@@ -199,6 +205,72 @@ describe('ActivateAccountComponent', () => {
       const spy = vi.spyOn(sub, 'unsubscribe');
       component.ngOnDestroy();
       expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe('form validators', () => {
+    it('should detect password mismatch via form-level validator', () => {
+      component.activateForm.patchValue({
+        password: 'Secure1!',
+        password_confirm: 'Different1!',
+      });
+      expect(component.activateForm.hasError('mismatch')).toBe(true);
+    });
+
+    it('should not have mismatch error when passwords match', () => {
+      component.activateForm.patchValue({
+        password: 'Secure1!',
+        password_confirm: 'Secure1!',
+      });
+      expect(component.activateForm.hasError('mismatch')).toBe(false);
+    });
+
+    it('should fail passwordStrength validator for weak password', () => {
+      component.activateForm.get('password')!.setValue('weak');
+      expect(component.activateForm.get('password')!.hasError('passwordStrength')).toBe(true);
+    });
+
+    it('should pass passwordStrength validator for strong password', () => {
+      component.activateForm.get('password')!.setValue('Strong1!');
+      expect(component.activateForm.get('password')!.hasError('passwordStrength')).toBe(false);
+    });
+  });
+
+  describe('authService interaction', () => {
+    const fillValid = () => {
+      component.activateForm.patchValue({
+        activation_code: 'TOKEN123',
+        password: 'Secure1!',
+        password_confirm: 'Secure1!',
+      });
+    };
+
+    it('should call authService.storeTokens on successful activation', () => {
+      fillValid();
+      component.onSubmit();
+      const req = httpCtrl.expectOne('/api/v1/auth/activate');
+      req.flush({ access_token: 'access-tok', refresh_token: 'refresh-tok' });
+      expect(authMock.storeTokens).toHaveBeenCalledWith(
+        { requires_2fa: false, access_token: 'access-tok', refresh_token: 'refresh-tok' },
+        '',
+      );
+    });
+  });
+
+  describe('onSubmit', () => {
+    const fillValid = () => {
+      component.activateForm.patchValue({
+        activation_code: 'TOKEN123',
+        password: 'Secure1!',
+        password_confirm: 'Secure1!',
+      });
+    };
+
+    it('should clear submitError before sending', () => {
+      fillValid();
+      component.submitError = 'previous error';
+      component.onSubmit();
+      expect(component.submitError).toBeNull();
     });
   });
 });

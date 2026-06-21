@@ -110,7 +110,42 @@ def _build_rules_data(profile: Any) -> list:
     return rules_data
 
 
+_ENGINE_VERDICT_MAP = {
+    "VALIDA": VerdictType.VALID,
+    "CON_ADVERTENCIAS": VerdictType.VALID_WITH_WARNINGS,
+    "NO_VALIDA": VerdictType.INVALID,
+}
+
+_VERDICT_TO_STATUS = {
+    VerdictType.VALID: ReleaseStatus.VALIDA,
+    VerdictType.VALID_WITH_WARNINGS: ReleaseStatus.CON_ADVERTENCIAS,
+    VerdictType.INVALID: ReleaseStatus.NO_VALIDA,
+}
+
 _wlog = logging.getLogger(__name__)
+
+
+async def _build_connector_names(profile: Any) -> dict:
+    connector_repo = SqlConnectorRepository()
+    connector_names: dict[uuid.UUID, str] = {}
+    for rule in profile.rules:
+        if rule.connector_instance_id and rule.connector_instance_id not in connector_names:
+            connector = await connector_repo.get_by_id(rule.connector_instance_id)
+            if connector:
+                connector_names[rule.connector_instance_id] = connector.name
+    return connector_names
+
+
+def _enrich_rule_results(result_data: dict, rule_lookup: dict, connector_names: dict) -> None:
+    for rule_result in result_data.get("rule_results", []):
+        rid = rule_result.get("rule_id", "")
+        rule_result["rule_name"] = RULE_NAMES.get(rid, rid)
+        profile_rule = rule_lookup.get(rid)
+        if profile_rule and profile_rule.connector_instance_id:
+            rule_result["connector"] = connector_names.get(profile_rule.connector_instance_id, "")
+        else:
+            rule_result["connector"] = ""
+        rule_result["evidence"] = rule_result.get("message", "")
 
 
 async def _notify_user(release_id: uuid.UUID, release: Any, saved_result: Any) -> None:
@@ -166,42 +201,14 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
         raise exc
 
     rule_lookup = {rule.rule_template: rule for rule in profile.rules}
-
-    connector_repo = SqlConnectorRepository()
-    connector_names: dict[uuid.UUID, str] = {}
-    for rule in profile.rules:
-        if rule.connector_instance_id and rule.connector_instance_id not in connector_names:
-            connector = await connector_repo.get_by_id(rule.connector_instance_id)
-            if connector:
-                connector_names[rule.connector_instance_id] = connector.name
-
-    for rule_result in result_data.get("rule_results", []):
-        rid = rule_result.get("rule_id", "")
-        rule_result["rule_name"] = RULE_NAMES.get(rid, rid)
-        profile_rule = rule_lookup.get(rid)
-        if profile_rule and profile_rule.connector_instance_id:
-            rule_result["connector"] = connector_names.get(profile_rule.connector_instance_id, "")
-        else:
-            rule_result["connector"] = ""
-        rule_result["evidence"] = rule_result.get("message", "")
-
-    # Engine returns Spanish verdict strings; map them to the domain VerdictType
-    _engine_verdict_map = {
-        "VALIDA": VerdictType.VALID,
-        "CON_ADVERTENCIAS": VerdictType.VALID_WITH_WARNINGS,
-        "NO_VALIDA": VerdictType.INVALID,
-    }
-    verdict_to_status = {
-        VerdictType.VALID: ReleaseStatus.VALIDA,
-        VerdictType.VALID_WITH_WARNINGS: ReleaseStatus.CON_ADVERTENCIAS,
-        VerdictType.INVALID: ReleaseStatus.NO_VALIDA,
-    }
+    connector_names = await _build_connector_names(profile)
+    _enrich_rule_results(result_data, rule_lookup, connector_names)
 
     save_stage = engine_stage + 1
     _report_progress(celery_task, current=save_stage, total=total_stages, stage='saving_results')
 
     raw_verdict = result_data.get("verdict", "NO_VALIDA")
-    domain_verdict = _engine_verdict_map.get(raw_verdict, VerdictType.INVALID)
+    domain_verdict = _ENGINE_VERDICT_MAP.get(raw_verdict, VerdictType.INVALID)
 
     verification_result = VerificationResult(
         id=uuid.uuid4(),
@@ -214,7 +221,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
 
     try:
         saved_result = await verification_repo.save(verification_result)
-        final_status = verdict_to_status.get(saved_result.verdict, ReleaseStatus.NO_VALIDA)
+        final_status = _VERDICT_TO_STATUS.get(saved_result.verdict, ReleaseStatus.NO_VALIDA)
         await release_repo.update_status(release_id, final_status)
     except Exception as exc:
         await release_repo.update_status(release_id, ReleaseStatus.PENDIENTE)

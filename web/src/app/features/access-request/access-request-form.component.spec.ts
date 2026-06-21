@@ -237,5 +237,51 @@ describe('AccessRequestFormComponent', () => {
       req.flush({ id: 'req-2' });
       expect(component.submitted()).toBe(true);
     });
+
+    it('should markAllAsTouched when step 3 form is invalid', () => {
+      component.currentStep.set(3);
+      component.requestForm.patchValue({ requester_name: '' });
+      const spy = vi.spyOn(component.requestForm, 'markAllAsTouched');
+      component.handleFormSubmit();
+      expect(spy).toHaveBeenCalled();
+      httpCtrl.expectNone('/api/v1/access-requests');
+    });
+  });
+
+  describe('loading state', () => {
+    it('should set loading true during submission', () => {
+      component.requestForm.patchValue({
+        requester_name: 'Jane Smith',
+        requester_email: 'jane@example.com',
+        organization_name: 'Acme Corp',
+        organization_description: 'A great company',
+      });
+      component.handleFormSubmit();
+      expect(component.loading()).toBe(true);
+      httpCtrl.expectOne('/api/v1/access-requests');
+    });
+
+    it('should set loading false after error', () => {
+      component.requestForm.patchValue({
+        requester_name: 'Jane Smith',
+        requester_email: 'jane@example.com',
+        organization_name: 'Acme Corp',
+        organization_description: 'A great company',
+      });
+      component.onSubmit();
+      httpCtrl.expectOne('/api/v1/access-requests').flush({}, { status: 503, statusText: 'Service Unavailable' });
+      expect(component.loading()).toBe(false);
+    });
+  });
+
+  describe('handleFormSubmit step 2 markAsTouched', () => {
+    it('should mark step 2 fields as touched when invalid', () => {
+      component.currentStep.set(2);
+      component.requestForm.patchValue({ organization_name: '' });
+      component.handleFormSubmit();
+      expect(component.requestForm.get('organization_name')?.touched).toBe(true);
+      expect(component.requestForm.get('organization_description')?.touched).toBe(true);
+      expect(component.currentStep()).toBe(2);
+    });
   });
 });

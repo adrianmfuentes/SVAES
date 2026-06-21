@@ -44,6 +44,15 @@ describe('LogsComponent', () => {
 
   afterEach(() => httpCtrl.verify());
 
+  describe('initial state', () => {
+    it('should start with loading=true and notAvailable=false', () => {
+      expect(component.loading()).toBe(true);
+      expect(component.notAvailable()).toBe(false);
+      expect(component.allLogs()).toEqual([]);
+      expect(component.page()).toBe(0);
+    });
+  });
+
   describe('ngOnInit / HTTP', () => {
     it('should load logs on init', () => {
       const logs = makeLogs(5);
@@ -53,6 +62,14 @@ describe('LogsComponent', () => {
       expect(component.filtered()).toHaveLength(5);
       expect(component.loading()).toBe(false);
       expect(component.notAvailable()).toBe(false);
+    });
+
+    it('should handle empty logs on init', () => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/audit/logs?limit=500').flush({ total: 0, logs: [] });
+      expect(component.allLogs()).toHaveLength(0);
+      expect(component.filtered()).toHaveLength(0);
+      expect(component.loading()).toBe(false);
     });
 
     it('should set notAvailable on HTTP error', () => {
@@ -129,6 +146,21 @@ describe('LogsComponent', () => {
       component.nextPage();
       expect(component.page()).toBe(1);
     });
+
+    it('nextPage should clamp at last page', () => {
+      component.filtered.set(makeLogs(50));
+      component.page.set(1);
+      component.nextPage();
+      expect(component.page()).toBe(1);
+      component.nextPage();
+      expect(component.page()).toBe(1);
+    });
+
+    it('should return empty slice when no filtered results', () => {
+      component.filtered.set([]);
+      expect(component.paginated()).toHaveLength(0);
+      expect(component.totalPages()).toBe(0);
+    });
   });
 
   describe('maskId', () => {
@@ -147,6 +179,12 @@ describe('LogsComponent', () => {
       const result = component.maskId('abcdef1234567890');
       expect(result).toContain('••••');
     });
+
+    it('should handle exactly 8-char id without placeholder', () => {
+      const result = component.maskId('12345678');
+      expect(result).not.toBe('••••••••');
+      expect(result).toContain('••••');
+    });
   });
 
   describe('maskIp', () => {
@@ -161,6 +199,17 @@ describe('LogsComponent', () => {
 
     it('should handle non-IPv4 format', () => {
       const result = component.maskIp('abcdef');
+      expect(result).toBeTruthy();
+    });
+
+    it('should handle empty string IP', () => {
+      const result = component.maskIp('');
+      expect(result).toBe('•••');
+    });
+
+    it('should handle IP with too few octets', () => {
+      const result = component.maskIp('192.168');
+      expect(result).not.toBe('');
       expect(result).toBeTruthy();
     });
   });

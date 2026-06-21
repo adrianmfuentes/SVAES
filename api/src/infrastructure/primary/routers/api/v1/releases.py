@@ -578,7 +578,8 @@ async def export_verification_result_pdf(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verificación no encontrada")
         safe_lang = lang if lang in ("es", "en") else "es"
         pdf_path = await export_service.export_verification_to_pdf(release_id=id, result_id=rid, lang=safe_lang)
-        return FileResponse(pdf_path, media_type="application/pdf", filename=f"verification_{rid}.pdf")
+        safe_filename = f"verification_{rid}.pdf".replace("\\", "_").replace("/", "_")
+        return FileResponse(pdf_path, media_type="application/pdf", filename=safe_filename)
     except HTTPException:
         raise
     except Exception:
@@ -612,7 +613,8 @@ async def export_project_results_csv(
         if format != "csv":
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Formato no soportado. Use format=csv")
         csv_path = await export_service.export_project_results_to_csv(project_id=project_id)
-        return FileResponse(csv_path, media_type="text/csv", filename=f"project_{project_id}_results.csv")
+        safe_filename = f"project_{project_id}_results.csv".replace("\\", "_").replace("/", "_")
+        return FileResponse(csv_path, media_type="text/csv", filename=safe_filename)
     except HTTPException:
         raise
     except Exception:

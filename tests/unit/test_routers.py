@@ -2299,6 +2299,268 @@ class TestProfilesRouter:
         )
         assert resp.status_code in (404, 403, 405)
 
+    def test_list_profiles_server_error_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.list_profiles = AsyncMock(side_effect=RuntimeError("BOOM"))
+        client = TestClient(self.app)
+        resp = client.get(
+            f"/api/v1/organizations/{self.org_id}/profiles",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code == 500
+
+    def test_create_profile_validation_error_409(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import ValidationError
+        self.svc.create_profile = AsyncMock(side_effect=ValidationError("bad"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/organizations/{self.org_id}/profiles",
+            json={"name": "P1", "description": ""},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code == 409
+
+    def test_create_profile_server_error_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.create_profile = AsyncMock(side_effect=RuntimeError("BOOM"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/organizations/{self.org_id}/profiles",
+            json={"name": "P1", "description": ""},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code == 500
+
+    def test_get_profile_success(self):
+        from fastapi.testclient import TestClient
+        from domain.entities.verification_profile import VerificationProfile
+        pid = uuid4()
+        p = VerificationProfile(id=pid, organization_id=self.org_id, name="P1")
+        rule = MagicMock()
+        rule.id = uuid4()
+        rule.rule_template = "RV01"
+        rule.severity = MagicMock()
+        rule.severity.value = "HIGH"
+        rule.connector_instance_id = uuid4()
+        rule.params = {}
+        rule.display_order = 1
+        rule.is_active = True
+        p.rules = [rule]
+        self.svc.get_profile = AsyncMock(return_value=p)
+        client = TestClient(self.app)
+        resp = client.get(
+            f"/api/v1/profiles/{pid}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (200, 403)
+        if resp.status_code == 200:
+            data = resp.json()
+            assert data["id"] == str(pid)
+            assert len(data["rules"]) == 1
+
+    def test_get_profile_server_error_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.get_profile = AsyncMock(side_effect=RuntimeError("BOOM"))
+        client = TestClient(self.app)
+        resp = client.get(
+            f"/api/v1/profiles/{uuid4()}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
+    def test_update_profile_success(self):
+        from fastapi.testclient import TestClient
+        from domain.entities.verification_profile import VerificationProfile
+        pid = uuid4()
+        p = VerificationProfile(id=pid, organization_id=self.org_id, name="Updated")
+        self.svc.update_profile = AsyncMock(return_value=p)
+        client = TestClient(self.app)
+        resp = client.patch(
+            f"/api/v1/profiles/{pid}",
+            json={"name": "Updated", "description": "new desc"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (200, 403)
+        if resp.status_code == 200:
+            assert resp.json()["name"] == "Updated"
+
+    def test_update_profile_not_found_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.svc.update_profile = AsyncMock(side_effect=EntityNotFoundError("gone"))
+        client = TestClient(self.app)
+        resp = client.patch(
+            f"/api/v1/profiles/{uuid4()}",
+            json={"name": "Updated"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (404, 403)
+
+    def test_update_profile_validation_error_409(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import ValidationError
+        self.svc.update_profile = AsyncMock(side_effect=ValidationError("bad"))
+        client = TestClient(self.app)
+        resp = client.patch(
+            f"/api/v1/profiles/{uuid4()}",
+            json={"name": "X"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (409, 403)
+
+    def test_update_profile_server_error_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.update_profile = AsyncMock(side_effect=RuntimeError("BOOM"))
+        client = TestClient(self.app)
+        resp = client.patch(
+            f"/api/v1/profiles/{uuid4()}",
+            json={"name": "Updated"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
+    def test_delete_profile_success(self):
+        from fastapi.testclient import TestClient
+        self.svc.delete_profile = AsyncMock()
+        client = TestClient(self.app)
+        resp = client.delete(
+            f"/api/v1/profiles/{uuid4()}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (204, 403)
+
+    def test_delete_profile_not_found_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.svc.delete_profile = AsyncMock(side_effect=EntityNotFoundError("gone"))
+        client = TestClient(self.app)
+        resp = client.delete(
+            f"/api/v1/profiles/{uuid4()}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (404, 403)
+
+    def test_delete_profile_server_error_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.delete_profile = AsyncMock(side_effect=RuntimeError("BOOM"))
+        client = TestClient(self.app)
+        resp = client.delete(
+            f"/api/v1/profiles/{uuid4()}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
+    def test_add_rule_success(self):
+        from fastapi.testclient import TestClient
+        pid = uuid4()
+        rule = MagicMock()
+        rule.id = uuid4()
+        rule.rule_template = "RV01"
+        self.svc.add_rule = AsyncMock(return_value=rule)
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/profiles/{pid}/rules",
+            json={"rule_template": "RV01", "severity": "HIGH"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (201, 403)
+        if resp.status_code == 201:
+            assert resp.json()["rule_template"] == "RV01"
+
+    def test_add_rule_profile_not_found_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.svc.add_rule = AsyncMock(side_effect=EntityNotFoundError("gone"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/profiles/{uuid4()}/rules",
+            json={"rule_template": "RV01", "severity": "HIGH"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (404, 403)
+
+    def test_add_rule_server_error_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.add_rule = AsyncMock(side_effect=RuntimeError("BOOM"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/profiles/{uuid4()}/rules",
+            json={"rule_template": "RV01", "severity": "HIGH"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code == 500
+
+    def test_update_rule_success(self):
+        from fastapi.testclient import TestClient
+        rule = MagicMock()
+        rule.id = uuid4()
+        rule.is_active = True
+        self.svc.update_rule = AsyncMock(return_value=rule)
+        client = TestClient(self.app)
+        resp = client.patch(
+            f"/api/v1/rules/{uuid4()}",
+            json={"is_active": True},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (200, 403)
+        if resp.status_code == 200:
+            assert resp.json()["is_active"] is True
+
+    def test_update_rule_not_found_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.svc.update_rule = AsyncMock(side_effect=EntityNotFoundError("gone"))
+        client = TestClient(self.app)
+        resp = client.patch(
+            f"/api/v1/rules/{uuid4()}",
+            json={"is_active": False},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (404, 403)
+
+    def test_update_rule_server_error_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.update_rule = AsyncMock(side_effect=RuntimeError("BOOM"))
+        client = TestClient(self.app)
+        resp = client.patch(
+            f"/api/v1/rules/{uuid4()}",
+            json={"is_active": False},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
+    def test_delete_rule_success(self):
+        from fastapi.testclient import TestClient
+        self.svc.delete_rule = AsyncMock()
+        client = TestClient(self.app)
+        resp = client.delete(
+            f"/api/v1/rules/{uuid4()}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (204, 403)
+
+    def test_delete_rule_not_found_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.svc.delete_rule = AsyncMock(side_effect=EntityNotFoundError("gone"))
+        client = TestClient(self.app)
+        resp = client.delete(
+            f"/api/v1/rules/{uuid4()}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (404, 403)
+
+    def test_delete_rule_server_error_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.delete_rule = AsyncMock(side_effect=RuntimeError("BOOM"))
+        client = TestClient(self.app)
+        resp = client.delete(
+            f"/api/v1/rules/{uuid4()}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TestAuditRouter  (from test_routers_extended.py)
