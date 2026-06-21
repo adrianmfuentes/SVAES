@@ -377,7 +377,7 @@ class TestAccessGuards:
         from core.dependencies import require_project_access
         dep = require_project_access()
         result = await dep(project_id=uuid4(), current_user=cu_admin)
-        assert result.role.value == "ADMIN"
+        assert result.user.role.value == "ADMIN"
 
     async def test_require_project_access_not_found_404(self, cu_operator):
         """Branch: project not found → 404"""

@@ -34,7 +34,7 @@ class SqlArtifactRepository(IArtifactRepository):
                 artifact_type=getattr(artifact.artifact_type, 'value', artifact.artifact_type),
                 external_ref=artifact.external_ref,
                 description=artifact.description,
-                metadata=artifact.metadata,
+                artifact_metadata=artifact.metadata,
                 created_at=artifact.created_at,
             )
             session.add(artifact_model)

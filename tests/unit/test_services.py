@@ -1640,7 +1640,7 @@ class TestManageProfile:
         profile_repo.get_by_id = AsyncMock(return_value=None)
         from domain.exceptions import EntityNotFoundError
         with pytest.raises(EntityNotFoundError):
-            await service.delete_profile(uuid4())
+            await service.delete_profile(uuid4(), uuid4())
 
     async def test_delete_profile_success(self, svc):
         """Branch: profile found → delete called"""
@@ -1649,7 +1649,7 @@ class TestManageProfile:
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         profile_repo.get_by_id = AsyncMock(return_value=p)
         profile_repo.delete = AsyncMock()
-        await service.delete_profile(p.id)
+        await service.delete_profile(p.id, uuid4())
         profile_repo.delete.assert_awaited_once()
 
     async def test_add_rule_profile_not_found_raises(self, svc):
@@ -1708,7 +1708,7 @@ class TestManageProfile:
         rule_repo.get_by_id = AsyncMock(return_value=None)
         from domain.exceptions import EntityNotFoundError
         with pytest.raises(EntityNotFoundError):
-            await service.delete_rule(uuid4())
+            await service.delete_rule(uuid4(), uuid4())
 
     async def test_reorder_rules_profile_not_found_raises(self, svc):
         """Branch: profile not found → EntityNotFoundError"""
