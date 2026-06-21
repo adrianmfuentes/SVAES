@@ -106,13 +106,13 @@ class TestExportServicePDF:
         verification_repo.find_by_id = AsyncMock(return_value=result)
         release_repo.get_by_id = AsyncMock(return_value=release)
 
-        with patch("reportlab.platypus.SimpleDocTemplate") as mock_doc:
+        with patch("application.use_cases.main.export_service.SimpleDocTemplate") as mock_doc:
             mock_instance = MagicMock()
             mock_doc.return_value = mock_instance
 
             pdf_path = await service.export_verification_to_pdf(rid, vid)
 
-            assert pdf_path.endswith(f"verification_{vid}.pdf")
+            assert pdf_path.endswith(f"verification_{vid}_es.pdf")
             mock_instance.build.assert_called_once()
 
     async def test_export_pdf_result_found_release_none(self, svc):
@@ -136,7 +136,7 @@ class TestExportServicePDF:
         verification_repo.find_by_id = AsyncMock(return_value=result)
         release_repo.get_by_id = AsyncMock(return_value=None)
 
-        with patch("reportlab.platypus.SimpleDocTemplate") as mock_doc:
+        with patch("application.use_cases.main.export_service.SimpleDocTemplate") as mock_doc:
             mock_instance = MagicMock()
             mock_doc.return_value = mock_instance
 
@@ -160,7 +160,7 @@ class TestExportServicePDF:
         verification_repo.find_by_id = AsyncMock(return_value=result)
         release_repo.get_by_id = AsyncMock(return_value=None)
 
-        with patch("reportlab.platypus.SimpleDocTemplate") as mock_doc:
+        with patch("application.use_cases.main.export_service.SimpleDocTemplate") as mock_doc:
             mock_instance = MagicMock()
             mock_doc.return_value = mock_instance
 

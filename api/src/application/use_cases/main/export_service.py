@@ -300,6 +300,11 @@ def _status_colors(status: str) -> tuple:
     return _UNEVAL, _UNEVAL_BG, _UNEVAL_BDR
 
 
+def _write_bytes(path: str, data: bytes) -> None:
+    with open(path, "wb") as f:
+        f.write(data)
+
+
 def _write_csv(path: str, results: list) -> None:
     with open(path, "w", newline="", encoding="utf-8") as f:
         if results:
