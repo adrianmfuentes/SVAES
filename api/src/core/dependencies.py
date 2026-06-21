@@ -178,7 +178,8 @@ def require_project_access():
         current_user: CurrentUser = Depends(get_current_user),
         project_repo: SqlProjectRepository = Depends(get_project_repository),
         org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
-    ) -> CurrentUser:
+    ) -> ProjectAccess:
+        project = None
         if current_user.role != UserRole.U3:
             project = await project_repo.get_by_id(project_id)
             if not project:
@@ -191,7 +192,7 @@ def require_project_access():
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="No tienes acceso a este proyecto",
                     )
-        return current_user
+        return ProjectAccess(user=current_user, project=project)
     return dependency  # NOSONAR
 
 

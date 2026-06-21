@@ -1,7 +1,7 @@
 from application.ports.output.i_release_repository import IReleaseRepository
 from domain.entities.release import Release
 from domain.enums import ReleaseStatus
-from domain.exceptions import EntityNotFoundError
+from domain.exceptions import EntityNotFoundError, DuplicateEntityError
 from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
 from infrastructure.secondary.database.models import ArtifactModel, ReleaseModel
@@ -43,7 +43,14 @@ class SqlReleaseRepository(IReleaseRepository):
                 created_by=getattr(release, 'created_by', None)
             )
             session.add(release_model)
-            await session.commit()
+            try:
+                await session.commit()
+            except IntegrityError as exc:
+                await session.rollback()
+                orig = str(exc.orig)
+                if "project_id" in orig and "version" in orig:
+                    raise DuplicateEntityError("Ya existe una entrega con esa versión en este proyecto.")
+                raise
             await session.refresh(release_model)
 
 

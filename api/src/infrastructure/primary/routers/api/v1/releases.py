@@ -14,7 +14,7 @@ from application.ports.input.i_export_service import IExportService
 
 from core.dependencies import get_release_service, get_artifact_service, get_verification_service, get_export_service, get_current_user, CurrentUser, ProjectAccess, require_permission, require_project_access, require_release_access, require_role
 from domain.enums import ArtifactType, ReleaseStatus, Permission, UserRole
-from domain.exceptions import ValidationError, EntityNotFoundError
+from domain.exceptions import ValidationError, EntityNotFoundError, DuplicateEntityError
 from . import ERROR_INTERNO
 
 # Constantes de mensajes de error
@@ -93,6 +93,8 @@ async def create_release(
         }
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
+    except DuplicateEntityError:
+        raise
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 

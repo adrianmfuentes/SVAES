@@ -15,6 +15,9 @@ os.environ.setdefault("REDIS_URL", REDIS_URL)
 os.environ.setdefault("CELERY_BROKER_URL", REDIS_URL)
 os.environ.setdefault("CELERY_RESULT_BACKEND", REDIS_URL)
 os.environ.setdefault("ENGINE_URL", "http://localhost:8081")
+os.environ.setdefault("ENGINE_API_KEY", "test-engine-api-key")
+os.environ.setdefault("ADMIN_EMAIL", "admin@test.local")
+os.environ.setdefault("ADMIN_PASSWORD", "test-admin-password")
 
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "api", "src"))

@@ -16,10 +16,9 @@ class CeleryTaskQueue(ITaskQueue):
 
 
     async def get_task_status(self, task_id: str) -> TaskStatus:
-        result = celery_app.AsyncResult(task_id)
-        status_str = result.status
-
         try:
+            result = celery_app.AsyncResult(task_id)
+            status_str = result.status
             return TaskStatus[status_str]
         except Exception:
             return TaskStatus.PENDING
