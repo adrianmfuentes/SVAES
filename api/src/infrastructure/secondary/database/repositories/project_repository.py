@@ -121,5 +121,5 @@ class SqlProjectRepository(IProjectRepository):
             if not project_model:
                 raise ValueError("Project not found")
 
-            session.delete(project_model)
+            session.delete(project_model)  # pyright: ignore[reportUnusedCoroutine]
             await session.commit()

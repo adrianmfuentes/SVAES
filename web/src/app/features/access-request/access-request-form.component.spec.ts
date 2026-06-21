@@ -285,4 +285,197 @@ describe('AccessRequestFormComponent', () => {
       expect(component.currentStep()).toBe(2);
     });
   });
+
+  describe('generateSlug edge cases (via updateSlug)', () => {
+    it('should generate slug from normal name', () => {
+      component.requestForm.patchValue({ organization_name: 'My Test Organization' });
+      component.updateSlug();
+      expect(component.slugPreview()).toBe('my-test-organization');
+    });
+
+    it('should handle name with special characters', () => {
+      component.requestForm.patchValue({ organization_name: 'Test@#Company!' });
+      component.updateSlug();
+      expect(component.slugPreview()).toBe('testcompany');
+    });
+
+    it('should collapse multiple spaces into single hyphen', () => {
+      component.requestForm.patchValue({ organization_name: 'Hello    World' });
+      component.updateSlug();
+      expect(component.slugPreview()).toBe('hello-world');
+    });
+
+    it('should preserve existing hyphens', () => {
+      component.requestForm.patchValue({ organization_name: 'already-hyphenated-name' });
+      component.updateSlug();
+      expect(component.slugPreview()).toBe('already-hyphenated-name');
+    });
+
+    it('should strip leading and trailing hyphens', () => {
+      component.requestForm.patchValue({ organization_name: '-Leading Trailing-' });
+      component.updateSlug();
+      expect(component.slugPreview()).toBe('leading-trailing');
+    });
+
+    it('should return empty string for empty input', () => {
+      component.requestForm.patchValue({ organization_name: '' });
+      component.updateSlug();
+      expect(component.slugPreview()).toBe('');
+    });
+  });
+
+  describe('handleFormSubmit step 1 with invalid email', () => {
+    it('should mark fields as touched and stay on step 1 when email is invalid', () => {
+      component.currentStep.set(1);
+      component.requestForm.patchValue({ requester_name: 'Jane', requester_email: 'not-an-email' });
+      component.handleFormSubmit();
+      expect(component.requestForm.get('requester_name')?.touched).toBe(true);
+      expect(component.requestForm.get('requester_email')?.touched).toBe(true);
+      expect(component.currentStep()).toBe(1);
+    });
+  });
+
+  describe('handleFormSubmit step 2 with over-500-char description', () => {
+    it('should stay on step 2 and mark fields as touched when description exceeds 500 chars', () => {
+      component.currentStep.set(2);
+      component.requestForm.patchValue({
+        organization_name: 'Valid Org',
+        organization_description: 'x'.repeat(501),
+      });
+      component.handleFormSubmit();
+      expect(component.currentStep()).toBe(2);
+      expect(component.requestForm.get('organization_name')?.touched).toBe(true);
+      expect(component.requestForm.get('organization_description')?.touched).toBe(true);
+    });
+  });
+
+  describe('prevStep from step 3', () => {
+    it('should go to step 2 when currentStep is 3', () => {
+      component.currentStep.set(3);
+      component.prevStep();
+      expect(component.currentStep()).toBe(2);
+    });
+  });
+
+  describe('updateSlug with non-latin characters', () => {
+    it('should remove non-latin characters from slug', () => {
+      component.requestForm.patchValue({ organization_name: '组织测试' });
+      component.updateSlug();
+      expect(component.slugPreview()).toBe('');
+    });
+
+    it('should keep latin characters and remove non-latin ones', () => {
+      component.requestForm.patchValue({ organization_name: 'Empresa 组织' });
+      component.updateSlug();
+      expect(component.slugPreview()).toBe('empresa');
+    });
+  });
+
+  describe('updateCharCount edge cases', () => {
+    it('should set charCount to 0 for empty description', () => {
+      component.requestForm.patchValue({ organization_description: '' });
+      component.updateCharCount();
+      expect(component.charCount()).toBe(0);
+    });
+
+    it('should set charCount for description over 500 chars', () => {
+      component.requestForm.patchValue({ organization_description: 'x'.repeat(501) });
+      component.updateCharCount();
+      expect(component.charCount()).toBe(501);
+    });
+  });
+
+  describe('onSubmit when response is null', () => {
+    const fillValid = (comp: AccessRequestFormComponent) => {
+      comp.requestForm.patchValue({
+        requester_name: 'Jane Smith',
+        requester_email: 'jane@example.com',
+        organization_name: 'Acme Corp',
+        organization_description: 'A great company',
+      });
+    };
+
+    it('should not set submitted when catchError returns null response', () => {
+      fillValid(component);
+      component.onSubmit();
+      httpCtrl.expectOne('/api/v1/access-requests').flush({}, { status: 0, statusText: '' });
+      expect(component.submitted()).toBe(false);
+      expect(component.loading()).toBe(false);
+    });
+  });
+
+  describe('loading false after successful submission', () => {
+    const fillValid = (comp: AccessRequestFormComponent) => {
+      comp.requestForm.patchValue({
+        requester_name: 'Jane Smith',
+        requester_email: 'jane@example.com',
+        organization_name: 'Acme Corp',
+        organization_description: 'A great company',
+      });
+    };
+
+    it('should set loading to false after successful submission', () => {
+      fillValid(component);
+      component.onSubmit();
+      httpCtrl.expectOne('/api/v1/access-requests').flush({ id: 'req-1' });
+      expect(component.loading()).toBe(false);
+      expect(component.submitted()).toBe(true);
+    });
+  });
+
+  describe('errorMessage cleared before new submission', () => {
+    const fillValid = (comp: AccessRequestFormComponent) => {
+      comp.requestForm.patchValue({
+        requester_name: 'Jane Smith',
+        requester_email: 'jane@example.com',
+        organization_name: 'Acme Corp',
+        organization_description: 'A great company',
+      });
+    };
+
+    it('should clear errorMessage when starting a new submission', () => {
+      fillValid(component);
+      component.errorMessage.set('previous error');
+      component.onSubmit();
+      expect(component.errorMessage()).toBeNull();
+      httpCtrl.expectOne('/api/v1/access-requests');
+    });
+  });
+
+  describe('handleFormSubmit step 3 when loading is true', () => {
+    it('should call markAllAsTouched and not submit when loading', () => {
+      component.requestForm.patchValue({
+        requester_name: 'Jane Smith',
+        requester_email: 'jane@example.com',
+        organization_name: 'Acme Corp',
+        organization_description: 'A great company',
+      });
+      component.currentStep.set(3);
+      component.loading.set(true);
+      const spy = vi.spyOn(component.requestForm, 'markAllAsTouched');
+      component.handleFormSubmit();
+      expect(spy).toHaveBeenCalled();
+      httpCtrl.expectNone('/api/v1/access-requests');
+    });
+  });
+
+  describe('onSubmit sets loading and clears errorMessage', () => {
+    const fillValid = (comp: AccessRequestFormComponent) => {
+      comp.requestForm.patchValue({
+        requester_name: 'Jane Smith',
+        requester_email: 'jane@example.com',
+        organization_name: 'Acme Corp',
+        organization_description: 'A great company',
+      });
+    };
+
+    it('should set loading to true and errorMessage to null before making request', () => {
+      fillValid(component);
+      component.errorMessage.set('previous error');
+      component.onSubmit();
+      expect(component.loading()).toBe(true);
+      expect(component.errorMessage()).toBeNull();
+      httpCtrl.expectOne('/api/v1/access-requests');
+    });
+  });
 });

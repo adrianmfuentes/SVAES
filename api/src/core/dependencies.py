@@ -338,6 +338,11 @@ def require_profile_access():
                 return
 
             if profile.organization_id != current_user.organization_id:
+                if profile.organization_id is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="No tienes acceso a este perfil",
+                    )
                 org = await org_repo.get_by_id(profile.organization_id)
                 if not (org and org.owner_id == current_user.user_id):
                     raise HTTPException(
@@ -362,6 +367,11 @@ def require_rule_access():
 
             profile = await profile_repo.get_by_id(rule.profile_id)
             if profile and profile.organization_id != current_user.organization_id:
+                if profile.organization_id is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="No tienes acceso a esta regla",
+                    )
                 org = await org_repo.get_by_id(profile.organization_id)
                 if not (org and org.owner_id == current_user.user_id):
                     raise HTTPException(

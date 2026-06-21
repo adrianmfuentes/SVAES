@@ -1,3 +1,4 @@
+import ast
 import uuid
 import asyncio
 import logging
@@ -79,22 +80,34 @@ async def _fetch_artifacts(
     celery_task: Any,
     total_stages: int,
 ) -> list:
+    from cryptography.fernet import Fernet
+    connector_repo = SqlConnectorRepository()
+    fernet = Fernet(settings.encryption_key.encode())  # type: ignore[union-attr]
     artifacts_data = []
     for i, artifact in enumerate(artifacts):
         _report_progress(celery_task, current=2 + i, total=total_stages, stage='fetching_artifacts')
         try:
             connector_impl = connector_registry.get_by_implementation(artifact.connector_implementation)
-            if connector_impl:
-                config = {}
-                data = await connector_impl.fetch_artifact(artifact.external_ref, config)
-                data = pseudonymize(data)
-                artifacts_data.append({
-                    "id": str(artifact.id),
-                    "artifact_type": artifact.artifact_type,
-                    "metadata": data,
-                })
+            connector_instance = await connector_repo.get_by_id(artifact.connector_instance_id)
+            if not connector_instance:
+                _wlog.warning(
+                    "Connector instance %s not found for artifact %s",
+                    artifact.connector_instance_id, artifact.id,
+                )
+                continue
+            config = ast.literal_eval(fernet.decrypt(connector_instance.encrypted_credentials).decode())
+            data = await connector_impl.fetch_artifact(artifact.external_ref, config)
+            data = pseudonymize(data)
+            artifacts_data.append({
+                "id": str(artifact.id),
+                "artifact_type": artifact.artifact_type,
+                "metadata": data,
+            })
         except Exception:
-            pass
+            _wlog.exception(
+                "Failed to fetch artifact %s (connector=%s, ref=%s)",
+                artifact.id, artifact.connector_implementation, artifact.external_ref,
+            )
     return artifacts_data
 
 

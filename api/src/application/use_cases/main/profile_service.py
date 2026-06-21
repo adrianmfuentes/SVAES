@@ -161,4 +161,4 @@ class ProfileService(ManageProfileUseCase, IProfileService):
         profile = await self._profile_repo.get_by_id(rule.profile_id)
         if profile and profile.is_default:
             raise ValidationError("No se pueden eliminar reglas del perfil por defecto.")
-        await super().delete_rule(rule_id)
+        await super().delete_rule(rule_id, requested_by)

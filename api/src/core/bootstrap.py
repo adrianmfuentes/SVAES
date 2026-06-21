@@ -41,18 +41,18 @@ async def seed_admin_user(settings: Settings) -> None:
 
         if existing_admin is not None:
             if existing_admin.organization_id is not None:
-                existing_admin.organization_id = None
+                existing_admin.organization_id = None  # pyright: ignore[reportAttributeAccessIssue]
                 await session.commit()
                 _log.warning(
                     "Admin user (id=%s) had organization_id set — stripped to enforce invariant.",
                     existing_admin.id,
                 )
-            if hasher.needs_rehash(existing_admin.hashed_password):
+            if hasher.needs_rehash(str(existing_admin.hashed_password)):
                 password_matches = await asyncio.to_thread(
-                    hasher.verify_password, settings.admin_password, existing_admin.hashed_password
+                    hasher.verify_password, settings.admin_password, str(existing_admin.hashed_password)
                 )
                 if password_matches:
-                    existing_admin.hashed_password = await asyncio.to_thread(
+                    existing_admin.hashed_password = await asyncio.to_thread(  # pyright: ignore[reportAttributeAccessIssue]
                         hasher.hash_password, settings.admin_password
                     )
                     await session.commit()

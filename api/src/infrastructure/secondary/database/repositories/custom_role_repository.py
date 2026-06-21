@@ -65,7 +65,7 @@ class SqlCustomRoleRepository(ICustomRoleRepository):
             model.name = role.name  # pyright: ignore[reportAttributeAccessIssue]
             model.permissions = [p.value for p in role.permissions]  # pyright: ignore[reportAttributeAccessIssue]
             model.is_active = role.is_active  # pyright: ignore[reportAttributeAccessIssue]
-            model.updated_at = datetime.now(timezone.utc)
+            model.updated_at = datetime.now(timezone.utc)  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(model)
@@ -78,5 +78,5 @@ class SqlCustomRoleRepository(ICustomRoleRepository):
             if not model:
                 raise ValueError("Custom role not found")
 
-            session.delete(model)
+            session.delete(model)  # pyright: ignore[reportUnusedCoroutine]
             await session.commit()

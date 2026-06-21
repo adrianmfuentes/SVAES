@@ -1,3 +1,5 @@
+import os
+import tempfile
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -81,7 +83,7 @@ async def create_release(
             name=payload.name,
             version=payload.version,
             project_id=project_id,
-            user_id=project_access.user_id,
+            user_id=project_access.user.user_id,
             description=payload.description,
             profile_id=payload.profile_id,
         )
@@ -578,6 +580,8 @@ async def export_verification_result_pdf(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verificación no encontrada")
         safe_lang = lang if lang in ("es", "en") else "es"
         pdf_path = await export_service.export_verification_to_pdf(release_id=id, result_id=rid, lang=safe_lang)
+        if not os.path.realpath(pdf_path).startswith(tempfile.gettempdir()):
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
         safe_filename = f"verification_{rid}.pdf".replace("\\", "_").replace("/", "_")
         return FileResponse(pdf_path, media_type="application/pdf", filename=safe_filename)
     except HTTPException:
@@ -613,6 +617,8 @@ async def export_project_results_csv(
         if format != "csv":
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Formato no soportado. Use format=csv")
         csv_path = await export_service.export_project_results_to_csv(project_id=project_id)
+        if not os.path.realpath(csv_path).startswith(tempfile.gettempdir()):
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
         safe_filename = f"project_{project_id}_results.csv".replace("\\", "_").replace("/", "_")
         return FileResponse(csv_path, media_type="text/csv", filename=safe_filename)
     except HTTPException:

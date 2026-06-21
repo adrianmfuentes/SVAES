@@ -27,14 +27,14 @@ interface PasswordChecks {
   specialChar: boolean;
 }
 
-function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+export function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const password = control.get('password');
   const confirm = control.get('password_confirm');
   if (!password || !confirm) return null;
   return password.value === confirm.value ? null : { mismatch: true };
 }
 
-function passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
+export function passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
   const value: string = control.value || '';
   const valid =
     value.length >= 8 &&

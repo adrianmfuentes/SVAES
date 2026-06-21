@@ -57,6 +57,8 @@ class ManageProfileUseCase:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
 
         if is_default and not profile.is_default:
+            if profile.organization_id is None:
+                raise ValidationError("El perfil no pertenece a ninguna organización")
             existing_default = await self._profile_repo.get_default_for_organization(profile.organization_id)
             if existing_default:
                 existing_default.is_default = False
@@ -114,7 +116,7 @@ class ManageProfileUseCase:
         return duplicated
 
 
-    async def delete_profile(self, profile_id: UUID) -> None:
+    async def delete_profile(self, profile_id: UUID, _requested_by: UUID) -> None:
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
@@ -180,7 +182,7 @@ class ManageProfileUseCase:
         return await self._rule_repo.update(rule)
 
 
-    async def delete_rule(self, rule_id: UUID) -> None:
+    async def delete_rule(self, rule_id: UUID, _requested_by: UUID) -> None:
         rule = await self._rule_repo.get_by_id(rule_id)
         if not rule:
             raise EntityNotFoundError(f"Regla no encontrada: {rule_id}")

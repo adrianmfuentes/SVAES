@@ -77,7 +77,7 @@ class SqlOrganizationRepository(IOrganizationRepository):
             org_model.slug = organization.slug  # pyright: ignore[reportAttributeAccessIssue]
             org_model.owner_id = organization.owner_id  # pyright: ignore[reportAttributeAccessIssue]
             org_model.is_active = organization.is_active  # pyright: ignore[reportAttributeAccessIssue]
-            org_model.updated_at = datetime.now(timezone.utc)
+            org_model.updated_at = datetime.now(timezone.utc)  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(org_model)

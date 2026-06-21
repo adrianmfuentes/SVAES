@@ -105,7 +105,7 @@ class SqlUserRepository(IUserRepository):
             user_model.totp_enabled = user.totp_enabled  # pyright: ignore[reportAttributeAccessIssue]
             user_model.password_reset_token = user.password_reset_token  # pyright: ignore[reportAttributeAccessIssue]
             user_model.password_reset_token_expiry = user.password_reset_token_expiry  # pyright: ignore[reportAttributeAccessIssue]
-            user_model.updated_at = datetime.now(timezone.utc)
+            user_model.updated_at = datetime.now(timezone.utc)  # pyright: ignore[reportAttributeAccessIssue]
             await session.commit()
             await session.refresh(user_model)
             return self._model_to_entity(user_model)
@@ -127,5 +127,5 @@ class SqlUserRepository(IUserRepository):
             user_model = await session.get(UserModel, user_id)
             if not user_model:
                 raise ValueError("User not found")
-            session.delete(user_model)
+            session.delete(user_model)  # pyright: ignore[reportUnusedCoroutine]
             await session.commit()

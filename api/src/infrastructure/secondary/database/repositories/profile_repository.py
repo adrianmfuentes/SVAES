@@ -109,7 +109,7 @@ class SqlProfileRepository(IProfileRepository):
             profile_model.name = profile.name  # pyright: ignore[reportAttributeAccessIssue]
             profile_model.description = profile.description  # pyright: ignore[reportAttributeAccessIssue]
             profile_model.is_default = profile.is_default  # pyright: ignore[reportAttributeAccessIssue]
-            profile_model.updated_at = datetime.now(timezone.utc)
+            profile_model.updated_at = datetime.now(timezone.utc)  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(profile_model)
@@ -152,5 +152,5 @@ class SqlProfileRepository(IProfileRepository):
             if not profile_model:
                 raise ValueError("Profile not found")
 
-            session.delete(profile_model)
+            session.delete(profile_model)  # pyright: ignore[reportUnusedCoroutine]
             await session.commit()

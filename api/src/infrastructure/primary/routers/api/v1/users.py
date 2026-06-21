@@ -278,6 +278,7 @@ async def invite_user(
             role=payload.role,
             requested_by=current_user.user_id,
         )
+        assert user.activation_token is not None
         try:
             await email_service.send_activation_email(
                 to_email=user.email,

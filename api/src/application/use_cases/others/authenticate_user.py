@@ -64,5 +64,5 @@ class AuthenticateUserUseCase:
             access_token=access_token,
             refresh_token=refresh_token,
             user_id=user.id,
-            role=user.role.value,
+            role=user.role,
         )
