@@ -9,6 +9,14 @@ import tempfile
 import csv
 import os
 from datetime import datetime, timezone
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import mm, cm
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image,
+)
+from reportlab.lib import colors
+from reportlab.platypus.flowables import Flowable
 
 _log = get_logger(__name__)
 
@@ -303,17 +311,162 @@ def _write_csv(path: str, results: list) -> None:
 _LOGO_PATH = "/app/static/images/icon-192.png"
 
 
-def _build_pdf(pdf_path: str, result, release, lang: str) -> None:
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.styles import ParagraphStyle
-    from reportlab.lib.units import mm, cm
-    from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image,
-    )
-    from reportlab.lib import colors
-    from reportlab.platypus.flowables import Flowable
+class _HeaderFlowable(Flowable):
+    def __init__(self, content_w: float, logo_sz: float, logo_off: float,
+                 use_logo: bool, gen_date: str, lang: str):
+        self._content_w = content_w
+        self._logo_sz = logo_sz
+        self._logo_off = logo_off
+        self._use_logo = use_logo
+        self._gen_date = gen_date
+        self._lang = lang
 
-    PAGE_W, PAGE_H = A4
+    def wrap(self, aW: float, aH: float) -> tuple[float, float]:  # NOSONAR
+        return self._content_w, self._logo_sz
+
+    def draw(self):
+        c = self.canv
+        if self._use_logo:
+            logo = Image(_LOGO_PATH, width=self._logo_sz, height=self._logo_sz)
+            logo.drawOn(c, 0, 0)
+        else:
+            c.setFillColorRGB(*_ACCENT)
+            c.rect(0, 4 * mm, 6, 6, fill=1, stroke=0)
+        c.setFillColorRGB(*_INK)
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(self._logo_off, 5 * mm, "SVAES")
+        c.setFillColorRGB(*_MUTED)
+        c.setFont("Helvetica", 6.5)
+        c.drawString(self._logo_off, 1.5 * mm, _t(self._lang, "generated_by"))
+        c.setFillColorRGB(*_MUTED)
+        c.setFont("Helvetica", 7)
+        c.drawRightString(self._content_w, 1.5 * mm, self._gen_date)
+        c.setFillColorRGB(*_INK)
+        c.setFont("Helvetica-Bold", 7.5)
+        c.drawRightString(self._content_w, 5 * mm, _t(self._lang, "report_title").upper())
+
+
+class _VerdictBanner(Flowable):
+    def __init__(self, content_w: float, banner_h: float, bg, bd, fg,
+                 stripe_w: float, verdict_text: str, result_id: str, exec_at: str):
+        self._content_w = content_w
+        self._banner_h = banner_h
+        self._bg = bg
+        self._bd = bd
+        self._fg = fg
+        self._stripe_w = stripe_w
+        self._verdict_text = verdict_text
+        self._result_id = result_id
+        self._exec_at = exec_at
+
+    def wrap(self, aW: float, aH: float) -> tuple[float, float]:  # NOSONAR
+        return self._content_w, self._banner_h
+
+    def draw(self):
+        c = self.canv
+        c.setFillColorRGB(*self._bg)
+        c.rect(0, 0, self._content_w, self._banner_h, fill=1, stroke=0)
+        c.setStrokeColorRGB(*self._bd)
+        c.setLineWidth(0.75)
+        c.rect(0, 0, self._content_w, self._banner_h, fill=0, stroke=1)
+        c.setFillColorRGB(*self._fg)
+        c.rect(0, 0, self._stripe_w, self._banner_h, fill=1, stroke=0)
+        mid = self._banner_h / 2
+        c.setFont("Helvetica-Bold", 10)
+        lx = self._stripe_w + 6 * mm
+        c.drawString(lx, mid - 1.5 * mm, self._verdict_text)
+        c.setFillColorRGB(*_MUTED)
+        c.setFont("Courier", 8)
+        w = c.stringWidth(self._verdict_text, "Helvetica-Bold", 10)
+        sep = lx + w + 6 * mm
+        c.drawString(sep, mid - 1 * mm, self._result_id[:8] + "...")
+        c.setFont("Helvetica", 8)
+        c.drawRightString(self._content_w - 5 * mm, mid - 1 * mm, self._exec_at)
+
+
+def _section_label(text: str, content_w: float, muted_c, border_c) -> list:
+    return [
+        Spacer(1, 5 * mm),
+        Paragraph(
+            text.upper(),
+            ParagraphStyle("SL", fontName="Helvetica-Bold", fontSize=7,
+                          textColor=muted_c, leading=9, spaceAfter=2 * mm),
+        ),
+        HRFlowable(width=content_w, thickness=0.5, color=border_c, spaceAfter=3 * mm),
+    ]
+
+
+def _build_rules_table(rules: list, ok_count: int, err_count: int, warn_count: int,
+                        lang: str, content_w: float, muted_c, ink_c) -> tuple:
+    n = len(rules)
+    summary_line = (
+        f"{n} {_t(lang, 'summary_rules')}  ·  "
+        f"{ok_count} {_t(lang, 'summary_ok')}  ·  "
+        f"{err_count} {_t(lang, 'summary_errors')}"
+    )
+    if warn_count:
+        summary_line += f"  ·  {warn_count} {_t(lang, 'summary_warnings')}"
+
+    th_s = ParagraphStyle("TH", fontName="Helvetica-Bold", fontSize=7,
+                          textColor=muted_c, leading=9)
+    tid_s = ParagraphStyle("TID", fontName="Courier", fontSize=7.5,
+                          textColor=ink_c, leading=10)
+    tnm_s = ParagraphStyle("TNM", fontName="Helvetica", fontSize=8,
+                          textColor=ink_c, leading=11)
+    tmg_s = ParagraphStyle("TMG", fontName="Helvetica", fontSize=7.5,
+                          textColor=muted_c, leading=10)
+
+    COL_ID = 1.4 * cm
+    COL_NM = 4.9 * cm
+    COL_ST = 1.9 * cm
+    COL_MSG = content_w - COL_ID - COL_NM - COL_ST
+
+    data_rows = [[
+        Paragraph(_t(lang, "col_rule_id").upper(), th_s),
+        Paragraph(_t(lang, "col_rule_name").upper(), th_s),
+        Paragraph(_t(lang, "col_status").upper(), th_s),
+        Paragraph(_t(lang, "col_message").upper(), th_s),
+    ]]
+
+    for rule in rules:
+        rule_id = rule.get("rule_id") or "–"
+        status = (rule.get("status") or "").upper()
+        msg = rule.get("message")
+        if msg is None or str(msg).strip().lower() == "none":
+            msg = _t(lang, "no_detail")
+        fg, _, _ = _status_colors(status)
+        st_label = _t(lang, f"status_{status.lower()}") or status
+        st_s = ParagraphStyle("ST", fontName="Helvetica-Bold", fontSize=8,
+                             textColor=colors.Color(*fg), leading=10)
+        data_rows.append([
+            Paragraph(rule_id, tid_s),
+            Paragraph(_rule_name(lang, rule_id), tnm_s),
+            Paragraph(st_label, st_s),
+            Paragraph(str(msg), tmg_s),
+        ])
+
+    rules_table = Table(data_rows, colWidths=[COL_ID, COL_NM, COL_ST, COL_MSG], repeatRows=1)
+    rules_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.Color(*_PAPER2)),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.75, colors.Color(*_BORDER_STR)),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("LINEBELOW", (0, 1), (-1, -1), 0.5, colors.Color(*_BORDER)),
+    ]))
+
+    summary_para = Paragraph(
+        summary_line,
+        ParagraphStyle("Sum", fontName="Helvetica", fontSize=8,
+                      textColor=muted_c, leading=11, spaceAfter=4 * mm),
+    )
+    return summary_para, rules_table
+
+
+def _build_pdf(pdf_path: str, result, release, lang: str) -> None:
+    PAGE_W, _ = A4
     MARGIN    = 2.0 * cm
     CONTENT_W = PAGE_W - 2 * MARGIN
 
@@ -323,9 +476,6 @@ def _build_pdf(pdf_path: str, result, release, lang: str) -> None:
         topMargin=1.5 * cm, bottomMargin=2.0 * cm,
         title=_t(lang, "report_title"), author="SVAES",
     )
-
-    def rgb(t): return colors.Color(*t)
-    def S(name, **kw): return ParagraphStyle(name, **kw)
 
     # ── computed values ───────────────────────────────────────────────────────
     verdict_str  = result.verdict.value if hasattr(result.verdict, "value") else str(result.verdict)
@@ -346,133 +496,63 @@ def _build_pdf(pdf_path: str, result, release, lang: str) -> None:
     duration  = f"{result.duration_ms} {_t(lang, 'duration_ms')}"
     gen_date  = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC")
 
-    # ── header flowable ───────────────────────────────────────────────────────
+    muted_c = colors.Color(*_MUTED)
+    ink_c   = colors.Color(*_INK)
+    border_c = colors.Color(*_BORDER)
+
     _use_logo = os.path.isfile(_LOGO_PATH)
     LOGO_SZ   = 14 * mm
     LOGO_OFF  = (LOGO_SZ + 3 * mm) if _use_logo else 0
 
-    class HeaderFlowable(Flowable):
-        def wrap(self, *_): return CONTENT_W, LOGO_SZ
-        def draw(self):
-            c = self.canv
-            if _use_logo:
-                logo = Image(_LOGO_PATH, width=LOGO_SZ, height=LOGO_SZ)
-                logo.drawOn(c, 0, 0)
-            else:
-                # Fallback: small accent square
-                c.setFillColorRGB(*_ACCENT)
-                c.rect(0, 4 * mm, 6, 6, fill=1, stroke=0)
-            # Wordmark
-            c.setFillColorRGB(*_INK)
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(LOGO_OFF, 5 * mm, "SVAES")
-            c.setFillColorRGB(*_MUTED)
-            c.setFont("Helvetica", 6.5)
-            c.drawString(LOGO_OFF, 1.5 * mm, _t(lang, "generated_by"))
-            # Right side
-            c.setFillColorRGB(*_MUTED)
-            c.setFont("Helvetica", 7)
-            c.drawRightString(CONTENT_W, 1.5 * mm, gen_date)
-            c.setFillColorRGB(*_INK)
-            c.setFont("Helvetica-Bold", 7.5)
-            c.drawRightString(CONTENT_W, 5 * mm, _t(lang, "report_title").upper())
-
-    # ── verdict banner (per DESIGN.md: ~56px tall, 4px left border) ──────────
-    BANNER_H = 20 * mm   # ≈ 56.7pt ≈ 56px
-    STRIPE_W = 4         # 4pt, matches CSS border-left: 4px
-
-    class VerdictBanner(Flowable):
-        def wrap(self, *_): return CONTENT_W, BANNER_H
-        def draw(self):
-            c = self.canv
-            # Background fill
-            c.setFillColorRGB(*bg_v)
-            c.rect(0, 0, CONTENT_W, BANNER_H, fill=1, stroke=0)
-            # 1pt border
-            c.setStrokeColorRGB(*bd_v)
-            c.setLineWidth(0.75)
-            c.rect(0, 0, CONTENT_W, BANNER_H, fill=0, stroke=1)
-            # 4pt left stripe
-            c.setFillColorRGB(*fg_v)
-            c.rect(0, 0, STRIPE_W, BANNER_H, fill=1, stroke=0)
-
-            mid = BANNER_H / 2
-            # Verdict text
-            c.setFont("Helvetica-Bold", 10)
-            lx = STRIPE_W + 6 * mm
-            c.drawString(lx, mid - 1.5 * mm, verdict_text)
-            # Short ID in mono
-            c.setFillColorRGB(*_MUTED)
-            c.setFont("Courier", 8)
-            w = c.stringWidth(verdict_text, "Helvetica-Bold", 10)
-            sep = lx + w + 6 * mm
-            c.drawString(sep, mid - 1 * mm, str(result.id)[:8] + "...")
-            # Timestamp right-aligned
-            c.setFont("Helvetica", 8)
-            c.drawRightString(CONTENT_W - 5 * mm, mid - 1 * mm, exec_at)
-
-    # ── helpers ───────────────────────────────────────────────────────────────
-    muted_c = rgb(_MUTED)
-    ink_c   = rgb(_INK)
-
-    def section_label(text: str) -> list:
-        return [
-            Spacer(1, 5 * mm),
-            Paragraph(
-                text.upper(),
-                S("SL", fontName="Helvetica-Bold", fontSize=7, textColor=muted_c,
-                  leading=9, spaceAfter=2 * mm),
-            ),
-            HRFlowable(width=CONTENT_W, thickness=0.5, color=rgb(_BORDER), spaceAfter=3 * mm),
-        ]
+    BANNER_H = 20 * mm
+    STRIPE_W = 4
 
     # ── story ─────────────────────────────────────────────────────────────────
     story: list = []
 
-    # Header + rule
-    story.append(HeaderFlowable())
+    story.append(_HeaderFlowable(CONTENT_W, LOGO_SZ, LOGO_OFF, _use_logo, gen_date, lang))
     story.append(HRFlowable(
-        width=CONTENT_W, thickness=0.5, color=rgb(_BORDER),
+        width=CONTENT_W, thickness=0.5, color=border_c,
         spaceBefore=3 * mm, spaceAfter=5 * mm,
     ))
 
-    # Report title (editorial serif)
     story.append(Paragraph(
         _t(lang, "report_title"),
-        S("Title", fontName="Times-Roman", fontSize=22, textColor=ink_c, leading=26, spaceAfter=2 * mm),
+        ParagraphStyle("Title", fontName="Times-Roman", fontSize=22,
+                      textColor=ink_c, leading=26, spaceAfter=2 * mm),
     ))
 
-    # Meta line
     story.append(Paragraph(
         f"{r_name}  ·  {r_version}  ·  {_t(lang, 'field_executed_at')}: {exec_at}",
-        S("Meta", fontName="Helvetica", fontSize=8, textColor=muted_c, leading=11, spaceAfter=6 * mm),
+        ParagraphStyle("Meta", fontName="Helvetica", fontSize=8,
+                      textColor=muted_c, leading=11, spaceAfter=6 * mm),
     ))
 
-    # Verdict banner
-    story.append(VerdictBanner())
+    story.append(_VerdictBanner(CONTENT_W, BANNER_H, bg_v, bd_v, fg_v, STRIPE_W,
+                                 verdict_text, str(result.id)[:8], exec_at))
 
     # ── Delivery info ─────────────────────────────────────────────────────────
-    story.extend(section_label(_t(lang, "section_release")))
+    story.extend(_section_label(_t(lang, "section_release"), CONTENT_W, muted_c, border_c))
 
-    lbl_s = S("Lbl", fontName="Helvetica-Bold", fontSize=7,   textColor=muted_c, leading=9)
-    val_s = S("Val", fontName="Helvetica",      fontSize=8.5,  textColor=ink_c,   leading=11)
-    mon_s = S("Mon", fontName="Courier",        fontSize=8,    textColor=ink_c,   leading=11)
+    lbl_s = ParagraphStyle("Lbl", fontName="Helvetica-Bold", fontSize=7, textColor=muted_c, leading=9)
+    val_s = ParagraphStyle("Val", fontName="Helvetica", fontSize=8.5, textColor=ink_c, leading=11)
+    mon_s = ParagraphStyle("Mon", fontName="Courier", fontSize=8, textColor=ink_c, leading=11)
 
     C1, C2 = CONTENT_W * 0.28, CONTENT_W * 0.72
 
-    def info_row(label, value, mono=False):
+    def _info(label, value, mono=False):
         return [
             Paragraph(label, lbl_s),
             Paragraph(str(value) if value else _t(lang, "na"), mon_s if mono else val_s),
         ]
 
     info_data = [
-        info_row(_t(lang, "field_release_name"),    r_name),
-        info_row(_t(lang, "field_release_version"), r_version),
-        info_row(_t(lang, "field_release_id"),      str(result.release_id), mono=True),
-        info_row(_t(lang, "field_verification_id"), str(result.id),         mono=True),
-        info_row(_t(lang, "field_executed_at"),     exec_at),
-        info_row(_t(lang, "field_duration"),        duration),
+        _info(_t(lang, "field_release_name"),    r_name),
+        _info(_t(lang, "field_release_version"), r_version),
+        _info(_t(lang, "field_release_id"),      str(result.release_id), mono=True),
+        _info(_t(lang, "field_verification_id"), str(result.id),         mono=True),
+        _info(_t(lang, "field_executed_at"),     exec_at),
+        _info(_t(lang, "field_duration"),        duration),
     ]
     info_table = Table(info_data, colWidths=[C1, C2])
     info_table.setStyle(TableStyle([
@@ -481,78 +561,25 @@ def _build_pdf(pdf_path: str, result, release, lang: str) -> None:
         ("RIGHTPADDING",  (0, 0), (-1, -1), 0),
         ("TOPPADDING",    (0, 0), (-1, -1), 5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("LINEBELOW",     (0, 0), (-1, -2), 0.5, rgb(_BORDER)),
+        ("LINEBELOW",     (0, 0), (-1, -2), 0.5, border_c),
     ]))
     story.append(info_table)
 
     # ── Rules ─────────────────────────────────────────────────────────────────
-    n = len(rules)
-    summary_line = (
-        f"{n} {_t(lang,'summary_rules')}  ·  "
-        f"{ok_count} {_t(lang,'summary_ok')}  ·  "
-        f"{err_count} {_t(lang,'summary_errors')}"
+    story.extend(_section_label(_t(lang, "section_rules"), CONTENT_W, muted_c, border_c))
+    summary_para, rules_table = _build_rules_table(
+        rules, ok_count, err_count, warn_count, lang, CONTENT_W, muted_c, ink_c,
     )
-    if warn_count:
-        summary_line += f"  ·  {warn_count} {_t(lang,'summary_warnings')}"
-
-    story.extend(section_label(_t(lang, "section_rules")))
-    story.append(Paragraph(
-        summary_line,
-        S("Sum", fontName="Helvetica", fontSize=8, textColor=muted_c, leading=11, spaceAfter=4 * mm),
-    ))
-
-    th_s  = S("TH",  fontName="Helvetica-Bold", fontSize=7,   textColor=muted_c, leading=9)
-    tid_s = S("TID", fontName="Courier",        fontSize=7.5,  textColor=ink_c,   leading=10)
-    tnm_s = S("TNM", fontName="Helvetica",      fontSize=8,    textColor=ink_c,   leading=11)
-    tmg_s = S("TMG", fontName="Helvetica",      fontSize=7.5,  textColor=muted_c, leading=10)
-
-    COL_ID  = 1.4 * cm
-    COL_NM  = 4.9 * cm
-    COL_ST  = 1.9 * cm
-    COL_MSG = CONTENT_W - COL_ID - COL_NM - COL_ST
-
-    data_rows = [[
-        Paragraph(_t(lang, "col_rule_id").upper(),   th_s),
-        Paragraph(_t(lang, "col_rule_name").upper(), th_s),
-        Paragraph(_t(lang, "col_status").upper(),    th_s),
-        Paragraph(_t(lang, "col_message").upper(),   th_s),
-    ]]
-
-    for rule in rules:
-        rule_id = rule.get("rule_id") or "–"
-        status  = (rule.get("status") or "").upper()
-        msg     = rule.get("message")
-        if msg is None or str(msg).strip().lower() == "none":
-            msg = _t(lang, "no_detail")
-        fg, _, _ = _status_colors(status)
-        st_label = _t(lang, f"status_{status.lower()}") or status
-        st_s = S("ST", fontName="Helvetica-Bold", fontSize=8, textColor=rgb(fg), leading=10)
-        data_rows.append([
-            Paragraph(rule_id,                   tid_s),
-            Paragraph(_rule_name(lang, rule_id), tnm_s),
-            Paragraph(st_label,                  st_s),
-            Paragraph(str(msg),                  tmg_s),
-        ])
-
-    rules_table = Table(data_rows, colWidths=[COL_ID, COL_NM, COL_ST, COL_MSG], repeatRows=1)
-    rules_table.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, 0),  rgb(_PAPER2)),
-        ("LINEBELOW",     (0, 0), (-1, 0),  0.75, rgb(_BORDER_STR)),
-        ("VALIGN",        (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING",   (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING",  (0, 0), (-1, -1), 6),
-        ("TOPPADDING",    (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ("LINEBELOW",     (0, 1), (-1, -1), 0.5, rgb(_BORDER)),
-    ]))
+    story.append(summary_para)
     story.append(rules_table)
 
     # ── Footer ────────────────────────────────────────────────────────────────
     story.append(Spacer(1, 8 * mm))
-    story.append(HRFlowable(width=CONTENT_W, thickness=0.5, color=rgb(_BORDER), spaceAfter=3 * mm))
+    story.append(HRFlowable(width=CONTENT_W, thickness=0.5, color=border_c, spaceAfter=3 * mm))
     story.append(Paragraph(
         f"SVAES  ·  {_t(lang, 'footer_note')}  ·  {gen_date}",
-        S("Foot", fontName="Helvetica", fontSize=7.5, textColor=muted_c, leading=10, alignment=1),
+        ParagraphStyle("Foot", fontName="Helvetica", fontSize=7.5,
+                      textColor=muted_c, leading=10, alignment=1),
     ))
 
     doc.build(story)
