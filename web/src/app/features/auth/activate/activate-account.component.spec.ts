@@ -255,6 +255,7 @@ describe('ActivateAccountComponent', () => {
       component.submitError = 'previous error';
       component.onSubmit();
       expect(component.submitError).toBeNull();
+      httpCtrl.expectOne('/api/v1/auth/activate').flush({}, { status: 500, statusText: 'Error' });
     });
   });
 });

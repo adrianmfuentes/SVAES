@@ -28,6 +28,7 @@ describe('LoginComponent', () => {
     vi.clearAllMocks();
     authMock.isAuthenticated.mockReturnValue(false);
     authMock.isAdmin.mockReturnValue(false);
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),

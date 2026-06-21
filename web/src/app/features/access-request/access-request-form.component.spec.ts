@@ -256,6 +256,7 @@ describe('AccessRequestFormComponent', () => {
         organization_name: 'Acme Corp',
         organization_description: 'A great company',
       });
+      component.currentStep.set(3);
       component.handleFormSubmit();
       expect(component.loading()).toBe(true);
       httpCtrl.expectOne('/api/v1/access-requests');
