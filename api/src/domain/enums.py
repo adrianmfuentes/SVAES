@@ -82,17 +82,12 @@ def rule_severity_to_string(severity: RuleSeverityType) -> str:
     return severity.value
 
 class UserRole(str, Enum):
-    U1 = "VIEWER"    # Guest/Viewer
     U2 = "OPERATOR"  # Standard User
     U3 = "ADMIN"     # Global Administrator
     U4 = "MANAGER"   # Organization Manager
 
     def has_permission(self, permission: "Permission") -> bool:
         hierarchy = {
-            UserRole.U1: [
-                Permission.VIEW_DASHBOARD,
-                Permission.VIEW_OWN_PROJECTS
-            ],
             UserRole.U2: [
                 Permission.VIEW_DASHBOARD,
                 Permission.VIEW_ORG_PROJECTS,
@@ -105,14 +100,13 @@ class UserRole(str, Enum):
             ],
             UserRole.U4: [
                 Permission.VIEW_DASHBOARD,
-                Permission.VIEW_OWN_PROJECTS,
+                Permission.VIEW_ORG_PROJECTS,
                 Permission.CREATE_RELEASE,
                 Permission.UPDATE_OWN_RELEASES,
                 Permission.ARCHIVE_RELEASE,
                 Permission.EXECUTE_VERIFICATION,
                 Permission.VIEW_OWN_HISTORY,
                 Permission.MANAGE_OWN_API_KEYS,
-                Permission.VIEW_ORG_PROJECTS,
                 Permission.CREATE_PROJECT,
                 Permission.UPDATE_PROJECT,
                 Permission.ARCHIVE_PROJECT,

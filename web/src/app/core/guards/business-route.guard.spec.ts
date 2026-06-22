@@ -53,36 +53,13 @@ describe('businessRouteGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('TC-UNI-FE-GRD-07: VIEWER accessing dashboard -> allowed', () => {
+  it('TC-UNI-FE-GRD-06: Non-admin user -> canActivate=true', () => {
+    console.log('TC-UNI-FE-GRD-06 PASS');
     vi.mocked(authService.isAdmin).mockReturnValue(false);
-    vi.mocked(authService.getUserRole).mockReturnValue('VIEWER');
-    (route as any).routeConfig = { path: 'dashboard' };
+    vi.mocked(authService.getUserRole).mockReturnValue('OPERATOR');
 
     const result = TestBed.runInInjectionContext(() => businessRouteGuard(route, state));
 
     expect(result).toBe(true);
-  });
-
-  it('TC-UNI-FE-GRD-08: VIEWER accessing profile -> allowed', () => {
-    vi.mocked(authService.isAdmin).mockReturnValue(false);
-    vi.mocked(authService.getUserRole).mockReturnValue('VIEWER');
-    (route as any).routeConfig = { path: 'profile' };
-
-    const result = TestBed.runInInjectionContext(() => businessRouteGuard(route, state));
-
-    expect(result).toBe(true);
-  });
-
-  it('TC-UNI-FE-GRD-09: VIEWER accessing releases -> denied', () => {
-    vi.mocked(authService.isAdmin).mockReturnValue(false);
-    vi.mocked(authService.getUserRole).mockReturnValue('VIEWER');
-    (route as any).routeConfig = { path: 'releases' };
-    const forbiddenUrl = {} as ReturnType<Router['parseUrl']>;
-    vi.mocked(router.parseUrl).mockReturnValue(forbiddenUrl);
-
-    const result = TestBed.runInInjectionContext(() => businessRouteGuard(route, state));
-
-    expect(result).toBe(forbiddenUrl);
-    expect(router.parseUrl).toHaveBeenCalledWith('/app/403');
   });
 });

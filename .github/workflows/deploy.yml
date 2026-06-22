@@ -1,0 +1,258 @@
+name: Deploy to Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      force_rebuild:
+        description: 'Force rebuild of Docker images'
+        required: false
+        default: false
+        type: boolean
+      skip_migration:
+        description: 'Skip database migration'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  API_IMAGE: ${{ github.repository_owner }}/svaes-api
+  WEB_IMAGE: ${{ github.repository_owner }}/svaes-web
+  ENGINE_IMAGE: ${{ github.repository_owner }}/svaes-engine
+  PLATFORM: linux/arm64
+
+jobs:
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    outputs:
+      api_tag: ${{ steps.meta.outputs.api_tag }}
+      web_tag: ${{ steps.meta.outputs.web_tag }}
+      engine_tag: ${{ steps.meta.outputs.engine_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up QEMU for multi-platform build
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.API_IMAGE }}
+          tags: |
+            type=sha,prefix={{branch}}-,format=sha256
+            type=raw,value=latest,enable=${{ inputs.environment == 'production' }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ./api
+          file: ./api/Dockerfile
+          platforms: ${{ env.PLATFORM }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          platforms: ${{ env.PLATFORM }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Engine image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ./engine
+          file: ./engine/Dockerfile
+          platforms: ${{ env.PLATFORM }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Server
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Configure SSH
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          echo "$SERVER_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Create deployment directory
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
+
+      - name: Copy Docker Compose file
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          scp docker-compose.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/"
+
+      - name: Copy nginx configuration
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          scp nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/" 2>/dev/null || true
+
+      - name: Create .env file
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          ENGINE_API_KEY: ${{ secrets.ENGINE_API_KEY }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
+        run: |
+          ssh "$SERVER_USER@$SERVER_HOST" "cat > ~/svaes/$ENVIRONMENT/.env << 'ENDOFENV'
+          POSTGRES_USER=$POSTGRES_USER
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          REDIS_PASSWORD=$REDIS_PASSWORD
+          JWT_SECRET_KEY=$JWT_SECRET_KEY
+          ENCRYPTION_KEY=$ENCRYPTION_KEY
+          ENGINE_API_KEY=$ENGINE_API_KEY
+          ALLOWED_ORIGINS=$ALLOWED_ORIGINS
+          SMTP_HOST=$SMTP_HOST
+          SMTP_PORT=$SMTP_PORT
+          SMTP_USER=$SMTP_USER
+          SMTP_PASSWORD=$SMTP_PASSWORD
+          SMTP_FROM=$SMTP_FROM
+          ADMIN_EMAIL=$ADMIN_EMAIL
+          ADMIN_PASSWORD=$ADMIN_PASSWORD
+          APP_BASE_URL=$APP_BASE_URL
+          JWT_EXPIRE_MINUTES=60
+          TLS_CERT_PATH=./certs
+          ENDOFENV"
+
+      - name: Update docker-compose image references
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          REGISTRY: ${{ env.REGISTRY }}
+          API_IMAGE: ${{ env.API_IMAGE }}
+          WEB_IMAGE: ${{ env.WEB_IMAGE }}
+          ENGINE_IMAGE: ${{ env.ENGINE_IMAGE }}
+        run: |
+          ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
+            sed -i 's|image: .*svaes-api.*|image: $REGISTRY/$API_IMAGE:latest|' docker-compose.yml && \
+            sed -i 's|image: .*svaes-web.*|image: $REGISTRY/$WEB_IMAGE:latest|' docker-compose.yml && \
+            sed -i 's|image: .*svaes-engine.*|image: $REGISTRY/$ENGINE_IMAGE:latest|' docker-compose.yml"
+
+      - name: Pull latest images
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          REGISTRY: ${{ env.REGISTRY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: |
+          ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
+            echo '$GITHUB_TOKEN' | docker login $REGISTRY -u '$GITHUB_ACTOR' --password-stdin && \
+            docker compose pull"
+
+      - name: Run database migration
+        if: inputs.skip_migration == false
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
+            docker compose run --rm api python -m alembic upgrade head"
+
+      - name: Restart services
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
+            docker compose down && \
+            docker compose up -d"
+
+      - name: Health check
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          ssh "$SERVER_USER@$SERVER_HOST" " \
+            for i in \$(seq 1 30); do \
+              if curl -sf http://localhost:8000/health > /dev/null 2>&1; then \
+                echo 'API is healthy'; break; \
+              fi; \
+              echo 'Waiting for API...'; sleep 2; \
+            done && \
+            for i in \$(seq 1 10); do \
+              if curl -sf http://localhost/ > /dev/null 2>&1; then \
+                echo 'Web is healthy'; break; \
+              fi; \
+              echo 'Waiting for Web...'; sleep 2; \
+            done"
+
+      - name: Show container status
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && docker compose ps"

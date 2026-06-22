@@ -264,7 +264,6 @@ Organization (1) ─────< UserMembership >───── User
 
 ### UserRole
 ```python
-U1 = "U1"  # Guest/Viewer - invitado con acceso limitado
 U2 = "U2"  # Standard User - usuario regular con acceso a proyectos
 U3 = "U3"  # Global Administrator - administrador del sistema
 U4 = "U4"  # Organization Manager - gerente a nivel de organización
@@ -1127,9 +1126,8 @@ BORRADOR → PENDIENTE → EN_VERIFICACION → VALIDA
 
 | Role | Permissions |
 |------|-------------|
-| U1 (Guest) | VIEW_DASHBOARD, VIEW_OWN_PROJECTS |
-| U2 (Standard) | U1 + CREATE_RELEASE, UPDATE_OWN_RELEASES, ARCHIVE_RELEASE, EXECUTE_VERIFICATION, VIEW_OWN_HISTORY, MANAGE_OWN_API_KEYS |
-| U4 (Org Manager) | U2 + VIEW_ORG_PROJECTS, CREATE_PROJECT, UPDATE_PROJECT, ARCHIVE_PROJECT, MANAGE_CONNECTORS, MANAGE_PROFILES, MANAGE_RULES, VIEW_ORG_DASHBOARD, INVITE_USERS, MANAGE_ROLES |
+| U2 (Standard) | VIEW_DASHBOARD, VIEW_ORG_PROJECTS, CREATE_RELEASE, UPDATE_OWN_RELEASES, ARCHIVE_RELEASE, EXECUTE_VERIFICATION, VIEW_OWN_HISTORY, MANAGE_OWN_API_KEYS |
+| U4 (Org Manager) | U2 + CREATE_PROJECT, UPDATE_PROJECT, ARCHIVE_PROJECT, MANAGE_CONNECTORS, MANAGE_PROFILES, MANAGE_RULES, VIEW_ORG_DASHBOARD, INVITE_USERS, MANAGE_ROLES |
 | U3 (Global Admin) | All permissions |
 
 **Note:** The `DELETE_PROJECT` permission has been removed from all roles. The SRS (requirement GR7.2) and implementation notes specify that physical deletion of projects is not allowed, only logical archiving via `ARCHIVE_PROJECT`.

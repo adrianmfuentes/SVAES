@@ -34,10 +34,6 @@ export class ShellComponent {
     return this.authService.getUserRole() === 'MANAGER';
   }
 
-  get isViewer(): boolean {
-    return this.authService.getUserRole() === 'VIEWER';
-  }
-
   get isOperator(): boolean {
     return this.authService.getUserRole() === 'OPERATOR';
   }
@@ -53,7 +49,6 @@ export class ShellComponent {
       ADMIN: this.ts.translateInstant('shell.role_admin'),
       MANAGER: this.ts.translateInstant('shell.role_manager'),
       OPERATOR: this.ts.translateInstant('shell.role_operator'),
-      VIEWER: this.ts.translateInstant('shell.role_viewer'),
     };
     return map[role] ?? role;
   }

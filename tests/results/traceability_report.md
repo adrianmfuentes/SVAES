@@ -25,7 +25,7 @@
 | `TC-UNI-MOT-12` | Unitaria | 7.2.2 | ✅ PASS | cargo test | RV-10 Documento aprobado existe |
 | `TC-UNI-API-00` | Unitaria | 7.2.3 | ✅ PASS | pytest | Base OPERATOR valido+propia+completo -> 201 |
 | `TC-UNI-API-01` | Unitaria | 7.2.3 | ✅ PASS | pytest | rol=ADMIN -> 201 |
-| `TC-UNI-API-02` | Unitaria | 7.2.3 | ✅ PASS | pytest | rol=VIEWER -> 403 |
+| `TC-UNI-API-02` | Unitaria | 7.2.3 | ✅ PASS | pytest | rol=INVALID -> 403 |
 | `TC-UNI-API-03` | Unitaria | 7.2.3 | ✅ PASS | pytest | autenticacion=token_caducado -> 401 |
 | `TC-UNI-API-04` | Unitaria | 7.2.3 | ✅ PASS | pytest | autenticacion=sin_token -> 401 |
 | `TC-UNI-API-05` | Unitaria | 7.2.3 | ✅ PASS | pytest | org_context=ajena -> 404 |
@@ -40,7 +40,7 @@
 | `TC-UNI-FE-GRD-01` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | Token valido, U2/OPERATOR, ruta permitida -> canActivate=true |
 | `TC-UNI-FE-GRD-02` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | Token caducado -> canActivate=false, redirige /login |
 | `TC-UNI-FE-GRD-03` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | Token ausente -> canActivate=false, redirige /login |
-| `TC-UNI-FE-GRD-04` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | U1/VIEWER en /releases/verify -> canActivate=false, /forbidden |
+| `TC-UNI-FE-GRD-04` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | U2/OPERATOR en /releases -> canActivate=true |
 | `TC-UNI-FE-SVC-01` | Unitaria | 7.2.5.2 | ⬜ MISSING | Jest | POST /releases 201 -> Observable emite Release, Bearer presente |
 | `TC-UNI-FE-SVC-02` | Unitaria | 7.2.5.2 | ⬜ MISSING | Jest | POST /releases 401 -> Observable emite AuthError |
 | `TC-UNI-FE-SVC-03` | Unitaria | 7.2.5.2 | ⬜ MISSING | Jest | POST /releases 422 -> Observable emite ValidationError |

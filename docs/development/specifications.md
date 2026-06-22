@@ -21,12 +21,11 @@ Any data source can be integrated by implementing the `IConnector` port.
 
 | ID | Role | Description |
 |---|---|---|
-| U1 | Viewer | Queries releases and verification results. No write permissions. |
 | U2 | Operator | Creates and manages releases; launches verifications. |
 | U3 | Manager | Configures connectors, profiles, and templates for their organization. |
 | U4 | Admin (org) | Manages their own users and organizations. |
 
-Role hierarchy: `VIEWER < OPERATOR < MANAGER < ADMIN`.
+Role hierarchy: `OPERATOR < MANAGER < ADMIN`.
 
 ---
 

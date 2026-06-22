@@ -53,33 +53,8 @@
       </a>
     </nav>
 
-    <!-- VIEWER (U1) navigation -->
-    <nav class="sidebar-nav" *ngIf="!isAdmin && isViewer" [attr.aria-label]="'shell.nav_user_label' | t" (click)="closeSidebar()" (keydown.enter)="closeSidebar()">
-      <div class="nav-section">{{ 'shell.nav_main' | t }}</div>
-
-      <a
-        routerLink="/app/dashboard"
-        routerLinkActive="nav-item-active"
-        [routerLinkActiveOptions]="{ exact: false }"
-        class="nav-item"
-      >
-        {{ 'shell.nav_dashboard' | t }}
-      </a>
-
-      <div class="nav-section">{{ 'shell.nav_account' | t }}</div>
-
-      <a
-        routerLink="/app/profile"
-        routerLinkActive="nav-item-active"
-        [routerLinkActiveOptions]="{ exact: false }"
-        class="nav-item"
-      >
-        {{ 'shell.nav_my_profile' | t }}
-      </a>
-    </nav>
-
     <!-- OPERATOR/MANAGER (U2/U4) navigation -->
-    <nav class="sidebar-nav" *ngIf="!isAdmin && !isViewer" [attr.aria-label]="'shell.nav_user_label' | t" (click)="closeSidebar()" (keydown.enter)="closeSidebar()">
+    <nav class="sidebar-nav" *ngIf="!isAdmin" [attr.aria-label]="'shell.nav_user_label' | t" (click)="closeSidebar()" (keydown.enter)="closeSidebar()">
       <div class="nav-section">{{ 'shell.nav_main' | t }}</div>
 
       <a

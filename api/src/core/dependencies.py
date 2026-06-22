@@ -5,7 +5,7 @@ Estas dependencias pueden ser utilizadas para manejar la autenticación, autoriz
 
 from dataclasses import dataclass
 from functools import wraps
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Callable, Optional
 from uuid import UUID
@@ -61,12 +61,88 @@ from infrastructure.secondary.connectors import create_registered_connector_regi
 from domain.enums import UserRole, Permission
 from domain.entities.project import Project
 
-_bearer = HTTPBearer()
+_bearer = HTTPBearer(auto_error=False)
 _INVALID_TOKEN = "Token inválido"
+_API_KEY_HDR = "X-API-Key"
 
 
 def get_settings_dependency() -> Settings:
     return get_settings()
+
+
+async def get_current_user_or_api_key(
+    request: Request,
+    settings: Settings = Depends(get_settings_dependency),
+) -> CurrentUser:
+    raw_key = request.headers.get(_API_KEY_HDR)
+    if raw_key:
+        api_key_user = await _validate_api_key(raw_key, settings)
+        if api_key_user:
+            return api_key_user
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
+
+    credentials = None
+    try:
+        credentials = await _bearer(request)
+    except Exception:
+        pass
+
+    if credentials:
+        handler = JwtHandler(
+            secret=settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm,
+            access_token_expire_minutes=settings.jwt_expire_minutes,
+            refresh_token_expire_days=30,
+            redis_url=settings.redis_url,
+        )
+        try:
+            payload = handler.decode_token(credentials.credentials)
+            return CurrentUser(
+                user_id=payload.user_id,
+                role=UserRole(payload.role),
+                email=payload.email,
+                organization_id=payload.organization_id,
+            )
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
+
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
+
+
+async def get_current_user_api_key_only(
+    request: Request,
+    settings: Settings = Depends(get_settings_dependency),
+) -> "CurrentUser":
+    raw_key = request.headers.get(_API_KEY_HDR)
+    if not raw_key:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
+    api_key_user = await _validate_api_key(raw_key, settings)
+    if not api_key_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
+    return api_key_user
+
+
+async def _validate_api_key(raw_key: str, settings: Settings) -> Optional[CurrentUser]:
+    from application.use_cases.others.manage_api_keys import ManageApiKeysUseCase
+
+    try:
+        repo = SqlAPIKeyRepository()
+        user_repo = SqlUserRepository()
+        use_case = ManageApiKeysUseCase(api_key_repository=repo)
+        api_key = await use_case.validate_api_key(raw_key)
+        if not api_key:
+            return None
+        db_user = await user_repo.get_by_id(api_key.user_id)
+        role = db_user.role if db_user else UserRole.U2
+        return CurrentUser(
+            user_id=api_key.user_id,
+            role=role,
+            email=db_user.email if db_user else "api_key_user",
+            organization_id=api_key.organization_id,
+            auth_via_api_key=True,
+        )
+    except Exception:
+        return None
 
 
 def get_current_user_id(
@@ -111,6 +187,7 @@ class CurrentUser:
     role: UserRole
     email: str
     organization_id: Optional[UUID] = None
+    auth_via_api_key: bool = False
 
 
 @dataclass
@@ -123,6 +200,8 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer),
     settings: Settings = Depends(get_settings_dependency),
 ) -> CurrentUser:
+    if credentials is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
     handler = JwtHandler(
         secret=settings.jwt_secret_key,
         algorithm=settings.jwt_algorithm,
@@ -200,15 +279,15 @@ def require_role(min_role: UserRole):
     def dependency(
         current_user: CurrentUser = Depends(get_current_user),
     ) -> CurrentUser:
-        role_hierarchy = [UserRole.U1, UserRole.U2, UserRole.U4, UserRole.U3]
+        role_hierarchy = [UserRole.U2, UserRole.U4, UserRole.U3]
         if min_role == UserRole.U3:
-            required_idx = 3
-        elif min_role == UserRole.U4:
             required_idx = 2
-        elif min_role == UserRole.U2:
+        elif min_role == UserRole.U4:
             required_idx = 1
-        else:
+        elif min_role == UserRole.U2:
             required_idx = 0
+        else:
+            required_idx = -1
 
         user_idx = role_hierarchy.index(current_user.role) if current_user.role in role_hierarchy else -1
         if user_idx < required_idx:

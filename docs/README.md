@@ -240,7 +240,6 @@ SVAES/
 
 | Role         | Permissions                                               |
 | ------------ | --------------------------------------------------------- |
-| **Viewer**   | Read-only access to releases, results, dashboards         |
 | **Operator** | Create releases, trigger verifications, manage artifacts  |
 | **Manager**  | Configure connectors, profiles, projects; view audit logs |
 | **Admin**    | Manage users, organizations, system configuration         |

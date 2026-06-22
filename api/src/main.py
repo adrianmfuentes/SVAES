@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from core.rate_limit import limiter
+from core.rate_limit import limiter, api_key_limiter
 from infrastructure.primary.routers.api.routers import (
     auth_router,
     organizations_router,
@@ -74,8 +74,20 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
+app.state.api_key_limiter = api_key_limiter
+
+
 def _rate_limit_exceeded_handler_wrapper(request: Request, exc: Exception):
-    return _rate_limit_exceeded_handler(request, exc)  # type: ignore[arg-type]
+    from fastapi.responses import JSONResponse
+    retry_after = getattr(exc, "retry_after", 60)
+    detail = getattr(exc, "detail", "Rate limit exceeded")
+    if isinstance(detail, dict):
+        content = detail
+    else:
+        content = {"message": str(detail)}
+    response = JSONResponse(status_code=429, content=content)
+    response.headers["Retry-After"] = str(retry_after)
+    return response
 
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler_wrapper)
 

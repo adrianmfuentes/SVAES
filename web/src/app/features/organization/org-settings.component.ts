@@ -13,7 +13,7 @@ interface OrgUser {
   id: string;
   email: string;
   display_name: string;
-  role: 'VIEWER' | 'OPERATOR' | 'ADMIN' | 'MANAGER';
+  role: 'OPERATOR' | 'ADMIN' | 'MANAGER';
 }
 
 @Component({
@@ -64,7 +64,6 @@ interface OrgUser {
                     [value]="member.role"
                     (change)="onRoleChange(member, $event)"
                   >
-                    <option value="VIEWER">{{ 'org_settings.role_viewer' | t }}</option>
                     <option value="OPERATOR">{{ 'org_settings.role_operator' | t }}</option>
                   </select>
                   <span *ngIf="member.role === 'MANAGER'" class="role-owner">{{ 'org_settings.role_owner' | t }}</span>
@@ -112,7 +111,6 @@ interface OrgUser {
         <div class="form-group">
           <label for="invite-role">{{ 'common.role' | t }}<span class="required-star" aria-hidden="true">*</span></label>
           <select id="invite-role" [(ngModel)]="inviteRole" class="form-group select" aria-required="true">
-            <option value="VIEWER">{{ 'org_settings.role_viewer' | t }}</option>
             <option value="OPERATOR">{{ 'org_settings.role_operator' | t }}</option>
             <option value="MANAGER">{{ 'org_settings.role_manager' | t }}</option>
           </select>
@@ -613,7 +611,7 @@ export class OrgSettingsComponent implements OnInit {
   // Invite modal
   showInviteModal = signal(false);
   inviteEmail = '';
-  inviteRole: 'VIEWER' | 'OPERATOR' | 'MANAGER' = 'VIEWER';
+  inviteRole: 'OPERATOR' | 'MANAGER' = 'OPERATOR';
   inviteError = signal<string | null>(null);
   inviteSuccess = signal<string | null>(null);
   inviting = signal(false);
@@ -657,7 +655,7 @@ export class OrgSettingsComponent implements OnInit {
 
   openInviteModal(): void {
     this.inviteEmail = '';
-    this.inviteRole = 'VIEWER';
+    this.inviteRole = 'OPERATOR';
     this.inviteError.set(null);
     this.inviteSuccess.set(null);
     this.showInviteModal.set(true);

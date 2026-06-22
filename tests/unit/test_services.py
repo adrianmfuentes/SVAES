@@ -511,7 +511,7 @@ class TestUserService:
         from domain.exceptions import ValidationError
         from domain.enums import UserRole
         with pytest.raises(ValidationError, match="Owner"):
-            await service.update_user_role(user.id, org_id, UserRole.U1, uuid4())
+            await service.update_user_role(user.id, org_id, UserRole.U2, uuid4())
 
     async def test_update_user_role_success(self, svc):
         """Branch: valid non-owner user → role updated"""
@@ -524,7 +524,7 @@ class TestUserService:
         org_repo.get_by_id = AsyncMock(return_value=org)
         user_repo.update = AsyncMock(return_value=user)
         from domain.enums import UserRole
-        result = await service.update_user_role(user.id, org_id, UserRole.U1, uuid4())
+        result = await service.update_user_role(user.id, org_id, UserRole.U2, uuid4())
         assert result == user
 
     async def test_remove_user_not_in_org_raises(self, svc):
@@ -612,7 +612,7 @@ class TestUserService:
         """Branch: role is not None → filter by role"""
         service, user_repo, *_ = svc
         from domain.enums import UserRole
-        users = [_make_user(role=UserRole.U2), _make_user(role=UserRole.U1)]
+        users = [_make_user(role=UserRole.U2), _make_user(role=UserRole.U4)]
         user_repo.list_all = AsyncMock(return_value=users)
         result = await service.list_all_users(role=UserRole.U2)
         assert all(u.role == UserRole.U2 for u in result)
@@ -621,7 +621,7 @@ class TestUserService:
         """Branch: role is None → return all users"""
         service, user_repo, *_ = svc
         from domain.enums import UserRole
-        users = [_make_user(role=UserRole.U2), _make_user(role=UserRole.U1)]
+        users = [_make_user(role=UserRole.U2), _make_user(role=UserRole.U4)]
         user_repo.list_all = AsyncMock(return_value=users)
         result = await service.list_all_users()
         assert len(result) == 2

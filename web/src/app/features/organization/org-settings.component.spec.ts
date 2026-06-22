@@ -16,7 +16,7 @@ interface MockUser {
   id: string;
   email: string;
   display_name: string;
-  role: 'VIEWER' | 'OPERATOR' | 'ADMIN' | 'MANAGER';
+  role: 'OPERATOR' | 'ADMIN' | 'MANAGER';
   organization_id?: string;
 }
 
@@ -31,7 +31,6 @@ const createMockAuthService = (user: MockUser | null) => {
 const mockMembers: MockUser[] = [
   { id: 'user-1', email: 'admin@test.com', display_name: 'Admin User', role: 'MANAGER' },
   { id: 'user-2', email: 'op@test.com', display_name: 'Operator User', role: 'OPERATOR' },
-  { id: 'user-3', email: 'viewer@test.com', display_name: 'Viewer User', role: 'VIEWER' },
 ];
 
 describe('OrgSettingsComponent', () => {
@@ -141,7 +140,7 @@ describe('OrgSettingsComponent', () => {
       component.openInviteModal();
 
       expect(component.inviteEmail).toBe('');
-      expect(component.inviteRole).toBe('VIEWER');
+      expect(component.inviteRole).toBe('OPERATOR');
       expect(component.inviteError()).toBeNull();
       expect(component.inviteSuccess()).toBeNull();
       expect(component.showInviteModal()).toBe(true);

@@ -407,11 +407,11 @@ class TestAccessGuards:
         result = dep(current_user=cu_operator)
         assert result.role.value == "OPERATOR"
 
-    def test_require_role_u1_required_any_passes(self, cu_operator):
-        """Branch: ANY role allows any authenticated user"""
+    def test_require_role_u2_required_passes_for_operator(self, cu_operator):
+        """Branch: OPERATOR role is sufficient"""
         from core.dependencies import require_role
         from domain.enums import UserRole
-        dep = require_role(UserRole.U1)
+        dep = require_role(UserRole.U2)
         result = dep(current_user=cu_operator)
         assert result.role == UserRole.U2
 

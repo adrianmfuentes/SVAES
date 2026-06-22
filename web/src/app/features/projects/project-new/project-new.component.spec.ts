@@ -25,7 +25,7 @@ interface MockUser {
   id: string;
   email: string;
   display_name: string;
-  role: 'VIEWER' | 'OPERATOR' | 'ADMIN' | 'MANAGER';
+  role: 'OPERATOR' | 'ADMIN' | 'MANAGER';
   organization_id: string;
 }
 

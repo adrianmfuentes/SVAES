@@ -110,7 +110,7 @@
 ### Authentication & Authorization
 - **JWT:** HS256 via PyJWT (`jwt_handler.py`)
 - **Password hashing:** bcrypt via passlib, cost factor 12
-- **RBAC:** 4 roles (U1=VIEWER, U2=OPERATOR, U3=ADMIN, U4=MANAGER)
+- **RBAC:** 3 roles (U2=OPERATOR, U3=ADMIN, U4=MANAGER)
 - **30 granular permissions** defined in `domain/enums.py`
 - **Token blacklisting:** In-memory set + Redis with TTL (`jwt_handler.py`)
 - **Account lockout:** 5 failed attempts → 15-minute lockout

@@ -579,7 +579,7 @@ export type UserNotificationPreferences = {
 /**
  * UserRole
  */
-export type UserRole = 'VIEWER' | 'OPERATOR' | 'ADMIN' | 'MANAGER';
+export type UserRole = 'OPERATOR' | 'ADMIN' | 'MANAGER';
 
 /**
  * UserRoleUpdateRequest

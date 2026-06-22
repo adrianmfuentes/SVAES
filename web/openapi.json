@@ -5162,7 +5162,6 @@
       "UserRole": {
         "type": "string",
         "enum": [
-          "VIEWER",
           "OPERATOR",
           "ADMIN",
           "MANAGER"

@@ -149,7 +149,7 @@ describe('SystemComponent', () => {
       httpCtrl.expectOne('/api/v1/organizations').flush([]);
       httpCtrl.expectOne('/api/v1/admin/users?limit=200').flush([
         { id: 'u1', role: 'OPERATOR', is_active: true },
-        { id: 'u2', role: 'VIEWER', is_active: false },
+        { id: 'u2', role: 'OPERATOR', is_active: false },
         { id: 'u3', role: 'MANAGER', is_active: true },
       ]);
       httpCtrl.expectOne('/api/v1/connectors/types').flush([]);

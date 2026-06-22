@@ -50,7 +50,6 @@ def _token(user_id, org_id, role_str="OPERATOR"):
     from domain.enums import UserRole
     from infrastructure.primary.middleware.jwt_handler import JwtHandler
     role_map = {
-        "VIEWER": UserRole.U1,
         "OPERATOR": UserRole.U2,
         "ADMIN": UserRole.U3,
         "MANAGER": UserRole.U4,
@@ -191,24 +190,6 @@ class TestCreateReleaseEndpoint:
             headers=self._headers(token),
         )
         assert resp.status_code == 201
-
-    # TC-UNI-API-02: VIEWER cross-org -> 403
-    def test_tc_uni_api_02_viewer_cross_org_returns_403(self):
-        from fastapi.testclient import TestClient
-        other_org_id = uuid4()
-        project = MagicMock()
-        project.id = self.project_id
-        project.organization_id = other_org_id
-        self.project_repo.get_by_id = AsyncMock(return_value=project)
-        self.org_repo.get_by_id = AsyncMock(return_value=None)
-
-        token = _token(self.user_id, self.org_id, "VIEWER")
-        resp = self.client.post(
-            f"/api/v1/projects/{self.project_id}/releases",
-            json=self._valid_body(),
-            headers=self._headers(token),
-        )
-        assert resp.status_code in (403, 404)
 
     # TC-UNI-API-03: No token -> 401
     def test_tc_uni_api_03_no_token_returns_401(self):
@@ -359,7 +340,7 @@ class TestReleasesCoverage:
         r = self._make_release()
         self.rel_svc.list_org_releases = AsyncMock(return_value=[r])
         client = TestClient(self.app)
-        resp = client.get("/api/v1/releases", headers=self._headers("VIEWER"))
+        resp = client.get("/api/v1/releases", headers=self._headers("OPERATOR"))
         assert resp.status_code == 200
 
     def test_list_global_releases_admin(self):
@@ -1575,7 +1556,7 @@ class TestUsersCoverage:
         self.svc.update_user_role = AsyncMock(side_effect=ValidationError("block"))
         client = TestClient(self.app)
         resp = client.patch(f"/api/v1/organizations/{self.org_id}/users/{uuid4()}/role",
-                            json={"role": "VIEWER"}, headers=self._headers("MANAGER"))
+                            json={"role": "ADMIN"}, headers=self._headers("MANAGER"))
         assert resp.status_code == 403
 
     def test_remove_user_from_org_validation_403(self):
@@ -1645,7 +1626,7 @@ class TestUsersCoverage:
         from domain.exceptions import ValidationError
         self.svc.update_global_role = AsyncMock(side_effect=ValidationError("self"))
         client = TestClient(self.app)
-        resp = client.patch(f"/api/v1/admin/users/{self.user_id}/role", json={"role": "VIEWER"},
+        resp = client.patch(f"/api/v1/admin/users/{self.user_id}/role", json={"role": "MANAGER"},
                             headers=self._headers("ADMIN"))
         assert resp.status_code == 403
 
@@ -2182,10 +2163,10 @@ class TestConnectorsRouter:
                            headers=self._headers())
         assert resp.status_code == 500
 
-    def test_list_connector_types_non_admin_or_viewer_gets_200(self):
+    def test_list_connector_types_non_admin_or_operator_gets_200(self):
         from fastapi.testclient import TestClient
         client = TestClient(self.app)
-        resp = client.get("/api/v1/connectors/types", headers=self._headers("VIEWER"))
+        resp = client.get("/api/v1/connectors/types", headers=self._headers("OPERATOR"))
         assert resp.status_code == 200
 
 

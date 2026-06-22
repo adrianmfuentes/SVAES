@@ -12,7 +12,7 @@ class UserModel(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     display_name = Column(String(100), nullable=False)
-    role = Column(Enum(UserRole, name='user_role', values_callable=lambda x: [e.value for e in x]), nullable=False, default=UserRole.U1)
+    role = Column(Enum(UserRole, name='user_role', values_callable=lambda x: [e.value for e in x]), nullable=False, default=UserRole.U2)
     organization_id = Column(PG_UUID(as_uuid=True), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     failed_login_attempts = Column(Integer, nullable=False, default=0)

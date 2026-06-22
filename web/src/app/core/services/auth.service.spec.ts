@@ -318,8 +318,8 @@ describe('AuthService', () => {
       const token = createJwt({ sub: '1' });
       setAccessToken(token);
       localStorage.setItem('access_token', token);
-      localStorage.setItem('user', JSON.stringify({ id: '1', role: 'VIEWER' }));
-      expect(service.getUserRole()).toBe('VIEWER');
+      localStorage.setItem('user', JSON.stringify({ id: '1', role: 'OPERATOR' }));
+      expect(service.getUserRole()).toBe('OPERATOR');
     });
 
     it('should return empty string when no role found', () => {

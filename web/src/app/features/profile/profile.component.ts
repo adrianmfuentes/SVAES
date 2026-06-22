@@ -1096,7 +1096,6 @@ export class ProfileComponent implements OnInit {
       ADMIN: this.ts.translateInstant('profile_page.role_admin'),
       MANAGER: this.ts.translateInstant('profile_page.role_manager'),
       OPERATOR: this.ts.translateInstant('profile_page.role_operator'),
-      VIEWER: this.ts.translateInstant('profile_page.role_viewer'),
     };
     return map[role] ?? role;
   }

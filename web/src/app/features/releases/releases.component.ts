@@ -29,7 +29,7 @@ interface Release {
           <h1 class="page-title">{{ 'releases.title' | t }}</h1>
           <span *ngIf="isAdmin" class="global-badge">{{ 'releases.global_view' | t }}</span>
         </div>
-        <a *ngIf="!isAdmin && !isViewer" routerLink="/app/releases/new" class="btn-primary">{{ 'releases.new_release' | t }}</a>
+        <a *ngIf="!isAdmin" routerLink="/app/releases/new" class="btn-primary">{{ 'releases.new_release' | t }}</a>
       </div>
 
       <div class="filters-bar">
@@ -64,7 +64,7 @@ interface Release {
               <th scope="col" *ngIf="isAdmin">{{ 'releases.col_org' | t }}</th>
               <th scope="col">{{ 'releases.table_verdict' | t }}</th>
               <th scope="col">{{ 'releases.table_date' | t }}</th>
-              <th scope="col" *ngIf="!isAdmin && !isViewer" class="col-actions">{{ 'releases.table_actions' | t }}</th>
+              <th scope="col" *ngIf="!isAdmin" class="col-actions">{{ 'releases.table_actions' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -82,7 +82,7 @@ interface Release {
                 </span>
               </td>
               <td class="cell-muted">{{ r.created_at | date:'dd MMM yyyy, HH:mm' }}</td>
-              <td *ngIf="!isAdmin && !isViewer" class="cell-actions" (click)="$event.stopPropagation()">
+              <td *ngIf="!isAdmin" class="cell-actions" (click)="$event.stopPropagation()">
                 <a [routerLink]="['/app/releases', r.id, 'edit']" class="btn-action btn-edit" title="{{ 'common.edit' | t }}">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -483,7 +483,6 @@ export class ReleasesComponent implements OnInit {
   private readonly ts = inject(TranslationService);
 
   readonly isAdmin = this.authService.isAdmin();
-  readonly isViewer = this.authService.getUserRole() === 'VIEWER';
   readonly pageSize = 20;
 
   releases = signal<Release[]>([]);

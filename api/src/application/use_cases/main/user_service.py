@@ -160,7 +160,7 @@ class UserService(IUserService):
         _log.info("User removed from org: by=%s user=%s org=%s", requested_by, user_id, organization_id)
 
         user.organization_id = None
-        user.role = UserRole.U1
+        user.role = UserRole.U2
         await self._user_repo.update(user)
 
     async def create_user(

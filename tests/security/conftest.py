@@ -231,7 +231,7 @@ def basic_user_token():
     token = handler.create_access_token(
         user_id=uuid4(),
         email="basic@example.com",
-        role=UserRole.U1,
+        role=UserRole.U2,
         organization_id=uuid4(),
     )
     return token

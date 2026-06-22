@@ -17,7 +17,7 @@ interface MockUser {
   id: string;
   email: string;
   display_name: string;
-  role: 'VIEWER' | 'OPERATOR' | 'ADMIN' | 'MANAGER';
+  role: 'OPERATOR' | 'ADMIN' | 'MANAGER';
   organization_id: string;
 }
 
@@ -55,11 +55,11 @@ describe('ProjectsComponent', () => {
     organization_id: 'org-1',
   };
 
-  const viewerUser: MockUser = {
+  const operatorUser: MockUser = {
     id: 'user-2',
-    email: 'viewer@test.com',
-    display_name: 'Viewer User',
-    role: 'VIEWER',
+    email: 'operator@test.com',
+    display_name: 'Operator User',
+    role: 'OPERATOR',
     organization_id: 'org-1',
   };
 
@@ -139,8 +139,8 @@ describe('ProjectsComponent', () => {
       expect(newBtn).toBeTruthy();
     });
 
-    it('should be false when user role is VIEWER', () => {
-      authService = createMockAuthService(viewerUser);
+    it('should be false when user role is OPERATOR', () => {
+      authService = createMockAuthService(operatorUser);
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         providers: [

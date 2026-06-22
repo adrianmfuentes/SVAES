@@ -883,7 +883,7 @@ class TestSqlUserRepository:
         from domain.enums import UserRole
         user = User(
             id=uuid4(), email="updated@test.com", hashed_password="newhash", # NOSONAR
-            display_name="Updated", role=UserRole.U1, is_active=False,
+            display_name="Updated", role=UserRole.U2, is_active=False,
         )
         with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update(user)

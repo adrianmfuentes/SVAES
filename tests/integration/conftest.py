@@ -104,6 +104,8 @@ async def client(_test_db):
     app.router.lifespan_context = _test_lifespan
 
     app.state.limiter.reset()
+    if hasattr(app.state, "api_key_limiter"):
+        app.state.api_key_limiter.reset()
 
     try:
         async with engine.begin() as conn:
@@ -195,17 +197,6 @@ def operator_token(test_user_id, test_org_id):
 @pytest.fixture
 def operator_headers(operator_token):
     return {"Authorization": f"Bearer {operator_token}"}
-
-
-@pytest.fixture
-def viewer_token(test_user_id, test_org_id):
-    from domain.enums import UserRole
-    return _make_token(test_user_id, "viewer@integration.test", UserRole.U1, test_org_id)
-
-
-@pytest.fixture
-def viewer_headers(viewer_token):
-    return {"Authorization": f"Bearer {viewer_token}"}
 
 
 @pytest.fixture

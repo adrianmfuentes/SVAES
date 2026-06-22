@@ -1,9 +1,18 @@
 from uuid import UUID
 from typing import Optional, Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_organization_service import IOrganizationService
-from core.dependencies import get_organization_service, get_current_user, CurrentUser, require_permission, require_role
+from core.dependencies import (
+    get_organization_service,
+    get_current_user_or_api_key,
+    get_current_user_api_key_only,
+    get_current_user,
+    CurrentUser,
+    require_permission,
+    require_role,
+)
+from core.rate_limit import rate_limit_api_key
 from domain.enums import UserRole, Permission
 from domain.exceptions import ValidationError, EntityNotFoundError, DuplicateEntityError
 from . import ERROR_INTERNO
@@ -23,8 +32,10 @@ class ProjectCreateRequest(BaseModel):
 
 
 @router.get("/api/v1/organizations")
+@rate_limit_api_key()
 async def list_organizations(
-    current_user: Annotated[CurrentUser, Depends(require_role(UserRole.U3))],
+    request: Request,
+    current_user: Annotated[CurrentUser, Depends(get_current_user_api_key_only)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
     skip: int = 0,
     limit: int = 100,
@@ -42,6 +53,8 @@ async def list_organizations(
         - Lanza HTTPException con status 403 si el usuario no tiene rol ADMIN.
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
+    if current_user.role != UserRole.U3:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso")
     try:
         organizations = await service.list_organizations(skip=skip, limit=limit, active_only=True)
         return organizations
@@ -50,7 +63,9 @@ async def list_organizations(
 
 
 @router.post("/api/v1/organizations", status_code=status.HTTP_201_CREATED)
+@rate_limit_api_key()
 async def create_organization(
+    request: Request,
     payload: OrganizationCreateRequest,
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
@@ -67,10 +82,10 @@ async def create_organization(
         - Lanza HTTPException con status 409 si hay un error de validación (e.g., slug ya existe).
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
-    if current_user.role == UserRole.U3:
+    if current_user.role in (UserRole.U3, UserRole.U2):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="El administrador global no puede crear ni pertenecer a una organización.",
+            detail="No tienes permiso para crear una organización.",
         )
     try:
         org = await service.create_organization(
@@ -88,9 +103,11 @@ async def create_organization(
 
 
 @router.get("/api/v1/organizations/{org_id}")
+@rate_limit_api_key()
 async def get_organization(
+    request: Request,
     org_id: UUID,
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user_or_api_key)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """ Endpoint para obtener los detalles de una organización.
@@ -110,7 +127,9 @@ async def get_organization(
         org = await service.get_organization(organization_id=org_id)
         if not org:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organización no encontrada")
-        if current_user.role != UserRole.U3 and current_user.organization_id != org_id and org.owner_id != current_user.user_id:
+        api_key_blocked = current_user.auth_via_api_key and current_user.organization_id != org_id
+        jwt_blocked = not current_user.auth_via_api_key and current_user.role != UserRole.U3 and current_user.organization_id != org_id and org.owner_id != current_user.user_id
+        if api_key_blocked or jwt_blocked:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta organización")
         return {
             "id": str(org.id),
