@@ -54,6 +54,9 @@ jobs:
     needs: check-sonar-status
     name: Build and Push Images
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     outputs:
       api_tag: ${{ steps.meta.outputs.api_tag }}
       web_tag: ${{ steps.meta.outputs.web_tag }}
