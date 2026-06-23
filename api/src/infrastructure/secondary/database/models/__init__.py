@@ -10,6 +10,11 @@ from infrastructure.secondary.database.models.artifact_model import ArtifactMode
 from infrastructure.secondary.database.models.result_model import VerificationResultModel
 from infrastructure.secondary.database.models.audit_log_model import AuditLogModel
 from infrastructure.secondary.database.models.access_request_model import AccessRequestModel
+from infrastructure.secondary.database.models.api_key_model import APIKeyModel
+from infrastructure.secondary.database.models.custom_role_model import CustomRoleModel
+from infrastructure.secondary.database.models.template_model import TemplateModel
+from infrastructure.secondary.database.models.notification_subscription_model import NotificationSubscriptionModel
+from infrastructure.secondary.database.models.notification_channel_model import NotificationChannelModel
 
 __all__ = [
     "ReleaseModel",
@@ -23,4 +28,9 @@ __all__ = [
     "VerificationResultModel",
     "AuditLogModel",
     "AccessRequestModel",
+    "APIKeyModel",
+    "CustomRoleModel",
+    "TemplateModel",
+    "NotificationSubscriptionModel",
+    "NotificationChannelModel",
 ]

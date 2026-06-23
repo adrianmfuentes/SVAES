@@ -1,5 +1,6 @@
 from uuid import UUID
 from typing import Annotated, Optional
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.output.i_api_key_repository import IAPIKeyRepository
@@ -8,6 +9,8 @@ from core.dependencies import get_current_user, CurrentUser, get_api_key_reposit
 from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
 from domain.exceptions import ValidationError, EntityNotFoundError
 from . import ERROR_INTERNO
+
+_log = logging.getLogger(__name__)
 
 router = APIRouter(tags=["API Keys"])
 
@@ -79,7 +82,8 @@ async def create_api_key(
         return APIKeyResponse(**result)
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception:
+    except Exception as e:
+        _log.exception("Error creating API key: user_id=%s, organization_id=%s, error=%s", user_id, organization_id, str(e))
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 

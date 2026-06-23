@@ -35,7 +35,7 @@ class ProjectCreateRequest(BaseModel):
 @rate_limit_api_key()
 async def list_organizations(
     request: Request,
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user_api_key_only)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
     skip: int = 0,
     limit: int = 100,
@@ -82,7 +82,7 @@ async def create_organization(
         - Lanza HTTPException con status 409 si hay un error de validación (e.g., slug ya existe).
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
-    if current_user.role == UserRole.U3:
+    if current_user.role in (UserRole.U3, UserRole.U2):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No tienes permiso para crear una organización.",

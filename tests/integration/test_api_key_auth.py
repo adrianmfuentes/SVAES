@@ -144,7 +144,7 @@ async def redis_client():
     """Redis client for rate-limit key cleanup."""
     import redis.asyncio as redis
 
-    redis_url = os.environ.get("TEST_REDIS_URL", "redis://:redis_dev@redis:6379/0")
+    redis_url = os.environ.get("TEST_REDIS_URL", os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
     client = redis.from_url(redis_url, decode_responses=True)
     yield client
     await client.aclose()
