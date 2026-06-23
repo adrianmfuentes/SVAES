@@ -934,3 +934,457 @@ class TestConnectorImplementations:
         registry = create_registered_connector_registry()
         impls = registry.list_all_implementations()
         assert len(impls) >= 10
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TestNotionConnector
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestNotionConnector:
+    @pytest.fixture
+    def conn(self):
+        from infrastructure.secondary.connectors.documentation.notion_connector import NotionConnector
+        return NotionConnector()
+
+    def test_properties(self, conn):
+        assert conn.CONNECTOR_TYPE == "SISTEMA_DOCUMENTAL"
+        assert conn.CONNECTOR_IMPLEMENTATION == "NOTION"
+        assert "page" in conn.get_artifact_types()
+        assert "database" in conn.get_artifact_types()
+
+    def test_get_artifact_types(self, conn):
+        types = conn.get_artifact_types()
+        assert len(types) == 2
+        assert "page" in types
+        assert "database" in types
+
+    def test_build_headers(self, conn):
+        headers = conn._build_headers({"token": "secret-token"})
+        assert headers["Authorization"] == "Bearer secret-token"
+        assert headers["Notion-Version"] == "2022-06-28"
+
+    def test_get_health_url(self, conn):
+        url = conn._get_health_url({})
+        assert url == "https://api.notion.com/v1/users/me"
+
+    def test_get_fetch_url(self, conn):
+        url = conn._get_fetch_url("page-123", {})
+        assert url == "https://api.notion.com/v1/pages/page-123"
+
+    def test_get_fetch_params(self, conn):
+        params = conn._get_fetch_params({})
+        assert params is None
+
+    def test_get_list_url_with_database_id(self, conn):
+        url = conn._get_list_url({}, {"database_id": "db-123"})
+        assert "/databases/db-123/query" in url
+
+    def test_get_list_url_without_database_id(self, conn):
+        url = conn._get_list_url({}, {})
+        assert url == "https://api.notion.com/v1/search"
+
+    def test_get_list_params(self, conn):
+        params = conn._get_list_params({}, {})
+        assert params is None
+
+    def test_get_list_json_with_database_id(self, conn):
+        json_body = conn._get_list_json({}, {"database_id": "db-123"})
+        assert json_body == {"page_size": 50}
+
+    def test_get_list_json_without_database_id(self, conn):
+        json_body = conn._get_list_json({}, {})
+        assert json_body["filter"]["value"] == "page"
+        assert json_body["filter"]["property"] == "object"
+        assert json_body["page_size"] == 50
+
+    def test_get_results_key(self, conn):
+        assert conn._get_results_key() == "results"
+
+    @pytest.mark.asyncio
+    async def test_test_connection_success(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200))
+        result = await conn.test_connection({"token": "tok"})
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_test_connection_failure(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(401))
+        result = await conn.test_connection({"token": "bad"})
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, {"id": "page-123", "object": "page"}))
+        result = await conn.fetch_artifact("page-123", {"token": "tok"})
+        assert result["id"] == "page-123"
+
+    @pytest.mark.asyncio
+    async def test_list_artifacts_with_database_id(self, conn):
+        conn._post = AsyncMock(return_value=_mock_response(200, {"results": [{"id": "1"}]}))
+        result = await conn.list_artifacts({}, {"token": "tok", "database_id": "db-123"})
+        assert result == [{"id": "1"}]
+
+    @pytest.mark.asyncio
+    async def test_list_artifacts_without_database_id(self, conn):
+        conn._post = AsyncMock(return_value=_mock_response(200, {"results": [{"id": "1"}]}))
+        result = await conn.list_artifacts({}, {"token": "tok"})
+        assert result == [{"id": "1"}]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TestTaigaConnector
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestTaigaConnector:
+    @pytest.fixture
+    def conn(self):
+        from infrastructure.secondary.connectors.planning.taiga_connector import TaigaConnector
+        return TaigaConnector()
+
+    def test_properties(self, conn):
+        assert conn.CONNECTOR_TYPE == "HERRAMIENTA_PLANIFICACION"
+        assert conn.CONNECTOR_IMPLEMENTATION == "TAIGA"
+        assert "task" in conn.get_artifact_types()
+        assert "userstory" in conn.get_artifact_types()
+        assert "epic" in conn.get_artifact_types()
+        assert "project" in conn.get_artifact_types()
+
+    def test_get_artifact_types(self, conn):
+        types = conn.get_artifact_types()
+        assert len(types) == 4
+
+    def test_build_headers(self, conn):
+        headers = conn._build_headers({"token": "taiga-token"})
+        assert headers["Authorization"] == "Bearer taiga-token"
+
+    def test_get_health_url(self, conn):
+        url = conn._get_health_url({})
+        assert url == "https://api.taiga.io/api/v1/projects"
+
+    def test_get_fetch_url(self, conn):
+        url = conn._get_fetch_url("42", {})
+        assert "/tasks/42" in url
+
+    def test_get_fetch_params(self, conn):
+        params = conn._get_fetch_params({})
+        assert params is None
+
+    def test_get_list_url_with_project_slug(self, conn):
+        url = conn._get_list_url({}, {"project_slug": "my-project"})
+        assert "by_slug/my-project/tasks" in url
+
+    def test_get_list_url_without_project_slug(self, conn):
+        url = conn._get_list_url({}, {})
+        assert url == "https://api.taiga.io/api/v1/tasks"
+
+    def test_get_list_params_with_project_slug(self, conn):
+        params = conn._get_list_params({"status": "closed"}, {"project_slug": "my-project"})
+        assert params["status__is_closed"] == "closed"
+
+    def test_get_list_params_without_project_slug(self, conn):
+        params = conn._get_list_params({}, {"project": "proj-1"})
+        assert params["project"] == "proj-1"
+
+    def test_get_list_json(self, conn):
+        json_body = conn._get_list_json({}, {})
+        assert json_body is None
+
+    def test_get_results_key(self, conn):
+        assert conn._get_results_key() == ""
+
+    @pytest.mark.asyncio
+    async def test_test_connection_success(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200))
+        result = await conn.test_connection({"token": "tok"})
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_test_connection_failure(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(401))
+        result = await conn.test_connection({"token": "bad"})
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, {"id": 42, "subject": "Test task"}))
+        result = await conn.fetch_artifact("42", {"token": "tok"})
+        assert result["id"] == 42
+
+    @pytest.mark.asyncio
+    async def test_list_artifacts_with_project_slug(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, []))
+        result = await conn.list_artifacts({"status": "open"}, {"token": "tok", "project_slug": "my-project"})
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_list_artifacts_without_project_slug(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, []))
+        result = await conn.list_artifacts({}, {"token": "tok", "project": "proj-1"})
+        assert result == []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TestAsanaConnector
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestAsanaConnector:
+    @pytest.fixture
+    def conn(self):
+        from infrastructure.secondary.connectors.task_management.asana_connector import AsanaConnector
+        return AsanaConnector()
+
+    def test_properties(self, conn):
+        assert conn.CONNECTOR_TYPE == "GESTOR_TAREAS"
+        assert conn.CONNECTOR_IMPLEMENTATION == "ASANA"
+        assert "task" in conn.get_artifact_types()
+        assert "project" in conn.get_artifact_types()
+        assert "section" in conn.get_artifact_types()
+
+    def test_get_artifact_types(self, conn):
+        types = conn.get_artifact_types()
+        assert len(types) == 3
+
+    def test_get_health_url(self, conn):
+        url = conn._get_health_url({})
+        assert url == "https://app.asana.com/api/1.0/users/me"
+
+    def test_get_fetch_url(self, conn):
+        url = conn._get_fetch_url("task-123", {})
+        assert "/tasks/task-123" in url
+
+    def test_get_fetch_params(self, conn):
+        params = conn._get_fetch_params({})
+        assert "opt_fields" in params
+
+    def test_get_list_url_with_project_gid(self, conn):
+        url = conn._get_list_url({}, {"project_gid": "proj-123"})
+        assert "/projects/proj-123/tasks" in url
+
+    def test_get_list_url_without_project_gid(self, conn):
+        url = conn._get_list_url({}, {})
+        assert "/tasks/search" in url
+
+    def test_get_list_params_with_project_gid(self, conn):
+        params = conn._get_list_params({}, {"project_gid": "proj-123"})
+        assert "opt_fields" in params
+
+    def test_get_list_params_without_project_gid(self, conn):
+        params = conn._get_list_params({}, {"workspace": "ws-123"})
+        assert params["workspace"] == "ws-123"
+        assert params["count"] == 50
+
+    def test_get_list_json(self, conn):
+        json_body = conn._get_list_json({}, {})
+        assert json_body is None
+
+    def test_get_results_key(self, conn):
+        assert conn._get_results_key() == "data"
+
+    @pytest.mark.asyncio
+    async def test_test_connection_success(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200))
+        result = await conn.test_connection({"token": "tok"})
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_test_connection_failure(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(401))
+        result = await conn.test_connection({"token": "bad"})
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, {"data": {"id": "task-123", "name": "Test"}}))
+        result = await conn.fetch_artifact("task-123", {"token": "tok"})
+        assert result["data"]["id"] == "task-123"
+
+    @pytest.mark.asyncio
+    async def test_list_artifacts_with_project(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, {"data": [{"id": "1"}]}))
+        result = await conn.list_artifacts({}, {"token": "tok", "project_gid": "proj-123"})
+        assert result == [{"id": "1"}]
+
+    @pytest.mark.asyncio
+    async def test_list_artifacts_without_project(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, {"data": []}))
+        result = await conn.list_artifacts({}, {"token": "tok", "workspace": "ws-123"})
+        assert result == []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TestBitbucketConnector
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestBitbucketConnector:
+    @pytest.fixture
+    def conn(self):
+        from infrastructure.secondary.connectors.source_control.bitbucket_connector import BitbucketConnector
+        return BitbucketConnector()
+
+    def test_properties(self, conn):
+        assert conn.CONNECTOR_TYPE == "REPO_CODIGO"
+        assert conn.CONNECTOR_IMPLEMENTATION == "BITBUCKET"
+        assert "pullrequest" in conn.get_artifact_types()
+        assert "commit" in conn.get_artifact_types()
+        assert "pipeline" in conn.get_artifact_types()
+
+    def test_get_artifact_types(self, conn):
+        types = conn.get_artifact_types()
+        assert len(types) == 3
+
+    def test_build_headers(self, conn):
+        headers = conn._build_headers({"token": "bb-token"})
+        assert headers["Authorization"] == "Bearer bb-token"
+
+    def test_get_health_url(self, conn):
+        url = conn._get_health_url({})
+        assert url == "https://api.bitbucket.org/2.0/user"
+
+    def test_get_fetch_url(self, conn):
+        url = conn._get_fetch_url("owner/repo/123", {})
+        assert "/repositories/owner/repo/pullrequests/123" in url
+
+    def test_get_fetch_params(self, conn):
+        params = conn._get_fetch_params({})
+        assert params is None
+
+    def test_get_list_url_with_owner_repo(self, conn):
+        url = conn._get_list_url({}, {"owner": "myowner", "repo": "myrepo"})
+        assert "/repositories/myowner/myrepo/pullrequests" in url
+
+    def test_get_list_url_without_owner_repo(self, conn):
+        url = conn._get_list_url({}, {})
+        assert "/user/pullrequests" in url
+
+    def test_get_list_params(self, conn):
+        params = conn._get_list_params({"state": "MERGED"}, {})
+        assert params["state"] == "MERGED"
+        assert params["pagelen"] == 50
+
+    def test_get_list_json(self, conn):
+        json_body = conn._get_list_json({}, {})
+        assert json_body is None
+
+    def test_get_results_key(self, conn):
+        assert conn._get_results_key() == "values"
+
+    @pytest.mark.asyncio
+    async def test_test_connection_success(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200))
+        result = await conn.test_connection({"token": "tok"})
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_test_connection_failure(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(401))
+        result = await conn.test_connection({"token": "bad"})
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, {"id": 123, "title": "PR Title"}))
+        result = await conn.fetch_artifact("owner/repo/123", {"token": "tok"})
+        assert result["id"] == 123
+
+    @pytest.mark.asyncio
+    async def test_list_artifacts_with_owner_repo(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, {"values": [{"id": "1"}]}))
+        result = await conn.list_artifacts({}, {"token": "tok", "owner": "o", "repo": "r"})
+        assert result == [{"id": "1"}]
+
+    @pytest.mark.asyncio
+    async def test_list_artifacts_without_owner_repo(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, {"values": []}))
+        result = await conn.list_artifacts({}, {"token": "tok"})
+        assert result == []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TestGitHubConnector
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestGitHubConnector:
+    @pytest.fixture
+    def conn(self):
+        from infrastructure.secondary.connectors.source_control.github_connector import GitHubConnector
+        return GitHubConnector()
+
+    def test_properties(self, conn):
+        assert conn.CONNECTOR_TYPE == "REPO_CODIGO"
+        assert conn.CONNECTOR_IMPLEMENTATION == "GITHUB"
+        assert "pull_request" in conn.get_artifact_types()
+        assert "commit" in conn.get_artifact_types()
+        assert "release" in conn.get_artifact_types()
+        assert "workflow_run" in conn.get_artifact_types()
+
+    def test_get_artifact_types(self, conn):
+        types = conn.get_artifact_types()
+        assert len(types) == 4
+
+    def test_build_headers(self, conn):
+        headers = conn._build_headers({"token": "gh-token"})
+        assert headers["Authorization"] == "Bearer gh-token"
+        assert headers["Accept"] == "application/vnd.github+json"
+        assert headers["X-GitHub-Api-Version"] == "2022-11-28"
+
+    def test_get_health_url(self, conn):
+        url = conn._get_health_url({})
+        assert url == "https://api.github.com/user"
+
+    def test_get_fetch_url(self, conn):
+        url = conn._get_fetch_url("owner/repo/42", {})
+        assert "/repos/owner/repo/pulls/42" in url
+
+    def test_get_fetch_params(self, conn):
+        params = conn._get_fetch_params({})
+        assert params is None
+
+    def test_get_list_url_with_owner_repo(self, conn):
+        url = conn._get_list_url({}, {"owner": "myowner", "repo": "myrepo"})
+        assert "/repos/myowner/myrepo/pulls" in url
+
+    def test_get_list_url_without_owner_repo(self, conn):
+        url = conn._get_list_url({}, {})
+        assert "/user/pulls" in url
+
+    def test_get_list_params(self, conn):
+        params = conn._get_list_params({"state": "closed"}, {})
+        assert params["state"] == "closed"
+        assert params["per_page"] == 50
+
+    def test_get_list_json(self, conn):
+        json_body = conn._get_list_json({}, {})
+        assert json_body is None
+
+    def test_get_results_key(self, conn):
+        assert conn._get_results_key() == ""
+
+    @pytest.mark.asyncio
+    async def test_test_connection_success(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200))
+        result = await conn.test_connection({"token": "tok"})
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_test_connection_failure(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(401))
+        result = await conn.test_connection({"token": "bad"})
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, {"id": 42, "title": "PR Title"}))
+        result = await conn.fetch_artifact("owner/repo/42", {"token": "tok"})
+        assert result["id"] == 42
+
+    @pytest.mark.asyncio
+    async def test_list_artifacts_with_owner_repo(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, []))
+        result = await conn.list_artifacts({}, {"token": "tok", "owner": "o", "repo": "r"})
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_list_artifacts_without_owner_repo(self, conn):
+        conn._get = AsyncMock(return_value=_mock_response(200, []))
+        result = await conn.list_artifacts({}, {"token": "tok"})
+        assert result == []

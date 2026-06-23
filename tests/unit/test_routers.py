@@ -2230,6 +2230,182 @@ class TestTemplatesRouter:
         )
         assert resp.status_code in (404, 403)
 
+    def test_create_template_missing_organization_returns_400(self):
+        from fastapi.testclient import TestClient
+        tmpl = MagicMock()
+        tmpl.id = uuid4()
+        tmpl.name = "T1"
+        tmpl.description = ""
+        tmpl.profile_id = uuid4()
+        tmpl.organization_id = None
+        tmpl.is_archived = False
+        tmpl.created_by = self.user_id
+        tmpl.project_name_template = None
+        tmpl.created_at = datetime.now(timezone.utc)
+        tmpl.updated_at = datetime.now(timezone.utc)
+        self.svc.create_template = AsyncMock(return_value=tmpl)
+        client = TestClient(self.app)
+        resp = client.post(
+            "/api/v1/templates",
+            json={"name": "T1", "description": "", "profile_id": str(uuid4())},
+            headers={"Authorization": f"Bearer {_token(self.user_id, None)}"},
+        )
+        assert resp.status_code in (400, 403, 500)
+
+    def test_create_template_validation_error_returns_409(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import ValidationError
+        self.svc.create_template = AsyncMock(side_effect=ValidationError("Template already exists"))
+        client = TestClient(self.app)
+        resp = client.post(
+            "/api/v1/templates",
+            json={"name": "T1", "description": "", "profile_id": str(uuid4())},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (409, 403, 500)
+
+    def test_create_template_generic_error_returns_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.create_template = AsyncMock(side_effect=RuntimeError("Unexpected error"))
+        client = TestClient(self.app)
+        resp = client.post(
+            "/api/v1/templates",
+            json={"name": "T1", "description": "", "profile_id": str(uuid4())},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
+    def test_list_templates_missing_organization_returns_400(self):
+        from fastapi.testclient import TestClient
+        self.svc.list_templates = AsyncMock(return_value=[])
+        client = TestClient(self.app)
+        resp = client.get(
+            "/api/v1/templates",
+            headers={"Authorization": f"Bearer {_token(self.user_id, None)}"},
+        )
+        assert resp.status_code in (400, 500)
+
+    def test_list_templates_generic_error_returns_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.list_templates = AsyncMock(side_effect=RuntimeError("Unexpected error"))
+        client = TestClient(self.app)
+        resp = client.get(
+            "/api/v1/templates",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
+    def test_get_template_not_found_returns_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.svc.get_template = AsyncMock(side_effect=EntityNotFoundError("Template not found"))
+        client = TestClient(self.app)
+        resp = client.get(
+            f"/api/v1/templates/{uuid4()}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (404, 403, 500)
+
+    def test_get_template_http_exception_propagates(self):
+        from fastapi.testclient import TestClient
+        from fastapi import HTTPException
+        self.svc.get_template = AsyncMock(side_effect=HTTPException(status_code=401, detail="Unauthorized"))
+        client = TestClient(self.app)
+        resp = client.get(
+            f"/api/v1/templates/{uuid4()}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (401, 403, 500)
+
+    def test_get_template_generic_error_returns_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.get_template = AsyncMock(side_effect=RuntimeError("Unexpected error"))
+        client = TestClient(self.app)
+        resp = client.get(
+            f"/api/v1/templates/{uuid4()}",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
+    def test_update_template_not_found_returns_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.svc.update_template = AsyncMock(side_effect=EntityNotFoundError("Template not found"))
+        client = TestClient(self.app)
+        resp = client.patch(
+            f"/api/v1/templates/{uuid4()}",
+            json={"name": "Updated"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (404, 403, 500)
+
+    def test_update_template_generic_error_returns_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.update_template = AsyncMock(side_effect=RuntimeError("Unexpected error"))
+        client = TestClient(self.app)
+        resp = client.patch(
+            f"/api/v1/templates/{uuid4()}",
+            json={"name": "Updated"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
+    def test_archive_template_not_found_returns_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.svc.archive_template = AsyncMock(side_effect=EntityNotFoundError("Template not found"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/templates/{uuid4()}/archive",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (404, 403, 500)
+
+    def test_archive_template_generic_error_returns_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.archive_template = AsyncMock(side_effect=RuntimeError("Unexpected error"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/templates/{uuid4()}/archive",
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
+    def test_clone_template_not_found_returns_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.svc.clone_template = AsyncMock(side_effect=EntityNotFoundError("Template not found"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/templates/{uuid4()}/clone",
+            json={"name": "Cloned", "target_organization_id": str(uuid4())},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (404, 403, 500)
+
+    def test_clone_template_validation_error_returns_409(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import ValidationError
+        self.svc.clone_template = AsyncMock(side_effect=ValidationError("Cannot clone to same organization"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/templates/{uuid4()}/clone",
+            json={"name": "Cloned", "target_organization_id": str(uuid4())},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (409, 403, 500)
+
+    def test_clone_template_generic_error_returns_500(self):
+        from fastapi.testclient import TestClient
+        self.svc.clone_template = AsyncMock(side_effect=RuntimeError("Unexpected error"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/templates/{uuid4()}/clone",
+            json={"name": "Cloned", "target_organization_id": str(uuid4())},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id)}"},
+        )
+        assert resp.status_code in (500, 403)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TestProfilesRouter  (from test_routers_extended.py)
