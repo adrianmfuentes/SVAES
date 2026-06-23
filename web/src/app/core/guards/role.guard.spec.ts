@@ -28,7 +28,6 @@ describe('roleGuard', () => {
     });
 
     authService = TestBed.inject(AuthService);
-    router = TestBed.inject(Router);
     state = {} as RouterStateSnapshot;
   });
 

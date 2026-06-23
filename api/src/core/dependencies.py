@@ -3,6 +3,8 @@ Este archivo define las dependencias que se pueden inyectar en los endpoints de 
 Estas dependencias pueden ser utilizadas para manejar la autenticación, autorización, validación de datos, entre otras funcionalidades comunes en los endpoints.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import wraps
 from fastapi import Depends, HTTPException, Request, status
@@ -76,7 +78,7 @@ async def get_current_user_or_api_key(
 ) -> CurrentUser:
     raw_key = request.headers.get(_API_KEY_HDR)
     if raw_key:
-        api_key_user = await _validate_api_key(raw_key, settings)
+        api_key_user = await _validate_api_key(raw_key)
         if api_key_user:
             return api_key_user
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
@@ -111,18 +113,17 @@ async def get_current_user_or_api_key(
 
 async def get_current_user_api_key_only(
     request: Request,
-    settings: Settings = Depends(get_settings_dependency),
 ) -> "CurrentUser":
     raw_key = request.headers.get(_API_KEY_HDR)
     if not raw_key:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
-    api_key_user = await _validate_api_key(raw_key, settings)
+    api_key_user = await _validate_api_key(raw_key)
     if not api_key_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
     return api_key_user
 
 
-async def _validate_api_key(raw_key: str, settings: Settings) -> Optional[CurrentUser]:
+async def _validate_api_key(raw_key: str) -> Optional[CurrentUser]:
     from application.use_cases.others.manage_api_keys import ManageApiKeysUseCase
 
     try:
