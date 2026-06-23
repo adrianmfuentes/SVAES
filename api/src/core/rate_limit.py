@@ -9,7 +9,7 @@ _API_KEY_HDR = "X-API-Key"
 def _get_api_key_addr(request: Request) -> str:
     raw_key = request.headers.get(_API_KEY_HDR)
     if raw_key:
-        return f"apikey:{hashlib.sha256(raw_key.encode()).hexdigest()}"
+        return f"apikey:{hashlib.pbkdf2_hmac('sha256', raw_key.encode(), b'svk_api_key_pepper_v1', 100000).hex()}"
     return f"ip:{get_ipaddr(request)}"
 
 

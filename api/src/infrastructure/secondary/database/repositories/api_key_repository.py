@@ -97,6 +97,11 @@ class SqlAPIKeyRepository(IAPIKeyRepository):
             session.delete(model)
             await session.commit()
 
+    _API_KEY_HASH_SALT = b"svk_api_key_pepper_v1"
+    _API_KEY_HASH_ITERATIONS = 100000
+
     @staticmethod
     def hash_key(key: str) -> str:
-        return hashlib.sha256(key.encode()).hexdigest()
+        return hashlib.pbkdf2_hmac(
+            "sha256", key.encode(), SqlAPIKeyRepository._API_KEY_HASH_SALT, SqlAPIKeyRepository._API_KEY_HASH_ITERATIONS
+        ).hex()

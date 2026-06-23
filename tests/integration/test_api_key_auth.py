@@ -360,7 +360,7 @@ async def test_tc_api_auth_08_db_stores_hash_not_plaintext(
                 f"Plaintext key found in key_hash column for key '{name}'"
             )
 
-    expected_hash = hashlib.sha256(plaintext.encode()).hexdigest()
+    expected_hash = hashlib.pbkdf2_hmac("sha256", plaintext.encode(), b"svk_api_key_pepper_v1", 100000).hex()
     async with AsyncSessionLocal() as sess:
         result = await sess.execute(
             sa.select(APIKeyModel.key_hash).where(APIKeyModel.id == uuid4())
@@ -386,7 +386,7 @@ async def test_tc_api_auth_09_rate_limit_429(
     _, user_id, jwt_headers = org_with_admin
     plaintext, _ = await api_key_factory(str(user_id), jwt_headers, "rate-limit-key")
 
-    rate_key = f"rate_limit:{hashlib.sha256(plaintext.encode()).hexdigest()}"
+    rate_key = f"rate_limit:{hashlib.pbkdf2_hmac('sha256', plaintext.encode(), b'svk_api_key_pepper_v1', 100000).hex()}"
     try:
         await redis_client.delete(rate_key)
     except Exception:

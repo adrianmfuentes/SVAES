@@ -1959,7 +1959,7 @@ class TestSqlAPIKeyRepository:
                 await repo.delete(uuid4())
 
     def test_hash_key(self, repo):
-        """Branch: hash_key static method returns sha256 hex digest"""
+        """Branch: hash_key static method returns pbkdf2-hmac-sha256 hex digest"""
         result = repo.hash_key("test-key")
         assert isinstance(result, str)
         assert len(result) == 64
