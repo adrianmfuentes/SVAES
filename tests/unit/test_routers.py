@@ -725,10 +725,11 @@ class TestOrganizationsRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_organization_service
+        from core.dependencies import get_organization_service, get_current_user_api_key_only, get_current_user
         self.app = app
         self.org_svc = AsyncMock()
         app.dependency_overrides[get_organization_service] = lambda: self.org_svc
+        app.dependency_overrides[get_current_user_api_key_only] = get_current_user
 
         self.user_id = uuid4()
         self.org_id = uuid4()
@@ -772,7 +773,7 @@ class TestOrganizationsRouter:
         resp = client.post(
             "/api/v1/organizations",
             json={"name": "My Org", "slug": "my-org"},
-            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id, 'OPERATOR')}"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id, 'MANAGER')}"},
         )
         assert resp.status_code == 201
 
@@ -784,7 +785,7 @@ class TestOrganizationsRouter:
         resp = client.post(
             "/api/v1/organizations",
             json={"name": "My Org", "slug": "dup-slug"},
-            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id, 'OPERATOR')}"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id, 'MANAGER')}"},
         )
         assert resp.status_code == 409
 
@@ -796,7 +797,7 @@ class TestOrganizationsRouter:
         resp = client.post(
             "/api/v1/organizations",
             json={"name": "My Org", "slug": "valid-slug"},
-            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id, 'OPERATOR')}"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id, 'MANAGER')}"},
         )
         assert resp.status_code in (409, 422)
 
@@ -807,7 +808,7 @@ class TestOrganizationsRouter:
         resp = client.post(
             "/api/v1/organizations",
             json={"name": "My Org", "slug": "err-slug"},
-            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id, 'OPERATOR')}"},
+            headers={"Authorization": f"Bearer {_token(self.user_id, self.org_id, 'MANAGER')}"},
         )
         assert resp.status_code == 500
 
