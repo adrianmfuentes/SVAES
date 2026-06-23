@@ -27,7 +27,6 @@ env:
   API_IMAGE: ${{ github.repository_owner }}/svaes-api
   WEB_IMAGE: ${{ github.repository_owner }}/svaes-web
   ENGINE_IMAGE: ${{ github.repository_owner }}/svaes-engine
-  PLATFORM: linux/arm64
 
 jobs:
   check-sonar-status:
@@ -53,7 +52,7 @@ jobs:
   build-and-push:
     needs: check-sonar-status
     name: Build and Push Images
-    runs-on: ubuntu-24.04-arm-latest
+    runs-on: [self-hosted, ARM64, oracle-ampere]
     permissions:
       contents: read
       packages: write
@@ -89,7 +88,6 @@ jobs:
         with:
           context: ./api
           file: ./api/Dockerfile
-          platforms: ${{ env.PLATFORM }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
@@ -100,7 +98,6 @@ jobs:
         with:
           context: ./web
           file: ./web/Dockerfile
-          platforms: ${{ env.PLATFORM }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
@@ -111,7 +108,6 @@ jobs:
         with:
           context: ./engine
           file: ./engine/Dockerfile
-          platforms: ${{ env.PLATFORM }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
