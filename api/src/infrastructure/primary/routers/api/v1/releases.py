@@ -130,7 +130,7 @@ async def list_releases(
 # ===================================
 @router.get("/api/v1/releases")
 async def list_global_releases(
-    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_OWN_PROJECTS))],
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_ORG_PROJECTS))],
     service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
     try:
