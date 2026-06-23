@@ -18,6 +18,7 @@ os.environ.setdefault("ENGINE_URL", "http://localhost:8081")
 os.environ.setdefault("ENGINE_API_KEY", "test-engine-api-key")
 os.environ.setdefault("ADMIN_EMAIL", "admin@test.local")
 os.environ.setdefault("ADMIN_PASSWORD", "test-admin-password")
+os.environ.setdefault("API_KEY_PEPPER", "test-api-key-pepper")
 
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "api", "src"))

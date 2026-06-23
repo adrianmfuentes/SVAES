@@ -30,7 +30,28 @@ env:
   PLATFORM: linux/arm64
 
 jobs:
+  check-sonar-status:
+    name: Check Sonar workflow status
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Sonar workflow run
+        run: |
+          latest_run=$(gh run list --workflow=sonar.yml --limit 1 --json status,conclusion --jq '.[0]' 2>/dev/null)
+          if [ -z "$latest_run" ] || [ "$latest_run" = "null" ]; then
+            echo "ERROR: No Sonar workflow run found. Deploy blocked."
+            exit 1
+          fi
+          conclusion=$(echo "$latest_run" | jq -r '.conclusion')
+          if [ "$conclusion" != "success" ]; then
+            echo "ERROR: Last Sonar workflow run was not successful (conclusion: $conclusion). Deploy blocked."
+            exit 1
+          fi
+          echo "Last Sonar workflow run was successful"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-and-push:
+    needs: check-sonar-status
     name: Build and Push Images
     runs-on: ubuntu-latest
     outputs:
