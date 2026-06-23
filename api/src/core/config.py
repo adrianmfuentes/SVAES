@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str
     jwt_expire_minutes: int
 
+    # API Key pepper (salt for hashing)
+    api_key_pepper: str
+
     # Encryption — None triggers ephemeral key generation (see validator below)
     encryption_key: str | None = None
 

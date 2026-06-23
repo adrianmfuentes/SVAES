@@ -8,6 +8,7 @@ from domain.entities.api_key import APIKey
 from domain.exceptions import EntityNotFoundError, ValidationError
 from application.ports.output.i_api_key_repository import IAPIKeyRepository
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.config import settings
 from core.logger import get_logger
 
 _log = get_logger(__name__)
@@ -29,7 +30,7 @@ class ManageApiKeysUseCase:
             raise ValidationError("Se ha alcanzado el límite máximo de 5 claves API activas por usuario")
 
         raw_key = f"svk_{secrets.token_urlsafe(32)}"
-        key_hash = hashlib.pbkdf2_hmac("sha256", raw_key.encode(), b"svk_api_key_pepper_v1", 100000).hex()
+        key_hash = hashlib.pbkdf2_hmac("sha256", raw_key.encode(), settings.api_key_pepper.encode(), 100000).hex()
         prefix = raw_key[:12]
         expires_at = None
         if expires_in_days:
@@ -113,7 +114,7 @@ class ManageApiKeysUseCase:
         return {"id": str(updated.id), "is_active": updated.is_active}
 
     async def validate_api_key(self, raw_key: str) -> Optional[APIKey]:
-        key_hash = hashlib.pbkdf2_hmac("sha256", raw_key.encode(), b"svk_api_key_pepper_v1", 100000).hex()
+        key_hash = hashlib.pbkdf2_hmac("sha256", raw_key.encode(), settings.api_key_pepper.encode(), 100000).hex()
         api_key = await self._repo.get_by_hash(key_hash)
         if not api_key:
             return None
