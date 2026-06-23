@@ -31,6 +31,7 @@ const createMockAuthService = (user: MockUser | null) => {
 const mockMembers: MockUser[] = [
   { id: 'user-1', email: 'admin@test.com', display_name: 'Admin User', role: 'MANAGER' },
   { id: 'user-2', email: 'op@test.com', display_name: 'Operator User', role: 'OPERATOR' },
+  { id: 'user-3', email: 'op2@test.com', display_name: 'Operator User 2', role: 'OPERATOR' },
 ];
 
 describe('OrgSettingsComponent', () => {
