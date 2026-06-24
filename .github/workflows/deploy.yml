@@ -284,11 +284,9 @@ jobs:
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
-            docker compose down --remove-orphans && \
-            docker ps -aq | xargs -r docker stop 2>/dev/null || true && \
-            docker ps -aq | xargs -r docker rm 2>/dev/null || true && \
-            sleep 5 && \
-            docker compose up -d"
+            docker compose down --remove-orphans 2>/dev/null; \
+            fuser -k 8000/tcp 2>/dev/null; fuser -k 80/tcp 2>/dev/null; fuser -k 443/tcp 2>/dev/null; \
+            sleep 3; docker compose up -d"
 
       - name: Health check
         env:
