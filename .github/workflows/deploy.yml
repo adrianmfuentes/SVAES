@@ -166,7 +166,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
 
       - name: Copy Docker Compose file
         env:
@@ -174,7 +174,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          scp docker-compose.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/"
+          scp -P 4422 docker-compose.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/"
 
       - name: Copy nginx configuration
         env:
@@ -182,7 +182,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          scp nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/" 2>/dev/null || true
+          scp -P 4422 nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/" 2>/dev/null || true
 
       - name: Create .env file
         env:
@@ -205,7 +205,7 @@ jobs:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || vars.ADMIN_PASSWORD }}
           APP_BASE_URL: ${{ secrets.APP_BASE_URL || vars.APP_BASE_URL }}
         run: |
-          ssh "$SERVER_USER@$SERVER_HOST" "cat > ~/svaes/$ENVIRONMENT/.env << 'ENDOFENV'
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cat > ~/svaes/$ENVIRONMENT/.env << 'ENDOFENV'
           POSTGRES_USER=$POSTGRES_USER
           POSTGRES_PASSWORD=$POSTGRES_PASSWORD
           REDIS_PASSWORD=$REDIS_PASSWORD
@@ -235,7 +235,7 @@ jobs:
           WEB_IMAGE: ${{ env.WEB_IMAGE }}
           ENGINE_IMAGE: ${{ env.ENGINE_IMAGE }}
         run: |
-          ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
             sed -i 's|image: .*svaes-api.*|image: $REGISTRY/$API_IMAGE:latest|' docker-compose.yml && \
             sed -i 's|image: .*svaes-web.*|image: $REGISTRY/$WEB_IMAGE:latest|' docker-compose.yml && \
             sed -i 's|image: .*svaes-engine.*|image: $REGISTRY/$ENGINE_IMAGE:latest|' docker-compose.yml"
@@ -249,7 +249,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
-          ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
             echo '$GITHUB_TOKEN' | docker login $REGISTRY -u '$GITHUB_ACTOR' --password-stdin && \
             docker compose pull"
 
@@ -260,7 +260,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
             docker compose run --rm api python -m alembic upgrade head"
 
       - name: Restart services
@@ -269,7 +269,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
             docker compose down && \
             docker compose up -d"
 
@@ -279,7 +279,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          ssh "$SERVER_USER@$SERVER_HOST" " \
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" " \
             for i in \$(seq 1 30); do \
               if curl -sf http://localhost:8000/health > /dev/null 2>&1; then \
                 echo 'API is healthy'; break; \
@@ -299,4 +299,4 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && docker compose ps"
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && docker compose ps"
