@@ -118,6 +118,7 @@ async def get_template(
 
     Retorna:
         - Detalles de la plantilla.
+        - 403 Forbidden si el usuario no pertenece a la organización de la plantilla.
         - 404 Not Found si la plantilla no existe.
         - 500 Internal Server Error para cualquier error inesperado.
     """
@@ -125,6 +126,8 @@ async def get_template(
         template = await service.get_template(template_id=template_id)
         if not template:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada")
+        if current_user.role != UserRole.U3 and current_user.organization_id != template.organization_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta plantilla")
         return template
     except HTTPException:
         raise
@@ -149,10 +152,16 @@ async def update_template(
 
     Retorna:
         - 200 OK con la plantilla actualizada.
+        - 403 Forbidden si el usuario no pertenece a la organización de la plantilla.
         - 404 Not Found si la plantilla no existe.
         - 500 Internal Server Error para cualquier error inesperado.
     """
     try:
+        existing = await service.get_template(template_id=template_id)
+        if not existing:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada")
+        if current_user.role != UserRole.U3 and current_user.organization_id != existing.organization_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta plantilla")
         template = await service.update_template(
             template_id=template_id,
             name=payload.name,

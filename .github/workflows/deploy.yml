@@ -250,6 +250,7 @@ jobs:
           APP_BASE_URL=$APP_BASE_URL
           API_KEY_PEPPER=$API_KEY_PEPPER
           JWT_EXPIRE_MINUTES=60
+          ENVIRONMENT=production
           ENDOFENV"
 
       - name: Pull latest images

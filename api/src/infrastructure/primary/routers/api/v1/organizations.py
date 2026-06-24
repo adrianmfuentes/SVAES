@@ -6,7 +6,6 @@ from application.ports.input.i_organization_service import IOrganizationService
 from core.dependencies import (
     get_organization_service,
     get_current_user_or_api_key,
-    get_current_user_api_key_only,
     get_current_user,
     CurrentUser,
     require_permission,
@@ -35,7 +34,7 @@ class ProjectCreateRequest(BaseModel):
 @rate_limit_api_key()
 async def list_organizations(
     request: Request,
-    current_user: Annotated[CurrentUser, Depends(get_current_user_api_key_only)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user_or_api_key)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
     skip: int = 0,
     limit: int = 100,
@@ -70,7 +69,8 @@ async def create_organization(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
-    """ Endpoint para crear una nueva organización. Cualquier usuario autenticado puede crear una organización.
+    """ Endpoint para crear una nueva organización. Usuarios OPERATOR y MANAGER pueden crear organizaciones.
+        Los usuarios ADMIN deben usar las rutas de administración.
 
     Atributos:
         - payload: OrganizationCreateRequest - El cuerpo de la solicitud con los datos de la organización a crear.
@@ -82,10 +82,10 @@ async def create_organization(
         - Lanza HTTPException con status 409 si hay un error de validación (e.g., slug ya existe).
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
-    if current_user.role in (UserRole.U3, UserRole.U2):
+    if current_user.role == UserRole.U3:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes permiso para crear una organización.",
+            detail="Los administradores deben crear organizaciones desde el panel de administración.",
         )
     try:
         org = await service.create_organization(

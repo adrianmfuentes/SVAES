@@ -596,6 +596,7 @@ async def export_verification_result_pdf(
 async def export_project_results_csv(
     project_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.VIEW_ORG_PROJECTS))],
+    _: Annotated[None, Depends(require_project_access())],
     service: Annotated[IVerificationService, Depends(get_verification_service)],
     export_service: Annotated[IExportService, Depends(get_export_service)],
     format: Annotated[Literal["csv"], Query(description="Formato de exportación")] = "csv",
