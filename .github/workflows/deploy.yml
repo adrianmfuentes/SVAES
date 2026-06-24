@@ -123,77 +123,87 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - name: Debug secret availability
+      - name: Debug - secrets vs vars
         env:
-          _HOST: ${{ secrets.SERVER_HOST }}
-          _USER: ${{ secrets.SERVER_USER }}
-          _KEY: ${{ secrets.SERVER_SSH_KEY }}
+          _HOST_S: ${{ secrets.SERVER_HOST }}
+          _USER_S: ${{ secrets.SERVER_USER }}
+          _KEY_S: ${{ secrets.SERVER_SSH_KEY }}
+          _HOST_V: ${{ vars.SERVER_HOST }}
+          _USER_V: ${{ vars.SERVER_USER }}
+          _KEY_V: ${{ vars.SERVER_SSH_KEY }}
         run: |
-          echo "Environment: ${{ inputs.environment }}"
-          echo "SERVER_HOST set: $([ -n "$_HOST" ] && echo YES || echo NO)"
-          echo "SERVER_USER set: $([ -n "$_USER" ] && echo YES || echo NO)"
-          echo "SERVER_SSH_KEY set: $([ -n "$_KEY" ] && echo YES || echo NO)"
+          echo "=== Environment input: ${{ inputs.environment }} ==="
+          echo "secrets.SERVER_HOST  : $([ -n "$_HOST_S" ] && echo SET || echo EMPTY)"
+          echo "secrets.SERVER_USER  : $([ -n "$_USER_S" ] && echo SET || echo EMPTY)"
+          echo "secrets.SERVER_SSH_KEY: $([ -n "$_KEY_S" ] && echo SET || echo EMPTY)"
+          echo "vars.SERVER_HOST     : $([ -n "$_HOST_V" ] && echo SET || echo EMPTY)"
+          echo "vars.SERVER_USER     : $([ -n "$_USER_V" ] && echo SET || echo EMPTY)"
+          echo "vars.SERVER_SSH_KEY  : $([ -n "$_KEY_V" ] && echo SET || echo EMPTY)"
 
       - name: Configure SSH
         env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY || vars.SERVER_SSH_KEY }}
         run: |
           if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_USER" ] || [ -z "$SERVER_SSH_KEY" ]; then
-            echo "ERROR: SERVER_HOST, SERVER_USER, or SERVER_SSH_KEY secret is not set in the '${{ inputs.environment }}' environment."
+            echo "ERROR: SERVER_HOST, SERVER_USER, or SERVER_SSH_KEY is not set in the '${{ inputs.environment }}' environment."
+            echo "Add them under Settings > Environments > ${{ inputs.environment }} > Secrets (or Secrets > Actions for repo-level)."
             exit 1
           fi
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts
           echo "$SERVER_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          if ! ssh-keyscan -T 15 -H "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "ssh-keyscan failed (server may restrict incoming scans); disabling StrictHostKeyChecking"
+            printf 'Host %s\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n' "$SERVER_HOST" > ~/.ssh/config
+          fi
 
       - name: Create deployment directory
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
 
       - name: Copy Docker Compose file
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           scp docker-compose.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/"
 
       - name: Copy nginx configuration
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           scp nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/" 2>/dev/null || true
 
       - name: Create .env file
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
-          ENGINE_API_KEY: ${{ secrets.ENGINE_API_KEY }}
-          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          SMTP_FROM: ${{ secrets.SMTP_FROM }}
-          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER || vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || vars.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || vars.REDIS_PASSWORD }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY || vars.JWT_SECRET_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY || vars.ENCRYPTION_KEY }}
+          ENGINE_API_KEY: ${{ secrets.ENGINE_API_KEY || vars.ENGINE_API_KEY }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS || vars.ALLOWED_ORIGINS }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST || vars.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT || vars.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER || vars.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD || vars.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM || vars.SMTP_FROM }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL || vars.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || vars.ADMIN_PASSWORD }}
+          APP_BASE_URL: ${{ secrets.APP_BASE_URL || vars.APP_BASE_URL }}
         run: |
           ssh "$SERVER_USER@$SERVER_HOST" "cat > ~/svaes/$ENVIRONMENT/.env << 'ENDOFENV'
           POSTGRES_USER=$POSTGRES_USER
@@ -217,8 +227,8 @@ jobs:
 
       - name: Update docker-compose image references
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
           REGISTRY: ${{ env.REGISTRY }}
           API_IMAGE: ${{ env.API_IMAGE }}
@@ -232,8 +242,8 @@ jobs:
 
       - name: Pull latest images
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
           REGISTRY: ${{ env.REGISTRY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -246,8 +256,8 @@ jobs:
       - name: Run database migration
         if: inputs.skip_migration == false
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
@@ -255,8 +265,8 @@ jobs:
 
       - name: Restart services
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
@@ -265,8 +275,8 @@ jobs:
 
       - name: Health check
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           ssh "$SERVER_USER@$SERVER_HOST" " \
@@ -285,8 +295,8 @@ jobs:
 
       - name: Show container status
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           ssh "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && docker compose ps"
