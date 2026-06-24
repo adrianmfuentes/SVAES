@@ -166,7 +166,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
+          ssh -o ConnectTimeout=30 -o ServerAliveInterval=15 -p 4422 "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
 
       - name: Copy Docker Compose file
         env:
@@ -236,9 +236,10 @@ jobs:
           ENGINE_IMAGE: ${{ env.ENGINE_IMAGE }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
-            sed -i 's|image: .*svaes-api.*|image: $REGISTRY/$API_IMAGE:latest|' docker-compose.yml && \
-            sed -i 's|image: .*svaes-web.*|image: $REGISTRY/$WEB_IMAGE:latest|' docker-compose.yml && \
-            sed -i 's|image: .*svaes-engine.*|image: $REGISTRY/$ENGINE_IMAGE:latest|' docker-compose.yml"
+            perl -i -0pe 's/(  api:\n)    build:\n      context: .*\n      dockerfile: .*\n/\1    image: \$REGISTRY\/\$API_IMAGE:latest\n/sm' docker-compose.yml && \
+            perl -i -0pe 's/(  engine:\n)    build:\n      context: .*\n      dockerfile: .*\n/\1    image: \$REGISTRY\/\$ENGINE_IMAGE:latest\n/sm' docker-compose.yml && \
+            perl -i -0pe 's/(  web:\n)    build:\n      context: .*\n      dockerfile: .*\n/\1    image: \$REGISTRY\/\$WEB_IMAGE:latest\n/sm' docker-compose.yml && \
+            perl -i -0pe 's/(  celery-worker:\n)    build:\n      context: .*\n      dockerfile: .*\n/\1    image: \$REGISTRY\/\$API_IMAGE:latest\n/sm' docker-compose.yml"
 
       - name: Pull latest images
         env:
