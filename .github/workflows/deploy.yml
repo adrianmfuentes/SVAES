@@ -117,10 +117,22 @@ jobs:
     name: Deploy to Server
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment:
+      name: ${{ inputs.environment }}
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Debug secret availability
+        env:
+          _HOST: ${{ secrets.SERVER_HOST }}
+          _USER: ${{ secrets.SERVER_USER }}
+          _KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          echo "Environment: ${{ inputs.environment }}"
+          echo "SERVER_HOST set: $([ -n "$_HOST" ] && echo YES || echo NO)"
+          echo "SERVER_USER set: $([ -n "$_USER" ] && echo YES || echo NO)"
+          echo "SERVER_SSH_KEY set: $([ -n "$_KEY" ] && echo YES || echo NO)"
 
       - name: Configure SSH
         env:
