@@ -207,6 +207,10 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
+          REGISTRY: ${{ env.REGISTRY }}
+          API_IMAGE: ${{ env.API_IMAGE }}
+          WEB_IMAGE: ${{ env.WEB_IMAGE }}
+          ENGINE_IMAGE: ${{ env.ENGINE_IMAGE }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER || vars.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || vars.POSTGRES_PASSWORD }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || vars.REDIS_PASSWORD }}
@@ -224,6 +228,10 @@ jobs:
           APP_BASE_URL: ${{ secrets.APP_BASE_URL || vars.APP_BASE_URL }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cat > ~/svaes/$ENVIRONMENT/.env << 'ENDOFENV'
+          REGISTRY=$REGISTRY
+          API_IMAGE=$API_IMAGE
+          WEB_IMAGE=$WEB_IMAGE
+          ENGINE_IMAGE=$ENGINE_IMAGE
           POSTGRES_USER=$POSTGRES_USER
           POSTGRES_PASSWORD=$POSTGRES_PASSWORD
           REDIS_PASSWORD=$REDIS_PASSWORD
