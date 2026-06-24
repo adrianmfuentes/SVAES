@@ -81,7 +81,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.API_IMAGE }}
           tags: |
             type=sha,prefix={{branch}}-,format=short
-            type=raw,value=latest,enable=${{ inputs.environment == 'production' }}
+            type=raw,value=latest
 
       - name: Build and push API image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
