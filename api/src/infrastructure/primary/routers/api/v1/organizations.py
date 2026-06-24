@@ -66,7 +66,7 @@ async def list_organizations(
 async def create_organization(
     request: Request,
     payload: OrganizationCreateRequest,
-    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user_or_api_key)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """ Endpoint para crear una nueva organización. Usuarios OPERATOR y MANAGER pueden crear organizaciones.
@@ -82,6 +82,11 @@ async def create_organization(
         - Lanza HTTPException con status 409 si hay un error de validación (e.g., slug ya existe).
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
+    if current_user.auth_via_api_key and current_user.role == UserRole.U2:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso",
+        )
     if current_user.role == UserRole.U3:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
