@@ -173,9 +173,9 @@ jobs:
           chmod 700 ~/.ssh
           echo "$SERVER_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          if ! ssh-keyscan -T 15 -H "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
-            echo "ssh-keyscan failed (server may restrict incoming scans); disabling StrictHostKeyChecking"
-            printf 'Host %s\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n' "$SERVER_HOST" > ~/.ssh/config
+          if ! ssh-keyscan -T 15 -H -p 4422 "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "ssh-keyscan on port 4422 failed (server may restrict incoming scans); disabling StrictHostKeyChecking"
+            printf 'Host %s\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  LogLevel ERROR\n' "$SERVER_HOST" > ~/.ssh/config
           fi
 
       - name: Create deployment directory
