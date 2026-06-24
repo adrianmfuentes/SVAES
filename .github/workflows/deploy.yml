@@ -174,7 +174,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          scp -P 4422 docker-compose.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/"
+          scp -P 4422 docker-compose.prod.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/docker-compose.yml"
 
       - name: Copy nginx configuration
         env:
@@ -235,13 +235,7 @@ jobs:
           WEB_IMAGE: ${{ env.WEB_IMAGE }}
           ENGINE_IMAGE: ${{ env.ENGINE_IMAGE }}
         run: |
-          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
-            perl -i -0pe 's/(  api:\n)    build:\n      context: .*\n      dockerfile: .*\n/\1    image: \$REGISTRY\/\$API_IMAGE:latest\n/sm' docker-compose.yml && \
-            perl -i -0pe 's/(  engine:\n)    build:\n      context: .*\n      dockerfile: .*\n/\1    image: \$REGISTRY\/\$ENGINE_IMAGE:latest\n/sm' docker-compose.yml && \
-            perl -i -0pe 's/(  web:\n)    build:\n      context: .*\n      dockerfile: .*\n/\1    image: \$REGISTRY\/\$WEB_IMAGE:latest\n/sm' docker-compose.yml && \
-            perl -i -0pe 's/(  celery-worker:\n)    build:\n      context: .*\n      dockerfile: .*\n/\1    image: \$REGISTRY\/\$API_IMAGE:latest\n/sm' docker-compose.yml"
-
-      - name: Pull latest images
+          - name: Pull latest images
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
