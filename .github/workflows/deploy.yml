@@ -284,7 +284,8 @@ jobs:
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
-            docker compose down && \
+            docker compose down --remove-orphans && \
+            sleep 5 && \
             docker compose up -d"
 
       - name: Health check
