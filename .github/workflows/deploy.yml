@@ -231,10 +231,13 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
           REGISTRY: ${{ env.REGISTRY }}
+          API_IMAGE: ${{ env.API_IMAGE }}
+          WEB_IMAGE: ${{ env.WEB_IMAGE }}
+          ENGINE_IMAGE: ${{ env.ENGINE_IMAGE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
-          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "export REGISTRY='$REGISTRY' API_IMAGE='$API_IMAGE' WEB_IMAGE='$WEB_IMAGE' ENGINE_IMAGE='$ENGINE_IMAGE' && cd ~/svaes/$ENVIRONMENT && \
             echo '$GITHUB_TOKEN' | docker login $REGISTRY -u '$GITHUB_ACTOR' --password-stdin && \
             docker compose pull"
 
