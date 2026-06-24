@@ -225,17 +225,7 @@ jobs:
           TLS_CERT_PATH=./certs
           ENDOFENV"
 
-      - name: Update docker-compose image references
-        env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
-          REGISTRY: ${{ env.REGISTRY }}
-          API_IMAGE: ${{ env.API_IMAGE }}
-          WEB_IMAGE: ${{ env.WEB_IMAGE }}
-          ENGINE_IMAGE: ${{ env.ENGINE_IMAGE }}
-        run: |
-          - name: Pull latest images
+      - name: Pull latest images
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
