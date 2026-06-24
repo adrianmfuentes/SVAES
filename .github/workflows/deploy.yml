@@ -250,7 +250,6 @@ jobs:
           APP_BASE_URL=$APP_BASE_URL
           API_KEY_PEPPER=$API_KEY_PEPPER
           JWT_EXPIRE_MINUTES=60
-          TLS_CERT_PATH=./certs
           ENDOFENV"
 
       - name: Pull latest images
@@ -287,8 +286,7 @@ jobs:
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
             docker compose down --remove-orphans 2>/dev/null; \
-            fuser -k 8000/tcp 2>/dev/null; fuser -k 80/tcp 2>/dev/null; fuser -k 443/tcp 2>/dev/null; \
-            sleep 10; docker compose up -d"
+            sleep 3; docker compose up -d"
 
       - name: Health check
         env:
@@ -304,7 +302,7 @@ jobs:
               echo 'Waiting for API...'; sleep 2; \
             done && \
             for i in \$(seq 1 10); do \
-              if curl -sf http://localhost/ > /dev/null 2>&1; then \
+              if curl -sf http://localhost:8880/ > /dev/null 2>&1; then \
                 echo 'Web is healthy'; break; \
               fi; \
               echo 'Waiting for Web...'; sleep 2; \
