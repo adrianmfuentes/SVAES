@@ -8,5 +8,6 @@ module.exports = {
     defaultCommandTimeout: 10000,
     viewportWidth: 1280,
     viewportHeight: 720,
+    allowCypressEnv: false,
   },
 };
