@@ -21,6 +21,11 @@ on:
         required: false
         default: false
         type: boolean
+      clean_volumes:
+        description: 'Delete ALL SVAES data volumes (postgres + redis). DESTRUCTIVE — irreversible.'
+        required: false
+        default: false
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
@@ -286,6 +291,17 @@ jobs:
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
             docker compose run --rm api python -m alembic upgrade head"
+
+      - name: Clean SVAES data volumes
+        if: inputs.clean_volumes == true
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
+            docker compose down --volumes --remove-orphans 2>/dev/null && \
+            echo 'SVAES data volumes (postgres_data, redis_data) deleted.'"
 
       - name: Restart services
         env:
