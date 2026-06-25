@@ -637,7 +637,8 @@ class TestUserService:
             await service.delete_user_account(user.id, user.id, "wrong")
 
     async def test_delete_user_account_owner_transfers_ownership(self, svc):
-        """Branch: user owns org with other members → ownership transferred then account deleted"""
+        """Branch: user owns org with other members → ValidationError (manual transfer required)"""
+        from domain.exceptions import ValidationError
         service, user_repo, org_repo, pw_hasher = svc
         org_id = uuid4()
         user = _make_user(organization_id=org_id)
@@ -648,14 +649,8 @@ class TestUserService:
         org_repo.get_by_id = AsyncMock(return_value=org)
         other_user = _make_user(organization_id=org_id)
         user_repo.list_all = AsyncMock(return_value=[user, other_user])
-        org_repo.update = AsyncMock()
-        user_repo.update = AsyncMock()
-        user_repo.delete = AsyncMock()
-        await service.delete_user_account(user.id, user.id, "right")
-        assert org.owner_id == other_user.id
-        org_repo.update.assert_awaited_once_with(org)
-        assert other_user.role.value == "MANAGER"
-        user_repo.delete.assert_awaited_once_with(user.id)
+        with pytest.raises(ValidationError, match="transferir"):
+            await service.delete_user_account(user.id, user.id, "right")
 
     async def test_delete_user_account_sole_owner_deletes_org(self, svc):
         """Branch: user owns org with no other members → org deleted then account deleted"""

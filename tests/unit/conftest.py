@@ -1,6 +1,7 @@
 import os
 import sys
-from unittest.mock import MagicMock
+import pytest
+from unittest.mock import MagicMock, AsyncMock, patch
 
 REDIS_URL = "redis://localhost:6379/0"
 
@@ -42,3 +43,23 @@ def pytest_configure(config):
     mock_engine.begin = MagicMock(return_value=MagicMock())
 
     sqlalchemy.ext.asyncio.create_async_engine = lambda *args, **kwargs: mock_engine
+
+
+@pytest.fixture(autouse=True)
+def _mock_sql_user_active(request):
+    """Patch SqlUserRepository.get_by_id to return an active user.
+
+    get_current_user instantiates SqlUserRepository directly and checks is_active.
+    Without this patch every JWT-authenticated test gets 401 because no real DB row exists.
+    Skipped for test_repositories.py which tests the method itself.
+    """
+    if request.node.fspath.basename == "test_repositories.py":
+        yield
+        return
+    mock_user = MagicMock()
+    mock_user.is_active = True
+    with patch(
+        "infrastructure.secondary.database.repositories.user_repository.SqlUserRepository.get_by_id",
+        new=AsyncMock(return_value=mock_user),
+    ):
+        yield
