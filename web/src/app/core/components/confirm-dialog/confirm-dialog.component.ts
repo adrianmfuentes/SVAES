@@ -146,6 +146,23 @@ import { TranslationService } from '../../i18n/translation.service';
       opacity: 0.45;
       cursor: not-allowed;
     }
+
+    @media (max-width: 22.5rem) {
+      .dialog { padding: var(--spacing-md); width: 95%; }
+      .dialog-title { font-size: 0.9375rem; }
+      .dialog-message { font-size: 0.8125rem; margin-bottom: 1rem; }
+      .dialog-actions {
+        flex-direction: column-reverse;
+        gap: var(--spacing-xs);
+      }
+      .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.625rem 1rem;
+        min-height: 2.75rem;
+        font-size: 0.625rem;
+      }
+    }
   `],
 })
 export class ConfirmDialogComponent {

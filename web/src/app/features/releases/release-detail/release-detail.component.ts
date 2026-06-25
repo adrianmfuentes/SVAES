@@ -1043,10 +1043,23 @@ interface VerificationResult {
       .info-grid { grid-template-columns: repeat(2, 1fr); }
 
       .data-table-wrap { overflow-x: auto; }
+
+      .card { padding: var(--spacing-md); }
+      .card-title { font-size: 1.25rem; }
     }
 
     @media (max-width: 30rem) {
       .info-grid { grid-template-columns: 1fr; }
+
+      .page-title { font-size: 1.5rem; }
+
+      .verdict-banner { padding: var(--spacing-sm); font-size: 0.8125rem; }
+
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+      }
     }
 
     /* Section header */

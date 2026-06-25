@@ -49,3 +49,11 @@
   font-size: 0.8125rem;
   color: var(--muted);
 }
+
+@media (max-width: 35rem) {
+  .chart-wrapper,
+  .chart-skeleton,
+  .chart-empty { height: 12rem; }
+
+  .chart-title { margin-bottom: var(--spacing-md); }
+}

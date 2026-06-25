@@ -481,7 +481,9 @@ interface ConnectorTypesResponse {
     }
 
     @media (max-width: 48rem) {
-      .page-header { flex-wrap: wrap; }
+      .page-header { flex-wrap: wrap; gap: var(--spacing-sm); }
+
+      .page-header .btn-primary { width: 100%; }
 
       .page-title { font-size: 1.75rem; }
 
@@ -491,6 +493,51 @@ interface ConnectorTypesResponse {
       }
 
       .data-table-wrap { overflow-x: auto; }
+
+      .cell-actions {
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+      }
+
+      .cell-actions .btn-ghost {
+        font-size: 0.625rem;
+        padding: 0.25rem 0.5rem;
+      }
+
+      .modal-panel {
+        width: calc(100vw - 1.5rem);
+        max-width: none;
+        padding: var(--spacing-md);
+        max-height: calc(100vh - 3rem);
+        overflow-y: auto;
+      }
+
+      .modal-header { margin-bottom: var(--spacing-md); }
+      .modal-title { font-size: 0.9375rem; }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+        gap: var(--spacing-xs);
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-sm);
+      }
+
+      .modal-footer .btn-primary,
+      .modal-footer .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        padding: 0.625rem 1rem;
+        min-height: 2.75rem;
+      }
+
+      .form-group input,
+      .form-group select {
+        padding: 0.625rem 0.75rem;
+        min-height: 2.75rem;
+        font-size: 0.875rem;
+      }
+
+      .form-group label { font-size: 0.625rem; }
     }
   `],
 })

@@ -473,7 +473,14 @@ interface Release {
       .btn-danger {
         justify-content: center;
         width: 100%;
+        padding: 0.625rem 1rem;
+        min-height: 2.75rem;
       }
+    }
+
+    @media (max-width: 30rem) {
+      .page-title { font-size: 1.5rem; }
+      .col-actions { width: auto; }
     }
   `],
 })

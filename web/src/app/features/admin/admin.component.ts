@@ -682,15 +682,73 @@ interface AccessRequest {
     }
 
     @media (max-width: 48rem) {
-      .page-header { flex-wrap: wrap; }
+      .page-header { flex-wrap: wrap; gap: var(--spacing-sm); }
 
       .page-title { font-size: 1.75rem; }
 
-      .admin-tabs { overflow-x: auto; }
+      .admin-tabs { overflow-x: auto; white-space: nowrap; }
+
+      .admin-tab,
+      .ar-status-tab {
+        padding: var(--spacing-sm) var(--spacing-sm);
+        font-size: 0.625rem;
+        min-height: 2.5rem;
+      }
+
+      .tab-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+      }
 
       .data-table-wrap { overflow-x: auto; }
 
-      .modal-panel { width: calc(100vw - 2rem); }
+      .modal-panel {
+        width: calc(100vw - 1.5rem);
+        max-width: none;
+        padding: var(--spacing-md);
+      }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+        gap: var(--spacing-xs);
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-sm);
+      }
+
+      .modal-footer .btn-primary,
+      .modal-footer .btn-secondary,
+      .modal-footer .btn-danger {
+        width: 100%;
+        justify-content: center;
+        padding: 0.625rem 1rem;
+        min-height: 2.75rem;
+      }
+
+      .form-group input[type=text],
+      .form-group input[type=email],
+      .form-group input[type=password],
+      .form-group select,
+      .form-group textarea {
+        padding: 0.625rem 0.75rem;
+        min-height: 2.75rem;
+        font-size: 0.875rem;
+      }
+
+      .form-group label { font-size: 0.625rem; }
+
+      .info-panel {
+        flex-direction: column;
+        padding: var(--spacing-md);
+        gap: var(--spacing-sm);
+      }
+
+      .ar-status-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .tab-title { font-size: 1.25rem; }
     }
   `],
 })

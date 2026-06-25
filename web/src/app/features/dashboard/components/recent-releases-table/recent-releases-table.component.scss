@@ -174,3 +174,28 @@
     border-color: var(--verdict-unevaluated-border);
   }
 }
+
+@media (max-width: 48rem) {
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+
+  .releases-table {
+    th, td {
+      padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) 0;
+    }
+  }
+}
+
+@media (max-width: 30rem) {
+  .release-uuid { display: none; }
+
+  .releases-table {
+    th:nth-child(2),
+    td:nth-child(2) {
+      display: none;
+    }
+  }
+}

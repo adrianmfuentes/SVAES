@@ -585,11 +585,86 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     }
 
     @media (max-width: 48rem) {
-      .page-header { flex-wrap: wrap; }
+      .page-header { flex-wrap: wrap; gap: var(--spacing-sm); }
+
+      .page-header .btn-primary { width: 100%; }
 
       .page-title { font-size: 1.75rem; }
 
       .data-table-wrap { overflow-x: auto; }
+
+      .modal-panel,
+      .modal-panel-wide {
+        width: calc(100vw - 1.5rem);
+        max-width: none;
+        padding: var(--spacing-md);
+        max-height: calc(100vh - 3rem);
+        overflow-y: auto;
+      }
+
+      .modal-header { margin-bottom: var(--spacing-md); }
+      .modal-title { font-size: 0.9375rem; }
+
+      .form-row {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+      }
+
+      .form-group input {
+        padding: 0.625rem 0.75rem;
+        min-height: 2.75rem;
+        font-size: 0.875rem;
+      }
+
+      .form-group label { font-size: 0.625rem; }
+
+      .rules-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+      }
+
+      .rule-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-sm);
+      }
+
+      .rule-actions { align-self: flex-end; }
+
+      .rule-form-actions {
+        flex-direction: column-reverse;
+        gap: var(--spacing-xs);
+      }
+
+      .rule-form-actions .btn-primary,
+      .rule-form-actions .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        min-height: 2.75rem;
+      }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+        gap: var(--spacing-xs);
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-sm);
+      }
+
+      .modal-footer .btn-primary,
+      .modal-footer .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        padding: 0.625rem 1rem;
+        min-height: 2.75rem;
+      }
+
+      .form-group select {
+        padding: 0.625rem 0.75rem;
+        min-height: 2.75rem;
+        font-size: 0.875rem;
+      }
     }
   `],
 })

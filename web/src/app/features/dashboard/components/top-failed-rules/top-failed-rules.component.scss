@@ -121,3 +121,15 @@
   text-align: right;
   flex-shrink: 0;
 }
+
+@media (max-width: 35rem) {
+  .rule-row:hover {
+    margin: 0 calc(-1 * var(--spacing-md));
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+  }
+
+  .rule-name { font-size: 0.75rem; }
+  .rule-id { font-size: 0.625rem; }
+  .rule-meta { gap: var(--spacing-xs); }
+}

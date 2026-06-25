@@ -592,6 +592,8 @@ interface OrgUser {
 
       .data-table-wrap { overflow-x: auto; }
 
+      .admin-tabs { overflow-x: auto; white-space: nowrap; }
+
       .tab-toolbar {
         flex-direction: column;
         align-items: flex-start;
@@ -638,6 +640,8 @@ interface OrgUser {
       .form-group label { font-size: 0.625rem; }
 
       .modal-body-text { font-size: 0.8125rem; }
+
+      .tab-title { font-size: 1.25rem; }
     }
   `],
 })

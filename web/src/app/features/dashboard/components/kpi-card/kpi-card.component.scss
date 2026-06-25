@@ -69,3 +69,12 @@
   padding: var(--spacing-sm) var(--spacing-md);
   margin-top: var(--spacing-xs);
 }
+
+@media (max-width: 35rem) {
+  .kpi-card {
+    padding: var(--spacing-md);
+    min-height: 5.25rem;
+  }
+
+  .card-value { font-size: 1.5rem; }
+}
