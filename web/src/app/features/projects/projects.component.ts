@@ -49,15 +49,15 @@ interface Project {
             </thead>
             <tbody>
               <tr *ngFor="let p of projects()">
-                <td class="cell-primary">{{ p.name }}</td>
-                <td class="cell-muted">{{ p.description || '—' }}</td>
-                <td>
+                <td class="cell-primary" [attr.data-label]="'projects.col_name' | t">{{ p.name }}</td>
+                <td class="cell-muted" [attr.data-label]="'projects.col_description' | t">{{ p.description || '—' }}</td>
+                <td [attr.data-label]="'projects.col_status' | t">
                   <span class="status-badge" [class.status-archived]="p.is_archived">
                     {{ (p.is_archived ? 'projects.status_archived' : 'projects.status_active') | t }}
                   </span>
                 </td>
-                <td class="cell-muted">{{ p.created_at | date:'dd MMM yyyy' }}</td>
-                <td *ngIf="isManager" class="cell-actions">
+                <td class="cell-muted" [attr.data-label]="'projects.col_created' | t">{{ p.created_at | date:'dd MMM yyyy' }}</td>
+                <td *ngIf="isManager" class="cell-actions" [attr.data-label]="'common.actions' | t">
                   <button
                     *ngIf="!p.is_archived"
                     class="btn-ghost"
@@ -341,7 +341,62 @@ interface Project {
 
       .page-title { font-size: 1.75rem; }
 
-      .data-table-wrap { overflow-x: auto; }
+      .data-table-wrap { overflow-x: visible; }
+
+      .data-table,
+      .data-table tbody,
+      .data-table tr,
+      .data-table td {
+        display: block;
+      }
+
+      .data-table thead {
+        display: none;
+      }
+
+      .data-table tr {
+        margin-bottom: var(--spacing-sm);
+        border: 0.0625rem solid var(--border);
+        border-radius: var(--rounded-md);
+        background: var(--surface-raised);
+      }
+
+      .data-table tr:last-child {
+        margin-bottom: 0;
+      }
+
+      .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-bottom: 0.0625rem solid var(--border);
+        height: auto;
+        min-height: 2.5rem;
+        text-align: right;
+      }
+
+      .data-table td:last-child {
+        border-bottom: none;
+      }
+
+      .data-table tr:hover td {
+        background: transparent;
+      }
+
+      .data-table td::before {
+        content: attr(data-label);
+        font-family: var(--font-sans);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-right: var(--spacing-md);
+        flex-shrink: 0;
+        text-align: left;
+        white-space: nowrap;
+      }
     }
   `],
 })

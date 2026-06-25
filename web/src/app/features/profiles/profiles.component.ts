@@ -69,10 +69,10 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
             </thead>
             <tbody>
               <tr *ngFor="let p of orgProfiles()">
-                <td class="cell-primary">{{ p.name }}</td>
-                <td class="cell-muted">{{ p.description ?? '—' }}</td>
-                <td>{{ p.rules_count ?? '—' }}</td>
-                <td *ngIf="canManage && !p.is_default" class="cell-actions">
+                <td class="cell-primary" [attr.data-label]="'profiles.table_name' | t">{{ p.name }}</td>
+                <td class="cell-muted" [attr.data-label]="'common.description' | t">{{ p.description ?? '—' }}</td>
+                <td [attr.data-label]="'profiles.table_rules' | t">{{ p.rules_count ?? '—' }}</td>
+                <td *ngIf="canManage && !p.is_default" class="cell-actions" [attr.data-label]="'common.actions' | t">
                   <button class="btn-ghost" (click)="openEdit(p)">{{ 'common.edit' | t }}</button>
                   <button
                     class="btn-ghost btn-danger-ghost"
@@ -83,7 +83,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                     {{ deletingId() === p.id ? ('profiles.deleting' | t) : ('common.delete' | t) }}
                   </button>
                 </td>
-                <td *ngIf="canManage && p.is_default" class="cell-muted">
+                <td *ngIf="canManage && p.is_default" class="cell-muted" [attr.data-label]="'common.actions' | t">
                   {{ 'profiles.default_profile' | t }}
                 </td>
               </tr>
@@ -591,7 +591,62 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
       .page-title { font-size: 1.75rem; }
 
-      .data-table-wrap { overflow-x: auto; }
+      .data-table-wrap { overflow-x: visible; }
+
+      .data-table,
+      .data-table tbody,
+      .data-table tr,
+      .data-table td {
+        display: block;
+      }
+
+      .data-table thead {
+        display: none;
+      }
+
+      .data-table tr {
+        margin-bottom: var(--spacing-sm);
+        border: 0.0625rem solid var(--border);
+        border-radius: var(--rounded-md);
+        background: var(--surface-raised);
+      }
+
+      .data-table tr:last-child {
+        margin-bottom: 0;
+      }
+
+      .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-bottom: 0.0625rem solid var(--border);
+        height: auto;
+        min-height: 2.5rem;
+        text-align: right;
+      }
+
+      .data-table td:last-child {
+        border-bottom: none;
+      }
+
+      .data-table tr:hover td {
+        background: transparent;
+      }
+
+      .data-table td::before {
+        content: attr(data-label);
+        font-family: var(--font-sans);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-right: var(--spacing-md);
+        flex-shrink: 0;
+        text-align: left;
+        white-space: nowrap;
+      }
 
       .modal-panel,
       .modal-panel-wide {

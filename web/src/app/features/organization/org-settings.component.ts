@@ -52,12 +52,12 @@ interface OrgUser {
             </thead>
             <tbody>
               <tr *ngFor="let member of members()" [class.row-locked]="member.role === 'MANAGER'">
-                <td class="cell-primary">
+                <td class="cell-primary" [attr.data-label]="'common.name' | t">
                   {{ member.display_name }}
                   <span class="self-tag" *ngIf="member.id === currentUserId">{{ 'org_settings.self_tag' | t }}</span>
                 </td>
-                <td class="cell-muted">{{ member.email }}</td>
-                <td>
+                <td class="cell-muted" [attr.data-label]="'common.email' | t">{{ member.email }}</td>
+                <td [attr.data-label]="'common.role' | t">
                   <select
                     *ngIf="member.role !== 'MANAGER' && member.id !== currentUserId"
                     class="role-select"
@@ -69,7 +69,7 @@ interface OrgUser {
                   <span *ngIf="member.role === 'MANAGER'" class="role-owner">{{ 'org_settings.role_owner' | t }}</span>
                   <span *ngIf="member.id === currentUserId && member.role !== 'MANAGER'" class="role-text">{{ 'org_settings.role_' + member.role.toLowerCase() | t }}</span>
                 </td>
-                <td class="cell-actions">
+                <td class="cell-actions" [attr.data-label]="'common.actions' | t">
                   <button
                     *ngIf="member.role === 'MANAGER' && members().length > 1"
                     class="btn-ghost btn-transfer"
@@ -590,7 +590,70 @@ interface OrgUser {
     @media (max-width: 48rem) {
       .page-title { font-size: 1.75rem; }
 
-      .data-table-wrap { overflow-x: auto; }
+      .data-table-wrap { overflow-x: visible; }
+
+      .data-table,
+      .data-table tbody,
+      .data-table tr,
+      .data-table td {
+        display: block;
+      }
+
+      .data-table thead {
+        display: none;
+      }
+
+      .data-table tr {
+        margin-bottom: var(--spacing-sm);
+        border: 0.0625rem solid var(--border);
+        border-radius: var(--rounded-md);
+        background: var(--surface-raised);
+      }
+
+      .data-table tr:last-child {
+        margin-bottom: 0;
+      }
+
+      .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-bottom: 0.0625rem solid var(--border);
+        height: auto;
+        min-height: 2.5rem;
+        text-align: right;
+      }
+
+      .data-table td:last-child {
+        border-bottom: none;
+      }
+
+      .data-table tr:hover td {
+        background: transparent;
+      }
+
+      .data-table td::before {
+        content: attr(data-label);
+        font-family: var(--font-sans);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-right: var(--spacing-md);
+        flex-shrink: 0;
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      .row-locked {
+        border-color: var(--verdict-warning-border, var(--verdict-warning));
+      }
+
+      .row-locked td {
+        background: rgba(232, 213, 163, 0.05);
+      }
 
       .admin-tabs { overflow-x: auto; white-space: nowrap; }
 

@@ -82,14 +82,14 @@ interface ConnectorTypesResponse {
             </thead>
             <tbody>
               <tr *ngFor="let c of globalConnectors()">
-                <td class="cell-primary">{{ c.name }}</td>
-                <td><span class="type-chip">{{ typeLabel(c.type) }}</span></td>
-                <td>
+                <td class="cell-primary" [attr.data-label]="'connectors.table_name' | t">{{ c.name }}</td>
+                <td [attr.data-label]="'connectors.table_type' | t"><span class="type-chip">{{ typeLabel(c.type) }}</span></td>
+                <td [attr.data-label]="'connectors.table_status' | t">
                   <span class="status-dot" [ngClass]="'status-' + c.status"></span>
                   <span class="status-label">{{ statusLabel(c.status) }}</span>
                 </td>
-                <td class="cell-muted">{{ c.last_tested_at ? (c.last_tested_at | date:'dd MMM yyyy') : '—' }}</td>
-                <td *ngIf="canManage" class="cell-actions">
+                <td class="cell-muted" [attr.data-label]="'connectors.last_tested' | t">{{ c.last_tested_at ? (c.last_tested_at | date:'dd MMM yyyy') : '—' }}</td>
+                <td *ngIf="canManage" class="cell-actions" [attr.data-label]="'common.actions' | t">
                   <button class="btn-ghost" (click)="openEdit(c)">{{ 'connectors.edit_label' | t }}</button>
                   <button class="btn-ghost" (click)="testConnector(c)" [disabled]="testingId() === c.id" [title]="testingId() === c.id ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
                     {{ testingId() === c.id ? ('connectors.testing_label' | t) : ('connectors.test_label' | t) }}
@@ -492,11 +492,67 @@ interface ConnectorTypesResponse {
         gap: var(--spacing-sm);
       }
 
-      .data-table-wrap { overflow-x: auto; }
+      .data-table-wrap { overflow-x: visible; }
+
+      .data-table,
+      .data-table tbody,
+      .data-table tr,
+      .data-table td {
+        display: block;
+      }
+
+      .data-table thead {
+        display: none;
+      }
+
+      .data-table tr {
+        margin-bottom: var(--spacing-sm);
+        border: 0.0625rem solid var(--border);
+        border-radius: var(--rounded-md);
+        background: var(--surface-raised);
+      }
+
+      .data-table tr:last-child {
+        margin-bottom: 0;
+      }
+
+      .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-bottom: 0.0625rem solid var(--border);
+        height: auto;
+        min-height: 2.5rem;
+        text-align: right;
+      }
+
+      .data-table td:last-child {
+        border-bottom: none;
+      }
+
+      .data-table tr:hover td {
+        background: transparent;
+      }
+
+      .data-table td::before {
+        content: attr(data-label);
+        font-family: var(--font-sans);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-right: var(--spacing-md);
+        flex-shrink: 0;
+        text-align: left;
+        white-space: nowrap;
+      }
 
       .cell-actions {
         flex-wrap: wrap;
         gap: var(--spacing-xs);
+        justify-content: flex-end;
       }
 
       .cell-actions .btn-ghost {
