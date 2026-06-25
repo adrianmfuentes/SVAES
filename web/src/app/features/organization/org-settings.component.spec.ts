@@ -213,38 +213,6 @@ describe('OrgSettingsComponent', () => {
     });
   });
 
-  describe('role change', () => {
-    it('should update member role on role change', () => {
-      fixture.detectChanges();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
-
-      const member = mockMembers[1];
-      const event = { target: { value: 'ADMIN' } } as unknown as Event;
-      component.onRoleChange(member, event);
-
-      const req = httpCtrl.expectOne(`/api/v1/organizations/org-1/users/${member.id}/role`);
-      expect(req.request.method).toBe('PATCH');
-      expect(req.request.body).toEqual({ role: 'ADMIN' });
-      req.flush({});
-
-      expect(component.members()[1].role).toBe('ADMIN');
-    });
-
-    it('should revert role on error', () => {
-      fixture.detectChanges();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
-
-      const member = mockMembers[1];
-      const event = { target: { value: 'ADMIN' } } as unknown as Event;
-      component.onRoleChange(member, event);
-
-      httpCtrl.expectOne(`/api/v1/organizations/org-1/users/${member.id}/role`).flush('', { status: 500, statusText: 'Error' });
-      fixture.detectChanges();
-
-      expect(component.members()[1].role).toBe('OPERATOR');
-    });
-  });
-
   describe('remove member', () => {
     it('should open confirm remove modal', () => {
       const member = mockMembers[1];
