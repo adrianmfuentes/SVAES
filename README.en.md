@@ -1,4 +1,6 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adrianmfuentes_SVAES&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adrianmfuentes_SVAES)
+[![Status](https://img.shields.io/badge/Thesis-Completed-success)](https://github.com/adrianmfuentes/SVAES)
+[![Deploy](https://img.shields.io/badge/Deploy-Production-blue)](https://github.com/adrianmfuentes/SVAES)
 
 **[Español](README.md)** · **[Français](README.fr.md)**
 
@@ -6,11 +8,11 @@
 
 ## Automatic Software Delivery Verification System
 
-Final Degree Project
+Final Degree Project — Completed
 Bachelor's Degree in Software Engineering
 University of Oviedo
 
-Author: Adrián Martínez
+Author: Adrián Martínez Fuentes
 Academic Year: 2025/2026
 
 ---
@@ -46,10 +48,11 @@ Design and implement an extensible, decoupled system capable of automatically ve
 | Component        | Status         |
 | ---------------- | -------------- |
 | FastAPI Backend  | Full REST API with all endpoints                          |
-| Angular Frontend | SPA with auth, dashboard, releases, connectors, profile, admin, i18n ES/EN, 2FA, responsive design, WCAG 2.1 AA accessibility |
+| Angular Frontend | SPA with auth, dashboard, releases, connectors, profile, admin, i18n ES/EN/FR, 2FA, responsive design, WCAG 2.1 AA accessibility, account deletion with automatic ownership transfer |
 | Rust Engine      | Complete engine in engine/, parallel evaluator + 10 rules |
 | Celery Worker    | Real worker in verification_worker.py                     |
 | Connectors       | 20 connectors in 5 functional categories                  |
+| Deployment       | Deployed to production with Docker Compose + Oracle Cloud |
 
 ---
 
@@ -333,18 +336,19 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # 15. Conclusion
 
-The system provides a decoupled, extensible, and robust solution for automatic software delivery verification.
+The project has been completed as a Final Degree Project at the University of Oviedo (2025/2026), pending submission and defense. The system provides a decoupled, extensible, and robust solution for automatic software delivery verification, currently deployed in production.
 
 The system is fully operational with:
 
 - 20 connector implementations across 5 functional types
-- Angular frontend with 2FA authentication, dashboard, release and connector management
-- ES/EN internationalisation across all frontend modules
+- Angular frontend with 2FA authentication, dashboard, release and connector management, account deletion with automatic organization ownership transfer
+- ES/EN/FR internationalisation across all frontend modules
 - Responsive design: hamburger sidebar ≤1024px, horizontal table scroll, grid collapse at ≤768px
 - WCAG 2.1 AA accessibility: skip links, ARIA roles, colour+text status indicators, focus-visible
 - Complete multi-tenant isolation with GDPR audit trail
-- RBAC with predefined and custom roles
+- RBAC with three predefined roles (OPERATOR, MANAGER, ADMIN)
+- Comprehensive test suite: 200+ unit tests, 16 integration tests, 5 security tests, 4 performance tests, 12 acceptance tests
 
 ---
 
-_Last updated: June 2026 — Adrián Martínez (UO295454)_
+_Last updated: June 25, 2026 — Adrián Martínez Fuentes (UO295454)_

@@ -81,3 +81,7 @@ class IOrganizationService(ABC):
         requested_by: UUID,
     ) -> Organization:
         pass
+
+    @abstractmethod
+    async def delete_organization(self, organization_id: UUID) -> None:
+        pass

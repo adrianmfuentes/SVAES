@@ -29,3 +29,7 @@ class IOrganizationRepository(ABC):
     @abstractmethod
     async def update(self, organization: Organization) -> Organization:
         pass
+
+    @abstractmethod
+    async def delete(self, organization_id: uuid.UUID) -> None:
+        pass

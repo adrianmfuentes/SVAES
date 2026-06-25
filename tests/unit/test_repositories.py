@@ -2503,6 +2503,21 @@ class TestSqlOrganizationRepository:
             with pytest.raises(ValueError, match="Organization not found"):
                 await repo.update(org)
 
+    async def test_delete_success(self, repo):
+        session, mgr = _make_mock_session()
+        session.get = AsyncMock(return_value=_make_org_row())
+        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+            await repo.delete(uuid4())
+        session.delete.assert_called_once()
+        session.commit.assert_awaited_once()
+
+    async def test_delete_not_found_raises(self, repo):
+        session, mgr = _make_mock_session()
+        session.get = AsyncMock(return_value=None)
+        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+            with pytest.raises(ValueError, match="Organization not found"):
+                await repo.delete(uuid4())
+
 
 # ── helpers for verification_result repository ────────────────────────────
 

@@ -1,4 +1,6 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adrianmfuentes_SVAES&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adrianmfuentes_SVAES)
+[![Status](https://img.shields.io/badge/Mémoire-Terminé-success)](https://github.com/adrianmfuentes/SVAES)
+[![Deploy](https://img.shields.io/badge/Déploiement-Production-blue)](https://github.com/adrianmfuentes/SVAES)
 
 **[English](README.en.md)** · **[Español](README.md)**
 
@@ -6,11 +8,11 @@
 
 ## Système de Vérification Automatique des Livraisons de Logiciel
 
-Travail de Fin de Licence
+Mémoire de Fin de Licence — Terminé
 Licence en Ingénierie Informatique du Logiciel
 Université d'Oviedo
 
-Auteur: Adrián Martínez
+Auteur: Adrián Martínez Fuentes
 Année académique: 2025/2026
 
 ---
@@ -46,10 +48,11 @@ Concevoir et implémenter un système extensible et découplé capable de vérif
 | Composant        | État           |
 | ---------------- | ---------------- |
 | Backend FastAPI  | API REST complète avec tous les endpoints                 |
-| Frontend Angular | SPA avec authentification, dashboard, releases, connecteurs, profil, admin, i18n ES/EN, 2FA, design responsive, accessibilité WCAG 2.1 AA |
+| Frontend Angular | SPA avec authentification, dashboard, releases, connecteurs, profil, admin, i18n ES/EN/FR, 2FA, design responsive, accessibilité WCAG 2.1 AA, suppression de compte avec transfert automatique de propriété |
 | Moteur Rust      | Moteur complet dans engine/, évaluateur parallèle + 10 règles |
 | Worker Celery    | Worker réel dans verification_worker.py                     |
 | Connecteurs      | 20 connecteurs dans 5 catégories fonctionnelles                 |
+| Déploiement      | Déployé en production avec Docker Compose + Oracle Cloud        |
 
 ---
 
@@ -333,18 +336,19 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # 15. Conclusion
 
-Le système fournit une solution découplée, extensible et robuste pour la vérification automatique des livraisons de logiciels.
+Le projet a été terminé comme Mémoire de Fin de Licence à l'Université d'Oviedo (2025/2026), en attente de soumission et soutenance. Le système fournit une solution découplée, extensible et robuste pour la vérification automatique des livraisons de logiciels, actuellement déployée en production.
 
 Le système est pleinement opérationnel avec :
 
 - 20 implémentations de connecteurs dans 5 types fonctionnels
-- Frontend Angular avec authentification 2FA, dashboard, gestion des releases et connecteurs
-- Internationalisation ES/EN dans tous les modules frontend
+- Frontend Angular avec authentification 2FA, dashboard, gestion des releases et connecteurs, suppression de compte avec transfert automatique de propriété d'organisation
+- Internationalisation ES/EN/FR dans tous les modules frontend
 - Design responsive : sidebar hamburger ≤1024px, scroll horizontal sur les tableaux, grille collapssable ≤768px
 - Accessibilité WCAG 2.1 AA : skip links, ARIA, indicateurs couleur+texte, focus-visible
 - Isolation multi-tenant complète avec piste d'audit RGPD
-- RBAC avec rôles prédéfinis et personnalisés
+- RBAC avec trois rôles prédéfinis (OPERATOR, MANAGER, ADMIN)
+- Suite de tests complète : 200+ tests unitaires, 16 tests d'intégration, 5 tests de sécurité, 4 tests de performance, 12 tests d'acceptation
 
 ---
 
-_Dernière mise à jour : Juin 2026 — Adrián Martínez (UO295454)_
+_Dernière mise à jour : 25 juin 2026 — Adrián Martínez Fuentes (UO295454)_

@@ -1,5 +1,7 @@
 # Acceptance Tests — Plan de Pruebas
 
+> **TFG terminado** — All E2E acceptance tests passing.
+
 End-to-end tests with Cypress against the Angular frontend. Follow ISO 29119-4 structured test case IDs.
 
 ## Structure

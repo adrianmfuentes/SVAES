@@ -272,7 +272,19 @@ class UserService(IUserService):
             for org_id in user.organization_ids:
                 org = await self._org_repo.get_by_id(org_id)
                 if org and org.owner_id == user_id:
-                    raise ValidationError("No puedes eliminar tu cuenta siendo propietario de una organización. Transfiere la propiedad primero.")
+                    members = await self._user_repo.list_all(organization_id=org_id, active_only=False, skip=0, limit=100)
+                    other_members = [m for m in members if m.id != user_id]
+
+                    if other_members:
+                        new_owner = other_members[0]
+                        org.owner_id = new_owner.id
+                        await self._org_repo.update(org)
+                        new_owner.role = UserRole.U4
+                        await self._user_repo.update(new_owner)
+                        _log.info("Ownership transferred before account deletion: org=%s new_owner=%s", org_id, new_owner.id)
+                    else:
+                        await self._org_repo.delete(org_id)
+                        _log.info("Organization deleted before account deletion: org=%s", org_id)
 
         audit = get_audit_logger()
         audit.log(AuditEntry(

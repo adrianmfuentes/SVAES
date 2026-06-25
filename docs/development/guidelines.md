@@ -65,7 +65,7 @@ svaes/
 ├── scripts/                   # Auxiliary scripts
 ├── docker-compose.yml         # Services: api, postgres, redis
 └── tests/                     # Full test suite (Plan de Pruebas — ISO 29119-4)
-    ├── unit/                  # 150+ cases (TC-UNI-*): services branch coverage, connectors CE+VL, endpoints Base Choice, factories, gaps
+    ├── unit/                  # 200+ cases (TC-UNI-*): services branch coverage, connectors CE+VL, endpoints Base Choice, factories, gaps
     ├── integration/           # 16 cases (TC-INT-*): full flow, rate limit, resilience, state transitions
     ├── performance/           # 4 Locust cases (TC-PER-*) + 3 Rust benchmarks
     ├── security/              # 5 cases (TC-SEC-*): brute force, JWT, SQLi, XSS, credential encryption

@@ -636,8 +636,8 @@ class TestUserService:
         with pytest.raises(AuthenticationError):
             await service.delete_user_account(user.id, user.id, "wrong")
 
-    async def test_delete_user_account_owner_of_org_raises(self, svc):
-        """Branch: user owns an org → ValidationError"""
+    async def test_delete_user_account_owner_transfers_ownership(self, svc):
+        """Branch: user owns org with other members → ownership transferred then account deleted"""
         service, user_repo, org_repo, pw_hasher = svc
         org_id = uuid4()
         user = _make_user(organization_id=org_id)
@@ -646,9 +646,33 @@ class TestUserService:
         org = MagicMock()
         org.owner_id = user.id
         org_repo.get_by_id = AsyncMock(return_value=org)
-        from domain.exceptions import ValidationError
-        with pytest.raises(ValidationError, match="propietario"):
-            await service.delete_user_account(user.id, user.id, "right")
+        other_user = _make_user(organization_id=org_id)
+        user_repo.list_all = AsyncMock(return_value=[user, other_user])
+        org_repo.update = AsyncMock()
+        user_repo.update = AsyncMock()
+        user_repo.delete = AsyncMock()
+        await service.delete_user_account(user.id, user.id, "right")
+        assert org.owner_id == other_user.id
+        org_repo.update.assert_awaited_once_with(org)
+        assert other_user.role.value == "MANAGER"
+        user_repo.delete.assert_awaited_once_with(user.id)
+
+    async def test_delete_user_account_sole_owner_deletes_org(self, svc):
+        """Branch: user owns org with no other members → org deleted then account deleted"""
+        service, user_repo, org_repo, pw_hasher = svc
+        org_id = uuid4()
+        user = _make_user(organization_id=org_id)
+        user_repo.get_by_id = AsyncMock(return_value=user)
+        pw_hasher.verify_password = MagicMock(return_value=True)
+        org = MagicMock()
+        org.owner_id = user.id
+        org_repo.get_by_id = AsyncMock(return_value=org)
+        user_repo.list_all = AsyncMock(return_value=[user])
+        org_repo.delete = AsyncMock()
+        user_repo.delete = AsyncMock()
+        await service.delete_user_account(user.id, user.id, "right")
+        org_repo.delete.assert_awaited_once_with(org_id)
+        user_repo.delete.assert_awaited_once_with(user.id)
 
     async def test_delete_user_account_success(self, svc):
         """Branch: no org ownership → delete called"""
@@ -988,6 +1012,25 @@ class TestOrganizationService:
         org_repo.update = AsyncMock(return_value=org)
         result = await service.restore_organization(uuid4())
         assert org.is_active is True
+
+    async def test_delete_organization_not_found_raises(self, svc):
+        """Branch: org not found → EntityNotFoundError"""
+        service, org_repo, *_ = svc
+        org_repo.get_by_id = AsyncMock(return_value=None)
+        from domain.exceptions import EntityNotFoundError
+        with pytest.raises(EntityNotFoundError, match="Organizaci"):
+            await service.delete_organization(uuid4())
+
+    async def test_delete_organization_success(self, svc):
+        """Branch: org found → delete called"""
+        service, org_repo, *_ = svc
+        org_id = uuid4()
+        org = MagicMock()
+        org.name = "test-org"
+        org_repo.get_by_id = AsyncMock(return_value=org)
+        org_repo.delete = AsyncMock()
+        await service.delete_organization(org_id)
+        org_repo.delete.assert_awaited_once_with(org_id)
 
 
 # ── NotificationService ───────────────────────────────────────────────────────

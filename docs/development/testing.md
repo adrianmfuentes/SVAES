@@ -1,5 +1,7 @@
 # SVAES Testing Guide — Plan de Pruebas
 
+> **TFG terminado** — All test suites passing as of final delivery (June 2026)
+
 Overview of the test infrastructure, conventions, and execution procedures for the SVAES project. All tests follow the **Plan de Pruebas** structured according to **ISO 29119-4** with unique test case identifiers (TC-*).
 
 ---
@@ -9,7 +11,7 @@ Overview of the test infrastructure, conventions, and execution procedures for t
 ```
 tests/
 ├── conftest.py
-├── unit/                                   # Unit tests (150+ cases, isolated, mocked)
+├── unit/                                   # Unit tests (200+ cases, isolated, mocked)
 │   ├── conftest.py                         # Env vars, async engine mock, Python path
 │   ├── test_connectors_optimized.py        # TC-UNI-CON-01…06 (CE+VL: Connector credentials, network, timeout)
 │   ├── test_releases_endpoint.py           # TC-UNI-API-00…07 (Base Choice: POST /releases endpoint)
@@ -63,7 +65,7 @@ engine/src/
 
 All test cases are identified following **ISO 29119-4** with the format `TC-{NIVEL}-{CATEGORIA}-{NUM}`.
 
-### Unit Tests (150+ cases)
+### Unit Tests (200+ cases)
 
 #### Catalogued cases (14 cases)
 
@@ -343,4 +345,4 @@ Tests run automatically via GitHub Actions:
 
 ---
 
-*Last updated: June 2026 — Adrian Martinez Fuentes*
+*Last updated: 25 June 2026 — Adrián Martínez Fuentes*

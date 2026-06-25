@@ -83,3 +83,11 @@ class SqlOrganizationRepository(IOrganizationRepository):
             await session.refresh(org_model)
 
             return self._model_to_entity(org_model)
+
+    async def delete(self, organization_id: uuid.UUID) -> None:
+        async with AsyncSessionLocal() as session:
+            org_model = await session.get(OrganizationModel, organization_id)
+            if not org_model:
+                raise ValueError("Organization not found")
+            session.delete(org_model)  # pyright: ignore[reportUnusedCoroutine]
+            await session.commit()

@@ -212,3 +212,11 @@ class OrganizationService(IOrganizationService):
         _log.info("Organization restored: id=%s", organization_id)
 
         return updated
+
+    async def delete_organization(self, organization_id: UUID) -> None:
+        org = await self._org_repo.get_by_id(organization_id)
+        if not org:
+            raise EntityNotFoundError(f"Organización no encontrada: {organization_id}")
+
+        await self._org_repo.delete(organization_id)
+        _log.info("Organization deleted: id=%s name=%s", organization_id, org.name)

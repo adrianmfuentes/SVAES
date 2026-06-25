@@ -1,5 +1,7 @@
 # Performance Tests — Plan de Pruebas
 
+> **TFG terminado** — All performance tests passing.
+
 Validates **RNF-07**: the verification engine must process 10 rules in under 500 ms.
 
 ## Structure

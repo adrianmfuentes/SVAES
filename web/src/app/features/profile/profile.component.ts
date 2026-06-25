@@ -378,6 +378,61 @@ interface UserProfile {
           </div>
         </div>
 
+        <!-- Delete account card -->
+        <div class="card delete-account-card" *ngIf="!isAdmin()">
+          <h2 class="card-title">{{ 'profile_page.delete_account_title' | t }}</h2>
+          <p class="delete-account-desc">{{ 'profile_page.delete_account_desc' | t }}</p>
+          <div class="form-footer" style="border-top:none; padding-top:0; margin-top: var(--spacing-md);">
+            <button class="btn-danger" (click)="openDeleteModal()"
+              [disabled]="deleteAccountChecking()"
+              [title]="deleteAccountChecking() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+              {{ 'profile_page.delete_account_btn' | t }}
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- DELETE ACCOUNT MODAL -->
+      <div *ngIf="showDeleteModal()" class="modal-overlay" (click)="closeDeleteModal()">
+        <div class="modal-panel" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3 class="modal-title">{{ 'profile_page.delete_account_modal_title' | t }}</h3>
+            <button class="modal-close" (click)="closeDeleteModal()">×</button>
+          </div>
+          <p class="modal-body-text" [class.transfer-warning]="deleteOrgWarning()">
+            <ng-container *ngIf="deleteOrgWarning(); else standardConfirm">
+              {{ 'profile_page.delete_account_confirm_org_deletion' | t }}
+            </ng-container>
+            <ng-template #standardConfirm>
+              {{ 'profile_page.delete_account_confirm' | t }}
+            </ng-template>
+          </p>
+          <form [formGroup]="deleteAccountForm" (ngSubmit)="confirmDeleteAccount()">
+            <div class="form-group">
+              <label for="delete-password">{{ 'profile_page.delete_account_password_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+              <input
+                id="delete-password"
+                type="password"
+                formControlName="password"
+                autocomplete="current-password"
+                aria-required="true"
+                placeholder="••••••••"
+              />
+              <div class="field-error" *ngIf="deleteAccountForm.get('password')?.hasError('required') && deleteAccountForm.get('password')?.touched">
+                {{ 'profile_page.delete_account_password_required' | t }}
+              </div>
+            </div>
+            <div *ngIf="deleteAccountError()" class="modal-error error-banner error-sm">{{ deleteAccountError() }}</div>
+            <div *ngIf="deleteAccountSuccess()" class="alert-success">{{ 'profile_page.delete_account_success' | t }}</div>
+            <div class="modal-footer">
+              <button type="button" class="btn-ghost" (click)="closeDeleteModal()" [disabled]="deleteAccountDeleting()" [title]="deleteAccountDeleting() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">{{ 'common.cancel' | t }}</button>
+              <button type="submit" class="btn-danger" [disabled]="deleteAccountForm.invalid || deleteAccountDeleting()" [title]="deleteAccountForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
+                {{ deleteAccountDeleting() ? ('profile_page.delete_account_deleting' | t) : ('profile_page.delete_account_submit' | t) }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   `,
@@ -665,6 +720,157 @@ interface UserProfile {
 
     .btn-danger-sm:hover { background: var(--verdict-invalid-bg); }
 
+    .btn-danger {
+      display: inline-flex;
+      align-items: center;
+      background: var(--verdict-invalid);
+      color: var(--paper);
+      border: 0.0625rem solid var(--verdict-invalid);
+      border-radius: var(--rounded-md);
+      padding: 0.5625rem 1.125rem;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-danger:hover:not(:disabled) { background: var(--verdict-invalid-bg); color: var(--verdict-invalid); }
+    .btn-danger:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-ghost {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: 0.0625rem solid transparent;
+      border-radius: var(--rounded-md);
+      padding: 0.25rem 0.625rem;
+      cursor: pointer;
+      transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+    }
+
+    .btn-ghost:hover:not(:disabled) { color: var(--ink); background: var(--paper-secondary); border-color: var(--border); }
+    .btn-ghost:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      background: var(--ink);
+      color: var(--paper);
+      border: 0.0625rem solid var(--ink);
+      border-radius: var(--rounded-md);
+      padding: 0.5625rem 1.125rem;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: var(--ink-secondary); }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .delete-account-card {
+      border-color: var(--verdict-invalid-border);
+    }
+
+    .delete-account-desc {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin: 0 0 var(--spacing-sm);
+      line-height: 1.5;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-panel {
+      background: var(--surface-raised);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-lg);
+      padding: var(--spacing-lg);
+      width: 30rem;
+      max-width: calc(100vw - 3rem);
+      max-height: calc(100vh - 5rem);
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .modal-title {
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    .modal-close {
+      font-size: 1.25rem;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0 0.25rem;
+      line-height: 1;
+      transition: color 0.12s ease;
+    }
+
+    .modal-close:hover { color: var(--ink); }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-lg);
+      padding-top: var(--spacing-md);
+      border-top: 0.0625rem solid var(--border);
+    }
+
+    .modal-body-text {
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      color: var(--ink);
+      line-height: 1.65;
+      margin: 0 0 var(--spacing-md);
+    }
+
+    .modal-error { margin-bottom: var(--spacing-md); }
+
+    .transfer-warning { color: var(--verdict-warning); }
+
+    .error-banner {
+      background: var(--verdict-invalid-bg);
+      color: var(--verdict-invalid);
+      border: 0.0625rem solid var(--verdict-invalid-border);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: 0.8125rem;
+    }
+
+    .error-sm { margin-bottom: 0; margin-top: var(--spacing-sm); }
+
     .empty-keys {
       font-size: 0.8125rem;
       color: var(--muted);
@@ -830,7 +1036,8 @@ interface UserProfile {
       }
 
       .form-footer .btn-primary,
-      .form-footer .btn-danger-sm {
+      .form-footer .btn-danger-sm,
+      .form-footer .btn-danger {
         width: 100%;
         justify-content: center;
         padding: 0.625rem 1rem;
@@ -841,6 +1048,34 @@ interface UserProfile {
       .card-title { font-size: 1.25rem; margin-bottom: var(--spacing-md); }
 
       .totp-qr { width: 9rem; height: 9rem; }
+
+      .modal-panel {
+        width: calc(100vw - 1.5rem);
+        max-width: none;
+        padding: var(--spacing-md);
+        max-height: calc(100vh - 3rem);
+      }
+
+      .modal-header { margin-bottom: var(--spacing-md); }
+      .modal-title { font-size: 0.9375rem; }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+        gap: var(--spacing-xs);
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-sm);
+      }
+
+      .modal-footer .btn-primary,
+      .modal-footer .btn-danger,
+      .modal-footer .btn-ghost {
+        width: 100%;
+        justify-content: center;
+        padding: 0.625rem 1rem;
+        min-height: 2.75rem;
+      }
+
+      .modal-body-text { font-size: 0.8125rem; }
     }
   `],
 })
@@ -909,6 +1144,17 @@ export class ProfileComponent implements OnInit {
     },
     { validators: this.passwordsMatch }
   );
+
+  deleteAccountForm = this.fb.group({
+    password: ['', [Validators.required]],
+  });
+
+  showDeleteModal = signal(false);
+  deleteAccountDeleting = signal(false);
+  deleteAccountError = signal<string | null>(null);
+  deleteAccountSuccess = signal(false);
+  deleteOrgWarning = signal(false);
+  deleteAccountChecking = signal(false);
 
   ngOnInit(): void {
     this.http.get<UserProfile>('/api/v1/users/me')
@@ -1125,5 +1371,79 @@ export class ProfileComponent implements OnInit {
       OPERATOR: this.ts.translateInstant('profile_page.role_operator'),
     };
     return map[role] ?? role;
+  }
+
+  openDeleteModal(): void {
+    this.deleteAccountForm.reset();
+    this.deleteAccountError.set(null);
+    this.deleteAccountSuccess.set(false);
+    this.deleteOrgWarning.set(false);
+    this.deleteAccountChecking.set(true);
+    this.showDeleteModal.set(true);
+
+    const orgId = this.authService.getUser()?.organization_id;
+    if (!orgId) {
+      this.deleteAccountChecking.set(false);
+      return;
+    }
+
+    this.http.get<{ owner_id: string }>(`/api/v1/organizations/${orgId}`)
+      .pipe(catchError(() => {
+        this.deleteAccountChecking.set(false);
+        return of(null);
+      }))
+      .subscribe(org => {
+        if (org && org.owner_id === this.authService.getUser()?.id) {
+          this.http.get<{ id: string }[]>(`/api/v1/organizations/${orgId}/users`)
+            .pipe(catchError(() => {
+              this.deleteAccountChecking.set(false);
+              return of([]);
+            }))
+            .subscribe(members => {
+              if (members.length <= 1) {
+                this.deleteOrgWarning.set(true);
+              }
+              this.deleteAccountChecking.set(false);
+            });
+        } else {
+          this.deleteAccountChecking.set(false);
+        }
+      });
+  }
+
+  closeDeleteModal(): void {
+    if (!this.deleteAccountDeleting()) {
+      this.showDeleteModal.set(false);
+    }
+  }
+
+  confirmDeleteAccount(): void {
+    if (this.deleteAccountForm.invalid) { this.deleteAccountForm.markAllAsTouched(); return; }
+    this.deleteAccountDeleting.set(true);
+    this.deleteAccountError.set(null);
+
+    const { password } = this.deleteAccountForm.value;
+    this.http.delete('/api/v1/users/me/account', { body: { password } })
+      .pipe(catchError((err: HttpErrorResponse) => {
+        const status = err.status;
+        if (status === 400 || status === 401) {
+          this.deleteAccountError.set(this.ts.translateInstant('profile_page.delete_account_wrong_password'));
+        } else if (status === 403) {
+          this.deleteAccountError.set(err.error?.detail ?? this.ts.translateInstant('profile_page.delete_account_error'));
+        } else {
+          this.deleteAccountError.set(this.ts.translateInstant('profile_page.delete_account_error'));
+        }
+        this.deleteAccountDeleting.set(false);
+        return of(null);
+      }))
+      .subscribe(res => {
+        if (res !== null) {
+          this.deleteAccountSuccess.set(true);
+          setTimeout(() => {
+            this.authService.logout();
+          }, 2000);
+        }
+        this.deleteAccountDeleting.set(false);
+      });
   }
 }

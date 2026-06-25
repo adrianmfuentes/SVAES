@@ -157,7 +157,7 @@ can be found in section 4.8 of the SRS.
 | Celery Worker | Implemented | `api/src/infrastructure/workers/verification_worker.py` — real worker |
 | Rust Engine | Implemented | `engine/src/` — evaluator, aggregator, 10 rules (RV-01…RV-10), parallel evaluation with Rayon |
 | Angular Frontend | Implemented | `web/` — auth (2FA), dashboard, releases, connectors, profiles, admin, i18n ES/EN |
-| Unit Tests | Implemented | `tests/unit/` — 150+ cases (12 files): services branch coverage, connectors CE+VL, endpoints Base Choice, DI factories, structural gaps. Cobertura total: 70% |
+| Unit Tests | Implemented | `tests/unit/` — 200+ cases (12 files): services branch coverage, connectors CE+VL, endpoints Base Choice, DI factories, structural gaps. Cobertura total: 70% |
 | Integration Tests | Implemented | `tests/integration/` — 16 Python cases (TC-INT-*) + 8 Rust HTTP tests (tc_int_http_*) |
 | Acceptance Tests | Implemented | `tests/acceptance/` — 10 Cypress E2E cases (TC-ACP-CU/UI/FRM/USA) |
 | Performance Tests | Implemented | `tests/performance/` — 4 Locust cases (TC-PER-*) + 3 Rust benchmarks (tc_per_pf_*) |

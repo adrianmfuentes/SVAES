@@ -1,5 +1,7 @@
 # Integration Tests — Plan de Pruebas
 
+> **TFG terminado** — All 16 integration tests passing.
+
 Validates interactions between real components using ephemeral PostgreSQL + Redis containers. The FastAPI app is served via `ASGITransport` — no running HTTP server required.
 
 ## Structure

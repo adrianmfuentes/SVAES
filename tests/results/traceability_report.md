@@ -1,6 +1,8 @@
 # Informe de trazabilidad - SVAES Plan de Pruebas
 
-**Total en plan:** 79  |  **Cubiertas OK:** 68  |  **Fallan:** 0  |  **Sin implementar:** 11
+> **TFG terminado** — 25 de junio de 2026
+
+**Total en plan:** 89  |  **Cubiertas OK:** 78  |  **Fallan:** 0  |  **Sin implementar:** 11
 
 | TC-ID | Nivel | Seccion | Estado | Herramienta | Descripcion |
 |---|---|---|---|---|---|
@@ -23,6 +25,10 @@
 | `TC-UNI-MOT-10` | Unitaria | 7.2.2 | ✅ PASS | cargo test | RV-08 Artefacto con antiguedad > umbral -> WARNING |
 | `TC-UNI-MOT-11` | Unitaria | 7.2.2 | ✅ PASS | cargo test | RV-09 Dos artefactos mismo external_id -> ERROR |
 | `TC-UNI-MOT-12` | Unitaria | 7.2.2 | ✅ PASS | cargo test | RV-10 Documento aprobado existe |
+| `TC-UNI-ACC-01` | Unitaria | 7.2.2a | ✅ PASS | pytest | Owner transfiere propiedad antes de eliminar cuenta |
+| `TC-UNI-ACC-02` | Unitaria | 7.2.2a | ✅ PASS | pytest | Owner unico elimina org antes de cuenta |
+| `TC-UNI-ACC-03` | Unitaria | 7.2.2a | ✅ PASS | pytest | Eliminar organizacion existente/excepcion |
+| `TC-UNI-ACC-04` | Unitaria | 7.2.2a | ✅ PASS | pytest | Repo delete org existente/no encontrado |
 | `TC-UNI-API-00` | Unitaria | 7.2.3 | ✅ PASS | pytest | Base OPERATOR valido+propia+completo -> 201 |
 | `TC-UNI-API-01` | Unitaria | 7.2.3 | ✅ PASS | pytest | rol=ADMIN -> 201 |
 | `TC-UNI-API-02` | Unitaria | 7.2.3 | ✅ PASS | pytest | rol=INVALID -> 403 |
@@ -44,6 +50,12 @@
 | `TC-UNI-FE-SVC-01` | Unitaria | 7.2.5.2 | ⬜ MISSING | Jest | POST /releases 201 -> Observable emite Release, Bearer presente |
 | `TC-UNI-FE-SVC-02` | Unitaria | 7.2.5.2 | ⬜ MISSING | Jest | POST /releases 401 -> Observable emite AuthError |
 | `TC-UNI-FE-SVC-03` | Unitaria | 7.2.5.2 | ⬜ MISSING | Jest | POST /releases 422 -> Observable emite ValidationError |
+| `TC-UNI-FE-DEL-01` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | No muestra boton delete para ADMIN |
+| `TC-UNI-FE-DEL-02` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | Muestra boton delete para no-admin |
+| `TC-UNI-FE-DEL-03` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | Modal advierte eliminacion de org si es unico miembro |
+| `TC-UNI-FE-DEL-04` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | DELETE /me/account con password correcta -> logout |
+| `TC-UNI-FE-DEL-05` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | DELETE /me/account 400/401 -> wrong password |
+| `TC-UNI-FE-DEL-06` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | DELETE /me/account 403/500 -> error generico |
 | `TC-UNI-FE-NGR-01` | Unitaria | 7.2.5.3 | ⬜ MISSING | Jest | API 202+taskId -> verifyReleaseSuccess con taskId |
 | `TC-UNI-FE-NGR-02` | Unitaria | 7.2.5.3 | ⬜ MISSING | Jest | API 409 -> verifyReleaseFailure con INVALID_STATE |
 | `TC-INT-EST-01` | Integracion | 7.3.1 | ✅ PASS | pytest+Docker | T1 BORRADOR->EN_VERIFICACION -> HTTP 202 |

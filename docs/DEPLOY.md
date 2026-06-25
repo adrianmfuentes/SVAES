@@ -1,5 +1,7 @@
 # Deploy Workflow Configuration
 
+> **Status: Deployed in production** — Oracle Ampere (ARM64) with GitHub Actions + Docker Compose
+
 This document describes how to configure the GitHub Actions deploy workflow for your Oracle Ampere server.
 
 ## Prerequisites

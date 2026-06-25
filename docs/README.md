@@ -1,7 +1,8 @@
 # SVAES — Automatic Software Delivery Verification System
 
-> **Final Degree Project** — Software Engineering Degree, University of Oviedo (2025/2026)
-> Author: Adrian Martinez
+> **Final Degree Project — Completed** — Software Engineering Degree, University of Oviedo (2025/2026)
+> Author: Adrian Martinez Fuentes
+> Status: **Deployed in production**
 
 SVAES is an extensible, decoupled **Quality Gate platform** that automates the validation of software releases within modern CI/CD workflows. By integrating with multiple external tools across five functional categories, it verifies the consistency, integrity, and completeness of artifacts linked to a release — eliminating manual checks and guaranteeing full traceability.
 
@@ -293,9 +294,9 @@ Custom roles with granular permissions are also supported.
 - [Functional Specifications](development/specifications.md)
 - [Developer Guidelines](development/guidelines.md)
 - [Testing Guide](development/testing.md)
-- [Production Deployment](deployment.md)
+- [Deploy Workflow Guide](DEPLOY.md)
 - [Security & Compliance Audit](security/audit.md)
 
 ---
 
-*Last updated: June 2026 — Adrian Martinez*
+*Last updated: 25 June 2026 — Adrián Martínez Fuentes*

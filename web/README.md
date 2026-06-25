@@ -1,7 +1,7 @@
 # SVAES — Web Frontend
 
-Frontend application for the **Automatic Software Delivery Verification System (SVAES)**
-built with **Angular** (standalone components, no NgModules).
+> **TFG terminado** — Frontend application for the **Automatic Software Delivery Verification System (SVAES)**
+> built with **Angular 21** (standalone components, zoneless).
 
 ---
 

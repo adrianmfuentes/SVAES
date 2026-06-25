@@ -1,4 +1,6 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adrianmfuentes_SVAES&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adrianmfuentes_SVAES)
+[![Status](https://img.shields.io/badge/TFG-Finalizado-success)](https://github.com/adrianmfuentes/SVAES)
+[![Deploy](https://img.shields.io/badge/Deploy-Producción-blue)](https://github.com/adrianmfuentes/SVAES)
 
 **[English](README.en.md)** · **[Français](README.fr.md)**
 
@@ -6,11 +8,11 @@
 
 ## Sistema de Verificación Automática de Entregas de Software
 
-Trabajo Fin de Grado
+Trabajo Fin de Grado — Finalizado
 Grado en Ingeniería Informática del Software
 Universidad de Oviedo
 
-Autor: Adrián Martínez
+Autor: Adrián Martínez Fuentes
 Curso: 2025/2026
 
 ---
@@ -46,10 +48,11 @@ Diseñar e implementar un sistema extensible y desacoplado capaz de verificar au
 | Componente       | Estado           |
 | ---------------- | ---------------- |
 | Backend FastAPI  | API REST completa con todos los endpoints                 |
-| Frontend Angular | SPA con autenticación, dashboard, releases, conectores, perfil, admin, i18n ES/EN, 2FA, diseño responsivo, accesibilidad WCAG 2.1 AA |
+| Frontend Angular | SPA con autenticación, dashboard, releases, conectores, perfil, admin, i18n ES/EN/FR, 2FA, diseño responsivo, accesibilidad WCAG 2.1 AA, eliminación de cuenta con transferencia automática de propiedad |
 | Motor Rust       | Motor completo en engine/, evaluador paralelo + 10 reglas |
 | Worker Celery    | Worker real en verification_worker.py                     |
 | Conectores       | 20 conectores en 5 categorías funcionales                 |
+| Despliegue       | Desplegado en producción con Docker Compose + Oracle Cloud |
 
 ---
 
@@ -333,18 +336,19 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # 15. Conclusión
 
-El sistema proporciona una solución desacoplada, extensible y robusta para la verificación automática de entregas de software.
+El proyecto ha sido finalizado como Trabajo Fin de Grado en la Universidad de Oviedo (2025/2026), pendiente de entrega y defensa. El sistema proporciona una solución desacoplada, extensible y robusta para la verificación automática de entregas de software, actualmente desplegada en producción.
 
 El sistema está completamente operativo con:
 
 - 20 implementaciones de conectores en 5 tipos funcionales
-- Frontend Angular con autenticación 2FA, dashboard, gestión de releases y conectores
-- Internacionalización ES/EN en todos los módulos del frontend
+- Frontend Angular con autenticación 2FA, dashboard, gestión de releases y conectores, eliminación de cuenta con transferencia automática de propiedad de organizaciones
+- Internacionalización ES/EN/FR en todos los módulos del frontend
 - Diseño responsivo: sidebar hamburguesa ≤1024px, tablas con scroll horizontal, grid colapsable ≤768px
 - Accesibilidad WCAG 2.1 AA: skip links, ARIA, indicadores de color+texto, focus-visible
 - Aislamiento multi-tenant completo con auditoría GDPR
-- RBAC con roles predefinidos y personalizados
+- RBAC con tres roles predefinidos (OPERATOR, MANAGER, ADMIN)
+- Suite de pruebas completa: 200+ tests unitarios, 16 de integración, 5 de seguridad, 4 de rendimiento, 12 de aceptación
 
 ---
 
-_Última actualización: Junio 2026 — Adrián Martínez (UO295454)_
+_Última actualización: 25 de junio de 2026 — Adrián Martínez Fuentes (UO295454)_

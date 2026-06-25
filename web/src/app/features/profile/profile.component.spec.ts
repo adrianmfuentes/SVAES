@@ -441,6 +441,148 @@ describe('ProfileComponent', () => {
     });
   });
 
+  describe('delete account', () => {
+    beforeEach(() => {
+      component.ngOnInit();
+      httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
+      httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+    });
+
+    describe('openDeleteModal', () => {
+      it('should open modal and not fetch org when user has no org', () => {
+        authMock.getUser.mockReturnValue({ id: 'u1' });
+        component.openDeleteModal();
+        expect(component.showDeleteModal()).toBe(true);
+        expect(component.deleteAccountChecking()).toBe(false);
+        expect(component.deleteOrgWarning()).toBe(false);
+        httpCtrl.expectNone('/api/v1/organizations/org-1');
+        authMock.getUser.mockReturnValue({ id: 'u1', organization_id: 'org-1' });
+      });
+
+      it('should set org deletion warning when user is sole org owner', () => {
+        component.openDeleteModal();
+        httpCtrl.expectOne('/api/v1/organizations/org-1').flush({ owner_id: 'u1' });
+        httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush([{ id: 'u1' }]);
+        expect(component.deleteOrgWarning()).toBe(true);
+        expect(component.deleteAccountChecking()).toBe(false);
+      });
+
+      it('should NOT set org deletion warning when org has other members', () => {
+        component.openDeleteModal();
+        httpCtrl.expectOne('/api/v1/organizations/org-1').flush({ owner_id: 'u1' });
+        httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush([{ id: 'u1' }, { id: 'u2' }]);
+        expect(component.deleteOrgWarning()).toBe(false);
+        expect(component.deleteAccountChecking()).toBe(false);
+      });
+
+      it('should NOT set warning when user is not the org owner', () => {
+        component.openDeleteModal();
+        httpCtrl.expectOne('/api/v1/organizations/org-1').flush({ owner_id: 'u2' });
+        expect(component.deleteOrgWarning()).toBe(false);
+        expect(component.deleteAccountChecking()).toBe(false);
+      });
+
+      it('should handle org fetch error gracefully', () => {
+        component.openDeleteModal();
+        httpCtrl.expectOne('/api/v1/organizations/org-1').flush('', { status: 500, statusText: 'Error' });
+        expect(component.deleteAccountChecking()).toBe(false);
+      });
+
+      it('should handle members fetch error gracefully', () => {
+        component.openDeleteModal();
+        httpCtrl.expectOne('/api/v1/organizations/org-1').flush({ owner_id: 'u1' });
+        httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush('', { status: 500, statusText: 'Error' });
+        expect(component.deleteAccountChecking()).toBe(false);
+      });
+    });
+
+    describe('closeDeleteModal', () => {
+      it('should close modal when not deleting', () => {
+        component.showDeleteModal.set(true);
+        component.deleteAccountDeleting.set(false);
+        component.closeDeleteModal();
+        expect(component.showDeleteModal()).toBe(false);
+      });
+
+      it('should not close modal when deleting', () => {
+        component.showDeleteModal.set(true);
+        component.deleteAccountDeleting.set(true);
+        component.closeDeleteModal();
+        expect(component.showDeleteModal()).toBe(true);
+      });
+    });
+
+    describe('confirmDeleteAccount', () => {
+      it('should not submit if form is invalid', () => {
+        component.deleteAccountForm.setValue({ password: '' });
+        component.confirmDeleteAccount();
+        httpCtrl.expectNone('/api/v1/users/me/account');
+      });
+
+      it('should send DELETE and logout on success', () => {
+        component.deleteAccountForm.setValue({ password: 'mypassword' });
+        component.confirmDeleteAccount();
+        httpCtrl.expectOne('/api/v1/users/me/account').flush({});
+        expect(component.deleteAccountSuccess()).toBe(true);
+      });
+
+      it('should show wrong password error on 400', () => {
+        component.deleteAccountForm.setValue({ password: 'wrong' });
+        component.confirmDeleteAccount();
+        httpCtrl.expectOne('/api/v1/users/me/account').flush(
+          { detail: 'bad' },
+          { status: 400, statusText: 'Bad Request' }
+        );
+        expect(component.deleteAccountError()).toBe('profile_page.delete_account_wrong_password');
+        expect(component.deleteAccountDeleting()).toBe(false);
+      });
+
+      it('should show wrong password error on 401', () => {
+        component.deleteAccountForm.setValue({ password: 'wrong' });
+        component.confirmDeleteAccount();
+        httpCtrl.expectOne('/api/v1/users/me/account').flush(
+          {},
+          { status: 401, statusText: 'Unauthorized' }
+        );
+        expect(component.deleteAccountError()).toBe('profile_page.delete_account_wrong_password');
+        expect(component.deleteAccountDeleting()).toBe(false);
+      });
+
+      it('should show detail message on 403', () => {
+        component.deleteAccountForm.setValue({ password: 'pwd' });
+        component.confirmDeleteAccount();
+        httpCtrl.expectOne('/api/v1/users/me/account').flush(
+          { detail: 'Blocked by policy' },
+          { status: 403, statusText: 'Forbidden' }
+        );
+        expect(component.deleteAccountError()).toBe('Blocked by policy');
+        expect(component.deleteAccountDeleting()).toBe(false);
+      });
+
+      it('should show generic error on 403 without detail', () => {
+        component.deleteAccountForm.setValue({ password: 'pwd' });
+        component.confirmDeleteAccount();
+        httpCtrl.expectOne('/api/v1/users/me/account').flush(
+          {},
+          { status: 403, statusText: 'Forbidden' }
+        );
+        expect(component.deleteAccountError()).toBe('profile_page.delete_account_error');
+        expect(component.deleteAccountDeleting()).toBe(false);
+      });
+
+      it('should show generic error on 500', () => {
+        component.deleteAccountForm.setValue({ password: 'pwd' });
+        component.confirmDeleteAccount();
+        httpCtrl.expectOne('/api/v1/users/me/account').flush(
+          '',
+          { status: 500, statusText: 'Error' }
+        );
+        expect(component.deleteAccountError()).toBe('profile_page.delete_account_error');
+        expect(component.deleteAccountDeleting()).toBe(false);
+      });
+    });
+  });
+
   describe('template rendering', () => {
     const renderTemplate = (flushInitRequests = true) => {
       fixture.detectChanges();
@@ -548,6 +690,86 @@ describe('ProfileComponent', () => {
       component.totpError.set('totp error');
       component.totpSuccess.set(true);
       renderTemplate();
+    });
+
+    it('should NOT render delete account card for admin', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.isAdmin.set(true);
+      component.hasOrg.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      renderTemplate();
+      const deleteCard = fixture.nativeElement.querySelector('.delete-account-card');
+      expect(deleteCard).toBeNull();
+    });
+
+    it('should render delete account card for non-admin', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.isAdmin.set(false);
+      component.hasOrg.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      renderTemplate();
+      const deleteCard = fixture.nativeElement.querySelector('.delete-account-card');
+      expect(deleteCard).not.toBeNull();
+    });
+
+    it('should render delete account modal with org deletion warning', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.isAdmin.set(false);
+      component.hasOrg.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      component.showDeleteModal.set(true);
+      component.deleteOrgWarning.set(true);
+      renderTemplate();
+      const warning = fixture.nativeElement.querySelector('.transfer-warning');
+      expect(warning).not.toBeNull();
+    });
+
+    it('should render delete account modal with standard confirm', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.isAdmin.set(false);
+      component.hasOrg.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      component.showDeleteModal.set(true);
+      component.deleteOrgWarning.set(false);
+      renderTemplate();
+      const warning = fixture.nativeElement.querySelector('.transfer-warning');
+      expect(warning).toBeNull();
+    });
+
+    it('should render delete account error in modal', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.isAdmin.set(false);
+      component.hasOrg.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      component.showDeleteModal.set(true);
+      component.deleteAccountError.set('wrong password');
+      renderTemplate();
+      const error = fixture.nativeElement.querySelector('.modal-error');
+      expect(error).not.toBeNull();
+    });
+
+    it('should render delete account success in modal', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.isAdmin.set(false);
+      component.hasOrg.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      component.showDeleteModal.set(true);
+      component.deleteAccountSuccess.set(true);
+      renderTemplate();
+      const success = fixture.nativeElement.querySelector('.alert-success');
+      expect(success).not.toBeNull();
     });
   });
 });

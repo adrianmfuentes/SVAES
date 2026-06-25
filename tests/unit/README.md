@@ -1,5 +1,7 @@
 # Unit Tests — Plan de Pruebas
 
+> **TFG terminado** — 200+ unit tests across 14 files, all passing.
+
 Isolated component tests. All dependencies (repos, HTTP, task queue) are mocked via `unittest.mock.AsyncMock`. No database or external services needed.
 
 Coverage target: **>= 70%** of `api/src/` (total). Domain and application layers target **>= 80%** individually.

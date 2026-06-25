@@ -1,5 +1,7 @@
 # SVAES API
 
+> **TFG terminado** — FastAPI backend for the SVAES system (Sistema de Verificación Automática de Entregas de Software).
+
 FastAPI backend for the SVAES system (Static Verification and Approval Engine System).
 
 ## Description
@@ -11,8 +13,9 @@ RESTful API for managing organizations, projects, releases, and artifact verific
 - Hexagonal architecture with input/output ports
 - JWT authentication with refresh tokens
 - TOTP two-factor authentication (2FA) via pyotp + segno
-- RBAC with 4 role levels (U1-U4) and 30 granular permissions
+- RBAC with 3 role levels (OPERATOR, MANAGER, ADMIN) and 20 granular permissions
 - Multi-tenancy with organization-level isolation
+- Account deletion with automatic ownership transfer
 - Rate limiting per endpoint (slowapi)
 - GDPR-compliant audit logging (audit_log table)
 - PII pseudonymisation in verification pipeline
@@ -23,7 +26,7 @@ Full API documentation: [docs/api/reference.md](../docs/api/reference.md)
 
 Additional guides:
 - [Testing](../docs/development/testing.md)
-- [Deployment](../docs/deployment.md)
+- [Deployment](../docs/DEPLOY.md)
 - [Postman](../docs/api/postman/README.md)
 
 ## Usage
