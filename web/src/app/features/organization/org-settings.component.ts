@@ -591,6 +591,53 @@ interface OrgUser {
       .page-title { font-size: 1.75rem; }
 
       .data-table-wrap { overflow-x: auto; }
+
+      .tab-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+      }
+
+      .tab-toolbar .btn-primary { width: 100%; }
+
+      .modal-panel {
+        width: calc(100vw - 1.5rem);
+        max-width: none;
+        padding: var(--spacing-md);
+        max-height: calc(100vh - 3rem);
+      }
+
+      .modal-header { margin-bottom: var(--spacing-md); }
+      .modal-title { font-size: 0.9375rem; }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+        gap: var(--spacing-xs);
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-sm);
+      }
+
+      .modal-footer .btn-primary,
+      .modal-footer .btn-danger,
+      .modal-footer .btn-ghost {
+        width: 100%;
+        justify-content: center;
+        padding: 0.625rem 1rem;
+        min-height: 2.75rem;
+      }
+
+      .form-group input[type=text],
+      .form-group input[type=email],
+      .form-group select,
+      .form-group textarea {
+        padding: 0.625rem 0.75rem;
+        min-height: 2.75rem;
+        font-size: 0.875rem;
+      }
+
+      .form-group label { font-size: 0.625rem; }
+
+      .modal-body-text { font-size: 0.8125rem; }
     }
   `],
 })

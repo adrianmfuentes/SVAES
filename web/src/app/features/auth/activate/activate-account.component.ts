@@ -648,6 +648,68 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
       color: var(--muted);
       margin: 0;
     }
+
+    /* ── Responsive ──────────────────────────────────── */
+
+    @media (max-width: 48rem) {
+      .activate-header { padding: var(--spacing-md) var(--spacing-lg); }
+      .activate-main { padding: var(--spacing-md); }
+      .activate-card {
+        max-width: 100%;
+        padding: var(--spacing-lg);
+      }
+      .activate-footer { padding: var(--spacing-sm) var(--spacing-md); }
+
+      .step-title { font-size: 1.25rem; }
+      .step-desc { font-size: 0.75rem; }
+      .step-body { gap: var(--spacing-sm); }
+
+      .stepper { gap: 0; }
+      .step-circle { width: 1.5rem; height: 1.5rem; font-size: 0.6875rem; }
+      .step-label { font-size: 0.625rem; }
+
+      .form-group label { font-size: 0.625rem; }
+      .form-group input {
+        padding: 0.625rem 0.75rem;
+        min-height: 2.75rem;
+        font-size: 0.875rem;
+      }
+      .input-mono { font-size: 0.75rem !important; }
+
+      .password-checklist {
+        grid-template-columns: 1fr;
+        padding: var(--spacing-sm);
+        gap: 0.125rem 0;
+      }
+      .checklist-item { font-size: 0.75rem; }
+
+      .step-footer { padding-top: var(--spacing-md); }
+      .step-footer--two {
+        flex-direction: column-reverse;
+        gap: var(--spacing-sm);
+      }
+      .step-footer--two .btn-primary,
+      .step-footer--two .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        padding: 0.625rem 1rem;
+        min-height: 2.75rem;
+      }
+
+      .btn-primary, .btn-secondary { font-size: 0.625rem; }
+
+      .state-card { padding: var(--spacing-md) 0; }
+      .state-title { font-size: 1.25rem; }
+      .state-desc { font-size: 0.875rem; }
+    }
+
+    @media (max-width: 22.5rem) {
+      .activate-card { padding: var(--spacing-md); }
+      .activate-main { padding: var(--spacing-sm); }
+      .step-title { font-size: 1.125rem; }
+      .stepper { flex-wrap: wrap; }
+      .step-line { display: none; }
+    }
   `],
 })
 export class ActivateAccountComponent implements OnInit, OnDestroy {

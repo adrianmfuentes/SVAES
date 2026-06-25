@@ -292,6 +292,37 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       opacity: 0.65;
       cursor: not-allowed;
     }
+
+    /* ── Responsive ──────────────────────────────────── */
+
+    @media (max-width: 48rem) {
+      .reset-header { padding: var(--spacing-md) var(--spacing-lg); }
+      .reset-main { padding: var(--spacing-md); }
+      .reset-card {
+        max-width: 100%;
+        padding: 1.5rem;
+      }
+      .card-title { font-size: 1.25rem; }
+      .card-desc { font-size: 0.8125rem; }
+
+      label { font-size: 0.6875rem; }
+      input {
+        padding: 0.625rem 0.75rem;
+        min-height: 2.75rem;
+        font-size: 0.875rem;
+      }
+
+      .btn-primary.full-width {
+        min-height: 2.75rem;
+        padding: 0.625rem 1rem;
+      }
+
+      .alert-error { font-size: 0.75rem; }
+    }
+
+    @media (max-width: 22.5rem) {
+      .reset-card { padding: 1rem; }
+    }
   `],
 })
 export class ResetPasswordComponent implements OnInit {

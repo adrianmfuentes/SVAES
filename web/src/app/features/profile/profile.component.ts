@@ -814,6 +814,33 @@ interface UserProfile {
       .data-table-wrap { overflow-x: auto; }
 
       .new-key-row { flex-wrap: wrap; }
+
+      .form-group input {
+        padding: 0.625rem 0.75rem;
+        min-height: 2.75rem;
+        font-size: 0.875rem;
+      }
+
+      .form-group label { font-size: 0.625rem; }
+
+      .form-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        gap: var(--spacing-sm);
+      }
+
+      .form-footer .btn-primary,
+      .form-footer .btn-danger-sm {
+        width: 100%;
+        justify-content: center;
+        padding: 0.625rem 1rem;
+        min-height: 2.75rem;
+      }
+
+      .card { padding: var(--spacing-md); }
+      .card-title { font-size: 1.25rem; margin-bottom: var(--spacing-md); }
+
+      .totp-qr { width: 9rem; height: 9rem; }
     }
   `],
 })

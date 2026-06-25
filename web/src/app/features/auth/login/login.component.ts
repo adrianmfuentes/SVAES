@@ -600,6 +600,28 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
           top: var(--spacing-md);
           left: var(--spacing-md);
         }
+
+        .form-group input {
+          padding: 0.625rem 0.75rem;
+          min-height: 2.75rem;
+          font-size: 0.875rem;
+        }
+
+        .form-group label { font-size: 0.625rem; }
+
+        .btn-submit {
+          min-height: 2.75rem;
+          padding: 0.625rem 1rem;
+        }
+
+        .login-footer {
+          flex-direction: column;
+          gap: var(--spacing-sm);
+          text-align: center;
+          padding: var(--spacing-sm) var(--spacing-md);
+        }
+
+        .footer-links { gap: var(--spacing-sm); flex-wrap: wrap; justify-content: center; }
       }
     `,
   ],
