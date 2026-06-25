@@ -58,16 +58,8 @@ interface OrgUser {
                 </td>
                 <td class="cell-muted" [attr.data-label]="'common.email' | t">{{ member.email }}</td>
                 <td [attr.data-label]="'common.role' | t">
-                  <select
-                    *ngIf="member.role !== 'MANAGER' && member.id !== currentUserId"
-                    class="role-select"
-                    [value]="member.role"
-                    (change)="onRoleChange(member, $event)"
-                  >
-                    <option value="OPERATOR">{{ 'org_settings.role_operator' | t }}</option>
-                  </select>
                   <span *ngIf="member.role === 'MANAGER'" class="role-owner">{{ 'org_settings.role_owner' | t }}</span>
-                  <span *ngIf="member.id === currentUserId && member.role !== 'MANAGER'" class="role-text">{{ 'org_settings.role_' + member.role.toLowerCase() | t }}</span>
+                  <span *ngIf="member.role !== 'MANAGER'" class="role-text">{{ 'org_settings.role_' + member.role.toLowerCase() | t }}</span>
                 </td>
                 <td class="cell-actions" [attr.data-label]="'common.actions' | t">
                   <button
@@ -365,18 +357,6 @@ interface OrgUser {
     .btn-transfer:hover:not(:disabled) { background: rgba(232, 213, 163, 0.15); border-color: var(--verdict-warning); }
 
     .transfer-warning { color: var(--verdict-warning); }
-
-    .role-select {
-      font-family: var(--font-sans);
-      font-size: 0.8125rem;
-      color: var(--ink);
-      background: var(--paper);
-      border: 0.0625rem solid var(--border-strong);
-      border-radius: var(--rounded-md);
-      padding: 0.1875rem 0.375rem;
-      outline: none;
-      cursor: pointer;
-    }
 
     .role-text {
       font-family: var(--font-sans);
@@ -801,22 +781,6 @@ export class OrgSettingsComponent implements OnInit {
         setTimeout(() => this.closeInviteModal(), 1500);
       }
     });
-  }
-
-  onRoleChange(member: OrgUser, event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const newRole = select.value as OrgUser['role'];
-    this.http.patch(`/api/v1/organizations/${this.orgId}/users/${member.id}/role`, { role: newRole })
-      .pipe(catchError(() => {
-        select.value = member.role;
-        return of(null);
-      }))
-      .subscribe(res => {
-        if (res === null) return;
-        this.members.update(members => members.map(m =>
-          m.id === member.id ? { ...m, role: newRole } : m
-        ));
-      });
   }
 
   confirmRemoveMember(member: OrgUser): void {
