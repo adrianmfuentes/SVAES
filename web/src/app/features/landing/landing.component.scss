@@ -666,6 +666,26 @@
   .landing-footer { padding: var(--spacing-md) var(--spacing-lg); }
 }
 
+// ≤560px — compact mock table
+@media (max-width: 35rem) {
+  .mock-row {
+    grid-template-columns: 3.25rem 1fr auto;
+    gap: var(--spacing-sm);
+    padding: 0 var(--spacing-sm);
+    overflow: hidden;
+
+    .mock-connector { display: none; }
+    .mock-evidence { display: none; }
+    .mock-result { overflow: hidden; }
+  }
+
+  .mock-window-bar { padding: 0.625rem 1rem; }
+  .mock-verdict { padding: 0 var(--spacing-md); height: 3rem; gap: 0.5rem; }
+  .mock-verdict-sep { display: none; }
+  .mock-verdict-hash { display: none; }
+  .mock-footer { padding: 0.5rem 0.75rem; }
+}
+
 // ≤480px — phones
 @media (max-width: 30rem) {
   .landing-header { padding: var(--spacing-sm) var(--spacing-md); }
@@ -679,22 +699,6 @@
   .landing-stats { gap: var(--spacing-md); }
   .landing-stat-value { font-size: 1.5rem; }
   .landing-stat-sep { display: none; }
-
-  // Compact mock window columns on small phones
-  .mock-row {
-    grid-template-columns: 3.25rem 1fr 5.5rem;
-    gap: var(--spacing-sm);
-    padding: 0 var(--spacing-sm);
-
-    .mock-connector { display: none; }
-    .mock-evidence { display: none; }
-  }
-
-  .mock-window-bar { padding: 0.625rem 1rem; }
-  .mock-verdict { padding: 0 var(--spacing-md); height: 3rem; gap: 0.5rem; }
-  .mock-verdict-sep { display: none; }
-  .mock-verdict-hash { display: none; }
-  .mock-footer { padding: 0.5rem 0.75rem; }
 
   .landing-access { padding: var(--spacing-lg) var(--spacing-md); }
   .landing-footer { padding: var(--spacing-sm) var(--spacing-md); }
