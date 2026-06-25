@@ -1,0 +1,45 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# SVAES - Docker Compose (Integration Test Infrastructure)
+# ═══════════════════════════════════════════════════════════════════════════════
+# Usage: docker compose -f docker-compose.test.yml up -d --wait
+#
+# Provides ephemeral PostgreSQL + Redis on non-standard ports to avoid
+# collisions with a running dev/prod SVAES stack.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: svaes-test
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: svaes-test-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: svaes
+      POSTGRES_PASSWORD: svaes
+      POSTGRES_DB: svaes_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U svaes"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - svaes-test-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: svaes-test-redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - svaes-test-network
+
+networks:
+  svaes-test-network:
+    driver: bridge

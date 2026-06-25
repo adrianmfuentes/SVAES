@@ -88,13 +88,14 @@ async def _test_db(_test_env):
 
 
 @pytest_asyncio.fixture
-async def client(_test_db):
+async def client(_test_db, test_user_id):
     if not _test_db:
         pytest.skip("PostgreSQL test database not available — start PostgreSQL and create 'svaes_test' database")
 
     from main import app
     from infrastructure.secondary.database.models import Base
-    from infrastructure.secondary.database.get_async_session import engine
+    from infrastructure.secondary.database.models.user_model import UserModel
+    from infrastructure.secondary.database.get_async_session import engine, AsyncSessionLocal
     from httpx import AsyncClient, ASGITransport
 
     @asynccontextmanager
@@ -113,6 +114,20 @@ async def client(_test_db):
                 await conn.execute(table.delete())
     except Exception:
         pass
+
+    # Insert the test user so get_current_user can verify is_active via DB
+    try:
+        async with AsyncSessionLocal() as session:
+            session.add(UserModel(
+                id=test_user_id,
+                email="test@integration.test",
+                hashed_password="$2b$12$notarealhashjustfortest000",
+                display_name="Integration Test User",
+                is_active=True,
+            ))
+            await session.commit()
+    except Exception:
+        _log.exception("Failed to seed test user — authenticated endpoints will return 401")
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
