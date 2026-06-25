@@ -171,11 +171,17 @@ jobs:
           fi
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          echo "$SERVER_SSH_KEY" > ~/.ssh/id_rsa
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           if ! ssh-keyscan -T 15 -H -p 4422 "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
-            echo "ssh-keyscan on port 4422 failed (server may restrict incoming scans); disabling StrictHostKeyChecking"
-            printf 'Host %s\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  LogLevel ERROR\n' "$SERVER_HOST" > ~/.ssh/config
+            echo "ssh-keyscan on port 4422 failed; disabling StrictHostKeyChecking for this host"
+            cat >> ~/.ssh/config << SSHCONF
+          Host $SERVER_HOST
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            IdentityFile ~/.ssh/id_rsa
+            LogLevel ERROR
+          SSHCONF
           fi
 
       - name: Create deployment directory
@@ -184,7 +190,8 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          ssh -o ConnectTimeout=30 -o ServerAliveInterval=15 -p 4422 "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
+          echo "Testing SSH connection..."
+          ssh -v -o ConnectTimeout=30 -o ServerAliveInterval=15 -o BatchMode=yes -p 4422 "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
 
       - name: Copy Docker Compose file
         env:
