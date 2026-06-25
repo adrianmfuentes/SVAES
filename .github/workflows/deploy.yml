@@ -209,7 +209,7 @@ jobs:
         run: |
           scp -P 4422 nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/" 2>/dev/null || true
 
-      - name: Create .env file
+      - name: Create .env file and copy to server
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
@@ -235,30 +235,31 @@ jobs:
           APP_BASE_URL: ${{ secrets.APP_BASE_URL || vars.APP_BASE_URL }}
           API_KEY_PEPPER: ${{ secrets.API_KEY_PEPPER || vars.API_KEY_PEPPER }}
         run: |
-          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cat > ~/svaes/$ENVIRONMENT/.env << 'ENDOFENV'
-          REGISTRY=$REGISTRY
-          API_IMAGE=$API_IMAGE
-          WEB_IMAGE=$WEB_IMAGE
-          ENGINE_IMAGE=$ENGINE_IMAGE
-          POSTGRES_USER=$POSTGRES_USER
-          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
-          REDIS_PASSWORD=$REDIS_PASSWORD
-          JWT_SECRET_KEY=$JWT_SECRET_KEY
-          ENCRYPTION_KEY=$ENCRYPTION_KEY
-          ENGINE_API_KEY=$ENGINE_API_KEY
-          ALLOWED_ORIGINS=$ALLOWED_ORIGINS
-          SMTP_HOST=$SMTP_HOST
-          SMTP_PORT=$SMTP_PORT
-          SMTP_USER=$SMTP_USER
-          SMTP_PASSWORD=$SMTP_PASSWORD
-          SMTP_FROM=$SMTP_FROM
-          ADMIN_EMAIL=$ADMIN_EMAIL
-          ADMIN_PASSWORD=$ADMIN_PASSWORD
-          APP_BASE_URL=$APP_BASE_URL
-          API_KEY_PEPPER=$API_KEY_PEPPER
-          JWT_EXPIRE_MINUTES=60
-          ENVIRONMENT=production
-          ENDOFENV"
+          {
+            printf 'REGISTRY=%s\n'               "$REGISTRY"
+            printf 'API_IMAGE=%s\n'               "$API_IMAGE"
+            printf 'WEB_IMAGE=%s\n'               "$WEB_IMAGE"
+            printf 'ENGINE_IMAGE=%s\n'            "$ENGINE_IMAGE"
+            printf 'POSTGRES_USER=%s\n'           "$POSTGRES_USER"
+            printf 'POSTGRES_PASSWORD=%s\n'       "$POSTGRES_PASSWORD"
+            printf 'REDIS_PASSWORD=%s\n'          "$REDIS_PASSWORD"
+            printf 'JWT_SECRET_KEY=%s\n'          "$JWT_SECRET_KEY"
+            printf 'ENCRYPTION_KEY=%s\n'          "$ENCRYPTION_KEY"
+            printf 'ENGINE_API_KEY=%s\n'          "$ENGINE_API_KEY"
+            printf 'ALLOWED_ORIGINS=%s\n'         "$ALLOWED_ORIGINS"
+            printf 'SMTP_HOST=%s\n'               "$SMTP_HOST"
+            printf 'SMTP_PORT=%s\n'               "$SMTP_PORT"
+            printf 'SMTP_USER=%s\n'               "$SMTP_USER"
+            printf 'SMTP_PASSWORD=%s\n'           "$SMTP_PASSWORD"
+            printf 'SMTP_FROM=%s\n'               "$SMTP_FROM"
+            printf 'ADMIN_EMAIL=%s\n'             "$ADMIN_EMAIL"
+            printf 'ADMIN_PASSWORD=%s\n'          "$ADMIN_PASSWORD"
+            printf 'APP_BASE_URL=%s\n'            "$APP_BASE_URL"
+            printf 'API_KEY_PEPPER=%s\n'          "$API_KEY_PEPPER"
+            printf 'JWT_EXPIRE_MINUTES=60\n'
+            printf 'ENVIRONMENT=production\n'
+          } > .env.prod
+          scp -P 4422 .env.prod "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/.env"
 
       - name: Pull latest images
         env:
@@ -303,12 +304,19 @@ jobs:
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" " \
+            healthy=false; \
             for i in \$(seq 1 30); do \
               if curl -sf http://localhost:8000/health > /dev/null 2>&1; then \
-                echo 'API is healthy'; break; \
+                echo 'API is healthy'; healthy=true; break; \
               fi; \
               echo 'Waiting for API...'; sleep 2; \
-            done && \
+            done; \
+            if [ \"\$healthy\" != \"true\" ]; then \
+              echo 'ERROR: API did not become healthy. Showing API container logs (last 50 lines):'; \
+              cd ~/svaes/$ENVIRONMENT && docker compose logs --tail=50 api 2>&1; \
+              echo '---'; \
+              exit 1; \
+            fi && \
             for i in \$(seq 1 10); do \
               if curl -sf http://localhost:8880/ > /dev/null 2>&1; then \
                 echo 'Web is healthy'; break; \
