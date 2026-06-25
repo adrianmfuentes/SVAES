@@ -265,6 +265,9 @@ class UserService(IUserService):
         if not user:
             raise EntityNotFoundError(f"Usuario no encontrado: {user_id}")
 
+        if user.role == UserRole.U3:
+            raise ValidationError("Los administradores globales no pueden eliminar su cuenta")
+
         if not await asyncio.to_thread(self._password_hasher.verify_password, password, user.hashed_password):
             raise AuthenticationError("Contraseña incorrecta")
 
@@ -276,12 +279,7 @@ class UserService(IUserService):
                     other_members = [m for m in members if m.id != user_id]
 
                     if other_members:
-                        new_owner = other_members[0]
-                        org.owner_id = new_owner.id
-                        await self._org_repo.update(org)
-                        new_owner.role = UserRole.U4
-                        await self._user_repo.update(new_owner)
-                        _log.info("Ownership transferred before account deletion: org=%s new_owner=%s", org_id, new_owner.id)
+                        raise ValidationError("Debes transferir la propiedad de la organización antes de eliminar tu cuenta")
                     else:
                         await self._org_repo.delete(org_id)
                         _log.info("Organization deleted before account deletion: org=%s", org_id)

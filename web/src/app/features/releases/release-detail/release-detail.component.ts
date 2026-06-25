@@ -207,15 +207,15 @@ interface VerificationResult {
                   @for (rule of result.rule_results; track rule.rule_id; let i = $index) {
                     <tr
                       (click)="toggleEvidence(i)">
-                      <td><code class="mono-sm">{{ rule.rule_id | slice:0:8 }}</code></td>
-                      <td class="cell-primary">{{ rule.rule_name || ('common.dash' | t) }}</td>
-                      <td class="cell-muted">{{ rule.connector || ('common.dash' | t) }}</td>
-                      <td>
+                      <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm">{{ rule.rule_id | slice:0:8 }}</code></td>
+                      <td class="cell-primary" [attr.data-label]="'release_detail.rule_name' | t">{{ rule.rule_name || ('common.dash' | t) }}</td>
+                      <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ rule.connector || ('common.dash' | t) }}</td>
+                      <td [attr.data-label]="'release_detail.rule_result' | t">
                         <span class="verdict-badge" [ngClass]="ruleResultClass(rule.status ?? rule.result ?? '')">
                           {{ translateRuleResult(rule.status ?? rule.result ?? '') }}
                         </span>
                       </td>
-                      <td class="cell-evidence" (click)="$event.stopPropagation()">
+                      <td class="cell-evidence" [attr.data-label]="'release_detail.rule_evidence' | t" (click)="$event.stopPropagation()">
                         @let evidenceText = rule.evidence ?? rule.message;
                         @if (evidenceText) {
                           <span>{{ evidenceText | slice:0:100 }}{{ evidenceText.length > 100 ? '…' : '' }}</span>
@@ -296,13 +296,13 @@ interface VerificationResult {
                 <tbody>
                   @for (a of artifacts(); track a.id) {
                     <tr>
-                      <td>
+                      <td [attr.data-label]="'release_detail.col_type' | t">
                         <span class="artifact-type-badge">{{ ts.translateInstant('artifact_type.' + a.artifact_type) }}</span>
                       </td>
-                      <td class="cell-muted">{{ ts.translateInstant('connector_type.' + a.connector_implementation) || a.connector_implementation }}</td>
-                      <td><code class="mono-sm">{{ a.external_ref }}</code></td>
-                      <td class="cell-muted">{{ a.description || ('common.dash' | t) }}</td>
-                      <td class="cell-actions">
+                      <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ ts.translateInstant('connector_type.' + a.connector_implementation) || a.connector_implementation }}</td>
+                      <td [attr.data-label]="'release_detail.col_ext_ref' | t"><code class="mono-sm">{{ a.external_ref }}</code></td>
+                      <td class="cell-muted" [attr.data-label]="'common.description' | t">{{ a.description || ('common.dash' | t) }}</td>
+                      <td class="cell-actions" [attr.data-label]="'common.actions' | t">
                         <button class="btn-icon btn-danger" (click)="deleteArtifact(a.id)" [title]="'common.delete' | t">
                           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                             <path d="M2 4h10M5 4V3a1 1 0 011-1h2a1 1 0 011 1v1M11 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
@@ -472,14 +472,14 @@ interface VerificationResult {
                 <tbody>
                   @for (h of verificationHistory(); track h.id) {
                     <tr>
-                      <td>
+                      <td [attr.data-label]="'release_detail.history_verdict' | t">
                         <span class="verdict-badge" [ngClass]="verdictBadgeMap(h.verdict)">
                           {{ translateVerdict(h.verdict) }}
                         </span>
                       </td>
-                      <td class="cell-muted">{{ h.duration_ms }}ms</td>
-                      <td class="cell-muted">{{ h.executed_at | date:'dd MMM yyyy, HH:mm' }}</td>
-                      <td class="cell-action">
+                      <td class="cell-muted" [attr.data-label]="'release_detail.col_duration' | t">{{ h.duration_ms }}ms</td>
+                      <td class="cell-muted" [attr.data-label]="'release_detail.col_executed' | t">{{ h.executed_at | date:'dd MMM yyyy, HH:mm' }}</td>
+                      <td class="cell-action" [attr.data-label]="'common.actions' | t">
                         <button class="btn-ghost" (click)="loadResultDetail(h.id)">{{ 'release_detail.see_btn' | t }}</button>
                       </td>
                     </tr>
@@ -1042,10 +1042,121 @@ interface VerificationResult {
 
       .info-grid { grid-template-columns: repeat(2, 1fr); }
 
-      .data-table-wrap { overflow-x: auto; }
+      .data-table-wrap { overflow-x: visible; }
+
+      .data-table,
+      .data-table tbody,
+      .data-table tr,
+      .data-table td {
+        display: block;
+      }
+
+      .data-table thead {
+        display: none;
+      }
+
+      .data-table tr {
+        margin-bottom: var(--spacing-sm);
+        border: 0.0625rem solid var(--border);
+        border-radius: var(--rounded-md);
+        background: var(--surface-raised);
+      }
+
+      .data-table tr:last-child {
+        margin-bottom: 0;
+      }
+
+      .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-bottom: 0.0625rem solid var(--border);
+        height: auto;
+        min-height: 2.5rem;
+        text-align: right;
+      }
+
+      .data-table td:last-child {
+        border-bottom: none;
+      }
+
+      .data-table tr:hover td {
+        background: transparent;
+      }
+
+      .data-table td::before {
+        content: attr(data-label);
+        font-family: var(--font-sans);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-right: var(--spacing-md);
+        flex-shrink: 0;
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      .cell-evidence {
+        max-width: none;
+        overflow: visible;
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      .cell-actions {
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+        justify-content: flex-end;
+      }
+
+      .cell-action {
+        justify-content: flex-end;
+      }
+
+      .data-table tbody tr {
+        cursor: pointer;
+      }
 
       .card { padding: var(--spacing-md); }
       .card-title { font-size: 1.25rem; }
+
+      .modal-panel {
+        width: calc(100vw - 1.5rem);
+        max-width: none;
+        padding: var(--spacing-md);
+        max-height: calc(100vh - 3rem);
+        overflow-y: auto;
+      }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+        gap: var(--spacing-xs);
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-sm);
+      }
+
+      .modal-footer .btn-secondary,
+      .modal-footer .btn-accent {
+        width: 100%;
+        justify-content: center;
+        padding: 0.625rem 1rem;
+        min-height: 2.75rem;
+      }
+
+      .form-select,
+      .form-input {
+        padding: 0.625rem 0.75rem;
+        min-height: 2.75rem;
+        font-size: 0.875rem;
+      }
+
+      .section-actions {
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+      }
     }
 
     @media (max-width: 30rem) {

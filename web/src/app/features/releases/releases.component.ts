@@ -73,16 +73,16 @@ interface Release {
               [routerLink]="['/app/releases', r.id]"
               class="clickable-row"
             >
-              <td><code class="mono-sm">{{ r.id | slice:0:8 }}</code></td>
-              <td class="cell-primary">{{ r.name || ('common.dash' | t) }}</td>
-              <td *ngIf="isAdmin" class="cell-muted">{{ r.organization_name || ('common.dash' | t) }}</td>
-              <td>
+              <td [attr.data-label]="'releases.table_id' | t"><code class="mono-sm">{{ r.id | slice:0:8 }}</code></td>
+              <td class="cell-primary" [attr.data-label]="'releases.table_name' | t">{{ r.name || ('common.dash' | t) }}</td>
+              <td *ngIf="isAdmin" class="cell-muted" [attr.data-label]="'releases.col_org' | t">{{ r.organization_name || ('common.dash' | t) }}</td>
+              <td [attr.data-label]="'releases.table_verdict' | t">
                 <span class="verdict-badge" [ngClass]="verdictClass(r.verdict)">
                   {{ (r.verdict ? ('verdict.' + r.verdict | t) : ('verdict.NOT_EVALUATED' | t)) }}
                 </span>
               </td>
-              <td class="cell-muted">{{ r.created_at | date:'dd MMM yyyy, HH:mm' }}</td>
-              <td *ngIf="!isAdmin" class="cell-actions" (click)="$event.stopPropagation()">
+              <td class="cell-muted" [attr.data-label]="'releases.table_date' | t">{{ r.created_at | date:'dd MMM yyyy, HH:mm' }}</td>
+              <td *ngIf="!isAdmin" class="cell-actions" [attr.data-label]="'releases.table_actions' | t" (click)="$event.stopPropagation()">
                 <a [routerLink]="['/app/releases', r.id, 'edit']" class="btn-action btn-edit" title="{{ 'common.edit' | t }}">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -463,7 +463,68 @@ interface Release {
 
       .filter-input { max-width: 100%; }
 
-      .data-table-wrap { overflow-x: auto; }
+      .data-table-wrap { overflow-x: visible; }
+
+      .data-table,
+      .data-table tbody,
+      .data-table tr,
+      .data-table td {
+        display: block;
+      }
+
+      .data-table thead {
+        display: none;
+      }
+
+      .data-table tr {
+        margin-bottom: var(--spacing-sm);
+        border: 0.0625rem solid var(--border);
+        border-radius: var(--rounded-md);
+        background: var(--surface-raised);
+      }
+
+      .data-table tr:last-child {
+        margin-bottom: 0;
+      }
+
+      .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-bottom: 0.0625rem solid var(--border);
+        height: auto;
+        min-height: 2.5rem;
+        text-align: right;
+      }
+
+      .data-table td:last-child {
+        border-bottom: none;
+      }
+
+      .data-table tr:hover td {
+        background: transparent;
+      }
+
+      .data-table td::before {
+        content: attr(data-label);
+        font-family: var(--font-sans);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-right: var(--spacing-md);
+        flex-shrink: 0;
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      .cell-actions {
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+        justify-content: flex-end;
+      }
 
       .modal-footer {
         flex-direction: column-reverse;

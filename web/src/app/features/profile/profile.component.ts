@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { AuthService, TotpSetupResponse } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
@@ -28,7 +29,7 @@ interface UserProfile {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslatePipe],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, RouterModule],
   template: `
     <div class="profile-page">
       <div class="page-header">
@@ -400,38 +401,49 @@ interface UserProfile {
             <h3 class="modal-title">{{ 'profile_page.delete_account_modal_title' | t }}</h3>
             <button class="modal-close" (click)="closeDeleteModal()">×</button>
           </div>
-          <p class="modal-body-text" [class.transfer-warning]="deleteOrgWarning()">
-            <ng-container *ngIf="deleteOrgWarning(); else standardConfirm">
-              {{ 'profile_page.delete_account_confirm_org_deletion' | t }}
-            </ng-container>
-            <ng-template #standardConfirm>
-              {{ 'profile_page.delete_account_confirm' | t }}
-            </ng-template>
-          </p>
-          <form [formGroup]="deleteAccountForm" (ngSubmit)="confirmDeleteAccount()">
-            <div class="form-group">
-              <label for="delete-password">{{ 'profile_page.delete_account_password_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
-              <input
-                id="delete-password"
-                type="password"
-                formControlName="password"
-                autocomplete="current-password"
-                aria-required="true"
-                placeholder="••••••••"
-              />
-              <div class="field-error" *ngIf="deleteAccountForm.get('password')?.hasError('required') && deleteAccountForm.get('password')?.touched">
-                {{ 'profile_page.delete_account_password_required' | t }}
-              </div>
-            </div>
-            <div *ngIf="deleteAccountError()" class="modal-error error-banner error-sm">{{ deleteAccountError() }}</div>
-            <div *ngIf="deleteAccountSuccess()" class="alert-success">{{ 'profile_page.delete_account_success' | t }}</div>
+          <ng-container *ngIf="mustTransferFirst(); else deleteForm">
+            <p class="modal-body-text transfer-warning">{{ 'profile_page.delete_account_must_transfer' | t }}</p>
             <div class="modal-footer">
-              <button type="button" class="btn-ghost" (click)="closeDeleteModal()" [disabled]="deleteAccountDeleting()" [title]="deleteAccountDeleting() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">{{ 'common.cancel' | t }}</button>
-              <button type="submit" class="btn-danger" [disabled]="deleteAccountForm.invalid || deleteAccountDeleting()" [title]="deleteAccountForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
-                {{ deleteAccountDeleting() ? ('profile_page.delete_account_deleting' | t) : ('profile_page.delete_account_submit' | t) }}
-              </button>
+              <button type="button" class="btn-ghost" (click)="closeDeleteModal()">{{ 'common.cancel' | t }}</button>
+              <a class="btn-primary" [routerLink]="['/organization']" (click)="closeDeleteModal()">
+                {{ 'profile_page.delete_account_go_to_org_settings' | t }}
+              </a>
             </div>
-          </form>
+          </ng-container>
+          <ng-template #deleteForm>
+            <p class="modal-body-text" [class.transfer-warning]="deleteOrgWarning()">
+              <ng-container *ngIf="deleteOrgWarning(); else standardConfirm">
+                {{ 'profile_page.delete_account_confirm_org_deletion' | t }}
+              </ng-container>
+              <ng-template #standardConfirm>
+                {{ 'profile_page.delete_account_confirm' | t }}
+              </ng-template>
+            </p>
+            <form [formGroup]="deleteAccountForm" (ngSubmit)="confirmDeleteAccount()">
+              <div class="form-group">
+                <label for="delete-password">{{ 'profile_page.delete_account_password_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                <input
+                  id="delete-password"
+                  type="password"
+                  formControlName="password"
+                  autocomplete="current-password"
+                  aria-required="true"
+                  placeholder="••••••••"
+                />
+                <div class="field-error" *ngIf="deleteAccountForm.get('password')?.hasError('required') && deleteAccountForm.get('password')?.touched">
+                  {{ 'profile_page.delete_account_password_required' | t }}
+                </div>
+              </div>
+              <div *ngIf="deleteAccountError()" class="modal-error error-banner error-sm">{{ deleteAccountError() }}</div>
+              <div *ngIf="deleteAccountSuccess()" class="alert-success">{{ 'profile_page.delete_account_success' | t }}</div>
+              <div class="modal-footer">
+                <button type="button" class="btn-ghost" (click)="closeDeleteModal()" [disabled]="deleteAccountDeleting()" [title]="deleteAccountDeleting() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">{{ 'common.cancel' | t }}</button>
+                <button type="submit" class="btn-danger" [disabled]="deleteAccountForm.invalid || deleteAccountDeleting()" [title]="deleteAccountForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
+                  {{ deleteAccountDeleting() ? ('profile_page.delete_account_deleting' | t) : ('profile_page.delete_account_submit' | t) }}
+                </button>
+              </div>
+            </form>
+          </ng-template>
         </div>
       </div>
     </div>
@@ -1084,6 +1096,7 @@ export class ProfileComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
+  private readonly router = inject(Router);
 
   profile = signal<UserProfile | null>(null);
   loading = signal(true);
@@ -1154,6 +1167,7 @@ export class ProfileComponent implements OnInit {
   deleteAccountError = signal<string | null>(null);
   deleteAccountSuccess = signal(false);
   deleteOrgWarning = signal(false);
+  mustTransferFirst = signal(false);
   deleteAccountChecking = signal(false);
 
   ngOnInit(): void {
@@ -1378,6 +1392,7 @@ export class ProfileComponent implements OnInit {
     this.deleteAccountError.set(null);
     this.deleteAccountSuccess.set(false);
     this.deleteOrgWarning.set(false);
+    this.mustTransferFirst.set(false);
     this.deleteAccountChecking.set(true);
     this.showDeleteModal.set(true);
 
@@ -1402,6 +1417,8 @@ export class ProfileComponent implements OnInit {
             .subscribe(members => {
               if (members.length <= 1) {
                 this.deleteOrgWarning.set(true);
+              } else {
+                this.mustTransferFirst.set(true);
               }
               this.deleteAccountChecking.set(false);
             });
@@ -1414,6 +1431,7 @@ export class ProfileComponent implements OnInit {
   closeDeleteModal(): void {
     if (!this.deleteAccountDeleting()) {
       this.showDeleteModal.set(false);
+      this.mustTransferFirst.set(false);
     }
   }
 

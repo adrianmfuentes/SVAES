@@ -92,8 +92,8 @@ interface AccessRequest {
             </thead>
             <tbody>
               <tr *ngFor="let org of orgs()">
-                <td><code class="mono-cell">{{ org.id }}</code></td>
-                <td class="cell-primary">{{ org.name }}</td>
+                <td [attr.data-label]="'admin.org_id_col' | t"><code class="mono-cell">{{ org.id }}</code></td>
+                <td class="cell-primary" [attr.data-label]="'admin.org_anon_name' | t">{{ org.name }}</td>
               </tr>
             </tbody>
           </table>
@@ -128,16 +128,16 @@ interface AccessRequest {
             </thead>
             <tbody>
               <tr *ngFor="let user of users()" [class.row-locked]="user.role === 'ADMIN'">
-                <td><code class="mono-cell">{{ user.id }}</code></td>
-                <td class="cell-primary">
+                <td [attr.data-label]="'admin.org_id_col' | t"><code class="mono-cell">{{ user.id }}</code></td>
+                <td class="cell-primary" [attr.data-label]="'admin.org_anon_name' | t">
                   {{ user.display_name }}
                   <span class="self-tag" *ngIf="user.id === currentUserId">{{ 'admin.self_tag' | t }}</span>
                 </td>
-                <td>
+                <td [attr.data-label]="'common.role' | t">
                   <span *ngIf="user.role === 'ADMIN'" class="role-fixed">{{ 'admin.global_admin_role' | t }}</span>
                   <span *ngIf="user.role !== 'ADMIN'" class="role-text">{{ ts.translateInstant('user_role.' + user.role) }}</span>
                 </td>
-                <td>
+                <td [attr.data-label]="'admin.user_status_col' | t">
                   <span class="badge" [class.badge-active]="user.is_active" [class.badge-inactive]="!user.is_active">
                     {{ user.is_active ? ('admin.active_badge' | t) : ('admin.inactive_badge' | t) }}
                   </span>
@@ -187,15 +187,15 @@ interface AccessRequest {
             </thead>
             <tbody>
               <tr *ngFor="let ar of accessRequests()">
-                <td>
+                <td [attr.data-label]="'admin.access_requester' | t">
                   <div class="cell-primary">{{ ar.requester_name }}</div>
                   <div class="cell-muted">{{ ar.requester_email }}</div>
                 </td>
-                <td>
+                <td [attr.data-label]="'admin.access_org' | t">
                   <div class="cell-primary">{{ ar.organization_name }}</div>
                 </td>
-                <td class="cell-muted">{{ relativeDate(ar.created_at) }}</td>
-                <td>
+                <td class="cell-muted" [attr.data-label]="'admin.access_created' | t">{{ relativeDate(ar.created_at) }}</td>
+                <td [attr.data-label]="'common.status' | t">
                   <span class="badge" [class.badge-pending]="ar.status === 'PENDING'" [class.badge-approved]="ar.status === 'APPROVED'" [class.badge-rejected]="ar.status === 'REJECTED'">
                     {{ ts.translateInstant('access_request.' + ar.status) }}
                   </span>
@@ -701,7 +701,62 @@ interface AccessRequest {
         gap: var(--spacing-xs);
       }
 
-      .data-table-wrap { overflow-x: auto; }
+      .data-table-wrap { overflow-x: visible; }
+
+      .data-table,
+      .data-table tbody,
+      .data-table tr,
+      .data-table td {
+        display: block;
+      }
+
+      .data-table thead {
+        display: none;
+      }
+
+      .data-table tr {
+        margin-bottom: var(--spacing-sm);
+        border: 0.0625rem solid var(--border);
+        border-radius: var(--rounded-md);
+        background: var(--surface-raised);
+      }
+
+      .data-table tr:last-child {
+        margin-bottom: 0;
+      }
+
+      .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-bottom: 0.0625rem solid var(--border);
+        height: auto;
+        min-height: 2.5rem;
+        text-align: right;
+      }
+
+      .data-table td:last-child {
+        border-bottom: none;
+      }
+
+      .data-table tr:hover td {
+        background: transparent;
+      }
+
+      .data-table td::before {
+        content: attr(data-label);
+        font-family: var(--font-sans);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-right: var(--spacing-md);
+        flex-shrink: 0;
+        text-align: left;
+        white-space: nowrap;
+      }
 
       .modal-panel {
         width: calc(100vw - 1.5rem);

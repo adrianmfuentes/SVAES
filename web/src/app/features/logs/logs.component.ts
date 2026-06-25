@@ -109,17 +109,17 @@ interface AuditLogsResponse {
             </thead>
             <tbody>
               <tr *ngFor="let log of paginated()">
-                <td><code class="mono-sm">{{ log.timestamp | date:'dd/MM/yy HH:mm:ss' }}</code></td>
-                <td><span class="category-chip">{{ log.category }}</span></td>
-                <td class="cell-action">{{ log.action }}</td>
-                <td><code class="mono-sm">{{ maskId(log.actor_id) }}</code></td>
-                <td class="cell-muted">{{ log.actor_role }}</td>
-                <td>
+                <td [attr.data-label]="'logs.col_timestamp' | t"><code class="mono-sm">{{ log.timestamp | date:'dd/MM/yy HH:mm:ss' }}</code></td>
+                <td [attr.data-label]="'logs.col_category' | t"><span class="category-chip">{{ log.category }}</span></td>
+                <td class="cell-action" [attr.data-label]="'logs.col_action' | t">{{ log.action }}</td>
+                <td [attr.data-label]="'logs.col_actor' | t"><code class="mono-sm">{{ maskId(log.actor_id) }}</code></td>
+                <td class="cell-muted" [attr.data-label]="'logs.col_role' | t">{{ log.actor_role }}</td>
+                <td [attr.data-label]="'logs.col_result' | t">
                   <span class="result-badge" [class]="'result-' + log.result">
                     {{ resultLabel(log.result) }}
                   </span>
                 </td>
-                <td><code class="mono-sm">{{ log.ip_address ? maskIp(log.ip_address) : '—' }}</code></td>
+                <td [attr.data-label]="'logs.col_ip' | t"><code class="mono-sm">{{ log.ip_address ? maskIp(log.ip_address) : '—' }}</code></td>
               </tr>
             </tbody>
           </table>
@@ -401,7 +401,66 @@ interface AuditLogsResponse {
         gap: var(--spacing-sm);
       }
 
-      .data-table-wrap { overflow-x: auto; }
+      .data-table-wrap { overflow-x: visible; }
+
+      .data-table,
+      .data-table tbody,
+      .data-table tr,
+      .data-table td {
+        display: block;
+      }
+
+      .data-table thead {
+        display: none;
+      }
+
+      .data-table tr {
+        margin-bottom: var(--spacing-sm);
+        border: 0.0625rem solid var(--border);
+        border-radius: var(--rounded-md);
+        background: var(--surface-raised);
+      }
+
+      .data-table tr:last-child {
+        margin-bottom: 0;
+      }
+
+      .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-bottom: 0.0625rem solid var(--border);
+        height: auto;
+        min-height: 2.5rem;
+        text-align: right;
+      }
+
+      .data-table td:last-child {
+        border-bottom: none;
+      }
+
+      .data-table tr:hover td {
+        background: transparent;
+      }
+
+      .data-table td::before {
+        content: attr(data-label);
+        font-family: var(--font-sans);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-right: var(--spacing-md);
+        flex-shrink: 0;
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      .filters-bar { flex-wrap: wrap; }
+
+      .filter-select { width: 100%; }
 
       .table-footer {
         flex-direction: column;

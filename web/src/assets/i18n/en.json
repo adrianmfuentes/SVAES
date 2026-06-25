@@ -863,6 +863,8 @@
   "profile_page.delete_account_wrong_password": "Incorrect password.",
   "profile_page.delete_account_error": "Error deleting account.",
   "profile_page.delete_account_success": "Account deleted successfully. Logging out…",
+  "profile_page.delete_account_must_transfer": "You are the owner of an organization with other members. You must transfer ownership to another member before deleting your account.",
+  "profile_page.delete_account_go_to_org_settings": "Go to Organization Settings",
   "system.detail_responding": "Responding",
   "system.detail_no_response": "No response",
   "system.detail_accessible": "Accessible",

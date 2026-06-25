@@ -862,6 +862,8 @@
   "profile_page.delete_account_wrong_password": "Contraseña incorrecta.",
   "profile_page.delete_account_error": "Error al eliminar la cuenta.",
   "profile_page.delete_account_success": "Cuenta eliminada correctamente. Cerrando sesión…",
+  "profile_page.delete_account_must_transfer": "Eres el propietario de una organización con otros miembros. Debes transferir la propiedad a otro miembro antes de eliminar tu cuenta.",
+  "profile_page.delete_account_go_to_org_settings": "Ir a Configuración de la organización",
   "system.detail_responding": "Respondiendo",
   "system.detail_no_response": "Sin respuesta",
   "system.detail_accessible": "Accesible",

@@ -206,7 +206,7 @@ class ProjectAccess:
     project: Optional[Project] = None
 
 
-def get_current_user(
+async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer),
     settings: Settings = Depends(get_settings_dependency),
 ) -> CurrentUser:
@@ -221,12 +221,18 @@ def get_current_user(
     )
     try:
         payload = handler.decode_token(credentials.credentials)
+        user_repo = SqlUserRepository()
+        user = await user_repo.get_by_id(payload.user_id)
+        if not user or not user.is_active:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
         return CurrentUser(
             user_id=payload.user_id,
             role=UserRole(payload.role),
             email=payload.email,
             organization_id=payload.organization_id,
         )
+    except HTTPException:
+        raise
     except ValueError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
 
