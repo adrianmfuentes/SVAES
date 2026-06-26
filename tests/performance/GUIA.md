@@ -87,8 +87,8 @@ locust -f tests/performance/locustfile.py --host=http://localhost:8000
 locust -f tests/performance/locustfile.py --host=http://localhost:8000 `
   --users 50 --spawn-rate 10 --headless --run-time 60s
 
-# Opcion C — WebLoadUser alternativo (del archivo test_rnf_coverage.py)
-locust -f tests/performance/test_rnf_coverage.py `
+# Opcion C — WebLoadUser (20 usuarios web, latencia <= 3s)
+locust -f tests/performance/locustfile.py WebLoadUser `
   --users 20 --spawn-rate 20 --headless --run-time 30s
 ```
 

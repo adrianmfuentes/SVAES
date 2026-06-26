@@ -32,6 +32,7 @@ const mockMembers: MockUser[] = [
   { id: 'user-1', email: 'admin@test.com', display_name: 'Admin User', role: 'MANAGER' },
   { id: 'user-2', email: 'op@test.com', display_name: 'Operator User', role: 'OPERATOR' },
   { id: 'user-3', email: 'op2@test.com', display_name: 'Operator User 2', role: 'OPERATOR' },
+  { id: 'user-4', email: 'orgadmin@test.com', display_name: 'Org Admin', role: 'ADMIN' },
 ];
 
 describe('OrgSettingsComponent', () => {
@@ -214,46 +215,86 @@ describe('OrgSettingsComponent', () => {
   });
 
   describe('remove member', () => {
-    it('should open confirm remove modal', () => {
+    beforeEach(() => {
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
+    });
+
+    it('should open confirm remove modal and clear error', () => {
+      component.removeError.set('previous error');
       const member = mockMembers[1];
       component.confirmRemoveMember(member);
       expect(component.memberToRemove()).toBe(member);
+      expect(component.removeError()).toBeNull();
     });
 
-    it('should cancel remove member', () => {
+    it('should cancel remove member and clear error', () => {
+      component.removeError.set('previous error');
       component.memberToRemove.set(mockMembers[1]);
       component.cancelRemoveMember();
       expect(component.memberToRemove()).toBeNull();
+      expect(component.removeError()).toBeNull();
     });
 
-    it('should remove member successfully', () => {
-      fixture.detectChanges();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
-
-      component.confirmRemoveMember(mockMembers[1]);
+    it('should remove OPERATOR member successfully (200)', () => {
+      const operator = mockMembers[1];
+      component.confirmRemoveMember(operator);
       component.removeMember();
 
-      const req = httpCtrl.expectOne(`/api/v1/organizations/org-1/users/${mockMembers[1].id}`);
+      const req = httpCtrl.expectOne(`/api/v1/organizations/org-1/users/${operator.id}`);
       expect(req.request.method).toBe('DELETE');
       req.flush({});
       fixture.detectChanges();
 
       expect(component.removing()).toBe(false);
-      expect(component.members()).toHaveLength(2);
+      expect(component.removeError()).toBeNull();
+      expect(component.members()).toHaveLength(3);
       expect(component.memberToRemove()).toBeNull();
     });
 
-    it('should handle remove error', () => {
-      fixture.detectChanges();
-      httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
-
-      component.confirmRemoveMember(mockMembers[1]);
+    it('should handle 403 when removing ADMIN member (forbidden)', () => {
+      const orgAdmin = mockMembers[3];
+      component.confirmRemoveMember(orgAdmin);
       component.removeMember();
 
-      httpCtrl.expectOne(`/api/v1/organizations/org-1/users/${mockMembers[1].id}`).flush('', { status: 500, statusText: 'Error' });
+      httpCtrl.expectOne(`/api/v1/organizations/org-1/users/${orgAdmin.id}`).flush(
+        { detail: 'Cannot remove admin' },
+        { status: 403, statusText: 'Forbidden' }
+      );
       fixture.detectChanges();
 
       expect(component.removing()).toBe(false);
+      expect(component.removeError()).toBe('org_settings.remove_member_forbidden');
+      expect(component.memberToRemove()).not.toBeNull();
+      expect(component.members()).toHaveLength(4);
+    });
+
+    it('should handle 404 when member not found', () => {
+      const operator = mockMembers[1];
+      component.confirmRemoveMember(operator);
+      component.removeMember();
+
+      httpCtrl.expectOne(`/api/v1/organizations/org-1/users/${operator.id}`).flush(
+        '',
+        { status: 404, statusText: 'Not Found' }
+      );
+      fixture.detectChanges();
+
+      expect(component.removing()).toBe(false);
+      expect(component.removeError()).toBe('org_settings.remove_member_not_found');
+      expect(component.memberToRemove()).not.toBeNull();
+    });
+
+    it('should handle generic error on 500', () => {
+      const operator = mockMembers[1];
+      component.confirmRemoveMember(operator);
+      component.removeMember();
+
+      httpCtrl.expectOne(`/api/v1/organizations/org-1/users/${operator.id}`).flush('', { status: 500, statusText: 'Error' });
+      fixture.detectChanges();
+
+      expect(component.removing()).toBe(false);
+      expect(component.removeError()).toBe('org_settings.remove_member_error');
     });
 
     it('should not remove if no member selected', () => {
@@ -340,7 +381,7 @@ describe('OrgSettingsComponent', () => {
       httpCtrl.expectOne('/api/v1/organizations/org-1/users').flush(mockMembers);
 
       const nonOwners = component.nonOwnerMembers();
-      expect(nonOwners).toHaveLength(2);
+      expect(nonOwners).toHaveLength(3);
       expect(nonOwners.every(m => m.role !== 'MANAGER')).toBe(true);
     });
   });

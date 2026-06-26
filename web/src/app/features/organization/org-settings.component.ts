@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
@@ -154,8 +154,9 @@ interface OrgUser {
           <button class="modal-close" (click)="cancelRemoveMember()">×</button>
         </div>
         <p class="modal-body-text">{{ 'org_settings.remove_member_confirm' | t: { name: memberToRemove()!.display_name } }}</p>
+        <div *ngIf="removeError()" class="error-banner error-sm">{{ removeError() }}</div>
         <div class="modal-footer">
-          <button class="btn-ghost" (click)="cancelRemoveMember()">{{ 'common.cancel' | t }}</button>
+          <button class="btn-ghost" (click)="cancelRemoveMember()" [disabled]="removing()" [title]="removing() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">{{ 'common.cancel' | t }}</button>
           <button class="btn-danger" (click)="removeMember()" [disabled]="removing()" [title]="removing() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
             {{ removing() ? ('common.loading' | t) : ('common.delete' | t) }}
           </button>
@@ -713,6 +714,7 @@ export class OrgSettingsComponent implements OnInit {
   // Remove member modal
   memberToRemove = signal<OrgUser | null>(null);
   removing = signal(false);
+  removeError = signal<string | null>(null);
 
   // Transfer ownership modal
   showTransferModal = signal(false);
@@ -784,10 +786,12 @@ export class OrgSettingsComponent implements OnInit {
   }
 
   confirmRemoveMember(member: OrgUser): void {
+    this.removeError.set(null);
     this.memberToRemove.set(member);
   }
 
   cancelRemoveMember(): void {
+    this.removeError.set(null);
     this.memberToRemove.set(null);
   }
 
@@ -795,13 +799,22 @@ export class OrgSettingsComponent implements OnInit {
     const member = this.memberToRemove();
     if (!member) return;
     this.removing.set(true);
+    this.removeError.set(null);
 
     this.http.delete(`/api/v1/organizations/${this.orgId}/users/${member.id}`)
-      .pipe(catchError(() => {
+      .pipe(catchError((err: HttpErrorResponse) => {
         this.removing.set(false);
+        if (err.status === 403) {
+          this.removeError.set(this.ts.translateInstant('org_settings.remove_member_forbidden'));
+        } else if (err.status === 404) {
+          this.removeError.set(this.ts.translateInstant('org_settings.remove_member_not_found'));
+        } else {
+          this.removeError.set(this.ts.translateInstant('org_settings.remove_member_error'));
+        }
         return of(null);
       }))
-      .subscribe(() => {
+      .subscribe(res => {
+        if (res === null) return;
         this.removing.set(false);
         this.members.update(members => members.filter(m => m.id !== member.id));
         this.memberToRemove.set(null);

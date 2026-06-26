@@ -89,56 +89,15 @@ async def _noop_lifespan(app):
 
 
 # ---------------------------------------------------------------------------
-# Locust user class (also usable with: locust -f test_rnf_coverage.py)
+# NOTE: The Locust load-test user (WebLoadUser) lives in locustfile.py and is
+# run via the `locust` CLI. It is NOT imported here on purpose: importing
+# locust triggers gevent's monkey.patch_all(), which corrupts the asyncio
+# event loop for every subsequent @pytest.mark.asyncio test in the same
+# process (they hang forever on Windows IOCP). The pytest check below
+# therefore validates the load class by SOURCE INSPECTION only.
 # ---------------------------------------------------------------------------
 
-try:
-    from locust import HttpUser, between, task as locust_task
-
-    class WebLoadUser(HttpUser):
-        """TC-PER-RNF02-01: 20 usuarios web concurrentes — latencia ≤3s (RNF-02).
-
-        Ejecutar con:
-            locust -f tests/performance/test_rnf_coverage.py --users 20 --spawn-rate 20 --run-time 30s
-        """
-
-        host = TARGET_HOST
-        wait_time = between(0.05, 0.2)
-        MAX_RESPONSE_MS = 3_000
-
-        @locust_task(3)
-        def dashboard_metrics(self):
-            """Solicitud al endpoint de métricas del dashboard."""
-            with self.client.get(
-                "/api/v1/dashboard/metrics",
-                name="TC-PER-RNF02-01 /dashboard/metrics",
-                catch_response=True,
-            ) as resp:
-                elapsed_ms = resp.elapsed.total_seconds() * 1_000
-                if elapsed_ms > self.MAX_RESPONSE_MS:
-                    resp.failure(f"Dashboard > 3 s: {elapsed_ms:.0f} ms")
-                else:
-                    resp.success()
-
-        @locust_task(1)
-        def health(self):
-            """Solicitud al endpoint de salud."""
-            with self.client.get(
-                "/health",
-                name="TC-PER-RNF02-01 /health",
-                catch_response=True,
-            ) as resp:
-                elapsed_ms = resp.elapsed.total_seconds() * 1_000
-                if elapsed_ms > self.MAX_RESPONSE_MS:
-                    resp.failure(f"Health > 3 s: {elapsed_ms:.0f} ms")
-                else:
-                    resp.success()
-
-    _LOCUST_AVAILABLE = True
-
-except ImportError:
-    _LOCUST_AVAILABLE = False
-    WebLoadUser = None  # type: ignore[assignment, misc]
+_LOCUSTFILE = Path(__file__).resolve().parent / "locustfile.py"
 
 
 # ===========================================================================
@@ -205,21 +164,45 @@ async def test_tc_per_rnf01_01_verification_10_rules_under_30s():
 def test_tc_per_rnf02_01_locust_web_load_20_users_class_defined():
     """TC-PER-RNF02-01: Locust WebLoadUser con umbral 3s definido (RNF-02).
 
-    Prueba de carga real: locust -f tests/performance/test_rnf_coverage.py
+    Prueba de carga real: locust -f tests/performance/locustfile.py WebLoadUser
     --users 20 --spawn-rate 20 --headless --run-time 30s
+
+    Se valida por inspección de código fuente (sin importar locust) porque
+    importar locust dispara gevent.monkey.patch_all(), que rompe el bucle de
+    eventos asyncio de las pruebas async siguientes (RNF-02).
     """
-    if not _LOCUST_AVAILABLE:
-        pytest.skip("locust not installed")
+    assert _LOCUSTFILE.exists(), f"locustfile.py no encontrado en {_LOCUSTFILE}"
+    source = _LOCUSTFILE.read_text(encoding="utf-8")
 
-    assert WebLoadUser is not None
-    assert WebLoadUser.MAX_RESPONSE_MS == 3_000, "Umbral de latencia debe ser 3000ms"
-    assert hasattr(WebLoadUser, "dashboard_metrics"), "Falta tarea dashboard_metrics"
-    assert hasattr(WebLoadUser, "health"), "Falta tarea health"
+    # The WebLoadUser load-test class must be declared in the locustfile
+    assert "class WebLoadUser(HttpUser):" in source, (
+        "Falta la clase WebLoadUser en locustfile.py (RNF-02)"
+    )
 
-    # Verify the task has the locust @task decorator (weight attribute)
-    assert getattr(WebLoadUser.dashboard_metrics, "_locust_task", None) is not None or callable(
-        WebLoadUser.dashboard_metrics
-    ), "dashboard_metrics debe ser una tarea Locust válida"
+    # Parse with AST to assert structure precisely
+    tree = ast.parse(source)
+    web_load_user = next(
+        (
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ClassDef) and node.name == "WebLoadUser"
+        ),
+        None,
+    )
+    assert web_load_user is not None, "WebLoadUser no es una clase válida (RNF-02)"
+
+    method_names = {
+        n.name
+        for n in web_load_user.body
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    assert "dashboard_metrics" in method_names, "Falta tarea dashboard_metrics (RNF-02)"
+    assert "health" in method_names, "Falta tarea health (RNF-02)"
+
+    # 3-second latency threshold must be defined
+    assert "MAX_RESPONSE_MS = 3_000" in source or "MAX_RESPONSE_MS = 3000" in source, (
+        "Umbral de latencia debe ser 3000ms (RNF-02)"
+    )
 
 
 @pytest.mark.asyncio
@@ -361,7 +344,9 @@ async def test_tc_fia_rnf09_01_connector_failure_continues_verification():
 
     with (
         patch("infrastructure.workers.verification_worker.SqlConnectorRepository", return_value=mock_repo),
-        patch("infrastructure.workers.verification_worker.Fernet") as mock_fernet,
+        # Fernet is imported lazily inside _fetch_artifacts (from cryptography.fernet
+        # import Fernet), so it must be patched at its source module, not on the worker.
+        patch("cryptography.fernet.Fernet") as mock_fernet,
     ):
         mock_fernet.return_value.decrypt.return_value = encrypted_config
 
@@ -891,11 +876,16 @@ async def test_tc_org_rnf38_01_gdpr_endpoints_functional():
                 f"GDPR export returned {export_resp.status_code} (RNF-38)"
             )
             export_data = export_resp.json()
-            assert "email" in export_data, "Export must contain email field (RNF-38)"
-            assert export_data["email"] == "test@svaes.test"
+            # GDPR Art.20 export wraps the subject's data under a "user" object
+            # alongside schema_version / export_format metadata.
+            assert "user" in export_data, "Export must contain user object (RNF-38)"
+            assert "email" in export_data["user"], "Export user must contain email field (RNF-38)"
+            assert export_data["user"]["email"] == "test@svaes.test"
 
-            # GDPR Art.17 — right to erasure (sends password in body)
-            delete_resp = await client.delete(
+            # GDPR Art.17 — right to erasure (sends password in body).
+            # httpx's .delete() has no `json` param, so use .request() to send a body.
+            delete_resp = await client.request(
+                "DELETE",
                 "/api/v1/users/me/account",
                 json={"password": "TestPass1!"},
                 headers={"Authorization": "Bearer test-token"},

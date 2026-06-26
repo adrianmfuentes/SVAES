@@ -37,6 +37,8 @@ dev = [
     "faker",
     "testcontainers",
     "locust>=2.44.4",
+    "aiosqlite>=0.22.1",
+    "respx>=0.22.0",
 ]
 
 [tool.pytest.ini_options]
