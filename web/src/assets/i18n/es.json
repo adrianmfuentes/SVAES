@@ -991,6 +991,7 @@
   "rule_result.WARNING": "Advertencia",
   "rule_result.ERROR": "Error",
   "rule_result.NOT_EVALUATED": "No evaluado",
+  "rule_result.NO_EVALUADA": "No evaluada",
   "severity.INFO": "Informacion",
   "severity.LOW": "Baja",
   "severity.MEDIUM": "Media",

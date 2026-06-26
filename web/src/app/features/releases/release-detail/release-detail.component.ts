@@ -207,7 +207,7 @@ interface VerificationResult {
                   @for (rule of result.rule_results; track rule.rule_id; let i = $index) {
                     <tr
                       (click)="toggleEvidence(i)">
-                      <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm">{{ rule.rule_id | slice:0:8 }}</code></td>
+                      <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm">{{ rule.rule_id }}</code></td>
                       <td class="cell-primary" [attr.data-label]="'release_detail.rule_name' | t">{{ rule.rule_name || ('common.dash' | t) }}</td>
                       <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ rule.connector || ('common.dash' | t) }}</td>
                       <td [attr.data-label]="'release_detail.rule_result' | t">

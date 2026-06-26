@@ -22,7 +22,7 @@ from infrastructure.secondary.database.repositories.profile_repository import Sq
 from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
 from infrastructure.secondary.connectors import create_registered_connector_registry
 from infrastructure.secondary.database.repositories.connector_repository import SqlConnectorRepository
-from core.rule_names import RULE_NAMES
+from core.rule_names import RULE_NAMES, RULE_DEFAULT_ARTIFACT_TYPES
 
 
 def _map_severity_to_engine(severity: SeverityType) -> str:
@@ -149,15 +149,38 @@ async def _build_connector_names(profile: Any) -> dict:
     return connector_names
 
 
-def _enrich_rule_results(result_data: dict, rule_lookup: dict, connector_names: dict) -> None:
+async def _build_artifact_type_connector_map(release_artifacts: list) -> dict[str, str]:
+    connector_repo = SqlConnectorRepository()
+    artifact_type_to_connector: dict[str, str] = {}
+    seen: set[uuid.UUID] = set()
+    for artifact in release_artifacts:
+        if artifact.connector_instance_id and artifact.connector_instance_id not in seen:
+            seen.add(artifact.connector_instance_id)
+            connector = await connector_repo.get_by_id(artifact.connector_instance_id)
+            if connector and artifact.artifact_type not in artifact_type_to_connector:
+                artifact_type_to_connector[artifact.artifact_type] = connector.name
+    return artifact_type_to_connector
+
+
+def _enrich_rule_results(
+    result_data: dict,
+    rule_lookup: dict,
+    connector_names: dict,
+    artifact_type_connector: dict[str, str] | None = None,
+) -> None:
     for rule_result in result_data.get("rule_results", []):
         rid = rule_result.get("rule_id", "")
         rule_result["rule_name"] = RULE_NAMES.get(rid, rid)
         profile_rule = rule_lookup.get(rid)
+        connector = ""
         if profile_rule and profile_rule.connector_instance_id:
-            rule_result["connector"] = connector_names.get(profile_rule.connector_instance_id, "")
-        else:
-            rule_result["connector"] = ""
+            connector = connector_names.get(profile_rule.connector_instance_id, "")
+        elif artifact_type_connector:
+            params = profile_rule.params if profile_rule else {}
+            artifact_type = params.get("artifact_type") or RULE_DEFAULT_ARTIFACT_TYPES.get(rid)
+            if artifact_type:
+                connector = artifact_type_connector.get(artifact_type, "")
+        rule_result["connector"] = connector
         rule_result["evidence"] = rule_result.get("message", "")
 
 
@@ -215,7 +238,8 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
 
     rule_lookup = {rule.rule_template: rule for rule in profile.rules}
     connector_names = await _build_connector_names(profile)
-    _enrich_rule_results(result_data, rule_lookup, connector_names)
+    artifact_type_connector = await _build_artifact_type_connector_map(release.artifacts or [])
+    _enrich_rule_results(result_data, rule_lookup, connector_names, artifact_type_connector)
 
     save_stage = engine_stage + 1
     _report_progress(celery_task, current=save_stage, total=total_stages, stage='saving_results')
