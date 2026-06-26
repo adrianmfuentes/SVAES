@@ -77,8 +77,8 @@ jobs:
           POSTGRES_PASSWORD: svaes
         run: uv run --frozen --no-build --project api --extra dev pytest tests/integration tests/security --cov=api/src --cov-append --cov-report=xml
 
-      - name: Run performance structure tests
-        run: uv run --frozen --no-build --project api --extra dev pytest tests/performance/test_coverage_threshold.py -v --tb=short
+      - name: Run performance structure and RNF tests
+        run: uv run --frozen --no-build --project api --extra dev pytest tests/performance/test_coverage_threshold.py tests/performance/test_rnf_coverage.py tests/performance/test_rnf_security_rf.py -v --tb=short
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
