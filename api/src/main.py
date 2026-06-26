@@ -7,7 +7,7 @@ from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -99,6 +99,18 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
     max_age=600,
 )
+
+if settings.is_production:
+    @app.middleware("http")
+    async def https_redirect(request: Request, call_next):
+        # Respect X-Forwarded-Proto set by the TLS-terminating reverse proxy.
+        # Only redirect when the original client request arrived over plain HTTP.
+        proto = request.headers.get("X-Forwarded-Proto", "https")
+        if proto == "http":
+            url = request.url.replace(scheme="https")
+            return RedirectResponse(url=str(url), status_code=307)
+        return await call_next(request)
+
 
 # ---------------------------------------------------------------------------
 # Global domain exception handlers
