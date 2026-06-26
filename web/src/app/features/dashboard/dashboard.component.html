@@ -37,20 +37,20 @@
     </app-kpi-card>
   </div>
 
-  <!-- Temporal chart (empty when no historical data available) -->
+  <!-- Temporal chart -->
   <app-success-rate-chart
-    [data]="[]"
+    [data]="metrics()?.temporal_data ?? []"
     [loading]="metricsLoading()"
-    [error]="null">
+    [error]="metricsError()">
   </app-success-rate-chart>
 
   <!-- Bottom row -->
   <div class="bottom-row">
     <app-top-failed-rules
-      [rules]="[]"
-      [activePeriod]="''"
+      [rules]="metrics()?.top_failed_rules ?? []"
+      [activePeriod]="'30d'"
       [loading]="metricsLoading()"
-      [error]="null">
+      [error]="metricsError()">
     </app-top-failed-rules>
 
     <app-recent-releases-table

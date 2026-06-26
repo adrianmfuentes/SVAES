@@ -31,6 +31,8 @@ describe('DashboardService', () => {
         pending_releases: 10,
         total_verifications: 200,
         pass_rate: 80,
+        temporal_data: [],
+        top_failed_rules: [],
       };
 
       const promise = firstValueFrom(service.getMetrics());

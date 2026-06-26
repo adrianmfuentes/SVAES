@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
 
+export interface TemporalPoint { date: string; valid: number; with_warnings: number; invalid: number; }
+export interface FailedRule { rule_id: string; rule_name: string; count: number; percentage: number; }
+
 export interface DashboardMetrics {
   total_releases: number;
   valid_releases: number;
@@ -10,6 +13,8 @@ export interface DashboardMetrics {
   pending_releases: number;
   total_verifications: number;
   pass_rate: number;
+  temporal_data: TemporalPoint[];
+  top_failed_rules: FailedRule[];
 }
 
 export interface Project {
@@ -26,10 +31,6 @@ export interface RecentRelease {
   created_at: string;
   project_name?: string;
 }
-
-// Kept for sub-component type compatibility — backend does not provide these
-export interface TemporalPoint { date: string; valid: number; with_warnings: number; invalid: number; }
-export interface FailedRule { rule_id: string; rule_name: string; count: number; percentage: number; }
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {

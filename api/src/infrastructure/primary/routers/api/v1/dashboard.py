@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any, List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel
@@ -18,6 +18,8 @@ class DashboardMetricsResponse(BaseModel):
     pending_releases: int
     total_verifications: int
     pass_rate: float
+    temporal_data: List[Any] = []
+    top_failed_rules: List[Any] = []
 
 
 @router.get("/api/v1/dashboard/metrics")
@@ -68,6 +70,8 @@ async def get_dashboard_metrics(
             pending_releases=metrics.pending_releases,
             total_verifications=metrics.total_verifications,
             pass_rate=metrics.pass_rate,
+            temporal_data=metrics.temporal_data,
+            top_failed_rules=metrics.top_failed_rules,
         )
     except HTTPException:
         raise

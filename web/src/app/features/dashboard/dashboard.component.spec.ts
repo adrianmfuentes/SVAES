@@ -19,6 +19,8 @@ const mockMetrics: DashboardMetrics = {
   pending_releases: 1,
   total_verifications: 20,
   pass_rate: 80,
+  temporal_data: [],
+  top_failed_rules: [],
 };
 
 const mockReleases: RecentRelease[] = [
