@@ -558,11 +558,13 @@ def get_verification_service(
     verification_repo = SqlVerificationResultRepository()
     task_queue = CeleryTaskQueue()
     connector_registry = create_registered_connector_registry()
+    connector_repo = SqlConnectorRepository()
     return VerificationService(
         release_repository=release_repo,
         verification_repository=verification_repo,
         task_queue=task_queue,
         connector_registry=connector_registry,
+        connector_repository=connector_repo,
     )
 
 

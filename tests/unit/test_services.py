@@ -1565,8 +1565,9 @@ class TestDashboardMetrics:
         from domain.enums import ReleaseStatus, VerdictType
         rel = _make_release(status=ReleaseStatus.VALIDA)
         rel_repo.list_by_organization = AsyncMock(return_value=[rel])
-        valid_r = MagicMock(verdict=VerdictType.VALID)
-        invalid_r = MagicMock(verdict=VerdictType.INVALID)
+        from datetime import datetime
+        valid_r = MagicMock(verdict=VerdictType.VALID, executed_at=datetime(2024, 1, 15))
+        invalid_r = MagicMock(verdict=VerdictType.INVALID, executed_at=datetime(2024, 1, 15))
         ver_repo.find_by_release = AsyncMock(return_value=[valid_r, invalid_r])
         result = await service.execute(uuid4())
         assert result.pass_rate == 50.0

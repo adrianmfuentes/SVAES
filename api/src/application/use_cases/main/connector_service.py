@@ -1,3 +1,4 @@
+import ast
 from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
@@ -126,7 +127,7 @@ class ConnectorService(IConnectorService):
 
         connection_ok = False
         try:
-            decrypted_config = eval(fernet.decrypt(connector.encrypted_credentials).decode())
+            decrypted_config = ast.literal_eval(fernet.decrypt(connector.encrypted_credentials).decode())
             connection_ok = await connector_impl.test_connection(decrypted_config)
         except Exception as exc:
             _log.exception("Connector test failed: id=%s org=%s error=%s", connector_id, connector.organization_id, exc)
@@ -220,7 +221,7 @@ class ConnectorService(IConnectorService):
 
         fernet = Fernet(settings.encryption_key.encode())  # pyright: ignore[reportOptionalMemberAccess]
         try:
-            config = eval(fernet.decrypt(connector.encrypted_credentials).decode())
+            config = ast.literal_eval(fernet.decrypt(connector.encrypted_credentials).decode())
         except Exception as exc:
             _log.error("browse: credential decrypt failed connector_id=%s: %s", connector_id, exc)
             return []

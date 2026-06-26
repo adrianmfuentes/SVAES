@@ -1,8 +1,10 @@
+import ast
 from typing import List, Optional
 from uuid import UUID
 from application.ports.input.i_verification_service import IVerificationService
 from application.ports.output.i_verification_result_repository import IVerificationResultRepository
 from application.ports.output.i_release_repository import IReleaseRepository
+from application.ports.output.i_connector_repository import IConnectorRepository
 from application.ports.output.i_task_queue import ITaskQueue
 from application.ports.output.i_connector_registry import IConnectorRegistry
 from application.ports.output.i_connector import IConnector
@@ -10,6 +12,7 @@ from domain.entities.verification_result import VerificationResult
 from domain.enums import ReleaseStatus
 from domain.exceptions import ValidationError
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
+from core.config import settings
 from core.logger import get_logger
 
 
@@ -25,11 +28,13 @@ class VerificationService(IVerificationService):
         verification_repository: IVerificationResultRepository,
         task_queue: ITaskQueue,
         connector_registry: IConnectorRegistry,
+        connector_repository: Optional[IConnectorRepository] = None,
     ):
         self._release_repo = release_repository
         self._verification_repo = verification_repository
         self._task_queue = task_queue
         self._connector_registry = connector_registry
+        self._connector_repo = connector_repository
 
 
     async def launch_verification(self, release_id: UUID, requested_by: UUID) -> str:
@@ -105,18 +110,32 @@ class VerificationService(IVerificationService):
         for artifact in release.artifacts:
             try:
                 connector_impl = self._connector_registry.get_by_implementation(artifact.connector_implementation)
-                if connector_impl:
-                    config = {}
-                    data = await connector_impl.fetch_artifact(artifact.external_ref, config)
-                    results.append({
-                        "artifact_id": str(artifact.id),
-                        "type": artifact.artifact_type,
-                        "external_ref": artifact.external_ref,
-                        "connector_implementation": artifact.connector_implementation,
-                        "data": data,
-                    })
+                if not connector_impl:
+                    continue
+
+                config: dict = {}
+                if self._connector_repo:
+                    from cryptography.fernet import Fernet
+                    fernet = Fernet(settings.encryption_key.encode())  # pyright: ignore[reportOptionalMemberAccess]
+                    connector_instance = await self._connector_repo.get_by_id(artifact.connector_instance_id)
+                    if connector_instance:
+                        config = ast.literal_eval(
+                            fernet.decrypt(connector_instance.encrypted_credentials).decode()
+                        )
+
+                data = await connector_impl.fetch_artifact(artifact.external_ref, config)
+                results.append({
+                    "artifact_id": str(artifact.id),
+                    "type": artifact.artifact_type,
+                    "external_ref": artifact.external_ref,
+                    "connector_implementation": artifact.connector_implementation,
+                    "data": data,
+                })
             except Exception:
-                pass
+                _log.warning(
+                    "fetch_artifacts_via_connectors: artifact %s failed (release=%s, impl=%s)",
+                    artifact.id, release_id, artifact.connector_implementation,
+                )
         return results
 
 
