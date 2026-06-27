@@ -8,8 +8,7 @@
 
 ## Sistema de Verificación Automática de Entregas de Software
 
-Trabajo Fin de Grado — Finalizado
-Grado en Ingeniería Informática del Software
+Trabajo Fin de Grado — Grado en Ingeniería Informática del Software
 Universidad de Oviedo
 
 Autor: Adrián Martínez Fuentes
