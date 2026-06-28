@@ -16,6 +16,7 @@ _LABEL_BASE_URL = "connector_field.base_url"
 _LABEL_API_KEY = "connector_field.api_key"
 _LABEL_PERSONAL_ACCESS_TOKEN = "connector_field.personal_access_token"
 _LABEL_PROJECT_ID = "connector_field.project_id"
+_LABEL_REPOSITORY = "connector_field.repository"
 _URL_ATLASSIAN_API = "https://api.atlassian.com"
 
 class ConnectorCreateRequest(BaseModel):
@@ -106,18 +107,18 @@ def _get_config_schema(implementation: str) -> dict:
         "GITHUB": {
             "token": {"type": "string", "label": _LABEL_PERSONAL_ACCESS_TOKEN, "required": True, "sensitive": True},
             "owner": {"type": "string", "label": "connector_field.owner_org", "required": False},
-            "repo": {"type": "string", "label": "connector_field.repository", "required": False},
+            "repo": {"type": "string", "label": _LABEL_REPOSITORY, "required": False},
             "base_url": {"type": "string", "label": _LABEL_BASE_URL, "required": False, "default": "https://api.github.com"},
         },
         "BITBUCKET": {
             "token": {"type": "string", "label": "connector_field.app_password", "required": True, "sensitive": True},
             "owner": {"type": "string", "label": "connector_field.workspace", "required": False},
-            "repo": {"type": "string", "label": "connector_field.repository", "required": False},
+            "repo": {"type": "string", "label": _LABEL_REPOSITORY, "required": False},
         },
         "GITEA": {
             "token": {"type": "string", "label": "connector_field.access_token", "required": True, "sensitive": True},
             "owner": {"type": "string", "label": "connector_field.owner_org", "required": False},
-            "repo": {"type": "string", "label": "connector_field.repository", "required": False},
+            "repo": {"type": "string", "label": _LABEL_REPOSITORY, "required": False},
             "base_url": {"type": "string", "label": _LABEL_BASE_URL, "required": True},
         },
         "CONFLUENCE": {
