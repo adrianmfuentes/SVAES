@@ -110,10 +110,10 @@ interface AuditLogsResponse {
             <tbody>
               <tr *ngFor="let log of paginated()">
                 <td [attr.data-label]="'logs.col_timestamp' | t"><code class="mono-sm">{{ log.timestamp | date:'dd/MM/yy HH:mm:ss' }}</code></td>
-                <td [attr.data-label]="'logs.col_category' | t"><span class="category-chip">{{ log.category }}</span></td>
-                <td class="cell-action" [attr.data-label]="'logs.col_action' | t">{{ log.action }}</td>
+                <td [attr.data-label]="'logs.col_category' | t"><span class="category-chip">{{ 'logs.category_' + log.category | t }}</span></td>
+                <td class="cell-action" [attr.data-label]="'logs.col_action' | t">{{ 'audit_action.' + log.action | t }}</td>
                 <td [attr.data-label]="'logs.col_actor' | t"><code class="mono-sm">{{ maskId(log.actor_id) }}</code></td>
-                <td class="cell-muted" [attr.data-label]="'logs.col_role' | t">{{ log.actor_role }}</td>
+                <td class="cell-muted" [attr.data-label]="'logs.col_role' | t">{{ 'logs.actor_role_' + log.actor_role | t }}</td>
                 <td [attr.data-label]="'logs.col_result' | t">
                   <span class="result-badge" [class]="'result-' + log.result">
                     {{ resultLabel(log.result) }}

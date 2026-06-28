@@ -10,12 +10,12 @@ from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Connectors"])
 
-_LABEL_EMAIL_ATLASSIAN = "Email de Atlassian"
-_LABEL_API_TOKEN = "API Token"
-_LABEL_BASE_URL = "Base URL"
-_LABEL_API_KEY = "API Key"
-_LABEL_PERSONAL_ACCESS_TOKEN = "Personal Access Token"
-_LABEL_PROJECT_ID = "Project ID"
+_LABEL_EMAIL_ATLASSIAN = "connector_field.atlassian_email"
+_LABEL_API_TOKEN = "connector_field.api_token"
+_LABEL_BASE_URL = "connector_field.base_url"
+_LABEL_API_KEY = "connector_field.api_key"
+_LABEL_PERSONAL_ACCESS_TOKEN = "connector_field.personal_access_token"
+_LABEL_PROJECT_ID = "connector_field.project_id"
 _URL_ATLASSIAN_API = "https://api.atlassian.com"
 
 class ConnectorCreateRequest(BaseModel):
@@ -82,7 +82,7 @@ def _get_config_schema(implementation: str) -> dict:
         "JIRA": {
             "email": {"type": "string", "label": _LABEL_EMAIL_ATLASSIAN, "required": True},
             "api_token": {"type": "string", "label": _LABEL_API_TOKEN, "required": True, "sensitive": True},
-            "cloud_id": {"type": "string", "label": "Cloud ID", "required": False},
+            "cloud_id": {"type": "string", "label": "connector_field.cloud_id", "required": False},
             "base_url": {"type": "string", "label": _LABEL_BASE_URL, "required": False, "default": _URL_ATLASSIAN_API},
         },
         "LINEAR": {
@@ -90,13 +90,13 @@ def _get_config_schema(implementation: str) -> dict:
         },
         "TRELLO": {
             "api_key": {"type": "string", "label": _LABEL_API_KEY, "required": True, "sensitive": True},
-            "token": {"type": "string", "label": "Token", "required": True, "sensitive": True},
-            "board_id": {"type": "string", "label": "Board ID", "required": False},
+            "token": {"type": "string", "label": "connector_field.token", "required": True, "sensitive": True},
+            "board_id": {"type": "string", "label": "connector_field.board_id", "required": False},
         },
         "ASANA": {
             "token": {"type": "string", "label": _LABEL_PERSONAL_ACCESS_TOKEN, "required": True, "sensitive": True},
-            "workspace": {"type": "string", "label": "Workspace GID", "required": False},
-            "project_gid": {"type": "string", "label": "Project GID", "required": False},
+            "workspace": {"type": "string", "label": "connector_field.workspace_gid", "required": False},
+            "project_gid": {"type": "string", "label": "connector_field.project_gid", "required": False},
         },
         "GITLAB": {
             "token": {"type": "string", "label": _LABEL_PERSONAL_ACCESS_TOKEN, "required": True, "sensitive": True},
@@ -105,30 +105,30 @@ def _get_config_schema(implementation: str) -> dict:
         },
         "GITHUB": {
             "token": {"type": "string", "label": _LABEL_PERSONAL_ACCESS_TOKEN, "required": True, "sensitive": True},
-            "owner": {"type": "string", "label": "Owner/Organization", "required": False},
-            "repo": {"type": "string", "label": "Repository", "required": False},
+            "owner": {"type": "string", "label": "connector_field.owner_org", "required": False},
+            "repo": {"type": "string", "label": "connector_field.repository", "required": False},
             "base_url": {"type": "string", "label": _LABEL_BASE_URL, "required": False, "default": "https://api.github.com"},
         },
         "BITBUCKET": {
-            "token": {"type": "string", "label": "App Password", "required": True, "sensitive": True},
-            "owner": {"type": "string", "label": "Workspace", "required": False},
-            "repo": {"type": "string", "label": "Repository", "required": False},
+            "token": {"type": "string", "label": "connector_field.app_password", "required": True, "sensitive": True},
+            "owner": {"type": "string", "label": "connector_field.workspace", "required": False},
+            "repo": {"type": "string", "label": "connector_field.repository", "required": False},
         },
         "GITEA": {
-            "token": {"type": "string", "label": "Access Token", "required": True, "sensitive": True},
-            "owner": {"type": "string", "label": "Owner/Organization", "required": False},
-            "repo": {"type": "string", "label": "Repository", "required": False},
+            "token": {"type": "string", "label": "connector_field.access_token", "required": True, "sensitive": True},
+            "owner": {"type": "string", "label": "connector_field.owner_org", "required": False},
+            "repo": {"type": "string", "label": "connector_field.repository", "required": False},
             "base_url": {"type": "string", "label": _LABEL_BASE_URL, "required": True},
         },
         "CONFLUENCE": {
             "email": {"type": "string", "label": _LABEL_EMAIL_ATLASSIAN, "required": True},
             "api_token": {"type": "string", "label": _LABEL_API_TOKEN, "required": True, "sensitive": True},
-            "base_url": {"type": "string", "label": "Confluence URL", "required": True},
-            "space_key": {"type": "string", "label": "Space Key", "required": False},
+            "base_url": {"type": "string", "label": "connector_field.confluence_url", "required": True},
+            "space_key": {"type": "string", "label": "connector_field.space_key", "required": False},
         },
         "NOTION": {
-            "token": {"type": "string", "label": "Integration Token", "required": True, "sensitive": True},
-            "database_id": {"type": "string", "label": "Database ID", "required": False},
+            "token": {"type": "string", "label": "connector_field.integration_token", "required": True, "sensitive": True},
+            "database_id": {"type": "string", "label": "connector_field.database_id", "required": False},
         },
         "WIKIJS": {
             "token": {"type": "string", "label": _LABEL_API_TOKEN, "required": True, "sensitive": True},
@@ -140,33 +140,33 @@ def _get_config_schema(implementation: str) -> dict:
         },
         "CLICKUP": {
             "token": {"type": "string", "label": _LABEL_API_TOKEN, "required": True, "sensitive": True},
-            "team_id": {"type": "string", "label": "Team ID", "required": True},
-            "list_id": {"type": "string", "label": "List ID", "required": False},
+            "team_id": {"type": "string", "label": "connector_field.team_id", "required": True},
+            "list_id": {"type": "string", "label": "connector_field.list_id", "required": False},
         },
         "TAIGA": {
-            "token": {"type": "string", "label": "Auth Token", "required": True, "sensitive": True},
-            "project_slug": {"type": "string", "label": "Project Slug", "required": False},
+            "token": {"type": "string", "label": "connector_field.auth_token", "required": True, "sensitive": True},
+            "project_slug": {"type": "string", "label": "connector_field.project_slug", "required": False},
             "project": {"type": "string", "label": _LABEL_PROJECT_ID, "required": False},
         },
         "PLANE": {
             "api_key": {"type": "string", "label": _LABEL_API_KEY, "required": True, "sensitive": True},
-            "instance_url": {"type": "string", "label": "Instance URL (dejar vacío para Plane Cloud)", "required": False, "default": "https://api.plane.so"},
-            "workspace": {"type": "string", "label": "Workspace Slug", "required": True},
+            "instance_url": {"type": "string", "label": "connector_field.instance_url_plane", "required": False, "default": "https://api.plane.so"},
+            "workspace": {"type": "string", "label": "connector_field.workspace_slug", "required": True},
             "project": {"type": "string", "label": _LABEL_PROJECT_ID, "required": False},
         },
         "MIRO": {
-            "token": {"type": "string", "label": "Access Token", "required": True, "sensitive": True},
+            "token": {"type": "string", "label": "connector_field.access_token", "required": True, "sensitive": True},
         },
         "JIRA_SM": {
             "email": {"type": "string", "label": _LABEL_EMAIL_ATLASSIAN, "required": True},
             "api_token": {"type": "string", "label": _LABEL_API_TOKEN, "required": True, "sensitive": True},
-            "site_id": {"type": "string", "label": "Site ID", "required": False},
-            "service_desk_id": {"type": "string", "label": "Service Desk ID", "required": False},
+            "site_id": {"type": "string", "label": "connector_field.site_id", "required": False},
+            "service_desk_id": {"type": "string", "label": "connector_field.service_desk_id", "required": False},
             "base_url": {"type": "string", "label": _LABEL_BASE_URL, "required": False, "default": _URL_ATLASSIAN_API},
         },
         "GLPI": {
-            "user_token": {"type": "string", "label": "User Token", "required": True, "sensitive": True},
-            "app_token": {"type": "string", "label": "App Token", "required": True, "sensitive": True},
+            "user_token": {"type": "string", "label": "connector_field.user_token", "required": True, "sensitive": True},
+            "app_token": {"type": "string", "label": "connector_field.app_token", "required": True, "sensitive": True},
             "base_url": {"type": "string", "label": _LABEL_BASE_URL, "required": True},
         },
         "ZAMMAD": {

@@ -25,6 +25,30 @@ from infrastructure.secondary.database.repositories.connector_repository import 
 from core.rule_names import RULE_NAMES, RULE_DEFAULT_ARTIFACT_TYPES
 
 
+RULE_OK_EVIDENCE: dict[str, str] = {
+    "RV-01": "rule_evidence.ok.RV-01",
+    "RV-02": "rule_evidence.ok.RV-02",
+    "RV-03": "rule_evidence.ok.RV-03",
+    "RV-04": "rule_evidence.ok.RV-04",
+    "RV-05": "rule_evidence.ok.RV-05",
+    "RV-06": "rule_evidence.ok.RV-06",
+    "RV-07": "rule_evidence.ok.RV-07",
+    "RV-08": "rule_evidence.ok.RV-08",
+    "RV-09": "rule_evidence.ok.RV-09",
+    "RV-10": "rule_evidence.ok.RV-10",
+    "has_duplicated_code": "rule_evidence.ok.has_duplicated_code",
+    "has_high_severity_vulnerabilities": "rule_evidence.ok.has_high_severity_vulnerabilities",
+    "has_critical_vulnerabilities": "rule_evidence.ok.has_critical_vulnerabilities",
+    "has_open_high_priority_issues": "rule_evidence.ok.has_open_high_priority_issues",
+    "has_code_smells": "rule_evidence.ok.has_code_smells",
+    "has_security_hotspots": "rule_evidence.ok.has_security_hotspots",
+    "has_uncovered_code": "rule_evidence.ok.has_uncovered_code",
+    "has_blocking_issues": "rule_evidence.ok.has_blocking_issues",
+    "meets_minimum_test_coverage": "rule_evidence.ok.meets_minimum_test_coverage",
+    "meets_maximum_complexity": "rule_evidence.ok.meets_maximum_complexity",
+}
+
+
 def _map_severity_to_engine(severity: SeverityType) -> str:
     return rule_severity_to_string(severity_to_rule_severity(severity))
 
@@ -195,6 +219,8 @@ def _enrich_rule_results(
                 connector = artifact_type_connector.get(artifact_type, "")
         rule_result["connector"] = connector
         rule_result["evidence"] = rule_result.get("message", "")
+        if not rule_result["evidence"] and rule_result.get("status") == "OK":
+            rule_result["evidence"] = RULE_OK_EVIDENCE.get(rid, "rule_evidence.ok.default")
 
 
 async def _notify_user(release_id: uuid.UUID, release: Any, saved_result: Any) -> None:
@@ -260,11 +286,15 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
             "rule_name": "Error al recuperar artefacto",
             "status": "WARNING",
             "message": (
-                f"No se pudo obtener el artefacto {fe['artifact_id']} "
-                f"(tipo: {fe['artifact_type']}, conector: {fe['connector']}): {fe['error']}"
+                f"No se pudo obtener el artefacto '{fe['artifact_id']}' "
+                f"(tipo: {fe['artifact_type']}) desde el conector '{fe['connector']}': {fe['error']}"
             ),
             "connector": fe["connector"],
-            "evidence": fe["error"],
+            "evidence": (
+                f"No se pudo recuperar el artefacto '{fe['artifact_id']}' "
+                f"de tipo {fe['artifact_type']} desde el conector '{fe['connector']}'. "
+                f"Verifique que la referencia externa sea válida y que el conector esté activo."
+            ),
         })
 
     save_stage = engine_stage + 1

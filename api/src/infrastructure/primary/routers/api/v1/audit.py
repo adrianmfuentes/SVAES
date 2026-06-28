@@ -181,10 +181,10 @@ async def get_audit_logs(
         logs.append(AuditLogEntry(
             id=str(row.id),
             timestamp=row.timestamp.isoformat(),
-            action=EVENT_LABELS.get(row.event, row.event),
+            action=row.event,
             category=EVENT_TO_CATEGORY.get(row.event, "config"),
             actor_id=_mask_uuid(str(row.user_id)),
-            actor_role="enmascarado",
+            actor_role="masked",
             target_type=row.resource_type,
             target_id=_mask_uuid(str(row.resource_id)) if row.resource_id else None,
             result=_derive_result(row.event),

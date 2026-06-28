@@ -138,17 +138,17 @@ interface ConnectorTypesResponse {
           </div>
           <ng-container *ngIf="selectedImplementation() && currentConfigSchema()">
             <div class="form-group" *ngFor="let field of getConfigFields()" [ngClass]="{'has-error': shouldShowError(field.key)}">
-              <label for="field-{{ field.key }}">{{ field.label }}</label>
+              <label for="field-{{ field.key }}">{{ field.label | t }}</label>
               <input *ngIf="!field.sensitive"
                 id="field-{{ field.key }}"
                 type="text"
                 [formControlName]="field.key"
-                [placeholder]="field.label" />
+                [placeholder]="field.label | t" />
               <input *ngIf="field.sensitive"
                 id="field-{{ field.key }}"
                 type="password"
                 [formControlName]="field.key"
-                [placeholder]="field.label" />
+                [placeholder]="field.label | t" />
             </div>
           </ng-container>
           <div *ngIf="modalError()" class="error-banner error-banner-sm">{{ modalError() }}</div>

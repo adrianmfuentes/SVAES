@@ -208,7 +208,7 @@ interface VerificationResult {
                     <tr
                       (click)="toggleEvidence(i)">
                       <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm">{{ rule.rule_id }}</code></td>
-                      <td class="cell-primary" [attr.data-label]="'release_detail.rule_name' | t">{{ rule.rule_name || ('common.dash' | t) }}</td>
+                      <td class="cell-primary" [attr.data-label]="'release_detail.rule_name' | t">{{ translateRuleName(rule) || ('common.dash' | t) }}</td>
                       <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ rule.connector || ('common.dash' | t) }}</td>
                       <td [attr.data-label]="'release_detail.rule_result' | t">
                         <span class="verdict-badge" [ngClass]="ruleResultClass(rule.status ?? rule.result ?? '')">
@@ -216,7 +216,7 @@ interface VerificationResult {
                         </span>
                       </td>
                       <td class="cell-evidence" [attr.data-label]="'release_detail.rule_evidence' | t" (click)="$event.stopPropagation()">
-                        @let evidenceText = rule.evidence ?? rule.message;
+                        @let evidenceText = translateEvidence(rule.evidence || rule.message);
                         @if (evidenceText) {
                           <span>{{ evidenceText | slice:0:100 }}{{ evidenceText.length > 100 ? '…' : '' }}</span>
                           @if (evidenceText.length > 100) {
@@ -1792,7 +1792,8 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     if (idx === null) return null;
     const results = this.latestResult()?.rule_results;
     if (!results || idx >= results.length) return null;
-    return results[idx].evidence ?? results[idx].message ?? null;
+    const raw = results[idx].evidence || results[idx].message || null;
+    return raw ? this.ts.translateInstant(raw) : null;
   });
 
   stageLabel = computed(() => {
@@ -2243,7 +2244,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
       'result-valid': r === 'VALID' || r === 'PASSED' || r === 'SUCCESS' || r === 'OK',
       'result-warning': r === 'WITH_WARNINGS' || r === 'WARNING' || r === 'VALID_WITH_WARNINGS',
       'result-invalid': r === 'INVALID' || r === 'FAILED' || r === 'ERROR',
-      'result-unevaluated': !r || r === 'NOT_EVALUATED' || r === 'SKIPPED',
+      'result-unevaluated': !r || r === 'NOT_EVALUATED' || r === 'SKIPPED' || r === 'NO_EVALUADA',
     };
   }
 
@@ -2263,6 +2264,20 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   translateRuleResult(result: string): string {
     return this.ts.translateInstant('rule_result.' + result);
+  }
+
+  translateRuleName(rule: { rule_id?: string; rule_name?: string }): string {
+    const key = 'rules.' + (rule.rule_id ?? '');
+    const translated = this.ts.translateInstant(key);
+    if (!translated || translated === key) return rule.rule_name ?? rule.rule_id ?? '';
+    return translated;
+  }
+
+  translateEvidence(raw: string | null | undefined): string {
+    if (!raw) return '';
+    const translated = this.ts.translateInstant(raw);
+    // translateInstant returns the key unchanged when not found → raw text passes through
+    return translated;
   }
 
   isSummaryString(summary: Record<string, number> | string): summary is string {
