@@ -555,6 +555,14 @@ class TestGiteaConnector:
         url = conn._get_fetch_url("owner/repo/5", {"base_url": "https://gitea.example"})
         assert "owner/repo/pulls/5" in url
 
+    def test_get_fetch_url_without_slash_uses_config(self, conn):
+        url = conn._get_fetch_url("5", {"base_url": "https://gitea.example", "owner": "myowner", "repo": "myrepo"})
+        assert "/repos/myowner/myrepo/pulls/5" in url
+
+    def test_get_fetch_url_two_parts_uses_config_owner(self, conn):
+        url = conn._get_fetch_url("myrepo/5", {"base_url": "https://gitea.example", "owner": "myowner", "repo": "myrepo"})
+        assert "/repos/myowner/myrepo/pulls/5" in url
+
     def test_get_list_url_with_owner_repo(self, conn):
         url = conn._get_list_url({}, {"owner": "o", "repo": "r"})
         assert "/repos/o/r/pulls" in url
@@ -1265,6 +1273,14 @@ class TestBitbucketConnector:
         url = conn._get_fetch_url("owner/repo/123", {})
         assert "/repositories/owner/repo/pullrequests/123" in url
 
+    def test_get_fetch_url_without_slash_uses_config(self, conn):
+        url = conn._get_fetch_url("123", {"owner": "myowner", "repo": "myrepo"})
+        assert "/repositories/myowner/myrepo/pullrequests/123" in url
+
+    def test_get_fetch_url_two_parts_uses_config_owner(self, conn):
+        url = conn._get_fetch_url("myrepo/123", {"owner": "myowner", "repo": "myrepo"})
+        assert "/repositories/myowner/myrepo/pullrequests/123" in url
+
     def test_get_fetch_params(self, conn):
         params = conn._get_fetch_params({})
         assert params is None
@@ -1355,6 +1371,14 @@ class TestGitHubConnector:
     def test_get_fetch_url(self, conn):
         url = conn._get_fetch_url("owner/repo/42", {})
         assert "/repos/owner/repo/pulls/42" in url
+
+    def test_get_fetch_url_without_slash_uses_config(self, conn):
+        url = conn._get_fetch_url("42", {"owner": "myowner", "repo": "myrepo"})
+        assert "/repos/myowner/myrepo/pulls/42" in url
+
+    def test_get_fetch_url_two_parts_uses_config_owner(self, conn):
+        url = conn._get_fetch_url("myrepo/42", {"owner": "myowner", "repo": "myrepo"})
+        assert "/repos/myowner/myrepo/pulls/42" in url
 
     def test_get_fetch_params(self, conn):
         params = conn._get_fetch_params({})

@@ -17,7 +17,13 @@ class BitbucketConnector(BaseHttpConnector):
         return f"{self.BASE_URL}/user"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        owner, repo, pr_id = ref.split("/")
+        parts = ref.split("/", 2)
+        if len(parts) == 3:
+            owner, repo, pr_id = parts
+        else:
+            owner = config.get("owner", "")
+            repo = config.get("repo", "")
+            pr_id = parts[-1]
         return f"{self.BASE_URL}/repositories/{owner}/{repo}/pullrequests/{pr_id}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:

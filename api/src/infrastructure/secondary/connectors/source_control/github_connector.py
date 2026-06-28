@@ -24,7 +24,13 @@ class GitHubConnector(BaseHttpConnector, BearerAuthMixin):
         return f"{self._get_base_url(config)}/user"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        owner, repo, issue_number = ref.split("/")
+        parts = ref.split("/", 2)
+        if len(parts) == 3:
+            owner, repo, issue_number = parts
+        else:
+            owner = config.get("owner", "")
+            repo = config.get("repo", "")
+            issue_number = parts[-1]
         return f"{self._get_base_url(config)}/repos/{owner}/{repo}/pulls/{issue_number}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
