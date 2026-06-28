@@ -111,7 +111,7 @@ describe('ConnectorsComponent', () => {
     });
 
     it('openEdit should populate form and show modal', () => {
-      const conn = { id: 'c1', name: 'Test', type: 'gitlab', status: 'active' as const, global: false };
+      const conn = { id: 'c1', name: 'Test', type: 'gitlab', implementation: 'gitlab', status: 'active' as const, global: false };
       component.openEdit(conn);
       expect(component.showModal()).toBe(true);
       expect(component.editingConnector()).toEqual(conn);
@@ -137,7 +137,7 @@ describe('ConnectorsComponent', () => {
     });
 
     it('should PATCH existing connector', () => {
-      const existing = { id: 'conn-1', name: 'Old', type: 'gitlab', status: 'active' as const, global: false };
+      const existing = { id: 'conn-1', name: 'Old', type: 'gitlab', implementation: 'gitlab', status: 'active' as const, global: false };
       component.globalConnectors.set([existing]);
       component.openEdit(existing);
       component.connectorForm.patchValue({ name: 'Updated', connectorType: 'REPO_CODIGO', connectorImplementation: 'gitlab' });
@@ -169,7 +169,7 @@ describe('ConnectorsComponent', () => {
     });
 
     it('should set and clear testingId', () => {
-      const conn = { id: 'conn-1', name: 'X', type: 'gitlab', status: 'active' as const, global: false };
+      const conn = { id: 'conn-1', name: 'X', type: 'gitlab', implementation: 'gitlab', status: 'active' as const, global: false };
       component.testConnector(conn);
       expect(component.testingId()).toBe('conn-1');
       httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1/test').flush({});
@@ -184,7 +184,7 @@ describe('ConnectorsComponent', () => {
     });
 
     it('should POST to /toggle with INACTIVO when connector is active', () => {
-      const conn = { id: 'conn-1', name: 'X', type: 'gitlab', status: 'active' as const, global: false };
+      const conn = { id: 'conn-1', name: 'X', type: 'gitlab', implementation: 'gitlab', status: 'active' as const, global: false };
       component.globalConnectors.set([conn]);
       component.toggleConnector(conn);
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1/toggle');
@@ -195,7 +195,7 @@ describe('ConnectorsComponent', () => {
     });
 
     it('should POST to /toggle with ACTIVO when connector is inactive', () => {
-      const conn = { id: 'conn-2', name: 'Y', type: 'jira', status: 'inactive' as const, global: false };
+      const conn = { id: 'conn-2', name: 'Y', type: 'jira', implementation: 'jira', status: 'inactive' as const, global: false };
       component.globalConnectors.set([conn]);
       component.toggleConnector(conn);
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-2/toggle');
@@ -205,7 +205,7 @@ describe('ConnectorsComponent', () => {
     });
 
     it('should handle toggle error gracefully', () => {
-      const conn = { id: 'conn-1', name: 'X', type: 'gitlab', status: 'active' as const, global: false };
+      const conn = { id: 'conn-1', name: 'X', type: 'gitlab', implementation: 'gitlab', status: 'active' as const, global: false };
       component.globalConnectors.set([conn]);
       component.toggleConnector(conn);
       httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors/conn-1/toggle').flush(
@@ -251,7 +251,7 @@ describe('ConnectorsComponent', () => {
   });
 
   describe('template rendering', () => {
-    const mockConn = { id: 'c1', name: 'GitLab', type: 'gitlab', status: 'active' as const, global: false };
+    const mockConn = { id: 'c1', name: 'GitLab', type: 'gitlab', implementation: 'gitlab', status: 'active' as const, global: false };
 
     const renderTemplate = () => {
       fixture.detectChanges();
