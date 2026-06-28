@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+from urllib.parse import urlparse
 from infrastructure.secondary.connectors.base_http_connector import (
     BaseHttpConnector,
     AtlassianAuthMixin,
@@ -16,7 +17,7 @@ class JiraServiceManagementConnector(BaseHttpConnector, AtlassianAuthMixin):
     def _get_api_base(self, config: Dict[str, Any]) -> str:
         base_url = self._get_base_url(config).rstrip("/")
         site_id = config.get("site_id")
-        if site_id and "api.atlassian.com" in base_url:
+        if site_id and urlparse(base_url).netloc == "api.atlassian.com":
             return f"{base_url}/ex/jira/{site_id}"
         return base_url
 
