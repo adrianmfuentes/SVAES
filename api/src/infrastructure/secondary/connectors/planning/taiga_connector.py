@@ -23,18 +23,13 @@ class TaigaConnector(BaseHttpConnector):
         return None
 
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
-        project_slug = config.get("project_slug")
-        if project_slug:
-            return f"{self.BASE_URL}/projects/by_slug/{project_slug}/tasks"
         return f"{self.BASE_URL}/tasks"
 
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
     ) -> Dict[str, Any] | None:
-        project_slug = config.get("project_slug")
-        if project_slug:
-            return {"status__is_closed": filter_params.get("status", "open")}
-        return {"project": config.get("project")}
+        project_id = config.get("project")
+        return {"project": project_id} if project_id else None
 
     def _get_list_json(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

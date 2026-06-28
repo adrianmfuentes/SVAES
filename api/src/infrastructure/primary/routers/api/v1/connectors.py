@@ -150,7 +150,7 @@ def _get_config_schema(implementation: str) -> dict:
         },
         "PLANE": {
             "api_key": {"type": "string", "label": _LABEL_API_KEY, "required": True, "sensitive": True},
-            "instance_url": {"type": "string", "label": "Instance URL", "required": True},
+            "instance_url": {"type": "string", "label": "Instance URL (dejar vacío para Plane Cloud)", "required": False, "default": "https://api.plane.so"},
             "workspace": {"type": "string", "label": "Workspace Slug", "required": True},
             "project": {"type": "string", "label": _LABEL_PROJECT_ID, "required": False},
         },

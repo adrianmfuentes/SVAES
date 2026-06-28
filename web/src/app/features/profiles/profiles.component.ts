@@ -16,6 +16,7 @@ interface Profile {
   organization_name?: string;
   is_template?: boolean;
   is_default?: boolean;
+  is_system?: boolean;
   created_at?: string;
 }
 
@@ -72,7 +73,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                 <td class="cell-primary" [attr.data-label]="'profiles.table_name' | t">{{ p.name }}</td>
                 <td class="cell-muted" [attr.data-label]="'common.description' | t">{{ p.description ?? '—' }}</td>
                 <td [attr.data-label]="'profiles.table_rules' | t">{{ p.rules_count ?? '—' }}</td>
-                <td *ngIf="canManage && !p.is_default" class="cell-actions" [attr.data-label]="'common.actions' | t">
+                <td *ngIf="canManage && !p.is_default && !p.is_system" class="cell-actions" [attr.data-label]="'common.actions' | t">
                   <button class="btn-ghost" (click)="openEdit(p)">{{ 'common.edit' | t }}</button>
                   <button
                     class="btn-ghost btn-danger-ghost"
@@ -83,8 +84,8 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                     {{ deletingId() === p.id ? ('profiles.deleting' | t) : ('common.delete' | t) }}
                   </button>
                 </td>
-                <td *ngIf="canManage && p.is_default" class="cell-muted" [attr.data-label]="'common.actions' | t">
-                  {{ 'profiles.default_profile' | t }}
+                <td *ngIf="canManage && (p.is_default || p.is_system)" class="cell-muted" [attr.data-label]="'common.actions' | t">
+                  <button class="btn-ghost btn-xs" (click)="openEdit(p)">{{ 'profiles.view_rules' | t }}</button>
                 </td>
               </tr>
             </tbody>
@@ -100,30 +101,30 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     <div class="modal-overlay" *ngIf="showModal()" (click)="showModal.set(false)">
       <div class="modal-panel modal-panel-wide" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3 class="modal-title">{{ editingProfile() ? ('profiles.edit_title' | t) : ('profiles.create_title' | t) }}</h3>
+          <h3 class="modal-title">{{ (editingProfile()!.is_default || editingProfile()!.is_system) ? ('profiles.view_title' | t) : (editingProfile() ? ('profiles.edit_title' | t) : ('profiles.create_title' | t)) }}</h3>
           <button class="modal-close" (click)="showModal.set(false)">&times;</button>
         </div>
         <form [formGroup]="profileForm" (ngSubmit)="submitProfile()">
           <div class="form-row">
             <div class="form-group">
               <label for="prof-name">{{ 'profiles.name_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
-              <input id="prof-name" type="text" formControlName="name" aria-required="true" [placeholder]="'profiles.template_placeholder' | t" />
+              <input id="prof-name" type="text" formControlName="name" aria-required="true" [placeholder]="'profiles.template_placeholder' | t" [readonly]="editingProfile()!.is_default || editingProfile()!.is_system" />
             </div>
             <div class="form-group">
               <label for="prof-desc">{{ 'common.description' | t }}</label>
-              <input id="prof-desc" type="text" formControlName="description" [placeholder]="'profiles.desc_placeholder' | t" />
+              <input id="prof-desc" type="text" formControlName="description" [placeholder]="'profiles.desc_placeholder' | t" [readonly]="editingProfile()!.is_default || editingProfile()!.is_system" />
             </div>
           </div>
 
-          <div *ngIf="editingProfile() && !editingProfile()!.is_default" class="rules-section">
+          <div *ngIf="editingProfile()" class="rules-section">
             <div class="rules-section-header">
               <h4>{{ 'profiles.rules_label' | t }}</h4>
-              <button type="button" class="btn-ghost btn-sm" (click)="openAddRule()">
+              <button *ngIf="!editingProfile()!.is_default && !editingProfile()!.is_system" type="button" class="btn-ghost btn-sm" (click)="openAddRule()">
                 + {{ 'profiles.add_rule' | t }}
               </button>
             </div>
 
-            <div *ngIf="showRuleForm()" class="rule-form">
+            <div *ngIf="showRuleForm() && !editingProfile()!.is_default && !editingProfile()!.is_system" class="rule-form">
               <div class="form-row">
                 <div class="form-group">
                   <label for="rule-template">{{ 'profiles.rule_template' | t }}<span class="required-star" aria-hidden="true">*</span></label>
@@ -157,7 +158,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                   <span class="rule-template">{{ formatRuleName(rule.rule_template) }}</span>
                   <span class="severity-badge" [ngClass]="'severity-' + rule.severity.toLowerCase()">{{ rule.severity }}</span>
                 </div>
-                <div class="rule-actions" *ngIf="!editingProfile()!.is_default">
+                <div class="rule-actions" *ngIf="!editingProfile()!.is_default && !editingProfile()!.is_system">
                   <button type="button" class="btn-ghost btn-xs" (click)="openEditRule(rule)">{{ 'common.edit' | t }}</button>
                   <button type="button" class="btn-ghost btn-danger-ghost btn-xs" (click)="deleteRule(rule)">{{ 'common.delete' | t }}</button>
                 </div>
@@ -169,11 +170,14 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
           </div>
 
           <div *ngIf="modalError()" class="error-banner error-banner-sm">{{ modalError() }}</div>
-          <div class="modal-footer">
+          <div class="modal-footer" *ngIf="!editingProfile()!.is_default && !editingProfile()!.is_system">
             <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.cancel' | t }}</button>
             <button type="submit" class="btn-primary" [disabled]="saving()" [title]="saving() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
               {{ saving() ? ('profiles.saving' | t) : (editingProfile() ? ('profiles.save_changes' | t) : ('profiles.create_button' | t)) }}
             </button>
+          </div>
+          <div class="modal-footer" *ngIf="editingProfile()!.is_default || editingProfile()!.is_system">
+            <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.close' | t }}</button>
           </div>
         </form>
       </div>
@@ -845,6 +849,10 @@ export class ProfilesComponent implements OnInit {
   formatRuleName(template: string): string {
     const translated = this.ts.translateInstant('rules.' + template);
     if (translated && !translated.startsWith('rules.')) {
+      if (/^RV-\d+$/.test(template)) {
+        const short = translated.length > 25 ? translated.split(' ').slice(0, 3).join(' ') : translated;
+        return `${template} - ${short}`;
+      }
       return translated;
     }
     return template

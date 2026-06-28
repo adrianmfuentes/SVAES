@@ -14,7 +14,7 @@ class ZammadConnector(BaseHttpConnector):
         token = config.get("token")
         return {
             "Accept": "application/json",
-            "Authorization": f"Token {token}",
+            "Authorization": f"Token token={token}",
         }
 
     def _get_base_url(self, config: Dict[str, Any]) -> str:

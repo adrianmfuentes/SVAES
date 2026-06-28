@@ -12,6 +12,7 @@ interface Connector {
   id: string;
   name: string;
   type: string;
+  implementation: string;
   status: 'active' | 'inactive' | 'error';
   global: boolean;
   organization_id?: string;
@@ -23,6 +24,7 @@ interface ConnectorApiItem {
   id: string;
   name: string;
   connector_type: string;
+  connector_implementation: string;
   status: string;
   created_at: string;
   last_tested_at?: string;
@@ -124,7 +126,7 @@ interface ConnectorTypesResponse {
             <label for="conn-type">{{ 'connectors.category_label' | t }}</label>
             <select id="conn-type" formControlName="connectorType" (change)="onTypeChange($event)">
               <option value="">-- {{ 'connectors.select_category' | t }} --</option>
-              <option *ngFor="let type of getConnectorTypes()" [value]="type">{{ typeLabel(type) | t }}</option>
+              <option *ngFor="let type of getConnectorTypes()" [value]="type">{{ typeLabel(type) }}</option>
             </select>
           </div>
           <div class="form-group" *ngIf="selectedType()">
@@ -665,6 +667,7 @@ export class ConnectorsComponent implements OnInit {
       id: c.id,
       name: c.name,
       type: c.connector_type ?? existing?.type ?? 'UNKNOWN',
+      implementation: c.connector_implementation ?? existing?.implementation ?? '',
       status: this.normalizeStatus(c.status),
       global: false,
       organization_id: this.orgId ?? undefined,
@@ -705,10 +708,21 @@ export class ConnectorsComponent implements OnInit {
     this.connectorForm.reset({ name: c.name, connectorType: '', connectorImplementation: '' });
     this.selectedType.set(c.type);
     this.selectedImplementation.set(null);
-    this.availableImplementations.set([]);
-    this.connectorForm.patchValue({ connectorType: c.type });
     const types = this.connectorTypes()?.by_type;
-    this.availableImplementations.set(types?.[c.type] ?? []);
+    const impls = types?.[c.type] ?? [];
+    this.availableImplementations.set(impls);
+    this.connectorForm.patchValue({ connectorType: c.type });
+    if (c.implementation) {
+      this.selectedImplementation.set(c.implementation);
+      this.connectorForm.patchValue({ connectorImplementation: c.implementation });
+      const implData = impls.find(i => i.implementation === c.implementation);
+      if (implData) {
+        const newSchema = implData.config_schema ?? {};
+        this.currentConfigSchema.set(newSchema);
+        this.addConfigFields(newSchema);
+        this.updateConfigFields(newSchema);
+      }
+    }
     this.showModal.set(true);
   }
 

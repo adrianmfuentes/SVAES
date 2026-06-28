@@ -21,7 +21,7 @@ class GLPiConnector(BaseHttpConnector):
         return config.get("base_url", self.BASE_URL)
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
-        return f"{self._get_base_url(config)}/init"
+        return f"{self._get_base_url(config)}/initSession"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
         return f"{self._get_base_url(config)}/Ticket/{ref}"

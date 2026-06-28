@@ -17,11 +17,11 @@ class GitLabConnector(BaseHttpConnector, BearerAuthMixin):
         return {"Authorization": f"Bearer {config.get('token')}"}
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/user"
+        return f"{self._get_base_url(config)}/user"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
         project_id, mr_iid = ref.split("/")
-        return f"{self.BASE_URL}/projects/{project_id}/merge_requests/{mr_iid}"
+        return f"{self._get_base_url(config)}/projects/{project_id}/merge_requests/{mr_iid}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
@@ -29,8 +29,8 @@ class GitLabConnector(BaseHttpConnector, BearerAuthMixin):
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         project_id = config.get("project_id")
         if project_id:
-            return f"{self.BASE_URL}/projects/{project_id}/merge_requests"
-        return f"{self.BASE_URL}/merge_requests"
+            return f"{self._get_base_url(config)}/projects/{project_id}/merge_requests"
+        return f"{self._get_base_url(config)}/merge_requests"
 
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

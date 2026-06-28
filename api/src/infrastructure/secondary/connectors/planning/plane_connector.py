@@ -3,27 +3,32 @@ from infrastructure.secondary.connectors.base_http_connector import BaseHttpConn
 
 
 class PlaneConnector(BaseHttpConnector):
-    BASE_URL = "https://api.plane.io/api/v1"
+    BASE_URL = "https://api.plane.so/api/v1"
     CONNECTOR_TYPE = "HERRAMIENTA_PLANIFICACION"
     CONNECTOR_IMPLEMENTATION = "PLANE"
 
     def get_artifact_types(self) -> List[str]:
         return ["issue", "cycle", "module", "project"]
 
+    def _get_base_url(self, config: Dict[str, Any]) -> str:
+        instance_url = (config.get("instance_url") or "").rstrip("/")
+        if instance_url:
+            return f"{instance_url}/api/v1"
+        return self.BASE_URL
+
     def _build_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
         return {
             "Accept": "application/json",
-            "x-api-key": config.get("api_key", ""),
-            "x-api-host": config.get("instance_url", ""),
+            "X-API-Key": config.get("api_key", ""),
         }
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
         workspace = config.get("workspace")
-        return f"{self.BASE_URL}/workspaces/{workspace}/projects"
+        return f"{self._get_base_url(config)}/workspaces/{workspace}/projects/"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
         workspace = config.get("workspace")
-        return f"{self.BASE_URL}/workspaces/{workspace}/issues/{ref}"
+        return f"{self._get_base_url(config)}/workspaces/{workspace}/issues/{ref}/"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
@@ -32,8 +37,8 @@ class PlaneConnector(BaseHttpConnector):
         workspace = config.get("workspace")
         project = config.get("project")
         if project:
-            return f"{self.BASE_URL}/workspaces/{workspace}/projects/{project}/issues"
-        return f"{self.BASE_URL}/workspaces/{workspace}/issues"
+            return f"{self._get_base_url(config)}/workspaces/{workspace}/projects/{project}/issues/"
+        return f"{self._get_base_url(config)}/workspaces/{workspace}/issues/"
 
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

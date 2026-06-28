@@ -13,21 +13,24 @@ class JiraConnector(AtlassianAuthMixin, BaseHttpConnector):
     def get_artifact_types(self) -> List[str]:
         return ["issue", "project", "board"]
 
-    def _get_health_url(self, config: Dict[str, Any]) -> str:
-        base_url = self._get_base_url(config)
+    def _get_api_base(self, config: Dict[str, Any]) -> str:
+        base_url = self._get_base_url(config).rstrip("/")
         cloud_id = config.get("cloud_id")
-        if cloud_id:
-            return f"{base_url}/rest/api/3/myself?cloudId={cloud_id}"
-        return f"{base_url}/rest/api/3/myself"
+        if cloud_id and "api.atlassian.com" in base_url:
+            return f"{base_url}/ex/jira/{cloud_id}"
+        return base_url
+
+    def _get_health_url(self, config: Dict[str, Any]) -> str:
+        return f"{self._get_api_base(config)}/rest/api/3/myself"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        return f"{self._get_base_url(config)}/rest/api/3/issue/{ref}"
+        return f"{self._get_api_base(config)}/rest/api/3/issue/{ref}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
 
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
-        return f"{self._get_base_url(config)}/rest/api/3/search/jql"
+        return f"{self._get_api_base(config)}/rest/api/3/search/jql"
 
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

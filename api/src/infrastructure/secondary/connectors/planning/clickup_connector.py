@@ -17,8 +17,7 @@ class ClickUpConnector(BaseHttpConnector):
         }
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
-        team_id = config.get("team_id")
-        return f"{self.BASE_URL}/team/{team_id}/goals"
+        return f"{self.BASE_URL}/team"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
         return f"{self.BASE_URL}/task/{ref}"

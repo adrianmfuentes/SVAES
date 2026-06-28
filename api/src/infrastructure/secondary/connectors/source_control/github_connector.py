@@ -21,11 +21,11 @@ class GitHubConnector(BaseHttpConnector, BearerAuthMixin):
         }
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/user"
+        return f"{self._get_base_url(config)}/user"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
         owner, repo, issue_number = ref.split("/")
-        return f"{self.BASE_URL}/repos/{owner}/{repo}/pulls/{issue_number}"
+        return f"{self._get_base_url(config)}/repos/{owner}/{repo}/pulls/{issue_number}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
@@ -34,8 +34,8 @@ class GitHubConnector(BaseHttpConnector, BearerAuthMixin):
         owner = config.get("owner")
         repo = config.get("repo")
         if owner and repo:
-            return f"{self.BASE_URL}/repos/{owner}/{repo}/pulls"
-        return f"{self.BASE_URL}/user/pulls"
+            return f"{self._get_base_url(config)}/repos/{owner}/{repo}/pulls"
+        return f"{self._get_base_url(config)}/user/repos"
 
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

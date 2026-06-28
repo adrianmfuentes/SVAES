@@ -249,23 +249,23 @@ class TestJiraSMConnector:
 
     def test_get_health_url_with_site_id(self, conn):
         url = conn._get_health_url({"site_id": "site123"})
-        assert "siteId=site123" in url
+        assert "/ex/jira/site123/rest/servicedeskapi/servicedesk" in url
 
     def test_get_health_url_without_site_id(self, conn):
         url = conn._get_health_url({})
-        assert "siteId" not in url
+        assert "/rest/servicedeskapi/servicedesk" in url
 
     def test_get_fetch_url(self, conn):
         url = conn._get_fetch_url("REQ-1", {})
-        assert "/rest/servicedesk/1/request/REQ-1" in url
+        assert "/rest/servicedeskapi/request/REQ-1" in url
 
     def test_get_list_url_with_service_desk(self, conn):
         url = conn._get_list_url({}, {"service_desk_id": "sd1"})
-        assert "/servicedesk/sd1/request" in url
+        assert "/servicedeskapi/servicedesk/sd1/queue" in url
 
     def test_get_list_url_without_service_desk(self, conn):
         url = conn._get_list_url({}, {})
-        assert "/servicedesk/1/request" in url
+        assert "/servicedeskapi/request" in url
 
     def test_get_list_params_with_service_desk(self, conn):
         params = conn._get_list_params({}, {"service_desk_id": "sd1"})
@@ -614,13 +614,13 @@ class TestConfluenceConnector:
         assert conn.CONNECTOR_IMPLEMENTATION == "CONFLUENCE"
         assert "page" in conn.get_artifact_types()
 
-    def test_get_health_url_with_cloud_id(self, conn):
-        url = conn._get_health_url({"cloud_id": "c123"})
-        assert "cloudId=c123" in url
+    def test_get_health_url_with_base_url(self, conn):
+        url = conn._get_health_url({"base_url": "https://mysite.atlassian.net"})
+        assert url == "https://mysite.atlassian.net/wiki/rest/api/user/current"
 
-    def test_get_health_url_without_cloud_id(self, conn):
-        url = conn._get_health_url({})
-        assert "cloudId" not in url
+    def test_get_health_url_strips_wiki_suffix(self, conn):
+        url = conn._get_health_url({"base_url": "https://mysite.atlassian.net/wiki"})
+        assert url == "https://mysite.atlassian.net/wiki/rest/api/user/current"
 
     def test_get_fetch_url(self, conn):
         url = conn._get_fetch_url("123", {})
@@ -677,7 +677,7 @@ class TestClickUpConnector:
 
     def test_get_health_url(self, conn):
         url = conn._get_health_url({"team_id": "t1"})
-        assert "/team/t1/goals" in url
+        assert url.endswith("/team")
 
     def test_get_fetch_url(self, conn):
         url = conn._get_fetch_url("task1", {})
@@ -1071,19 +1071,19 @@ class TestTaigaConnector:
 
     def test_get_list_url_with_project_slug(self, conn):
         url = conn._get_list_url({}, {"project_slug": "my-project"})
-        assert "by_slug/my-project/tasks" in url
+        assert url == "https://api.taiga.io/api/v1/tasks"
 
     def test_get_list_url_without_project_slug(self, conn):
         url = conn._get_list_url({}, {})
         assert url == "https://api.taiga.io/api/v1/tasks"
 
-    def test_get_list_params_with_project_slug(self, conn):
-        params = conn._get_list_params({"status": "closed"}, {"project_slug": "my-project"})
-        assert params["status__is_closed"] == "closed"
+    def test_get_list_params_with_project_id(self, conn):
+        params = conn._get_list_params({}, {"project": "42"})
+        assert params == {"project": "42"}
 
-    def test_get_list_params_without_project_slug(self, conn):
-        params = conn._get_list_params({}, {"project": "proj-1"})
-        assert params["project"] == "proj-1"
+    def test_get_list_params_without_project(self, conn):
+        params = conn._get_list_params({}, {})
+        assert params is None
 
     def test_get_list_json(self, conn):
         json_body = conn._get_list_json({}, {})
@@ -1345,7 +1345,7 @@ class TestGitHubConnector:
 
     def test_get_list_url_without_owner_repo(self, conn):
         url = conn._get_list_url({}, {})
-        assert "/user/pulls" in url
+        assert "/user/repos" in url
 
     def test_get_list_params(self, conn):
         params = conn._get_list_params({"state": "closed"}, {})
