@@ -19,13 +19,22 @@ class GitLabConnector(BaseHttpConnector, BearerAuthMixin):
     def _get_health_url(self, config: Dict[str, Any]) -> str:
         return f"{self._get_base_url(config)}/user"
 
+    def _get_base_url(self, config: Dict[str, Any]) -> str:
+        base = (config.get("base_url") or self.BASE_URL).rstrip("/")
+        if "/api/" not in base:
+            base += "/api/v4"
+        return base
+
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
         if "/" in ref:
-            project_id, mr_iid = ref.split("/", 1)
+            project_id, sub_ref = ref.split("/", 1)
         else:
             project_id = config.get("project_id", "")
-            mr_iid = ref
-        return f"{self._get_base_url(config)}/projects/{project_id}/merge_requests/{mr_iid}"
+            sub_ref = ref
+        base = self._get_base_url(config)
+        if sub_ref.isdigit():
+            return f"{base}/projects/{project_id}/merge_requests/{sub_ref}"
+        return f"{base}/projects/{project_id}/releases/{sub_ref}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None

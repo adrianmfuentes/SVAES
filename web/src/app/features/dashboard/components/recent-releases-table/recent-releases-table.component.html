@@ -39,7 +39,7 @@
             <td class="cell-muted">{{ release.project_name ?? '—' }}</td>
             <td>
               <span class="verdict-badge" [ngClass]="verdictClass(release.verdict)">
-                {{ release.verdict ?? 'N/A' }}
+                {{ release.verdict ? ('verdict.' + release.verdict | t) : ('common.na' | t) }}
               </span>
             </td>
             <td class="cell-muted">{{ relativeDate(release.created_at) }}</td>

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, Observable, of } from 'rxjs';
-import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 
 export interface TemporalPoint { date: string; valid: number; with_warnings: number; invalid: number; }
 export interface FailedRule { rule_id: string; rule_name: string; count: number; percentage: number; }
@@ -36,17 +36,14 @@ export interface RecentRelease {
 export class DashboardService {
   private readonly http = inject(HttpClient);
 
-  private readonly projects$ = this.http.get<Project[]>('/api/v1/projects').pipe(
-    catchError(() => of([] as Project[])),
-    shareReplay(1),
-  );
-
   getMetrics(): Observable<DashboardMetrics> {
     return this.http.get<DashboardMetrics>('/api/v1/dashboard/metrics');
   }
 
   getProjects(): Observable<Project[]> {
-    return this.projects$;
+    return this.http.get<Project[]>('/api/v1/projects').pipe(
+      catchError(() => of([] as Project[])),
+    );
   }
 
   private static attachProjectName(projectName: string) {

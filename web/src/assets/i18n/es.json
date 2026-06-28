@@ -1189,6 +1189,7 @@
   "release.artifact_delete_success": "Artefacto eliminado correctamente",
   "release.artifact_delete_error": "Error al eliminar el artefacto",
   "release.description_label": "Descripcion",
+  "common.na": "N/A",
   "common.dash": "—",
   "common.placeholder_dash": "—",
   "common.delete": "Eliminar",

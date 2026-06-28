@@ -2,7 +2,7 @@ import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
+import { finalize, interval, switchMap, startWith } from 'rxjs';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import {
   DashboardService,
@@ -78,15 +78,19 @@ export class DashboardComponent implements OnInit {
   private loadRecentReleases(): void {
     this.releasesLoading.set(true);
     this.releasesError.set(null);
-    this.svc
-      .getRecentReleases()
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.releasesLoading.set(false)),
-      )
-      .subscribe({
-        next: (data) => this.recentReleases.set(data),
-        error: () => this.releasesError.set(this.ts.translateInstant('releases.loading_error')),
-      });
+    interval(10000).pipe(
+      startWith(0),
+      takeUntilDestroyed(this.destroyRef),
+      switchMap(() => this.svc.getRecentReleases()),
+    ).subscribe({
+      next: (data) => {
+        this.releasesLoading.set(false);
+        this.recentReleases.set(data);
+      },
+      error: () => {
+        this.releasesLoading.set(false);
+        this.releasesError.set(this.ts.translateInstant('releases.loading_error'));
+      },
+    });
   }
 }

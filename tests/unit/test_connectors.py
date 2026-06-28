@@ -957,6 +957,35 @@ class TestConnectorImplementations:
         url = c._get_fetch_url("42", {})
         assert "/projects//merge_requests/42" in url
 
+    def test_gitlab_connector_get_fetch_url_release_tag(self):
+        """Branch: ref is non-integer (release tag) -> uses /releases/ endpoint"""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        url = c._get_fetch_url("v1.0.0", {"project_id": "83409746"})
+        assert "/projects/83409746/releases/v1.0.0" in url
+        assert "merge_requests" not in url
+
+    def test_gitlab_connector_get_base_url_normalizes_missing_api_v4(self):
+        """Branch: base_url without /api/v4 -> /api/v4 is appended"""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        url = c._get_base_url({"base_url": "https://gitlab.com"})
+        assert url == "https://gitlab.com/api/v4"
+
+    def test_gitlab_connector_get_base_url_keeps_existing_api_v4(self):
+        """Branch: base_url already has /api/v4 -> unchanged"""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        url = c._get_base_url({"base_url": "https://gitlab.com/api/v4"})
+        assert url == "https://gitlab.com/api/v4"
+
+    def test_gitlab_connector_get_base_url_no_config_uses_default(self):
+        """Branch: no base_url in config -> uses BASE_URL default"""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        url = c._get_base_url({})
+        assert url == "https://gitlab.com/api/v4"
+
     def test_connector_registry_register_and_create(self):
         """Branch: create_registered_connector_registry registers all 20"""
         from infrastructure.secondary.connectors import create_registered_connector_registry

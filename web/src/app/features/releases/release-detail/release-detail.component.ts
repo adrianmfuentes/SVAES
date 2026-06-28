@@ -225,7 +225,7 @@ interface VerificationResult {
                       (click)="toggleEvidence(i)">
                       <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm">{{ rule.rule_id }}</code></td>
                       <td class="cell-primary" [attr.data-label]="'release_detail.rule_name' | t">{{ translateRuleName(rule) || ('common.dash' | t) }}</td>
-                      <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ rule.connector || ('common.dash' | t) }}</td>
+                      <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ rule.connector || ('common.na' | t) }}</td>
                       <td [attr.data-label]="'release_detail.rule_result' | t">
                         <span class="verdict-badge" [ngClass]="ruleResultClass(rule.status ?? rule.result ?? '')">
                           {{ translateRuleResult(rule.status ?? rule.result ?? '') }}
