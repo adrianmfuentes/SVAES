@@ -20,7 +20,11 @@ class GitLabConnector(BaseHttpConnector, BearerAuthMixin):
         return f"{self._get_base_url(config)}/user"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        project_id, mr_iid = ref.split("/")
+        if "/" in ref:
+            project_id, mr_iid = ref.split("/", 1)
+        else:
+            project_id = config.get("project_id", "")
+            mr_iid = ref
         return f"{self._get_base_url(config)}/projects/{project_id}/merge_requests/{mr_iid}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:

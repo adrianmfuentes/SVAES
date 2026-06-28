@@ -46,7 +46,7 @@ def _test_env():
         "JWT_ALGORITHM": "HS256",
         "JWT_EXPIRE_MINUTES": "60",
         "ALLOWED_ORIGINS": "*",
-        "ENCRYPTION_KEY": "HnVk8Q2xLm9pR4sT6wYzA1bC3dF5gJ7kN=",
+        "ENCRYPTION_KEY": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
         "REDIS_URL": redis_url,
         "CELERY_BROKER_URL": redis_url,
         "CELERY_RESULT_BACKEND": redis_url,

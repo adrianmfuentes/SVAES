@@ -76,6 +76,13 @@ class Settings(BaseSettings):
                 "ENCRYPTION_KEY not set — using an ephemeral key. "
                 "Connector credentials will not survive a server restart."
             )
+        else:
+            try:
+                Fernet(self.encryption_key.encode())
+            except Exception as exc:
+                raise ValueError(
+                    f"ENCRYPTION_KEY is not a valid Fernet key (must be 44-char URL-safe base64): {exc}"
+                ) from exc
         return self
 
     @model_validator(mode="after")

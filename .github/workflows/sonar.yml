@@ -67,7 +67,7 @@ jobs:
           ENGINE_API_KEY: ci-test-key
           ADMIN_EMAIL: admin@test.local
           ADMIN_PASSWORD: test-password-not-for-production
-          ENCRYPTION_KEY: HnVk8Q2xLm9pR4sT6wYzA1bC3dF5gJ7kN=
+          ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
           API_KEY_PEPPER: ci-test-api-key-pepper-not-for-production
           TEST_POSTGRES_USER: svaes
           TEST_POSTGRES_PASSWORD: svaes

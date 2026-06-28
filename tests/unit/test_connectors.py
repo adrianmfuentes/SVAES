@@ -928,6 +928,27 @@ class TestConnectorImplementations:
         assert params is not None
         assert params["state"] == "merged"
 
+    def test_gitlab_connector_get_fetch_url_with_slash(self):
+        """Branch: ref in project_id/mr_iid format -> uses ref parts"""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        url = c._get_fetch_url("123/42", {})
+        assert "/projects/123/merge_requests/42" in url
+
+    def test_gitlab_connector_get_fetch_url_without_slash_uses_config_project_id(self):
+        """Branch: ref has no '/' -> falls back to config project_id"""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        url = c._get_fetch_url("42", {"project_id": "999"})
+        assert "/projects/999/merge_requests/42" in url
+
+    def test_gitlab_connector_get_fetch_url_without_slash_no_config(self):
+        """Branch: ref has no '/' and no config project_id -> empty project segment"""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        url = c._get_fetch_url("42", {})
+        assert "/projects//merge_requests/42" in url
+
     def test_connector_registry_register_and_create(self):
         """Branch: create_registered_connector_registry registers all 20"""
         from infrastructure.secondary.connectors import create_registered_connector_registry
