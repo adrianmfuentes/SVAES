@@ -70,57 +70,40 @@ export class SuccessRateChartComponent implements OnChanges {
   };
 
   ngOnChanges(): void {
-    if (this.data?.length) {
-      const pct = (n: number, total: number) => (total > 0 ? (n / total) * 100 : 0);
-      const single = this.data.length === 1;
+    if (!this.data?.length) return;
 
-      this.chartData = {
-        labels: this.data.map((d) => d.date),
-        datasets: [
-          {
-            label: this.ts.translateInstant('verdict.VALID'),
-            data: this.data.map((d) => pct(d.valid, d.valid + d.with_warnings + d.invalid)),
-            borderColor: '#2E7D46',
-            backgroundColor: 'rgba(46,125,70,0.08)',
-            fill: !single,
-            tension: 0.35,
-            borderWidth: 2,
-            pointRadius: single ? 5 : 3,
-            pointHoverRadius: single ? 7 : 5,
-            pointBackgroundColor: '#2E7D46',
-            pointBorderColor: '#fff',
-            pointBorderWidth: single ? 2 : 0,
-          },
-          {
-            label: this.ts.translateInstant('verdict.VALID_WITH_WARNINGS'),
-            data: this.data.map((d) => pct(d.with_warnings, d.valid + d.with_warnings + d.invalid)),
-            borderColor: '#B07800',
-            backgroundColor: 'rgba(176,120,0,0.06)',
-            fill: !single,
-            tension: 0.35,
-            borderWidth: 2,
-            pointRadius: single ? 5 : 3,
-            pointHoverRadius: single ? 7 : 5,
-            pointBackgroundColor: '#B07800',
-            pointBorderColor: '#fff',
-            pointBorderWidth: single ? 2 : 0,
-          },
-          {
-            label: this.ts.translateInstant('verdict.INVALID'),
-            data: this.data.map((d) => pct(d.invalid, d.valid + d.with_warnings + d.invalid)),
-            borderColor: '#C0392B',
-            backgroundColor: 'rgba(192,57,43,0.06)',
-            fill: !single,
-            tension: 0.35,
-            borderWidth: 2,
-            pointRadius: single ? 5 : 3,
-            pointHoverRadius: single ? 7 : 5,
-            pointBackgroundColor: '#C0392B',
-            pointBorderColor: '#fff',
-            pointBorderWidth: single ? 2 : 0,
-          },
-        ],
-      };
-    }
+    const pct = (n: number, total: number) => (total > 0 ? (n / total) * 100 : 0);
+    const single = this.data.length === 1;
+    const basePointRadius = single ? 5 : 3;
+    const basePointHoverRadius = single ? 7 : 5;
+
+    const buildDataset = (
+      verdictKey: 'valid' | 'with_warnings' | 'invalid',
+      labelKey: string,
+      color: string,
+      bgColor: string,
+    ) => ({
+      label: this.ts.translateInstant(labelKey),
+      data: this.data.map((d) => pct(d[verdictKey], d.valid + d.with_warnings + d.invalid)),
+      borderColor: color,
+      backgroundColor: bgColor,
+      fill: !single,
+      tension: 0.35,
+      borderWidth: 2,
+      pointRadius: basePointRadius,
+      pointHoverRadius: basePointHoverRadius,
+      pointBackgroundColor: color,
+      pointBorderColor: '#fff',
+      pointBorderWidth: single ? 2 : 0,
+    });
+
+    this.chartData = {
+      labels: this.data.map((d) => d.date),
+      datasets: [
+        buildDataset('valid', 'verdict.VALID', '#2E7D46', 'rgba(46,125,70,0.08)'),
+        buildDataset('with_warnings', 'verdict.VALID_WITH_WARNINGS', '#B07800', 'rgba(176,120,0,0.06)'),
+        buildDataset('invalid', 'verdict.INVALID', '#C0392B', 'rgba(192,57,43,0.06)'),
+      ],
+    };
   }
 }
