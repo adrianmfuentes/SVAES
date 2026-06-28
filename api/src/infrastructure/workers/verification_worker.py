@@ -177,25 +177,30 @@ _VERDICT_TO_STATUS = {
 _wlog = logging.getLogger(__name__)
 
 
+async def _add_connector_name(
+    connector_repo: Any,
+    connector_names: dict[uuid.UUID, str],
+    seen: set[uuid.UUID],
+    connector_instance_id: uuid.UUID,
+) -> None:
+    if connector_instance_id and connector_instance_id not in seen:
+        seen.add(connector_instance_id)
+        connector = await connector_repo.get_by_id(connector_instance_id)
+        if connector:
+            connector_names[connector_instance_id] = connector.name
+
+
 async def _build_connector_names(profile: Any, release_artifacts: list | None = None) -> dict:
     connector_repo = SqlConnectorRepository()
     connector_names: dict[uuid.UUID, str] = {}
     seen: set[uuid.UUID] = set()
 
     for rule in profile.rules:
-        if rule.connector_instance_id and rule.connector_instance_id not in seen:
-            seen.add(rule.connector_instance_id)
-            connector = await connector_repo.get_by_id(rule.connector_instance_id)
-            if connector:
-                connector_names[rule.connector_instance_id] = connector.name
+        await _add_connector_name(connector_repo, connector_names, seen, rule.connector_instance_id)
 
     if release_artifacts:
         for artifact in release_artifacts:
-            if artifact.connector_instance_id and artifact.connector_instance_id not in seen:
-                seen.add(artifact.connector_instance_id)
-                connector = await connector_repo.get_by_id(artifact.connector_instance_id)
-                if connector:
-                    connector_names[artifact.connector_instance_id] = connector.name
+            await _add_connector_name(connector_repo, connector_names, seen, artifact.connector_instance_id)
 
     return connector_names
 
@@ -213,6 +218,35 @@ async def _build_artifact_type_connector_map(release_artifacts: list) -> dict[st
     return artifact_type_to_connector
 
 
+def _get_connector_for_rule(
+    rid: str,
+    rule_result: dict,
+    rule_lookup: dict,
+    connector_names: dict,
+    artifact_type_connector: dict[str, str] | None = None,
+) -> str:
+    if rid == "artifact_fetch_error":
+        ciid_str = rule_result.get("connector_instance_id", "")
+        if ciid_str:
+            try:
+                return connector_names.get(uuid.UUID(ciid_str), "")
+            except (ValueError, KeyError):
+                return ""
+        return ""
+
+    profile_rule = rule_lookup.get(rid)
+    if profile_rule and profile_rule.connector_instance_id:
+        return connector_names.get(profile_rule.connector_instance_id, "")
+
+    if artifact_type_connector:
+        params = profile_rule.params if profile_rule else {}
+        artifact_type = params.get("artifact_type") or RULE_DEFAULT_ARTIFACT_TYPES.get(rid)
+        if artifact_type:
+            return artifact_type_connector.get(artifact_type, "")
+
+    return ""
+
+
 def _enrich_rule_results(
     result_data: dict,
     rule_lookup: dict,
@@ -222,23 +256,9 @@ def _enrich_rule_results(
     for rule_result in result_data.get("rule_results", []):
         rid = rule_result.get("rule_id", "")
         rule_result["rule_name"] = RULE_NAMES.get(rid, rid)
-        profile_rule = rule_lookup.get(rid)
-        connector = ""
-        if rid == "artifact_fetch_error":
-            ciid_str = rule_result.get("connector_instance_id", "")
-            if ciid_str:
-                try:
-                    connector = connector_names.get(uuid.UUID(ciid_str), "")
-                except (ValueError, KeyError):
-                    pass
-        elif profile_rule and profile_rule.connector_instance_id:
-            connector = connector_names.get(profile_rule.connector_instance_id, "")
-        elif artifact_type_connector:
-            params = profile_rule.params if profile_rule else {}
-            artifact_type = params.get("artifact_type") or RULE_DEFAULT_ARTIFACT_TYPES.get(rid)
-            if artifact_type:
-                connector = artifact_type_connector.get(artifact_type, "")
-        rule_result["connector"] = connector
+        rule_result["connector"] = _get_connector_for_rule(
+            rid, rule_result, rule_lookup, connector_names, artifact_type_connector
+        )
         rule_result["evidence"] = rule_result.get("message", "")
         if not rule_result["evidence"] and rule_result.get("status") == "OK":
             rule_result["evidence"] = RULE_OK_EVIDENCE.get(rid, "rule_evidence.ok.default")
