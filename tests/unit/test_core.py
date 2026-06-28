@@ -20,7 +20,7 @@ os.environ.setdefault("JWT_SECRET_KEY", "base-choice-test-secret-key-32-ch!")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 os.environ.setdefault("JWT_EXPIRE_MINUTES", "60")
 os.environ.setdefault("ALLOWED_ORIGINS", "*")
-os.environ.setdefault("ENCRYPTION_KEY", "dMs9Bu4qV9bunZU511boUnNpC0jYXubAfB8a5VPynsE=")
+os.environ.setdefault("ENCRYPTION_KEY", "dMs9Bu4qV9bunZU511boUnNpC0jYXubAfB8a5VPynsE=") # NOSONAR
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:6379/0")
 os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
