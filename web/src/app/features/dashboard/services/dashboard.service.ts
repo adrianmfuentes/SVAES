@@ -35,7 +35,7 @@ export interface RecentRelease {
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
   private readonly http = inject(HttpClient);
-  private projects$: Observable<Project[]> | null = null;
+  private projects$!: Observable<Project[]>;
 
   getMetrics(): Observable<DashboardMetrics> {
     return this.http.get<DashboardMetrics>('/api/v1/dashboard/metrics');
