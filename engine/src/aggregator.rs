@@ -28,7 +28,10 @@ pub fn aggregate(evaluations: &[RuleEvaluation], rules: &[VerificationRule]) -> 
                 RuleStatus::Error if rule_config.severity == "OBLIGATORIA" => {
                     has_mandatory_error = true;
                 }
-                // Si las obligatorias están OK pero una OPCIONAL tiene WARNING, el veredicto es CON_ADVERTENCIAS.
+                // Si las obligatorias están OK pero una OPCIONAL tiene ERROR o WARNING, el veredicto es CON_ADVERTENCIAS.
+                RuleStatus::Error if rule_config.severity == "OPCIONAL" => {
+                    has_optional_warning = true;
+                }
                 RuleStatus::Warning if rule_config.severity == "OPCIONAL" => {
                     has_optional_warning = true;
                 }
@@ -233,6 +236,36 @@ mod tests {
         assert!(
             matches!(verdict, Verdict::NoValida),
             "OBLIGATORIA Error debe prevalecer sobre OPCIONAL Warning"
+        );
+    }
+
+    /// **TC-UNI-AGG-08**: Error en regla OPCIONAL retorna `ConAdvertencias`.
+    ///
+    /// ## Escenario
+    /// 1 regla OBLIGATORIA `Ok` + 1 regla OPCIONAL con `Error`.
+    ///
+    /// ## Resultado esperado
+    /// `Verdict::ConAdvertencias` — un error en una regla OPCIONAL es una advertencia,
+    /// no un bloqueo.
+    ///
+    /// ## Cobertura
+    /// Garantiza que OPCIONAL+Error produce ConAdvertencias (no es ignorado).
+    #[test]
+    fn tc_uni_agg_08_opcional_error_returns_con_advertencias() {
+        let evaluations = vec![
+            make_evaluation("RV-01", RuleStatus::Ok),
+            make_evaluation("RV-03", RuleStatus::Error),
+        ];
+        let rules = vec![
+            make_rule("RV-01", "OBLIGATORIA"),
+            make_rule("RV-03", "OPCIONAL"),
+        ];
+
+        let verdict = aggregate(&evaluations, &rules);
+
+        assert!(
+            matches!(verdict, Verdict::ConAdvertencias),
+            "OPCIONAL Error debe producir ConAdvertencias"
         );
     }
 

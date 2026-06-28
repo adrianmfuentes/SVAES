@@ -110,4 +110,41 @@ mod tests {
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
     }
+
+    #[test]
+    fn no_documents_returns_error() {
+        let artifacts = vec![make_artifact("T-001", "TAREA", json!({"accessible": true}))];
+        let rule = make_rule("RV-05");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("DOCUMENTO"));
+    }
+
+    #[test]
+    fn inaccessible_document_returns_error() {
+        let artifacts = vec![
+            make_artifact("D-001", "DOCUMENTO", json!({"accessible": true})),
+            make_artifact("D-002", "DOCUMENTO", json!({"accessible": false})),
+        ];
+        let rule = make_rule("RV-05");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("D-002"));
+    }
+
+    #[test]
+    fn document_missing_accessible_field_returns_error() {
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({}))];
+        let rule = make_rule("RV-05");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+    }
 }

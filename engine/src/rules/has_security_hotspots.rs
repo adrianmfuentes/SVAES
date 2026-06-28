@@ -19,8 +19,8 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
     if matching.is_empty() {
         return RuleEvaluation {
             rule_id: rule_config.id.clone(),
-            status: RuleStatus::Warning,
-            message: Some(format!("No se encontraron artefactos de tipo '{}' para evaluar", artifact_type)),
+            status: RuleStatus::NoEvaluada,
+            message: Some(format!("No hay artefactos de tipo '{}' en la entrega — regla no aplicable", artifact_type)),
         };
     }
 
@@ -75,8 +75,8 @@ mod tests {
     }
 
     #[test]
-    fn no_artifacts_returns_warning() {
+    fn no_artifacts_returns_no_evaluada() {
         let result = evaluate(&[], &make_rule(json!({})));
-        assert_eq!(result.status, RuleStatus::Warning);
+        assert_eq!(result.status, RuleStatus::NoEvaluada);
     }
 }

@@ -983,6 +983,7 @@
   "a11y.mock_preview": "Product interface preview (decorative)",
   "verdict.VALID": "Valid",
   "verdict.VALID_WITH_WARNINGS": "Valid with warnings",
+  "verdict.WITH_WARNINGS": "Valid with warnings",
   "verdict.INVALID": "Invalid",
   "verdict.NOT_EVALUATED": "Not evaluated",
   "rule_result.PASSED": "Passed",

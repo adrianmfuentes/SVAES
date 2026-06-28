@@ -7,12 +7,12 @@
 }
 
 .chart-wrapper {
-  height: 15rem;
+  height: 17rem;
   position: relative;
 }
 
 .chart-skeleton {
-  height: 15rem;
+  height: 17rem;
 }
 
 .skeleton {
@@ -53,7 +53,7 @@
 @media (max-width: 35rem) {
   .chart-wrapper,
   .chart-skeleton,
-  .chart-empty { height: 12rem; }
+  .chart-empty { height: 14rem; }
 
   .chart-title { margin-bottom: var(--spacing-md); }
 }

@@ -151,4 +151,61 @@ mod tests {
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
     }
+
+    #[test]
+    fn missing_master_artifact_id_param_returns_error() {
+        let rule = VerificationRule {
+            id: "RV-08".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: serde_json::json!({}),
+        };
+        let result = evaluate(&[], &rule);
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("master_artifact_id"));
+    }
+
+    #[test]
+    fn master_artifact_not_found_returns_error() {
+        let artifacts = vec![
+            make_artifact("T-001", "TAREA", json!({})),
+        ];
+        let rule = make_rule("RV-08", "PLAN-999");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("PLAN-999"));
+    }
+
+    #[test]
+    fn declared_task_missing_from_payload_returns_error() {
+        let artifacts = vec![
+            make_artifact("PLAN-001", "PLAN", json!({"planned_tasks": ["T-001", "T-002", "T-003"]})),
+            make_artifact("T-001", "TAREA", json!({})),
+            make_artifact("T-002", "TAREA", json!({})),
+        ];
+        let rule = make_rule("RV-08", "PLAN-001");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("T-003"));
+    }
+
+    #[test]
+    fn extra_task_not_declared_returns_error() {
+        let artifacts = vec![
+            make_artifact("PLAN-001", "PLAN", json!({"planned_tasks": ["T-001"]})),
+            make_artifact("T-001", "TAREA", json!({})),
+            make_artifact("T-002", "TAREA", json!({})),
+        ];
+        let rule = make_rule("RV-08", "PLAN-001");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+    }
 }

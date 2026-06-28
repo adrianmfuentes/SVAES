@@ -108,4 +108,47 @@ mod tests {
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
     }
+
+    #[test]
+    fn invalid_state_returns_error() {
+        let artifacts = vec![
+            make_artifact("T-001", "TAREA", "DONE"),
+            make_artifact("T-002", "TAREA", "IN_PROGRESS"),
+        ];
+        let rule = make_rule("RV-03", json!({}));
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("T-002"));
+    }
+
+    #[test]
+    fn missing_status_field_returns_error() {
+        let artifacts = vec![Artifact {
+            id: "T-001".to_string(),
+            artifact_type: "TAREA".to_string(),
+            metadata: serde_json::json!({}),
+        }];
+        let rule = make_rule("RV-03", json!({}));
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    #[test]
+    fn no_tarea_artifacts_returns_ok() {
+        let artifacts = vec![Artifact {
+            id: "C-001".to_string(),
+            artifact_type: "CODIGO".to_string(),
+            metadata: serde_json::json!({"status": "IN_PROGRESS"}),
+        }];
+        let rule = make_rule("RV-03", json!({}));
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
 }

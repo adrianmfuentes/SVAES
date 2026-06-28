@@ -6,7 +6,7 @@ use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 /// # Parámetros
 /// * `artifacts` - Slice de artefactos a verificar.
 /// * `rule_config` - Configuración de la regla con parámetros:
-///   - `artifact_type`: Tipo de artefacto a verificar (default: "CÓDIGO").
+///   - `artifact_type`: Tipo de artefacto a verificar (default: "CODIGO").
 ///   - `reference_fields`: Array de nombres de campos que contienen referencias (default: ["link", "branch"]).
 ///   - `accessible_field`: Campo boolean que indica si la referencia es accesible (default: "accessible").
 ///
@@ -60,7 +60,7 @@ fn parse_params<'a>(rule_config: &'a VerificationRule) -> Rv09Params<'a> {
         .params
         .get("artifact_type")
         .and_then(|v| v.as_str())
-        .unwrap_or("CÓDIGO");
+        .unwrap_or("CODIGO");
 
     let reference_fields: Vec<&str> = rule_config
         .params
@@ -174,7 +174,7 @@ mod tests {
     fn tc_uni_mot_09_rv09_valid_references_returns_ok() {
         let artifacts = vec![make_artifact(
             "C-001",
-            "CÓDIGO",
+            "CODIGO",
             json!({
                 "link": "https://github.com/repo/commit/abc123",
                 "branch": "feature/new-feature",
@@ -194,7 +194,7 @@ mod tests {
     fn invalid_link_returns_error() {
         let artifacts = vec![make_artifact(
             "C-002",
-            "CÓDIGO",
+            "CODIGO",
             json!({
                 "link": "ftp://bad-protocol.com",
                 "accessible": true
@@ -214,7 +214,7 @@ mod tests {
     fn invalid_branch_returns_error() {
         let artifacts = vec![make_artifact(
             "C-003",
-            "CÓDIGO",
+            "CODIGO",
             json!({
                 "branch": "",
                 "accessible": true
@@ -234,7 +234,7 @@ mod tests {
     fn not_accessible_returns_error() {
         let artifacts = vec![make_artifact(
             "C-004",
-            "CÓDIGO",
+            "CODIGO",
             json!({
                 "link": "https://valid.com",
                 "accessible": false
@@ -272,7 +272,7 @@ mod tests {
     fn missing_accessible_field_treated_as_ok() {
         let artifacts = vec![make_artifact(
             "C-005",
-            "CÓDIGO",
+            "CODIGO",
             json!({
                 "link": "https://valid.com"
             }),
@@ -289,7 +289,7 @@ mod tests {
     fn missing_reference_field_treated_as_ok() {
         let artifacts = vec![make_artifact(
             "C-006",
-            "CÓDIGO",
+            "CODIGO",
             json!({
                 "accessible": true
             }),
@@ -306,7 +306,7 @@ mod tests {
     fn reference_starts_with_http_validates_as_url() {
         let artifacts = vec![make_artifact(
             "C-007",
-            "CÓDIGO",
+            "CODIGO",
             json!({
                 "branch": "http://github.com/repo",
                 "accessible": true
@@ -325,7 +325,7 @@ mod tests {
         let artifacts = vec![
             make_artifact(
                 "C-008",
-                "CÓDIGO",
+                "CODIGO",
                 json!({
                     "link": "invalid-link",
                     "accessible": true
@@ -333,7 +333,7 @@ mod tests {
             ),
             make_artifact(
                 "C-009",
-                "CÓDIGO",
+                "CODIGO",
                 json!({
                     "link": "https://valid.com",
                     "accessible": false

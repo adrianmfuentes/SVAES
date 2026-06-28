@@ -5,12 +5,12 @@ use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 /// # Parámetros
 /// * `artifacts` - Slice de artefactos a verificar.
 /// * `rule_config` - Configuración de la regla con parámetros opcionales:
-///   - `source_type`: Tipo de artefacto fuente que contiene referencias (default: "CÓDIGO").
+///   - `source_type`: Tipo de artefacto fuente que contiene referencias (default: "CODIGO").
 ///   - `target_type`: Tipo de artefacto destino que debe existir (default: "TAREA").
 ///   - `reference_field`: Campo de metadata que contiene el ID referenciado (default: "task_id").
 ///
 /// # Lógica
-/// 1. Filtra artefactos por tipo fuente (default: "CÓDIGO").
+/// 1. Filtra artefactos por tipo fuente (default: "CODIGO").
 /// 2. Por cada artefacto fuente, extrae el campo de referencia de su metadata.
 /// 3. Busca si existe algún artefacto del tipo destino (default: "TAREA") con ese ID.
 /// 4. Si no existe, retorna Error con los IDs huérfanos.
@@ -22,7 +22,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
     let source_type = rule_config.params
         .get("source_type")
         .and_then(|v| v.as_str())
-        .unwrap_or("CÓDIGO");
+        .unwrap_or("CODIGO");
 
     let target_type = rule_config.params
         .get("target_type")
@@ -101,8 +101,8 @@ mod tests {
         let artifacts = vec![
             make_artifact("T-001", "TAREA", json!({})),
             make_artifact("T-002", "TAREA", json!({})),
-            make_artifact("C-001", "CÓDIGO", json!({"task_id": "T-001"})),
-            make_artifact("C-002", "CÓDIGO", json!({"task_id": "T-002"})),
+            make_artifact("C-001", "CODIGO", json!({"task_id": "T-001"})),
+            make_artifact("C-002", "CODIGO", json!({"task_id": "T-002"})),
         ];
         let rule = make_rule("RV-02");
 
@@ -118,8 +118,8 @@ mod tests {
     fn tc_uni_mot_12_rv02_orphan_reference_returns_error() {
         let artifacts = vec![
             make_artifact("T-001", "TAREA", json!({})),
-            make_artifact("C-001", "CÓDIGO", json!({"task_id": "T-001"})),
-            make_artifact("C-002", "CÓDIGO", json!({"task_id": "T-999"})),
+            make_artifact("C-001", "CODIGO", json!({"task_id": "T-001"})),
+            make_artifact("C-002", "CODIGO", json!({"task_id": "T-999"})),
         ];
         let rule = make_rule("RV-02");
 
@@ -128,5 +128,23 @@ mod tests {
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
         assert!(msg.contains("T-999"));
+    }
+
+    #[test]
+    fn codigo_without_task_id_field_is_ok() {
+        // CODIGO artifacts without the reference field are silently skipped (field is optional).
+        let artifacts = vec![
+            make_artifact("T-001", "TAREA", json!({})),
+            make_artifact("C-001", "CODIGO", json!({})),
+        ];
+        let result = evaluate(&artifacts, &make_rule("RV-02"));
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn no_codigo_artifacts_returns_ok() {
+        let artifacts = vec![make_artifact("T-001", "TAREA", json!({}))];
+        let result = evaluate(&artifacts, &make_rule("RV-02"));
+        assert_eq!(result.status, RuleStatus::Ok);
     }
 }

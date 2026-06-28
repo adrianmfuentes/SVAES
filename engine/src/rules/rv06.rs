@@ -100,4 +100,51 @@ mod tests {
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
     }
+
+    #[test]
+    fn version_mismatch_returns_error() {
+        let artifacts = vec![
+            make_artifact("D-001", "DOCUMENTO", json!({"version": "2.0"})),
+            make_artifact("D-002", "DOCUMENTO", json!({"version": "1.5"})),
+        ];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({"expected_value": "2.0"}),
+        };
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("D-002"));
+    }
+
+    #[test]
+    fn missing_attribute_returns_error() {
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({}))];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({"expected_value": "2.0"}),
+        };
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    #[test]
+    fn no_matching_artifacts_returns_ok() {
+        let artifacts = vec![make_artifact("T-001", "TAREA", json!({"version": "wrong"}))];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({"expected_value": "2.0"}),
+        };
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
 }

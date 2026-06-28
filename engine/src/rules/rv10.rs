@@ -108,4 +108,46 @@ mod tests {
         let msg = result.message.unwrap();
         assert!(msg.contains("D-001") && msg.contains("APROBADO"));
     }
+
+    #[test]
+    fn validado_state_also_accepted() {
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({"status": "VALIDADO"}))];
+        let result = evaluate(&artifacts, &make_rule("RV-10"));
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn no_documents_returns_error() {
+        let artifacts = vec![make_artifact("T-001", "TAREA", json!({"status": "APROBADO"}))];
+        let result = evaluate(&artifacts, &make_rule("RV-10"));
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("DOCUMENTO"));
+    }
+
+    #[test]
+    fn document_with_non_approved_status_returns_error() {
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({"status": "BORRADOR"}))];
+        let result = evaluate(&artifacts, &make_rule("RV-10"));
+        assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    #[test]
+    fn document_with_missing_status_returns_error() {
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({}))];
+        let result = evaluate(&artifacts, &make_rule("RV-10"));
+        assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    #[test]
+    fn custom_approved_states_respected() {
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({"status": "REVIEWED"}))];
+        let rule = VerificationRule {
+            id: "RV-10".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({"approved_states": ["REVIEWED", "SIGNED"]}),
+        };
+        let result = evaluate(&artifacts, &rule);
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
 }

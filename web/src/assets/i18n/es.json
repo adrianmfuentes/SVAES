@@ -982,6 +982,7 @@
   "a11y.mock_preview": "Vista previa de la interfaz del producto (decorativo)",
   "verdict.VALID": "Valido",
   "verdict.VALID_WITH_WARNINGS": "Valido con advertencias",
+  "verdict.WITH_WARNINGS": "Valido con advertencias",
   "verdict.INVALID": "No valido",
   "verdict.NOT_EVALUATED": "No evaluado",
   "rule_result.PASSED": "Aprobado",

@@ -6,22 +6,34 @@ use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 /// # Parámetros
 /// * `artifacts` - Slice de artefactos a verificar.
 /// * `rule_config` - Configuración de la regla con parámetros:
-///   - `artifact_type`: Tipo de artefacto marcador a buscar (default: "PLAN").
+///   - `artifact_type`: Tipo de artefacto marcador a buscar. OBLIGATORIO — si no se
+///     proporciona, la regla devuelve `NoEvaluada` porque no hay tipo concreto que buscar.
 ///   - `marker_field`: Campo en metadata que indica registro externo (default: "external_registered").
 ///
 /// # Lógica
-/// 1. Obtiene el tipo de artefacto marcador y el campo que indica registro externo.
+/// 1. Si `artifact_type` no está configurado, devuelve NoEvaluada (regla no aplicable sin config).
 /// 2. Busca un artefacto del tipo especificado.
-/// 3. Si existe, verifica que el campo marker sea `true`.
-/// 4. Si no existe o el campo no es `true`, retorna Error.
+/// 3. Si no existe, devuelve Error.
+/// 4. Si existe, verifica que el campo marker sea `true`; si no, Error.
 ///
 /// # Retorno
 /// `RuleEvaluation` con el estado correspondiente indicando si el marcador fue encontrado.
 pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleEvaluation {
-    let artifact_type = rule_config.params
+    let artifact_type = match rule_config.params
         .get("artifact_type")
         .and_then(|v| v.as_str())
-        .unwrap_or("PLAN");
+    {
+        Some(t) => t,
+        None => {
+            return RuleEvaluation {
+                rule_id: rule_config.id.clone(),
+                status: RuleStatus::NoEvaluada,
+                message: Some(
+                    "Parámetro 'artifact_type' no configurado — regla no aplicable".to_string(),
+                ),
+            };
+        }
+    };
 
     let marker_field = rule_config.params
         .get("marker_field")
@@ -86,7 +98,15 @@ mod tests {
         }
     }
 
-    fn make_rule(id: &str) -> VerificationRule {
+    fn make_rule_with_type(id: &str, artifact_type: &str) -> VerificationRule {
+        VerificationRule {
+            id: id.to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({"artifact_type": artifact_type}),
+        }
+    }
+
+    fn make_rule_no_params(id: &str) -> VerificationRule {
         VerificationRule {
             id: id.to_string(),
             severity: "OBLIGATORIA".to_string(),
@@ -99,13 +119,65 @@ mod tests {
     #[test]
     fn tc_uni_mot_07_rv07_marker_found_returns_ok() {
         let artifacts = vec![
-            make_artifact("P-001", "PLAN", json!({"external_registered": true})),
+            make_artifact("T-001", "TAREA", json!({"external_registered": true})),
         ];
-        let rule = make_rule("RV-07");
+        let rule = make_rule_with_type("RV-07", "TAREA");
 
         let result = evaluate(&artifacts, &rule);
 
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_some());
+    }
+
+    #[test]
+    fn no_artifact_type_param_returns_no_evaluada() {
+        let artifacts = vec![
+            make_artifact("T-001", "TAREA", json!({"external_registered": true})),
+        ];
+        let rule = make_rule_no_params("RV-07");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::NoEvaluada);
+    }
+
+    #[test]
+    fn marker_artifact_not_found_returns_error() {
+        let artifacts = vec![
+            make_artifact("C-001", "CODIGO", json!({})),
+        ];
+        let rule = make_rule_with_type("RV-07", "TAREA");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("TAREA"));
+    }
+
+    #[test]
+    fn marker_field_false_returns_error() {
+        let artifacts = vec![
+            make_artifact("T-001", "TAREA", json!({"external_registered": false})),
+        ];
+        let rule = make_rule_with_type("RV-07", "TAREA");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("T-001"));
+    }
+
+    #[test]
+    fn marker_field_missing_returns_error() {
+        let artifacts = vec![
+            make_artifact("T-001", "TAREA", json!({"other_field": true})),
+        ];
+        let rule = make_rule_with_type("RV-07", "TAREA");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
     }
 }

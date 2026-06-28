@@ -79,11 +79,12 @@ async def _fetch_artifacts(
     connector_registry: Any,
     celery_task: Any,
     total_stages: int,
-) -> list:
+) -> tuple[list, list]:
     from cryptography.fernet import Fernet
     connector_repo = SqlConnectorRepository()
     fernet = Fernet(settings.encryption_key.encode())  # type: ignore[union-attr]
     artifacts_data = []
+    fetch_errors = []
     for i, artifact in enumerate(artifacts):
         _report_progress(celery_task, current=2 + i, total=total_stages, stage='fetching_artifacts')
         try:
@@ -94,6 +95,12 @@ async def _fetch_artifacts(
                     "Connector instance %s not found for artifact %s",
                     artifact.connector_instance_id, artifact.id,
                 )
+                fetch_errors.append({
+                    "artifact_id": str(artifact.id),
+                    "artifact_type": artifact.artifact_type,
+                    "connector": artifact.connector_implementation,
+                    "error": f"Instancia de conector {artifact.connector_instance_id} no encontrada",
+                })
                 continue
             config = ast.literal_eval(fernet.decrypt(connector_instance.encrypted_credentials).decode())
             data = await connector_impl.fetch_artifact(artifact.external_ref, config)
@@ -103,12 +110,18 @@ async def _fetch_artifacts(
                 "artifact_type": artifact.artifact_type,
                 "metadata": data,
             })
-        except Exception:
+        except Exception as exc:
             _wlog.exception(
                 "Failed to fetch artifact %s (connector=%s, ref=%s)",
                 artifact.id, artifact.connector_implementation, artifact.external_ref,
             )
-    return artifacts_data
+            fetch_errors.append({
+                "artifact_id": str(artifact.id),
+                "artifact_type": artifact.artifact_type,
+                "connector": artifact.connector_implementation,
+                "error": str(exc),
+            })
+    return artifacts_data, fetch_errors
 
 
 def _build_rules_data(profile: Any) -> list:
@@ -221,7 +234,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
 
     _report_progress(celery_task, current=1, total=total_stages, stage='loading')
 
-    artifacts_data = await _fetch_artifacts(
+    artifacts_data, fetch_errors = await _fetch_artifacts(
         release.artifacts or [], connector_registry, celery_task, total_stages
     )
 
@@ -240,6 +253,19 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
     connector_names = await _build_connector_names(profile)
     artifact_type_connector = await _build_artifact_type_connector_map(release.artifacts or [])
     _enrich_rule_results(result_data, rule_lookup, connector_names, artifact_type_connector)
+
+    for fe in fetch_errors:
+        result_data.setdefault("rule_results", []).append({
+            "rule_id": "artifact_fetch_error",
+            "rule_name": "Error al recuperar artefacto",
+            "status": "WARNING",
+            "message": (
+                f"No se pudo obtener el artefacto {fe['artifact_id']} "
+                f"(tipo: {fe['artifact_type']}, conector: {fe['connector']}): {fe['error']}"
+            ),
+            "connector": fe["connector"],
+            "evidence": fe["error"],
+        })
 
     save_stage = engine_stage + 1
     _report_progress(celery_task, current=save_stage, total=total_stages, stage='saving_results')

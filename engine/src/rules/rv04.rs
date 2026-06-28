@@ -38,8 +38,8 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
                         if val.is_null() {
                             return true;
                         }
-                        match val.as_i64() {
-                            Some(n) => n < 0,
+                        match val.as_f64() {
+                            Some(n) => n < 0.0,
                             None => true,
                         }
                     }
@@ -102,6 +102,43 @@ mod tests {
 
         let result = evaluate(&artifacts, &rule);
 
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn float_values_are_accepted() {
+        let artifacts = vec![make_artifact("T-001", "TAREA", json!({"effort": 2.5, "estimation": 3.75}))];
+        let result = evaluate(&artifacts, &make_rule("RV-04"));
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn negative_value_returns_error() {
+        let artifacts = vec![make_artifact("T-001", "TAREA", json!({"effort": -1, "estimation": 5}))];
+        let result = evaluate(&artifacts, &make_rule("RV-04"));
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert!(msg.contains("T-001"));
+    }
+
+    #[test]
+    fn missing_field_returns_error() {
+        let artifacts = vec![make_artifact("T-001", "TAREA", json!({"effort": 3}))];
+        let result = evaluate(&artifacts, &make_rule("RV-04"));
+        assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    #[test]
+    fn null_field_returns_error() {
+        let artifacts = vec![make_artifact("T-001", "TAREA", json!({"effort": null, "estimation": 5}))];
+        let result = evaluate(&artifacts, &make_rule("RV-04"));
+        assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    #[test]
+    fn no_tarea_artifacts_returns_ok() {
+        let artifacts = vec![make_artifact("C-001", "CODIGO", json!({}))];
+        let result = evaluate(&artifacts, &make_rule("RV-04"));
         assert_eq!(result.status, RuleStatus::Ok);
     }
 }
