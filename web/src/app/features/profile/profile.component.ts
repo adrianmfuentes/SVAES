@@ -84,7 +84,6 @@ interface UserProfile {
           </form>
         </div>
 
-        <!-- Organization card (only when user has no org and is not global admin) -->
         <div class="card" *ngIf="!hasOrg() && !isAdmin()">
           <h2 class="card-title">{{ 'profile_page.create_org_title' | t }}</h2>
 
@@ -211,7 +210,6 @@ interface UserProfile {
             <div class="field-hint">{{ 'profile_page.2fa_hint' | t }}</div>
           </div>
 
-          <!-- Setup / QR code section (only when not yet enabled) -->
           <div *ngIf="!profile()?.totp_enabled">
             <div *ngIf="!totpSetupData()" class="form-footer" style="border-top:none; padding-top:0; margin-top: var(--spacing-md);">
               <button class="btn-primary" [disabled]="totpLoading()" [title]="totpLoading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''" (click)="setupTotp()">
@@ -258,7 +256,6 @@ interface UserProfile {
             </div>
           </div>
 
-          <!-- Disable section (only when enabled) -->
           <div *ngIf="profile()?.totp_enabled">
             <form [formGroup]="totpDisableForm" (ngSubmit)="disableTotp()">
               <div class="form-group" style="margin-top: var(--spacing-md);">

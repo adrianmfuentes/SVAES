@@ -8,7 +8,6 @@
       <a routerLink="/" class="sidebar-logo">SVAES</a>
     </div>
 
-    <!-- ADMIN (U3) navigation -->
     <nav class="sidebar-nav" *ngIf="isAdmin" [attr.aria-label]="'shell.nav_admin_label' | t" (click)="closeSidebar()" (keydown.enter)="closeSidebar()">
       <div class="nav-section">{{ 'shell.nav_system' | t }}</div>
 
@@ -53,7 +52,6 @@
       </a>
     </nav>
 
-    <!-- OPERATOR/MANAGER (U2/U4) navigation -->
     <nav class="sidebar-nav" *ngIf="!isAdmin" [attr.aria-label]="'shell.nav_user_label' | t" (click)="closeSidebar()" (keydown.enter)="closeSidebar()">
       <div class="nav-section">{{ 'shell.nav_main' | t }}</div>
 

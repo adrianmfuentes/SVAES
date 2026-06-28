@@ -895,7 +895,7 @@ export class AdminComponent implements OnInit {
     }
   }
 
-  // ── Organizations ─────────────────────────────────────────────
+  // -- Organizations --------------------------------------------─
 
   private loadOrgs(): void {
     this.orgsLoading.set(true);
@@ -911,7 +911,7 @@ export class AdminComponent implements OnInit {
       });
   }
 
-  // ── Users ─────────────────────────────────────────────────────
+  // -- Users ----------------------------------------------------─
 
   private loadUsers(): void {
     this.usersLoading.set(true);
@@ -928,7 +928,7 @@ export class AdminComponent implements OnInit {
       });
   }
 
-  // ── Access Requests ───────────────────────────────────────────
+  // -- Access Requests ------------------------------------------─
 
   setArStatus(status: AccessRequestStatus): void {
     this.arStatus.set(status);

@@ -293,7 +293,7 @@ function passwordStrengthValidator(control: AbstractControl): ValidationErrors |
       cursor: not-allowed;
     }
 
-    /* ── Responsive ──────────────────────────────────── */
+    /* -- Responsive ------------------------------------ */
 
     @media (max-width: 48rem) {
       .reset-header { padding: var(--spacing-md) var(--spacing-lg); }

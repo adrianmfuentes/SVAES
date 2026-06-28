@@ -88,7 +88,6 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
             </div>
           </div>
 
-          <!-- Step 1: email + password -->
           <div class="login-form" *ngIf="!totpRequired && !forgotMode">
             <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
               <h2 class="form-title">{{ 'login.title' | t }}</h2>
@@ -158,7 +157,6 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
             </p>
           </div>
 
-          <!-- Step 2: TOTP code -->
           <div class="login-form" *ngIf="totpRequired && !forgotMode">
             <form [formGroup]="totpForm" (ngSubmit)="onSubmitTotp()" novalidate>
               <h2 class="form-title">{{ 'login.2fa_title' | t }}</h2>
@@ -211,7 +209,6 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
             </p>
           </div>
 
-          <!-- Step: Forgot password -->
           <div class="login-form" *ngIf="forgotMode && !forgotSent">
             <h2 class="form-title">{{ 'forgot_password.title' | t }}</h2>
             <p class="totp-hint">{{ 'forgot_password.desc' | t }}</p>
@@ -254,8 +251,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
             </p>
           </div>
 
-          <!-- Step: Forgot password — sent -->
-          <div class="login-form" *ngIf="forgotMode && forgotSent">
+                    <div class="login-form" *ngIf="forgotMode && forgotSent">
             <h2 class="form-title">{{ 'forgot_password.sent_title' | t }}</h2>
             <p class="totp-hint">{{ 'forgot_password.sent_desc' | t }}</p>
             <p class="form-footer-link">

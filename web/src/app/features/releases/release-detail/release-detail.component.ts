@@ -371,7 +371,6 @@ interface VerificationResult {
                 }
               </div>
 
-              <!-- Artifact type — auto-set from connector type, still editable -->
               <div class="form-group">
                 <label class="form-label" for="import-type">{{ 'release.artifact_type' | t }}</label>
                 <select id="import-type" class="form-select" [value]="importArtifactType()" (change)="importArtifactType.set($any($event.target).value)">
@@ -381,7 +380,6 @@ interface VerificationResult {
                 </select>
               </div>
 
-              <!-- Smart reference picker: browse items from connector or manual fallback -->
               @if (importConnector()) {
                 <div class="form-group">
                   <label class="form-label">{{ 'release.external_ref' | t }}</label>
@@ -394,7 +392,6 @@ interface VerificationResult {
                       {{ 'release.browse_manual_label' | t }}
                     </button>
                   } @else if (!browseManual() && browseItems().length > 0) {
-                    <!-- Selected item display -->
                     @if (importExternalRef()) {
                       <div class="browse-selected">
                         <div class="browse-selected-info">
@@ -404,7 +401,6 @@ interface VerificationResult {
                         <button type="button" class="btn-icon btn-danger" (click)="clearBrowseSelection()" aria-label="Clear selection">✕</button>
                       </div>
                     } @else {
-                      <!-- Search + list -->
                       <input type="text" class="form-input browse-search"
                         [placeholder]="'release.browse_search_placeholder' | t"
                         [value]="browseSearch()"
@@ -447,7 +443,6 @@ interface VerificationResult {
                 </div>
               }
 
-              <!-- Description — pre-filled from selected item, still editable -->
               <div class="form-group">
                 <label class="form-label" for="import-desc">{{ 'release.description_optional' | t }}</label>
                 <input id="import-desc" type="text" class="form-input"
@@ -1656,7 +1651,7 @@ interface VerificationResult {
       border-color: var(--ink);
     }
 
-    /* ── Overlay mini progress bar ── */
+    /* -- Overlay mini progress bar -- */
     .vp-overlay-progress {
       margin: 0.25rem 1.5rem 0.75rem;
       display: flex;
@@ -1687,7 +1682,7 @@ interface VerificationResult {
       color: var(--muted);
     }
 
-    /* ── In-page progress card ── */
+    /* -- In-page progress card -- */
     .verification-progress-card {
       background: var(--surface-raised);
       border: 0.0625rem solid var(--border);
@@ -2339,7 +2334,6 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   translateEvidence(raw: string | null | undefined): string {
     if (!raw) return '';
     const translated = this.ts.translateInstant(raw);
-    // translateInstant returns the key unchanged when not found → raw text passes through
     return translated;
   }
 

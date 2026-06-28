@@ -42,7 +42,6 @@ function generateSlug(name: string): string {
       <main class="request-main">
         <div class="request-card">
 
-          <!-- Success state -->
           <ng-container *ngIf="submitted(); else formBlock">
             <div class="success-state step-block">
               <div class="success-icon" aria-hidden="true">
@@ -57,10 +56,8 @@ function generateSlug(name: string): string {
             </div>
           </ng-container>
 
-          <!-- Form state -->
           <ng-template #formBlock>
 
-            <!-- Stepper -->
             <div class="stepper" role="list">
               <div class="stepper-item" role="listitem"
                    [class.done]="currentStep() > 1" [class.active]="currentStep() === 1"
@@ -96,7 +93,6 @@ function generateSlug(name: string): string {
 
             <form [formGroup]="requestForm" (ngSubmit)="handleFormSubmit()" novalidate>
 
-              <!-- Step 1 — You -->
               <div class="step-block" *ngIf="currentStep() === 1">
                 <h2 class="card-title">{{ 'access_request.step1' | t }}</h2>
 
@@ -140,7 +136,6 @@ function generateSlug(name: string): string {
                 </div>
               </div>
 
-              <!-- Step 2 — Organization -->
               <div class="step-block" *ngIf="currentStep() === 2">
                 <h2 class="card-title">{{ 'access_request.step2' | t }}</h2>
 
@@ -187,7 +182,6 @@ function generateSlug(name: string): string {
                 </div>
               </div>
 
-              <!-- Step 3 — Review -->
               <div class="step-block" *ngIf="currentStep() === 3">
                 <h2 class="card-title">{{ 'access_request.review_title' | t }}</h2>
 
@@ -310,7 +304,7 @@ function generateSlug(name: string): string {
         max-width: 27.5rem;
       }
 
-      /* ── Stepper ──────────────────────────────────────────────────── */
+      /* -- Stepper ---------------------------------------------------- */
 
       .stepper {
         display: flex;
@@ -374,7 +368,7 @@ function generateSlug(name: string): string {
         background: var(--ink);
       }
 
-      /* ── Step block ───────────────────────────────────────────────── */
+      /* -- Step block ------------------------------------------------─ */
 
       .step-block {
         animation: stepIn 0.22s ease both;
@@ -406,7 +400,7 @@ function generateSlug(name: string): string {
         margin: 0 0 var(--spacing-md);
       }
 
-      /* ── Form groups ──────────────────────────────────────────────── */
+      /* -- Form groups ------------------------------------------------ */
 
       .form-group {
         margin-bottom: var(--spacing-md);
@@ -520,7 +514,7 @@ function generateSlug(name: string): string {
         color: var(--verdict-invalid);
       }
 
-      /* ── Step navigation ──────────────────────────────────────────── */
+      /* -- Step navigation -------------------------------------------- */
 
       .step-nav {
         display: flex;
@@ -534,7 +528,7 @@ function generateSlug(name: string): string {
         justify-content: flex-end;
       }
 
-      /* ── Review block ─────────────────────────────────────────────── */
+      /* -- Review block ----------------------------------------------─ */
 
       .review-block {
         background: var(--paper);
@@ -581,7 +575,7 @@ function generateSlug(name: string): string {
         color: var(--muted);
       }
 
-      /* ── Alert ────────────────────────────────────────────────────── */
+      /* -- Alert ------------------------------------------------------ */
 
       .alert-error {
         display: flex;
@@ -603,14 +597,14 @@ function generateSlug(name: string): string {
         margin-top: 0.125rem;
       }
 
-      /* ── Submit button ────────────────────────────────────────────── */
+      /* -- Submit button ---------------------------------------------- */
 
       .btn-submit.btn-loading {
         opacity: 0.7;
         cursor: wait;
       }
 
-      /* ── Success state ────────────────────────────────────────────── */
+      /* -- Success state ---------------------------------------------- */
 
       .success-state {
         display: flex;
@@ -633,7 +627,7 @@ function generateSlug(name: string): string {
         margin-top: var(--spacing-sm);
       }
 
-      /* ── Footer ───────────────────────────────────────────────────── */
+      /* -- Footer ----------------------------------------------------─ */
 
       .request-footer {
         display: flex;
@@ -662,7 +656,7 @@ function generateSlug(name: string): string {
         color: var(--ink);
       }
 
-      /* ── Responsive ───────────────────────────────────────────────── */
+      /* -- Responsive ------------------------------------------------─ */
 
       @media (max-width: 40rem) {
         .request-page {

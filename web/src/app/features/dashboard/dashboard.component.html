@@ -3,7 +3,6 @@
     <h1 class="page-title">{{ 'dashboard.title' | t }}</h1>
   </div>
 
-  <!-- KPI cards 2×2 -->
   <div class="kpi-grid">
     <app-kpi-card [label]="'dashboard.pass_rate' | t" [loading]="metricsLoading()" [error]="metricsError()">
       @if (metrics(); as m) {
@@ -37,14 +36,12 @@
     </app-kpi-card>
   </div>
 
-  <!-- Temporal chart -->
   <app-success-rate-chart
     [data]="metrics()?.temporal_data ?? []"
     [loading]="metricsLoading()"
     [error]="metricsError()">
   </app-success-rate-chart>
 
-  <!-- Bottom row -->
   <div class="bottom-row">
     <app-top-failed-rules
       [rules]="metrics()?.top_failed_rules ?? []"

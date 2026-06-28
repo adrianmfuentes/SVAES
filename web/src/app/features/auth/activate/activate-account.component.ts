@@ -57,24 +57,20 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
       <main class="activate-main">
         <div class="activate-card">
 
-          <!-- ── Token expired / invalid ─────────────── -->
           <div *ngIf="tokenExpired" class="state-card">
             <div class="state-icon state-icon--error">✕</div>
             <h1 class="state-title">{{ 'activate.error.invalid_code' | t }}</h1>
             <p class="state-desc">{{ 'activate.error.generic' | t }}</p>
           </div>
 
-          <!-- ── Success ─────────────────────────────── -->
           <div *ngIf="activationSuccess" class="state-card">
             <div class="state-icon state-icon--success">✓</div>
             <h1 class="state-title">{{ 'activate.success_title' | t }}</h1>
             <p class="state-desc">{{ 'activate.success_desc' | t }}</p>
           </div>
 
-          <!-- ── Step form ───────────────────────────── -->
           <ng-container *ngIf="!tokenExpired && !activationSuccess">
 
-            <!-- Step indicator -->
             <div class="stepper">
               <div class="step" [class.step--active]="step() === 1" [class.step--done]="step() > 1">
                 <div class="step-circle">
@@ -92,7 +88,6 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
 
             <form [formGroup]="activateForm" (ngSubmit)="onSubmit()" novalidate>
 
-              <!-- ── Step 1: activation code ─────────── -->
               <div *ngIf="step() === 1" class="step-body">
                 <h1 class="step-title">{{ 'activate.step1_title' | t }}</h1>
                 <p class="step-desc">{{ 'activate.step1_desc' | t }}</p>
@@ -130,7 +125,6 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
                 </div>
               </div>
 
-              <!-- ── Step 2: password ────────────────── -->
               <div *ngIf="step() === 2" class="step-body">
                 <h1 class="step-title">{{ 'activate.step2_title' | t }}</h1>
                 <p class="step-desc">{{ 'activate.step2_desc' | t }}</p>
@@ -251,7 +245,7 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
   styles: [`
     :host { display: block; }
 
-    /* ── Page shell ─────────────────────────────────── */
+    /* -- Page shell ----------------------------------─ */
 
     .activate-page {
       min-height: 100vh;
@@ -303,7 +297,7 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
       color: var(--muted);
     }
 
-    /* ── Stepper ─────────────────────────────────────── */
+    /* -- Stepper --------------------------------------─ */
 
     .stepper {
       display: flex;
@@ -374,7 +368,7 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
       background: var(--accent-dark);
     }
 
-    /* ── Step body ───────────────────────────────────── */
+    /* -- Step body ------------------------------------─ */
 
     .step-body {
       display: flex;
@@ -400,7 +394,7 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
       margin: 0;
     }
 
-    /* ── Form elements ───────────────────────────────── */
+    /* -- Form elements --------------------------------─ */
 
     .form-group {
       display: flex;
@@ -485,7 +479,7 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
       color: var(--verdict-invalid);
     }
 
-    /* ── Password checklist ──────────────────────────── */
+    /* -- Password checklist ---------------------------- */
 
     .password-checklist {
       display: grid;
@@ -517,7 +511,7 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
       flex-shrink: 0;
     }
 
-    /* ── Buttons ─────────────────────────────────────── */
+    /* -- Buttons --------------------------------------─ */
 
     .step-footer {
       display: flex;
@@ -575,7 +569,7 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
 
     .btn-secondary:hover { background: var(--paper-secondary); }
 
-    /* ── Spinner ─────────────────────────────────────── */
+    /* -- Spinner --------------------------------------─ */
 
     .spinner {
       display: inline-block;
@@ -589,7 +583,7 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Error / success states ──────────────────────── */
+    /* -- Error / success states ------------------------ */
 
     .alert-error {
       font-family: var(--font-sans);
@@ -649,7 +643,7 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
       margin: 0;
     }
 
-    /* ── Responsive ──────────────────────────────────── */
+    /* -- Responsive ------------------------------------ */
 
     @media (max-width: 48rem) {
       .activate-header { padding: var(--spacing-md) var(--spacing-lg); }

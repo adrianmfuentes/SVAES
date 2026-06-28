@@ -86,8 +86,6 @@ export class LangToggleComponent {
 
   setLang(lang: string): void {
     if (lang === this.ts.currentLang) return;
-    // Load translations FIRST, then emit the language change so the pipe
-    // re-translates only after this.translations is already updated.
     this.ts.loadTranslationsWithCache(lang).subscribe(() => {
       this.ts.setLanguage(lang);
     });

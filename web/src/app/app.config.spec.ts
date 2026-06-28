@@ -30,7 +30,6 @@ describe('appConfig', () => {
   });
 
   it('should include provideBrowserGlobalErrorListeners', () => {
-    // provideBrowserGlobalErrorListeners() returns an EnvironmentProviders object, not a function
     const providers = appConfig.providers as any[];
     const hasErrorListeners = providers.some(p => p !== null && typeof p === 'object');
     expect(hasErrorListeners).toBe(true);

@@ -58,8 +58,6 @@ export class TranslationService {
       if (raw) {
         const cached = JSON.parse(raw) as Record<string, string>;
         this.translations = new Map(Object.entries(cached));
-        // Background cache refresh — update localStorage only, NOT this.translations
-        // (avoids a race condition where a stale refresh overwrites a language the user already switched to)
         this.http.get<Record<string, string>>(`/assets/i18n/${lang}.json`).pipe(
           tap(fresh => {
             try { localStorage.setItem(`${I18N_CACHE_PREFIX}${lang}`, JSON.stringify(fresh)); } catch { /* ignore */ }
