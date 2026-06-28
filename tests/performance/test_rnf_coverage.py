@@ -358,10 +358,15 @@ async def test_tc_fia_rnf09_01_connector_failure_continues_verification():
         )
 
     # Only the successful artifact should be in results
-    assert len(result) == 1, (
-        f"Expected 1 artifact (JIRA), got {len(result)} — connector failure must not abort (RNF-09)"
+    artifacts_data, fetch_errors = result
+    assert len(artifacts_data) == 1, (
+        f"Expected 1 artifact (JIRA), got {len(artifacts_data)} — connector failure must not abort (RNF-09)"
     )
-    assert result[0]["metadata"]["key"] == "PROJ-42"
+    assert len(fetch_errors) == 1, (
+        f"Expected 1 error entry (GITHUB), got {len(fetch_errors)} — connector failure must not abort (RNF-09)"
+    )
+    assert artifacts_data[0]["metadata"]["key"] == "PROJ-42"
+    assert fetch_errors[0]["connector"] == "GITHUB"
 
 
 def test_tc_fia_rnf10_01_critical_errors_logged_within_5s(caplog):
