@@ -2143,11 +2143,12 @@ class TestArtifactService:
         from application.use_cases.main.artifact_service import ArtifactService
         art_repo = AsyncMock()
         rel_repo = AsyncMock()
-        return ArtifactService(art_repo, rel_repo), art_repo, rel_repo
+        conn_repo = AsyncMock()
+        return ArtifactService(art_repo, rel_repo, conn_repo), art_repo, rel_repo, conn_repo
 
     async def test_list_release_not_found_raises(self, svc):
         """Branch: release not found → ValidationError"""
-        service, _, rel_repo = svc
+        service, _, rel_repo, _ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
         from domain.exceptions import ValidationError
         with pytest.raises(ValidationError):
@@ -2155,7 +2156,7 @@ class TestArtifactService:
 
     async def test_list_success(self, svc):
         """Branch: release found → artifacts returned"""
-        service, art_repo, rel_repo = svc
+        service, art_repo, rel_repo, _ = svc
         rel_repo.get_by_id = AsyncMock(return_value=MagicMock())
         art_repo.find_by_release = AsyncMock(return_value=[])
         result = await service.list_artifacts(uuid4())
@@ -2163,7 +2164,7 @@ class TestArtifactService:
 
     async def test_add_release_not_found_raises(self, svc):
         """Branch: release not found → ValidationError"""
-        service, _, rel_repo = svc
+        service, _, rel_repo, _ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
         from domain.exceptions import ValidationError
         from domain.enums import ArtifactType
@@ -2172,10 +2173,13 @@ class TestArtifactService:
 
     async def test_add_success(self, svc):
         """Branch: release found → artifact saved"""
-        service, art_repo, rel_repo = svc
+        service, art_repo, rel_repo, conn_repo = svc
         from domain.enums import ArtifactType
         release = MagicMock()
         rel_repo.get_by_id = AsyncMock(return_value=release)
+        connector = MagicMock()
+        connector.connector_type = "GESTOR_TAREAS"
+        conn_repo.get_by_id = AsyncMock(return_value=connector)
         artifact = MagicMock()
         art_repo.save = AsyncMock(return_value=artifact)
         result = await service.add_artifact(uuid4(), uuid4(), "JIRA", ArtifactType.TAREA, "J-1")
@@ -2183,7 +2187,7 @@ class TestArtifactService:
 
     async def test_remove_release_not_found_raises(self, svc):
         """Branch: release not found → ValidationError"""
-        service, _, rel_repo = svc
+        service, _, rel_repo, _ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
         from domain.exceptions import ValidationError
         with pytest.raises(ValidationError):
@@ -2191,7 +2195,7 @@ class TestArtifactService:
 
     async def test_remove_artifact_not_found_raises(self, svc):
         """Branch: artifact not found → ValidationError"""
-        service, art_repo, rel_repo = svc
+        service, art_repo, rel_repo, _ = svc
         rel_repo.get_by_id = AsyncMock(return_value=MagicMock())
         art_repo.find_by_id = AsyncMock(return_value=None)
         from domain.exceptions import ValidationError
@@ -2200,7 +2204,7 @@ class TestArtifactService:
 
     async def test_remove_artifact_wrong_release_raises(self, svc):
         """Branch: artifact belongs to different release → ValidationError"""
-        service, art_repo, rel_repo = svc
+        service, art_repo, rel_repo, _ = svc
         release_id = uuid4()
         rel_repo.get_by_id = AsyncMock(return_value=MagicMock())
         artifact = MagicMock()
@@ -2212,7 +2216,7 @@ class TestArtifactService:
 
     async def test_remove_success(self, svc):
         """Branch: valid artifact → delete called"""
-        service, art_repo, rel_repo = svc
+        service, art_repo, rel_repo, _ = svc
         release_id = uuid4()
         artifact_id = uuid4()
         rel_repo.get_by_id = AsyncMock(return_value=MagicMock())

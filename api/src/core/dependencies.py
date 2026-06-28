@@ -545,10 +545,12 @@ def get_release_service(
 def get_artifact_service(
     artifact_repo: SqlArtifactRepository = Depends(get_artifact_repository),
     release_repo: SqlReleaseRepository = Depends(get_release_repository),
+    connector_repo: SqlConnectorRepository = Depends(get_connector_repository),
 ) -> IArtifactService:
     return ArtifactService(
         artifact_repository=artifact_repo,
         release_repository=release_repo,
+        connector_repository=connector_repo,
     )
 
 

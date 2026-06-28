@@ -177,14 +177,26 @@ _VERDICT_TO_STATUS = {
 _wlog = logging.getLogger(__name__)
 
 
-async def _build_connector_names(profile: Any) -> dict:
+async def _build_connector_names(profile: Any, release_artifacts: list | None = None) -> dict:
     connector_repo = SqlConnectorRepository()
     connector_names: dict[uuid.UUID, str] = {}
+    seen: set[uuid.UUID] = set()
+
     for rule in profile.rules:
-        if rule.connector_instance_id and rule.connector_instance_id not in connector_names:
+        if rule.connector_instance_id and rule.connector_instance_id not in seen:
+            seen.add(rule.connector_instance_id)
             connector = await connector_repo.get_by_id(rule.connector_instance_id)
             if connector:
                 connector_names[rule.connector_instance_id] = connector.name
+
+    if release_artifacts:
+        for artifact in release_artifacts:
+            if artifact.connector_instance_id and artifact.connector_instance_id not in seen:
+                seen.add(artifact.connector_instance_id)
+                connector = await connector_repo.get_by_id(artifact.connector_instance_id)
+                if connector:
+                    connector_names[artifact.connector_instance_id] = connector.name
+
     return connector_names
 
 
@@ -285,7 +297,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
         raise exc
 
     rule_lookup = {rule.rule_template: rule for rule in profile.rules}
-    connector_names = await _build_connector_names(profile)
+    connector_names = await _build_connector_names(profile, release.artifacts or [])
     artifact_type_connector = await _build_artifact_type_connector_map(release.artifacts or [])
 
     for fe in fetch_errors:

@@ -3,25 +3,31 @@ from uuid import UUID
 from application.ports.input.i_artifact_service import IArtifactService
 from application.ports.output.i_artifact_repository import IArtifactRepository
 from application.ports.output.i_release_repository import IReleaseRepository
+from application.ports.output.i_connector_repository import IConnectorRepository
 from domain.entities.artifact import Artifact
-from domain.enums import ArtifactType
+from domain.enums import ArtifactType, ConnectorType
 from domain.exceptions import ValidationError
 
 
 _RELEASE_NOT_FOUND = "Release no encontrada"
 
-"""
-Este módulo define el servicio de artefactos, que es responsable de gestionar los artefactos dentro del sistema. Incluye la lógica de negocio para 
-listar artefactos, agregar nuevos artefactos, y eliminar artefactos.
-"""
+_ARTIFACT_TYPE_TO_CONNECTOR_TYPE = {
+    ArtifactType.TAREA: ConnectorType.GESTOR_TAREAS,
+    ArtifactType.CODIGO: ConnectorType.REPO_CODIGO,
+    ArtifactType.DOCUMENTO: ConnectorType.SISTEMA_DOCUMENTAL,
+}
+
+
 class ArtifactService(IArtifactService):
     def __init__(
         self,
         artifact_repository: IArtifactRepository,
         release_repository: IReleaseRepository,
+        connector_repository: IConnectorRepository,
     ):
         self._artifact_repo = artifact_repository
         self._release_repo = release_repository
+        self._connector_repo = connector_repository
 
 
     async def list_artifacts(self, release_id: UUID) -> List[Artifact]:
@@ -44,6 +50,17 @@ class ArtifactService(IArtifactService):
         release = await self._release_repo.get_by_id(release_id)
         if not release:
             raise ValidationError(_RELEASE_NOT_FOUND)
+
+        connector = await self._connector_repo.get_by_id(connector_instance_id)
+        if not connector:
+            raise ValidationError(f"Conector {connector_instance_id} no encontrado")
+
+        expected_connector_type = _ARTIFACT_TYPE_TO_CONNECTOR_TYPE.get(artifact_type)
+        if expected_connector_type and connector.connector_type != expected_connector_type.value:
+            raise ValidationError(
+                f"Tipo de artefacto '{artifact_type.value}' no es compatible con conector de tipo '{connector.connector_type}'. "
+                f"Expected: {expected_connector_type.value}"
+            )
 
         artifact = Artifact(
             release_id=release_id,
