@@ -2341,8 +2341,8 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     return typeof summary === 'string';
   }
 
-  summaryItems(summary: Record<string, number> | string): [string, number][] {
+  summaryItems(summary: Record<string, number> | string): Array<[string, number]> {
     if (typeof summary !== 'object' || summary === null) return [];
-    return Object.entries(summary).sort((a, b) => b[1] - a[1]);
+    return Object.entries(summary).sort((a, b) => b[1] - a[1]) as Array<[string, number]>;
   }
 }

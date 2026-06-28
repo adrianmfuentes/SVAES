@@ -1,13 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { firstValueFrom, of } from 'rxjs';
 import { appConfig, initializeTranslations } from './app.config';
 import { TranslationService } from './core/i18n/translation.service';
-import { routes } from './app.routes';
-import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
-import { errorInterceptor } from './core/interceptors/error.interceptor';
-import { timeoutInterceptor } from './core/interceptors/timeout.interceptor';
+import { of } from 'rxjs';
 
 describe('appConfig', () => {
   it('should have expected providers configured', () => {
