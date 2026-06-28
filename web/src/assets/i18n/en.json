@@ -612,6 +612,7 @@
   "release_detail.cancel_verification": "Cancel verification",
   "release_detail.cancel_verification_success": "Verification cancelled successfully.",
   "release_detail.cancel_verification_error": "Error cancelling verification.",
+  "release_detail.fetch_errors_title": "Warning: some artifacts could not be retrieved",
   "release_new.back_link": "← Releases",
   "release_new.form_title": "Release details",
   "release_new.project_placeholder": "Select a project…",

@@ -612,6 +612,7 @@
   "release_detail.cancel_verification": "Cancelar verificación",
   "release_detail.cancel_verification_success": "Verificación cancelada correctamente.",
   "release_detail.cancel_verification_error": "Error al cancelar la verificación.",
+  "release_detail.fetch_errors_title": "Aviso: algunos artefactos no se pudieron recuperar",
   "release_new.back_link": "← Entregas",
   "release_new.form_title": "Datos de la entrega",
   "release_new.project_placeholder": "Selecciona un proyecto…",

@@ -192,6 +192,21 @@ interface VerificationResult {
         @if (latestResult(); as result) {
           <div class="card rules-section">
             <h2 class="card-title">{{ 'release_detail.verification_title' | t }}</h2>
+
+            @if (fetchErrors().length > 0) {
+              <div class="fetch-errors-banner">
+                <span class="fetch-errors-icon">⚠</span>
+                <span class="fetch-errors-title">{{ 'release_detail.fetch_errors_title' | t }}</span>
+                <ul class="fetch-errors-list">
+                  @for (fe of fetchErrors(); track fe.rule_id + '_' + $index) {
+                    <li class="fetch-error-item">
+                      <span class="fetch-error-detail">{{ translateEvidence(fe.evidence || fe.message) }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
             <div class="data-table-wrap">
               <table class="data-table rules-table">
                 <thead>
@@ -205,6 +220,7 @@ interface VerificationResult {
                 </thead>
                 <tbody>
                   @for (rule of result.rule_results; track rule.rule_id; let i = $index) {
+                    @if (rule.rule_id !== 'artifact_fetch_error') {
                     <tr
                       (click)="toggleEvidence(i)">
                       <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm">{{ rule.rule_id }}</code></td>
@@ -227,6 +243,7 @@ interface VerificationResult {
                         }
                       </td>
                     </tr>
+                    }
                   }
                 </tbody>
               </table>
@@ -1742,6 +1759,46 @@ interface VerificationResult {
       text-transform: uppercase;
       color: var(--muted);
     }
+
+    /* Fetch errors warning banner */
+    .fetch-errors-banner {
+      background: var(--verdict-warning-bg);
+      border: 0.0625rem solid var(--verdict-warning-border);
+      border-left: 0.25rem solid var(--verdict-warning);
+      border-radius: var(--rounded-md);
+      padding: 1rem 1.25rem;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .fetch-errors-icon {
+      font-size: 1rem;
+      margin-right: 0.5rem;
+    }
+
+    .fetch-errors-title {
+      font-family: var(--font-sans);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .fetch-errors-list {
+      list-style: none;
+      margin: 0.5rem 0 0 0;
+      padding: 0;
+    }
+
+    .fetch-error-item {
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      color: var(--muted);
+      padding: 0.25rem 0;
+      line-height: 1.5;
+    }
+
+    .fetch-error-detail {
+      word-break: break-word;
+    }
   `],
 })
 export class ReleaseDetailComponent implements OnInit, OnDestroy {
@@ -1794,6 +1851,12 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     if (!results || idx >= results.length) return null;
     const raw = results[idx].evidence || results[idx].message || null;
     return raw ? this.ts.translateInstant(raw) : null;
+  });
+
+  fetchErrors = computed(() => {
+    const results = this.latestResult()?.rule_results;
+    if (!results) return [];
+    return results.filter(r => r.rule_id === 'artifact_fetch_error');
   });
 
   stageLabel = computed(() => {
