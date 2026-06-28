@@ -2005,7 +2005,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   private showBrowserNotification(release: ReleaseDetail): void {
     if ('Notification' in globalThis && Notification.permission === 'granted') {
-      void new Notification(this.ts.translateInstant('release_detail.verify_notif_title'), {
+      new Notification(this.ts.translateInstant('release_detail.verify_notif_title'), {
         body: this.ts.translateInstant('release_detail.verify_notif_body', { name: release.name }),
       });
     }
