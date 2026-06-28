@@ -38,7 +38,7 @@ dev = [
     "testcontainers",
     "locust>=2.44.4",
     "aiosqlite>=0.22.1",
-    "respx>=0.22.0",
+    "respx>=0.23.1",
 ]
 
 [tool.pytest.ini_options]
@@ -52,7 +52,7 @@ filterwarnings = [
 [dependency-groups]
 dev = [
     "aiosqlite>=0.22.1",
-    "respx>=0.22.0",
+    "respx>=0.23.1",
 ]
 
 [tool.coverage.run]
