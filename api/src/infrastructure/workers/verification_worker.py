@@ -123,6 +123,7 @@ async def _fetch_artifacts(
                     "artifact_id": str(artifact.id),
                     "artifact_type": artifact.artifact_type,
                     "connector": artifact.connector_implementation,
+                    "connector_instance_id": str(artifact.connector_instance_id),
                     "error": f"Instancia de conector {artifact.connector_instance_id} no encontrada",
                 })
                 continue
@@ -143,6 +144,7 @@ async def _fetch_artifacts(
                 "artifact_id": str(artifact.id),
                 "artifact_type": artifact.artifact_type,
                 "connector": artifact.connector_implementation,
+                "connector_instance_id": str(artifact.connector_instance_id),
                 "error": str(exc),
             })
     return artifacts_data, fetch_errors
@@ -210,7 +212,14 @@ def _enrich_rule_results(
         rule_result["rule_name"] = RULE_NAMES.get(rid, rid)
         profile_rule = rule_lookup.get(rid)
         connector = ""
-        if profile_rule and profile_rule.connector_instance_id:
+        if rid == "artifact_fetch_error":
+            ciid_str = rule_result.get("connector_instance_id", "")
+            if ciid_str:
+                try:
+                    connector = connector_names.get(uuid.UUID(ciid_str), "")
+                except (ValueError, KeyError):
+                    pass
+        elif profile_rule and profile_rule.connector_instance_id:
             connector = connector_names.get(profile_rule.connector_instance_id, "")
         elif artifact_type_connector:
             params = profile_rule.params if profile_rule else {}
@@ -278,7 +287,6 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
     rule_lookup = {rule.rule_template: rule for rule in profile.rules}
     connector_names = await _build_connector_names(profile)
     artifact_type_connector = await _build_artifact_type_connector_map(release.artifacts or [])
-    _enrich_rule_results(result_data, rule_lookup, connector_names, artifact_type_connector)
 
     for fe in fetch_errors:
         result_data.setdefault("rule_results", []).append({
@@ -290,12 +298,15 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
                 f"(tipo: {fe['artifact_type']}) desde el conector '{fe['connector']}': {fe['error']}"
             ),
             "connector": fe["connector"],
+            "connector_instance_id": fe.get("connector_instance_id", ""),
             "evidence": (
                 f"No se pudo recuperar el artefacto '{fe['artifact_id']}' "
                 f"de tipo {fe['artifact_type']} desde el conector '{fe['connector']}'. "
                 f"Verifique que la referencia externa sea válida y que el conector esté activo."
             ),
         })
+
+    _enrich_rule_results(result_data, rule_lookup, connector_names, artifact_type_connector)
 
     save_stage = engine_stage + 1
     _report_progress(celery_task, current=save_stage, total=total_stages, stage='saving_results')
