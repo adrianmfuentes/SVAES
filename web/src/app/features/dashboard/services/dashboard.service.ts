@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, Observable, of } from 'rxjs';
-import { cache, catchError, map, switchMap } from 'rxjs/operators';
+import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
 
 export interface TemporalPoint { date: string; valid: number; with_warnings: number; invalid: number; }
 export interface FailedRule { rule_id: string; rule_name: string; count: number; percentage: number; }
@@ -42,12 +42,10 @@ export class DashboardService {
   }
 
   getProjects(): Observable<Project[]> {
-    if (!this.projects$) {
-      this.projects$ = this.http.get<Project[]>('/api/v1/projects').pipe(
-        catchError(() => of([] as Project[])),
-        cache(),
-      );
-    }
+    this.projects$ ??= this.http.get<Project[]>('/api/v1/projects').pipe(
+      catchError(() => of([] as Project[])),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
     return this.projects$;
   }
 

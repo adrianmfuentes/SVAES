@@ -20,6 +20,15 @@ class GitHubConnector(BaseHttpConnector, BearerAuthMixin):
             "X-GitHub-Api-Version": "2022-11-28",
         }
 
+    def _get_base_url(self, config: Dict[str, Any]) -> str:
+        base = (config.get("base_url") or self.BASE_URL).rstrip("/")
+        if "api.github.com" not in base and "/api/" not in base:
+            if "github.com" in base:
+                base = base.replace("github.com", "api.github.com")
+            else:
+                base += "/api/v3"
+        return base
+
     def _get_health_url(self, config: Dict[str, Any]) -> str:
         return f"{self._get_base_url(config)}/user"
 

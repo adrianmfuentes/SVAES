@@ -17,10 +17,10 @@ class ClickUpConnector(BaseHttpConnector):
         }
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/team"
+        return f"{self._get_base_url(config)}/team"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/task/{ref}"
+        return f"{self._get_base_url(config)}/task/{ref}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
@@ -28,9 +28,9 @@ class ClickUpConnector(BaseHttpConnector):
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         list_id = config.get("list_id")
         if list_id:
-            return f"{self.BASE_URL}/list/{list_id}/task"
+            return f"{self._get_base_url(config)}/list/{list_id}/task"
         team_id = config.get("team_id")
-        return f"{self.BASE_URL}/team/{team_id}/task"
+        return f"{self._get_base_url(config)}/team/{team_id}/task"
 
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

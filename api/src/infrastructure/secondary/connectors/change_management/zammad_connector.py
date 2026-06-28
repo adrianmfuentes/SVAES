@@ -18,7 +18,10 @@ class ZammadConnector(BaseHttpConnector):
         }
 
     def _get_base_url(self, config: Dict[str, Any]) -> str:
-        return config.get("base_url", self.BASE_URL)
+        base = (config.get("base_url") or self.BASE_URL).rstrip("/")
+        if "/api/" not in base:
+            base += "/api/v1"
+        return base
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
         return f"{self._get_base_url(config)}/users/me"

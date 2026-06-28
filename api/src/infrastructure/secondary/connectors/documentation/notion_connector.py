@@ -21,10 +21,10 @@ class NotionConnector(BaseHttpConnector, BearerAuthMixin):
         }
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/users/me"
+        return f"{self._get_base_url(config)}/users/me"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/pages/{ref}"
+        return f"{self._get_base_url(config)}/pages/{ref}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
@@ -32,8 +32,8 @@ class NotionConnector(BaseHttpConnector, BearerAuthMixin):
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         database_id = config.get("database_id")
         if database_id:
-            return f"{self.BASE_URL}/databases/{database_id}/query"
-        return f"{self.BASE_URL}/search"
+            return f"{self._get_base_url(config)}/databases/{database_id}/query"
+        return f"{self._get_base_url(config)}/search"
 
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

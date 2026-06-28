@@ -14,10 +14,10 @@ class AsanaConnector(BaseHttpConnector, BearerAuthMixin):
         return ["task", "project", "section"]
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/users/me"
+        return f"{self._get_base_url(config)}/users/me"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/tasks/{ref}"
+        return f"{self._get_base_url(config)}/tasks/{ref}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return {"opt_fields": "name,status,assignee,created_at,modified_at"}
@@ -25,8 +25,8 @@ class AsanaConnector(BaseHttpConnector, BearerAuthMixin):
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         project_gid = config.get("project_gid")
         if project_gid:
-            return f"{self.BASE_URL}/projects/{project_gid}/tasks"
-        return f"{self.BASE_URL}/tasks/search"
+            return f"{self._get_base_url(config)}/projects/{project_gid}/tasks"
+        return f"{self._get_base_url(config)}/tasks/search"
 
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

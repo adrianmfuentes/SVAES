@@ -16,6 +16,10 @@ class JiraServiceManagementConnector(BaseHttpConnector, AtlassianAuthMixin):
 
     def _get_api_base(self, config: Dict[str, Any]) -> str:
         base_url = self._get_base_url(config).rstrip("/")
+        for suffix in ("/rest/servicedeskapi", "/rest/api/3", "/rest/api/2"):
+            if base_url.endswith(suffix):
+                base_url = base_url[:-len(suffix)]
+                break
         site_id = config.get("site_id")
         if site_id and urlparse(base_url).netloc == "api.atlassian.com":
             return f"{base_url}/ex/jira/{site_id}"

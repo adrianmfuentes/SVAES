@@ -16,14 +16,20 @@ class WikiJsConnector(BaseGraphQLConnector):
             "Authorization": f"Bearer {config.get('token')}",
         }
 
+    def _get_base_url(self, config: Dict[str, Any]) -> str:
+        base = (config.get("base_url") or self.BASE_URL).rstrip("/")
+        if base.endswith("/graphql"):
+            base = base[:-8]
+        return base
+
     def _get_health_url(self, config: Dict[str, Any]) -> str:
-        return f"{config.get('base_url', self.BASE_URL)}/graphql"
+        return f"{self._get_base_url(config)}/graphql"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        return f"{config.get('base_url', self.BASE_URL)}/graphql"
+        return f"{self._get_base_url(config)}/graphql"
 
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
-        return f"{config.get('base_url', self.BASE_URL)}/graphql"
+        return f"{self._get_base_url(config)}/graphql"
 
     async def test_connection(self, config: Dict[str, Any]) -> bool:
         query = {"query": "{ users { total } }"}

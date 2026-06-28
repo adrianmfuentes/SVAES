@@ -18,7 +18,10 @@ class GLPiConnector(BaseHttpConnector):
         }
 
     def _get_base_url(self, config: Dict[str, Any]) -> str:
-        return config.get("base_url", self.BASE_URL)
+        base = (config.get("base_url") or self.BASE_URL).rstrip("/")
+        if "apirest.php" not in base:
+            base += "/apirest.php"
+        return base
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
         return f"{self._get_base_url(config)}/initSession"

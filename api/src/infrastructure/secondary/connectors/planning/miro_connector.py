@@ -14,16 +14,16 @@ class MiroConnector(BaseHttpConnector):
         return {"Authorization": f"Bearer {config.get('token')}"}
 
     def _get_health_url(self, config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/boards"
+        return f"{self._get_base_url(config)}/boards"
 
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/boards/{ref}"
+        return f"{self._get_base_url(config)}/boards/{ref}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
 
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
-        return f"{self.BASE_URL}/boards"
+        return f"{self._get_base_url(config)}/boards"
 
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

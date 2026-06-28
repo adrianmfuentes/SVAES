@@ -27,6 +27,12 @@ class TrelloConnector(IConnector):
             "artifact_types": ["card", "list", "board"],
         }
 
+    def _get_base_url(self, config: Dict[str, Any]) -> str:
+        base = (config.get("base_url") or self.BASE_URL).rstrip("/")
+        if "/1/" not in base and not base.endswith("/1"):
+            base += "/1"
+        return base
+
     def _build_auth_params(self, config: Dict[str, Any]) -> Dict[str, str]:
         return {
             "key": config.get("api_key", ""),
@@ -37,7 +43,7 @@ class TrelloConnector(IConnector):
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {**self._build_auth_params(config)}
             response = await client.get(
-                f"{self.BASE_URL}/members/me",
+                f"{self._get_base_url(config)}/members/me",
                 params=params,
             )
             return response.status_code == 200
@@ -46,7 +52,7 @@ class TrelloConnector(IConnector):
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {**self._build_auth_params(config)}
             response = await client.get(
-                f"{self.BASE_URL}/cards/{ref}",
+                f"{self._get_base_url(config)}/cards/{ref}",
                 params=params,
             )
             response.raise_for_status()
@@ -64,12 +70,12 @@ class TrelloConnector(IConnector):
             board_id = config.get("board_id")
             if board_id:
                 response = await client.get(
-                    f"{self.BASE_URL}/boards/{board_id}/cards",
+                    f"{self._get_base_url(config)}/boards/{board_id}/cards",
                     params=params,
                 )
             else:
                 response = await client.get(
-                    f"{self.BASE_URL}/members/me/cards",
+                    f"{self._get_base_url(config)}/members/me/cards",
                     params=params,
                 )
             response.raise_for_status()
