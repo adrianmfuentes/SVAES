@@ -120,7 +120,18 @@ async def list_releases(
     """
     try:
         releases = await service.list_releases(project_id=project_id)
-        return releases
+        return [
+            {
+                "id": str(r.id),
+                "name": r.name,
+                "version": r.version,
+                "status": r.status.value if r.status else None,
+                "verdict": _STATUS_TO_VERDICT.get(r.status, "NOT_EVALUATED"),
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "project_name": r.project_name,
+            }
+            for r in releases
+        ]
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 

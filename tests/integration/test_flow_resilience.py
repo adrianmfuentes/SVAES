@@ -65,11 +65,23 @@ class TestFullFlow:
         org_id, project_id, profile_id, release_id = await _setup_full_chain(
             client, manager_headers, "flw01"
         )
+        conn_resp = await client.post(
+            f"/api/v1/organizations/{org_id}/connectors",
+            json={
+                "connector_type": "GESTOR_TAREAS",
+                "connector_implementation": "JIRA",
+                "name": "Test JIRA Connector",
+                "credentials": {"email": "test@test.com", "api_token": "test"},
+            },
+            headers=manager_headers,
+        )
+        assert conn_resp.status_code == 201
+        connector_id = conn_resp.json()["id"]
         add_resp = await client.post(
             f"/api/v1/releases/{release_id}/artifacts",
             json={
                 "artifact_type": "TAREA",
-                "connector_instance_id": str(uuid4()),
+                "connector_instance_id": connector_id,
                 "connector_implementation": "JIRA",
                 "external_ref": "PROJ-1",
                 "description": "Active connector artifact",
