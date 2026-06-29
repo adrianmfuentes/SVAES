@@ -1,4 +1,6 @@
 from typing import Any, Dict, List
+from urllib.parse import urlparse
+
 from infrastructure.secondary.connectors.base_http_connector import (
     BaseHttpConnector,
     BearerAuthMixin,
@@ -23,8 +25,9 @@ class GitHubConnector(BaseHttpConnector, BearerAuthMixin):
     def _get_base_url(self, config: Dict[str, Any]) -> str:
         base = (config.get("base_url") or self.BASE_URL).rstrip("/")
         if "api.github.com" not in base and "/api/" not in base:
-            if "github.com" in base:
-                base = base.replace("github.com", "api.github.com")
+            parsed = urlparse(base)
+            if parsed.hostname == "github.com":
+                base = base.replace("github.com", "api.github.com", 1)
             else:
                 base += "/api/v3"
         return base
