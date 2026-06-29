@@ -587,7 +587,9 @@ describe('ProfileComponent', () => {
     let createObjectURLSpy: ReturnType<typeof vi.fn>;
     let revokeObjectURLSpy: ReturnType<typeof vi.fn>;
     let anchorClickSpy: ReturnType<typeof vi.fn>;
-    let removeSpy: ReturnType<typeof vi.fn>;
+    let origCreateElement: typeof document.createElement;
+    let origAppendChild: typeof document.body.appendChild;
+    let origRemoveChild: typeof document.body.removeChild;
 
     beforeEach(() => {
       component.loading.set(false);
@@ -603,32 +605,29 @@ describe('ProfileComponent', () => {
       createObjectURLSpy = vi.fn().mockReturnValue('blob:test-url');
       revokeObjectURLSpy = vi.fn();
       anchorClickSpy = vi.fn();
-      removeSpy = vi.fn();
 
       (globalThis.URL as any).createObjectURL = createObjectURLSpy;
       (globalThis.URL as any).revokeObjectURL = revokeObjectURLSpy;
 
-      const origCreateElement = document.createElement.bind(document);
-      vi.spyOn(document, 'createElement').mockImplementation((tag: string): any => {
-        if (tag === 'a') {
-          return {
-            href: '',
-            download: '',
-            click: anchorClickSpy,
-            remove: removeSpy,
-          };
-        }
-        return origCreateElement(tag);
-      });
+      origCreateElement = document.createElement;
+      origAppendChild = document.body.appendChild;
+      origRemoveChild = document.body.removeChild;
 
-      vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node): any => node);
+      (document as any).createElement = vi.fn(((tag: string, ...args: unknown[]) => {
+        if (tag === 'a') {
+          return { href: '', download: '', click: anchorClickSpy };
+        }
+        return (origCreateElement as any)(tag, ...args);
+      }));
+
+      (document.body as any).appendChild = vi.fn(((node: Node) => node));
+      (document.body as any).removeChild = vi.fn(((child: Node) => child));
     });
 
     afterEach(() => {
-      // Restore DOM spies to prevent interference with Angular TestBed in subsequent tests
-      (document.createElement as any).mockRestore?.();
-      (document.body.appendChild as any).mockRestore?.();
-
+      (document as any).createElement = origCreateElement;
+      (document.body as any).appendChild = origAppendChild;
+      (document.body as any).removeChild = origRemoveChild;
     });
 
     it('should fetch export data and trigger download on success', () => {

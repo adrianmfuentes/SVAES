@@ -259,12 +259,14 @@ interface ConnectorTypesResponse {
     .cell-muted { color: var(--muted); }
 
     .cell-actions {
-      text-align: right;
+      white-space: nowrap;
       display: flex;
       gap: var(--spacing-sm);
-      justify-content: flex-end;
+      justify-content: center;
       align-items: center;
     }
+
+    .data-table th:last-child { text-align: center; }
 
     .type-chip {
       font-family: var(--font-mono);
@@ -554,7 +556,7 @@ interface ConnectorTypesResponse {
       .cell-actions {
         flex-wrap: wrap;
         gap: var(--spacing-xs);
-        justify-content: flex-end;
+        justify-content: center;
       }
 
       .cell-actions .btn-ghost {

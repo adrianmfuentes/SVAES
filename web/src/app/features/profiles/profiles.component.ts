@@ -84,7 +84,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                     {{ deletingId() === p.id ? ('profiles.deleting' | t) : ('common.delete' | t) }}
                   </button>
                 </td>
-                <td *ngIf="canManage && (p.is_default || p.is_system)" class="cell-actions cell-actions-centered" [attr.data-label]="'common.actions' | t">
+                <td *ngIf="canManage && (p.is_default || p.is_system)" class="cell-actions" [attr.data-label]="'common.actions' | t">
                   <button class="btn-ghost btn-xs" (click)="openEdit(p)">{{ 'profiles.view_rules' | t }}</button>
                 </td>
               </tr>
@@ -280,15 +280,14 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     .cell-muted { color: var(--muted); }
 
     .cell-actions {
+      white-space: nowrap;
       display: flex;
       gap: var(--spacing-sm);
-      justify-content: flex-end;
+      justify-content: center;
       align-items: center;
     }
 
-    .cell-actions-centered {
-      justify-content: center;
-    }
+    .data-table th:last-child { text-align: center; }
 
     .btn-ghost {
       font-family: var(--font-sans);

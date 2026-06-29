@@ -20,6 +20,14 @@ use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 /// # Retorno
 /// `RuleEvaluation` con el estado correspondiente y IDs con valores discrepantes.
 pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleEvaluation {
+    if artifacts.is_empty() {
+        return RuleEvaluation {
+            rule_id: rule_config.id.clone(),
+            status: RuleStatus::NoEvaluada,
+            message: Some("No hay artefactos disponibles para evaluar esta regla.".to_string()),
+        };
+    }
+
     let artifact_type = rule_config.params
         .get("artifact_type")
         .and_then(|v| v.as_str())
@@ -146,5 +154,17 @@ mod tests {
         let result = evaluate(&artifacts, &rule);
 
         assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn empty_artifacts_returns_no_evaluada() {
+        let artifacts: Vec<Artifact> = vec![];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({"expected_value": "2.0"}),
+        };
+        let result = evaluate(&artifacts, &rule);
+        assert_eq!(result.status, RuleStatus::NoEvaluada);
     }
 }

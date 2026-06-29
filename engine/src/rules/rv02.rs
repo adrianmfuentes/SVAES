@@ -19,6 +19,14 @@ use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 /// # Retorno
 /// `RuleEvaluation` con el estado correspondiente y mensaje detallado si hay referencias faltantes.
 pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleEvaluation {
+    if artifacts.is_empty() {
+        return RuleEvaluation {
+            rule_id: rule_config.id.clone(),
+            status: RuleStatus::NoEvaluada,
+            message: Some("No hay artefactos disponibles para evaluar esta regla.".to_string()),
+        };
+    }
+
     let source_type = rule_config.params
         .get("source_type")
         .and_then(|v| v.as_str())
@@ -146,5 +154,12 @@ mod tests {
         let artifacts = vec![make_artifact("T-001", "TAREA", json!({}))];
         let result = evaluate(&artifacts, &make_rule("RV-02"));
         assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn empty_artifacts_returns_no_evaluada() {
+        let artifacts: Vec<Artifact> = vec![];
+        let result = evaluate(&artifacts, &make_rule("RV-02"));
+        assert_eq!(result.status, RuleStatus::NoEvaluada);
     }
 }

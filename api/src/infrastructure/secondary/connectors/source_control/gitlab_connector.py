@@ -34,7 +34,9 @@ class GitLabConnector(BaseHttpConnector, BearerAuthMixin):
         base = self._get_base_url(config)
         if sub_ref.isdigit():
             return f"{base}/projects/{project_id}/merge_requests/{sub_ref}"
-        return f"{base}/projects/{project_id}/releases/{sub_ref}"
+        if len(sub_ref) == 40 and all(c in "0123456789abcdefABCDEF" for c in sub_ref):
+            return f"{base}/projects/{project_id}/repository/commits/{sub_ref}"
+        return f"{base}/projects/{project_id}/repository/tags/{sub_ref}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None

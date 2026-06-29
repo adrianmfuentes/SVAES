@@ -957,13 +957,22 @@ class TestConnectorImplementations:
         url = c._get_fetch_url("42", {})
         assert "/projects//merge_requests/42" in url
 
-    def test_gitlab_connector_get_fetch_url_release_tag(self):
-        """Branch: ref is non-integer (release tag) -> uses /releases/ endpoint"""
+    def test_gitlab_connector_get_fetch_url_version_tag(self):
+        """Branch: ref is a version tag (vX.Y.Z) -> uses /repository/tags/ endpoint"""
         from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
         c = GitLabConnector()
         url = c._get_fetch_url("v1.0.0", {"project_id": "83409746"})
-        assert "/projects/83409746/releases/v1.0.0" in url
+        assert "/projects/83409746/repository/tags/v1.0.0" in url
         assert "merge_requests" not in url
+        assert "releases" not in url
+
+    def test_gitlab_connector_get_fetch_url_commit_sha(self):
+        """Branch: ref is a 40-char hex SHA -> uses /repository/commits/ endpoint"""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        sha = "a" * 40
+        url = c._get_fetch_url(sha, {"project_id": "99"})
+        assert f"/projects/99/repository/commits/{sha}" in url
 
     def test_gitlab_connector_get_base_url_normalizes_missing_api_v4(self):
         """Branch: base_url without /api/v4 -> /api/v4 is appended"""
