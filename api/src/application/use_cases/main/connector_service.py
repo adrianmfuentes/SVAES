@@ -247,8 +247,8 @@ class ConnectorService(IConnectorService):
             raw_items = await connector_impl.list_artifacts(filter_params, config)
         except Exception as exc:
             _log.warning(
-                "browse: list_artifacts failed connector_id=%s impl=%s: %s",
-                connector_id, connector.connector_implementation, exc,
+                "browse: list_artifacts failed connector_id=%s: %s",
+                connector_id, exc,
             )
             return []
 
@@ -256,8 +256,8 @@ class ConnectorService(IConnectorService):
             return _normalize_browse_items(raw_items, connector.connector_implementation, config)
         except Exception as exc:
             _log.warning(
-                "browse: normalization failed connector_id=%s impl=%s: %s",
-                connector_id, connector.connector_implementation, exc,
+                "browse: normalization failed connector_id=%s: %s",
+                connector_id, exc,
             )
             return []
 
@@ -296,13 +296,13 @@ class ConnectorService(IConnectorService):
                     f"Verifique que el identificador es correcto y que las credenciales tienen acceso."
                 )
             _log.warning(
-                "verify_ref: non-404 HTTP error for ref=%s connector=%s: %s",
-                external_ref, connector.connector_implementation, exc,
+                "verify_ref: non-404 HTTP error for connector_id=%s: %s",
+                connector_id, exc,
             )
         except Exception as exc:
             _log.warning(
-                "verify_ref: could not verify ref=%s connector=%s (connectivity issue): %s",
-                external_ref, connector.connector_implementation, exc,
+                "verify_ref: could not verify for connector_id=%s (connectivity issue): %s",
+                connector_id, exc,
             )
 
 

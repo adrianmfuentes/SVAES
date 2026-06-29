@@ -231,11 +231,13 @@ interface VerificationResult {
                           {{ translateRuleResult(rule.status ?? rule.result ?? '') }}
                         </span>
                       </td>
-                      <td class="cell-evidence" [attr.data-label]="'release_detail.rule_evidence' | t">
+                      <td [attr.data-label]="'release_detail.rule_evidence' | t">
                         @let evidenceText = translateEvidence(rule.evidence || rule.message);
                         @if (evidenceText) {
-                          <span class="evidence-text">{{ evidenceText }}</span>
-                          <button class="btn-expand" (click)="toggleEvidence(i); $event.stopPropagation()">{{ 'release_detail.see_more_btn' | t }}</button>
+                          <div class="cell-evidence-inner">
+                            <span class="evidence-text">{{ evidenceText }}</span>
+                            <button class="btn-expand" (click)="toggleEvidence(i); $event.stopPropagation()">{{ 'release_detail.see_more_btn' | t }}</button>
+                          </div>
                         } @else {
                           <span class="cell-muted">{{ 'common.dash' | t }}</span>
                         }
@@ -793,6 +795,7 @@ interface VerificationResult {
     .data-table {
       width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
     }
 
     .data-table th {
@@ -822,14 +825,15 @@ interface VerificationResult {
     .data-table tbody tr:hover td { background: var(--paper-secondary); }
     .data-table tbody tr { cursor: default; }
 
-    .col-id { width: 5rem; }
-    .col-name { width: 14rem; }
-    .col-connector { width: 6rem; }
-    .col-result { width: 5.5rem; }
+    .col-id { width: 7%; }
+    .col-name { width: 20%; }
+    .col-connector { width: 11%; }
+    .col-result { width: 11%; }
+    /* col-evidence takes remaining ~51% */
 
     .cell-primary { font-weight: 500; }
     .cell-muted { color: var(--muted); }
-    .cell-evidence { display: flex; align-items: center; gap: var(--spacing-xs); min-width: 0; }
+    .cell-evidence-inner { display: flex; align-items: center; gap: var(--spacing-xs); width: 100%; min-width: 0; }
     .evidence-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
     .cell-action { text-align: right; }
 
@@ -1111,11 +1115,16 @@ interface VerificationResult {
         white-space: nowrap;
       }
 
-      .cell-evidence {
-        max-width: none;
-        overflow: visible;
+      .cell-evidence-inner {
+        flex-wrap: wrap;
         white-space: normal;
         word-break: break-word;
+      }
+
+      .evidence-text {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
       }
 
       .cell-actions {
