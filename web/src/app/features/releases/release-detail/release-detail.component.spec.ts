@@ -817,6 +817,7 @@ describe('ReleaseDetailComponent — with ToastService', () => {
       component.showVerifyNotice.set(true);
 
       const stopPollingSpy = vi.spyOn(component as any, 'stopPolling');
+      vi.spyOn(component as any, 'reloadData').mockImplementation(() => {});
 
       component.cancelVerification();
       httpCtrl.expectOne('/api/v1/releases/release-abc/cancel').flush({ cancelled: true });
