@@ -394,7 +394,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
         release_id=release_id,
         verdict=domain_verdict,
         rule_results=result_data.get("rule_results", []),
-        summary=result_data.get("summary", ""),
+        summary=result_data.get("summary", {}),
         executed_at=datetime.now(timezone.utc),
     )
 

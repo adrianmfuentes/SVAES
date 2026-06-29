@@ -212,6 +212,32 @@ describe('ReleaseDetailComponent', () => {
     });
   });
 
+  describe('summaryTotal', () => {
+    it('should return total value from summary object', () => {
+      expect(component.summaryTotal({ TOTAL: 5, OK: 3 })).toBe(5);
+    });
+
+    it('should return null for string summary', () => {
+      expect(component.summaryTotal('not an object')).toBeNull();
+    });
+
+    it('should return null when TOTAL key is missing', () => {
+      expect(component.summaryTotal({ OK: 3 })).toBeNull();
+    });
+  });
+
+  describe('summaryStatusItems', () => {
+    it('should filter out TOTAL key and sort by count', () => {
+      const summary = { TOTAL: 5, OK: 3, ERROR: 1, WARNING: 2 };
+      const result = component.summaryStatusItems(summary);
+      expect(result).toEqual([['OK', 3], ['WARNING', 2], ['ERROR', 1]]);
+    });
+
+    it('should return empty array for string summary', () => {
+      expect(component.summaryStatusItems('not an object')).toEqual([]);
+    });
+  });
+
   describe('statusBadgeClass', () => {
     it('should return status-valida for valida', () => {
       component.release.set({ ...mockRelease, status: 'valida' });

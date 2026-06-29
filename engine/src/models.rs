@@ -53,8 +53,18 @@ pub enum Verdict {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub struct SummaryData {
+    pub total: usize,
+    pub ok: usize,
+    pub error: usize,
+    pub warning: usize,
+    pub not_evaluated: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EngineResult {
     pub verdict: Verdict,
     pub rule_results: Vec<RuleEvaluation>,
-    pub summary: String,
+    pub summary: SummaryData,
 }

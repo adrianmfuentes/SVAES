@@ -581,6 +581,7 @@
   "release_detail.verification_title": "Resultados de verificación",
   "release_detail.see_more_btn": "Ver más",
   "release_detail.summary_label": "Resumen:",
+  "release_detail.summary_total": "Total: {{n}}",
   "release_detail.artifacts_title": "Artefactos ({{n}})",
   "release_detail.col_type": "Tipo",
   "release_detail.col_ext_ref": "Ref. externa",

@@ -75,21 +75,18 @@ pub fn evaluate(payload: VerificationPayload) -> EngineResult {
     }
 }
 
-fn generate_summary(verdict: &crate::models::Verdict, rule_results: &[RuleEvaluation]) -> String {
+fn generate_summary(_verdict: &crate::models::Verdict, rule_results: &[RuleEvaluation]) -> crate::models::SummaryData {
     let total = rule_results.len();
     let ok_count = rule_results.iter().filter(|r| r.status == RuleStatus::Ok).count();
     let error_count = rule_results.iter().filter(|r| r.status == RuleStatus::Error).count();
     let warning_count = rule_results.iter().filter(|r| r.status == RuleStatus::Warning).count();
     let not_evaluated = rule_results.iter().filter(|r| r.status == RuleStatus::NoEvaluada).count();
 
-    let verdict_str = match verdict {
-        crate::models::Verdict::Valida => "VÁLIDA",
-        crate::models::Verdict::ConAdvertencias => "VÁLIDA CON ADVERTENCIAS",
-        crate::models::Verdict::NoValida => "NO VÁLIDA",
-    };
-
-    format!(
-        "Veredicto: {} | Total: {}, OK: {}, Errores: {}, Advertencias: {}, No evaluadas: {}",
-        verdict_str, total, ok_count, error_count, warning_count, not_evaluated
-    )
+    crate::models::SummaryData {
+        total,
+        ok: ok_count,
+        error: error_count,
+        warning: warning_count,
+        not_evaluated,
+    }
 }

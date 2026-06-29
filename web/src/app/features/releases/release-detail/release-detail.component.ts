@@ -263,7 +263,10 @@ interface VerificationResult {
                 @if (isSummaryString(result.summary)) {
                   <span class="summary-text cell-muted">{{ result.summary }}</span>
                 } @else {
-                  @for (item of summaryItems(result.summary); track item[0]) {
+                  @if (summaryTotal(result.summary) !== null) {
+                    <span class="summary-total">{{ 'release_detail.summary_total' | t : { n: summaryTotal(result.summary) } }}</span>
+                  }
+                  @for (item of summaryStatusItems(result.summary); track item[0]) {
                     <span class="summary-chip" [ngClass]="ruleResultClass(item[0])">
                       {{ item[1] }} {{ translateRuleResult(item[0]) }}
                     </span>
@@ -825,8 +828,8 @@ interface VerificationResult {
     .data-table tbody tr:hover td { background: var(--paper-secondary); }
     .data-table tbody tr { cursor: default; }
 
-    .col-id { width: 7%; }
-    .col-name { width: 20%; }
+    .col-id { width: 10%; }
+    .col-name { width: 24%; }
     .col-connector { width: 11%; }
     .col-result { width: 11%; }
     /* col-evidence takes remaining ~51% */
@@ -2248,7 +2251,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
       a.href = url;
       const lang = this.ts.currentLang ?? 'es';
       const slugify = (s: string) =>
-        s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+        s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
       const orgName  = slugify(this.release()?.organization_name ?? 'org');
       const dateStr  = result.executed_at
@@ -2357,6 +2360,19 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   isSummaryString(summary: Record<string, number> | string): summary is string {
     return typeof summary === 'string';
+  }
+
+  summaryTotal(summary: Record<string, number> | string): number | null {
+    if (typeof summary !== 'object' || summary === null) return null;
+    const total = summary['TOTAL'];
+    return typeof total === 'number' ? total : null;
+  }
+
+  summaryStatusItems(summary: Record<string, number> | string): Array<[string, number]> {
+    if (typeof summary !== 'object' || summary === null) return [];
+    return Object.entries(summary)
+      .filter(([key]) => key !== 'TOTAL')
+      .sort((a, b) => b[1] - a[1]) as Array<[string, number]>;
   }
 
   summaryItems(summary: Record<string, number> | string): Array<[string, number]> {
