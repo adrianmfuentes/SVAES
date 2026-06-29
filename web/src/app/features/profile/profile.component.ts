@@ -1502,11 +1502,10 @@ export class ProfileComponent implements OnInit {
     document.body.appendChild(el);
     el.focus();
     el.select();
-    try {
-      navigator.clipboard.writeText(text).then(() => onSuccess()).catch(() => onSuccess());
-    } catch {
-      onSuccess();
-    }
+    Promise.resolve()
+      .then(() => navigator.clipboard.writeText(text))
+      .then(() => onSuccess())
+      .catch(() => onSuccess());
     el.remove();
   }
 

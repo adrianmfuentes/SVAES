@@ -2436,7 +2436,11 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
       const slugify = (s: string) => {
         const normalized = s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const dashed = normalized.replace(/[^a-z0-9]+/g, '-');
-        return dashed.replace(/^-+/, '').replace(/-+$/, '');
+        let start = 0;
+        while (start < dashed.length && dashed[start] === '-') start++;
+        let end = dashed.length;
+        while (end > start && dashed[end - 1] === '-') end--;
+        return dashed.slice(start, end);
       };
       const orgName  = slugify(this.release()?.organization_name ?? 'org');
       const dateStr  = result.executed_at
