@@ -43,9 +43,24 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         .and_then(|v| v.as_str())
         .unwrap_or("");
 
-    let mismatched_artifacts: Vec<&str> = artifacts
+    let target_artifacts: Vec<&Artifact> = artifacts
         .iter()
         .filter(|a| a.artifact_type == artifact_type)
+        .collect();
+
+    if target_artifacts.is_empty() {
+        return RuleEvaluation {
+            rule_id: rule_config.id.clone(),
+            status: RuleStatus::NoEvaluada,
+            message: Some(format!(
+                "No se encontraron artefactos de tipo '{}' para evaluar",
+                artifact_type
+            )),
+        };
+    }
+
+    let mismatched_artifacts: Vec<&str> = target_artifacts
+        .iter()
         .filter(|a| {
             match a.metadata.get(attribute) {
                 Some(val) => val.as_str() != Some(expected_value),
@@ -143,7 +158,7 @@ mod tests {
     }
 
     #[test]
-    fn no_matching_artifacts_returns_ok() {
+    fn no_matching_artifacts_returns_no_evaluada() {
         let artifacts = vec![make_artifact("T-001", "TAREA", json!({"version": "wrong"}))];
         let rule = VerificationRule {
             id: "RV-06".to_string(),
@@ -153,7 +168,7 @@ mod tests {
 
         let result = evaluate(&artifacts, &rule);
 
-        assert_eq!(result.status, RuleStatus::Ok);
+        assert_eq!(result.status, RuleStatus::NoEvaluada);
     }
 
     #[test]

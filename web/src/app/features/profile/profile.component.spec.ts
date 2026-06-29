@@ -24,6 +24,7 @@ const authMock = {
 };
 
 const mockUser = { id: 'u1', display_name: 'Test User', email: 'test@example.com', role: 'MANAGER', totp_enabled: false };
+const mockNotifPrefs = { release_validated: true, release_invalidated: true, release_pending_reminder: false, weekly_digest: true };
 
 describe('ProfileComponent', () => {
   let component: ProfileComponent;
@@ -58,6 +59,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
       expect(component.profile()).toEqual(mockUser);
       expect(component.loading()).toBe(false);
       expect(component.keysLoading()).toBe(false);
@@ -67,6 +69,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush('', { status: 500, statusText: 'Error' });
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
       expect(component.profile()).toBeNull();
       expect(component.loading()).toBe(false);
     });
@@ -77,6 +80,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     it('should PATCH and set nameSaved on success', () => {
@@ -107,6 +111,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     it('should POST and set pwSaved on success', () => {
@@ -145,6 +150,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     it('should POST and set orgCreated on success', () => {
@@ -175,6 +181,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     it('createKey should POST and reveal the key value', () => {
@@ -275,6 +282,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     it('should set keyCreateError on failure', () => {
@@ -294,6 +302,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     it('should set orgError on conflict', () => {
@@ -321,6 +330,7 @@ describe('ProfileComponent', () => {
       const comp2 = fixture2.componentInstance;
       comp2.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
       expect(comp2.keysLoading()).toBe(false);
       authMock.getUser.mockReturnValue({ id: 'u1', organization_id: 'org-1' });
     });
@@ -332,6 +342,7 @@ describe('ProfileComponent', () => {
         '',
         { status: 500, statusText: 'Error' }
       );
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
       expect(component.apiKeys()).toEqual([]);
       expect(component.keysLoading()).toBe(false);
     });
@@ -342,6 +353,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     it('should not submit if pwForm is invalid', () => {
@@ -355,6 +367,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     it('should not submit if keyForm is invalid', () => {
@@ -386,6 +399,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     it('should clear newKeyValue when revoking', () => {
@@ -431,6 +445,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     it('should use fallback message when error has no detail', () => {
@@ -446,6 +461,7 @@ describe('ProfileComponent', () => {
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
     });
 
     describe('openDeleteModal', () => {
@@ -601,6 +617,7 @@ describe('ProfileComponent', () => {
       fixture.detectChanges();
       httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
       httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
 
       createObjectURLSpy = vi.fn().mockReturnValue('blob:test-url');
       revokeObjectURLSpy = vi.fn();
@@ -656,12 +673,93 @@ describe('ProfileComponent', () => {
     });
   });
 
+  describe('notificationPreferences', () => {
+    beforeEach(() => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.hasOrg.set(true);
+      component.isAdmin.set(false);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      component.notifPrefsLoading.set(false);
+    });
+
+    it('should load preferences on init', () => {
+      component.loadNotifPrefs();
+      const req = httpCtrl.expectOne('/api/v1/notifications/preferences');
+      expect(req.request.method).toBe('GET');
+      req.flush(mockNotifPrefs);
+      expect(component.notifPrefs()).toEqual(mockNotifPrefs);
+      expect(component.notifPrefsLoading()).toBe(false);
+    });
+
+    it('should toggle release_validated and send PATCH', () => {
+      component.notifPrefs.set({ ...mockNotifPrefs, release_validated: true });
+      component.toggleNotifPref('release_validated');
+      const req = httpCtrl.expectOne('/api/v1/notifications/preferences');
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual({ release_validated: false });
+      req.flush({});
+      expect(component.notifPrefs().release_validated).toBe(false);
+    });
+
+    it('should toggle release_invalidated and send PATCH', () => {
+      component.notifPrefs.set({ ...mockNotifPrefs, release_invalidated: false });
+      component.toggleNotifPref('release_invalidated');
+      const req = httpCtrl.expectOne('/api/v1/notifications/preferences');
+      expect(req.request.body).toEqual({ release_invalidated: true });
+      req.flush({});
+      expect(component.notifPrefs().release_invalidated).toBe(true);
+    });
+
+    it('should toggle release_pending_reminder and send PATCH', () => {
+      component.notifPrefs.set({ ...mockNotifPrefs, release_pending_reminder: false });
+      component.toggleNotifPref('release_pending_reminder');
+      const req = httpCtrl.expectOne('/api/v1/notifications/preferences');
+      expect(req.request.body).toEqual({ release_pending_reminder: true });
+      req.flush({});
+      expect(component.notifPrefs().release_pending_reminder).toBe(true);
+    });
+
+    it('should toggle weekly_digest and send PATCH', () => {
+      component.notifPrefs.set({ ...mockNotifPrefs, weekly_digest: true });
+      component.toggleNotifPref('weekly_digest');
+      const req = httpCtrl.expectOne('/api/v1/notifications/preferences');
+      expect(req.request.body).toEqual({ weekly_digest: false });
+      req.flush({});
+      expect(component.notifPrefs().weekly_digest).toBe(false);
+    });
+
+    it('should revert on PATCH error and show error message', () => {
+      const original = { ...mockNotifPrefs, release_validated: true };
+      component.notifPrefs.set(original);
+      component.toggleNotifPref('release_validated');
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(
+        { detail: 'Server error' },
+        { status: 500, statusText: 'Internal Server Error' }
+      );
+      expect(component.notifPrefs()).toEqual(original);
+      expect(component.notifPrefsError()).toBe('common.error_saving');
+    });
+
+    it('should handle load error gracefully', () => {
+      component.loadNotifPrefs();
+      httpCtrl.expectOne('/api/v1/notifications/preferences').flush(
+        '',
+        { status: 500, statusText: 'Error' }
+      );
+      expect(component.notifPrefs()).toEqual(mockNotifPrefs);
+      expect(component.notifPrefsLoading()).toBe(false);
+    });
+  });
+
   describe('template rendering', () => {
     const renderTemplate = (flushInitRequests = true) => {
       fixture.detectChanges();
       if (flushInitRequests) {
         httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
         httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+        httpCtrl.expectOne('/api/v1/notifications/preferences').flush(mockNotifPrefs);
       }
     };
 

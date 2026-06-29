@@ -26,6 +26,13 @@ interface UserProfile {
   totp_enabled?: boolean;
 }
 
+interface UserNotificationPreferences {
+  release_validated: boolean;
+  release_invalidated: boolean;
+  release_pending_reminder: boolean;
+  weekly_digest: boolean;
+}
+
 @Component({
   selector: 'app-profile',
   standalone: true,
@@ -374,6 +381,61 @@ interface UserProfile {
               </div>
             </form>
           </div>
+        </div>
+
+        <!-- Notification preferences card -->
+        <div class="card notif-prefs-card">
+          <h2 class="card-title">{{ 'profile_page.notif_prefs_title' | t }}</h2>
+          <p class="notif-prefs-desc">{{ 'profile_page.notif_prefs_desc' | t }}</p>
+
+          <div *ngIf="notifPrefsLoading()" class="skeleton-list">
+            <div class="skeleton sk-row"></div>
+            <div class="skeleton sk-row" style="width:60%"></div>
+          </div>
+
+          <div *ngIf="!notifPrefsLoading()" class="notif-prefs-list">
+            <label class="toggle-row">
+              <span class="toggle-label-wrap">
+                <span class="toggle-label-title">{{ 'profile_page.notif_release_validated' | t }}</span>
+                <span class="toggle-label-desc">{{ 'profile_page.notif_release_validated_desc' | t }}</span>
+              </span>
+              <span class="toggle-switch" [class.active]="notifPrefs().release_validated" (click)="toggleNotifPref('release_validated')">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
+
+            <label class="toggle-row">
+              <span class="toggle-label-wrap">
+                <span class="toggle-label-title">{{ 'profile_page.notif_release_invalidated' | t }}</span>
+                <span class="toggle-label-desc">{{ 'profile_page.notif_release_invalidated_desc' | t }}</span>
+              </span>
+              <span class="toggle-switch" [class.active]="notifPrefs().release_invalidated" (click)="toggleNotifPref('release_invalidated')">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
+
+            <label class="toggle-row">
+              <span class="toggle-label-wrap">
+                <span class="toggle-label-title">{{ 'profile_page.notif_release_pending' | t }}</span>
+                <span class="toggle-label-desc">{{ 'profile_page.notif_release_pending_desc' | t }}</span>
+              </span>
+              <span class="toggle-switch" [class.active]="notifPrefs().release_pending_reminder" (click)="toggleNotifPref('release_pending_reminder')">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
+
+            <label class="toggle-row">
+              <span class="toggle-label-wrap">
+                <span class="toggle-label-title">{{ 'profile_page.notif_weekly_digest' | t }}</span>
+                <span class="toggle-label-desc">{{ 'profile_page.notif_weekly_digest_desc' | t }}</span>
+              </span>
+              <span class="toggle-switch" [class.active]="notifPrefs().weekly_digest" (click)="toggleNotifPref('weekly_digest')">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
+          </div>
+
+          <div *ngIf="notifPrefsError()" class="alert-error" style="margin-top: var(--spacing-sm);">{{ notifPrefsError() }}</div>
         </div>
 
         <!-- Download my data card -->
@@ -1044,6 +1106,82 @@ interface UserProfile {
       .twofa-card { grid-column: 1; }
     }
 
+    .notif-prefs-desc {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin: 0 0 var(--spacing-md);
+      line-height: 1.5;
+    }
+
+    .notif-prefs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-sm) 0;
+      border-bottom: 0.0625rem solid var(--border);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-row:last-child {
+      border-bottom: none;
+    }
+
+    .toggle-label-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .toggle-label-title {
+      font-size: 0.875rem;
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .toggle-label-desc {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 2.25rem;
+      height: 1.25rem;
+      background: var(--paper-secondary);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-full);
+      flex-shrink: 0;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .toggle-switch.active {
+      background: var(--ink);
+      border-color: var(--ink);
+    }
+
+    .toggle-thumb {
+      position: absolute;
+      top: 0.0625rem;
+      left: 0.0625rem;
+      width: 0.875rem;
+      height: 0.875rem;
+      background: var(--paper);
+      border-radius: 50%;
+      transition: transform 0.15s ease;
+    }
+
+    .toggle-switch.active .toggle-thumb {
+      transform: translateX(1rem);
+      background: var(--paper);
+    }
+
     @media (max-width: 48rem) {
       .page-title { font-size: 1.75rem; }
 
@@ -1195,6 +1333,15 @@ export class ProfileComponent implements OnInit {
   exportDataDownloading = signal(false);
   exportDataError = signal<string | null>(null);
 
+  notifPrefs = signal<UserNotificationPreferences>({
+    release_validated: true,
+    release_invalidated: true,
+    release_pending_reminder: false,
+    weekly_digest: true,
+  });
+  notifPrefsLoading = signal(true);
+  notifPrefsError = signal<string | null>(null);
+
   ngOnInit(): void {
     this.http.get<UserProfile>('/api/v1/users/me')
       .pipe(catchError(() => of(null)))
@@ -1217,6 +1364,8 @@ export class ProfileComponent implements OnInit {
     } else {
       this.keysLoading.set(false);
     }
+
+    this.loadNotifPrefs();
   }
 
   saveName(): void {
@@ -1442,16 +1591,16 @@ export class ProfileComponent implements OnInit {
             .subscribe(members => {
               if (members.length <= 1) {
                 this.deleteOrgWarning.set(true);
-              } else {
-                this.mustTransferFirst.set(true);
-              }
-              this.deleteAccountChecking.set(false);
-            });
-        } else {
-          this.deleteAccountChecking.set(false);
-        }
-      });
-  }
+                } else {
+                  this.mustTransferFirst.set(true);
+                }
+                this.deleteAccountChecking.set(false);
+              });
+          } else {
+            this.deleteAccountChecking.set(false);
+          }
+        });
+    }
 
   closeDeleteModal(): void {
     if (!this.deleteAccountDeleting()) {
@@ -1514,5 +1663,32 @@ export class ProfileComponent implements OnInit {
         }
         this.exportDataDownloading.set(false);
       });
+  }
+
+  loadNotifPrefs(): void {
+    this.http.get<UserNotificationPreferences>('/api/v1/notifications/preferences')
+      .pipe(catchError(() => {
+        this.notifPrefsLoading.set(false);
+        return of(null);
+      }))
+      .subscribe(prefs => {
+        if (prefs) this.notifPrefs.set(prefs);
+        this.notifPrefsLoading.set(false);
+      });
+  }
+
+  toggleNotifPref(key: keyof UserNotificationPreferences): void {
+    const current = this.notifPrefs();
+    const newValue = !current[key];
+    this.notifPrefs.set({ ...current, [key]: newValue });
+
+    this.http.patch('/api/v1/notifications/preferences', { [key]: newValue })
+      .pipe(catchError(() => {
+        this.notifPrefs.set(current);
+        this.notifPrefsError.set(this.ts.translateInstant('common.error_saving'));
+        setTimeout(() => this.notifPrefsError.set(null), 3000);
+        return of(null);
+      }))
+      .subscribe();
   }
 }

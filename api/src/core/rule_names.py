@@ -3,7 +3,6 @@ RULE_DEFAULT_ARTIFACT_TYPES: dict[str, str] = {
     "RV-04": "TAREA",
     "RV-05": "DOCUMENTO",
     "RV-06": "DOCUMENTO",
-    "RV-08": "TAREA",
     "RV-09": "CODIGO",
     "RV-10": "DOCUMENTO",
     "has_duplicated_code": "CODIGO",

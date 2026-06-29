@@ -20,6 +20,7 @@ from infrastructure.secondary.database.repositories.release_repository import Sq
 from infrastructure.secondary.database.repositories.verification_result_repository import SqlVerificationResultRepository
 from infrastructure.secondary.database.repositories.profile_repository import SqlProfileRepository
 from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
+from infrastructure.secondary.database.repositories.notification_repository import SqlNotificationRepository
 from infrastructure.secondary.connectors import create_registered_connector_registry
 from infrastructure.secondary.database.repositories.connector_repository import SqlConnectorRepository
 from core.rule_names import RULE_NAMES, RULE_DEFAULT_ARTIFACT_TYPES
@@ -208,13 +209,19 @@ async def _build_connector_names(profile: Any, release_artifacts: list | None = 
 async def _build_artifact_type_connector_map(release_artifacts: list) -> dict[str, str]:
     connector_repo = SqlConnectorRepository()
     artifact_type_to_connector: dict[str, str] = {}
-    seen: set[uuid.UUID] = set()
+    connector_cache: dict[uuid.UUID, str] = {}
     for artifact in release_artifacts:
-        if artifact.connector_instance_id and artifact.connector_instance_id not in seen:
-            seen.add(artifact.connector_instance_id)
-            connector = await connector_repo.get_by_id(artifact.connector_instance_id)
-            if connector and artifact.artifact_type not in artifact_type_to_connector:
-                artifact_type_to_connector[artifact.artifact_type] = connector.name
+        if not artifact.connector_instance_id:
+            continue
+        if artifact.artifact_type in artifact_type_to_connector:
+            continue
+        cid = artifact.connector_instance_id
+        if cid not in connector_cache:
+            connector = await connector_repo.get_by_id(cid)
+            connector_cache[cid] = connector.name if connector else ""
+        name = connector_cache.get(cid, "")
+        if name:
+            artifact_type_to_connector[artifact.artifact_type] = name
     return artifact_type_to_connector
 
 
@@ -286,12 +293,25 @@ async def _notify_user(release_id: uuid.UUID, release: Any, saved_result: Any) -
     if not user:
         _wlog.warning("Cannot notify: user not found for release %s (created_by=%s)", release_id, release.created_by)
         return
+
+    verdict_value = saved_result.verdict.value
+    if verdict_value in ("VALID", "VALID_WITH_WARNINGS"):
+        event_type = "RELEASE_VALIDATED"
+    else:
+        event_type = "RELEASE_INVALIDATED"
+
+    notification_repo = SqlNotificationRepository()
+    subscription = await notification_repo.get_subscription(user.id, event_type)
+    if subscription is not None and not subscription.enabled:
+        _wlog.info("Skipping notification for release %s: user %s has disabled %s", release_id, user.id, event_type)
+        return
+
     try:
         await email_service.send_verification_result_email(
             to_email=user.email,
             to_name=user.display_name or user.email,
             release_name=release.name,
-            verdict=saved_result.verdict.value,
+            verdict=verdict_value,
             release_id=str(release_id),
         )
     except Exception:
