@@ -14,8 +14,7 @@ RUN pnpm exec ng build --configuration=production
 # ── Stage 2: serve with nginx ─────────────────────────────────────────────────
 FROM nginx:stable-alpine AS runtime
 
-RUN addgroup -S nginx && adduser -S nginx -G nginx && \
-    chown -R nginx:nginx /usr/share/nginx/html && \
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
     touch /var/run/nginx.pid && \
