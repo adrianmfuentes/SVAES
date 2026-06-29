@@ -1120,6 +1120,7 @@
   "rule_evidence.ok.has_blocking_issues": "No blocking issues detected for this release.",
   "rule_evidence.ok.meets_minimum_test_coverage": "Test coverage exceeds the minimum required threshold.",
   "rule_evidence.ok.meets_maximum_complexity": "Code complexity is within the maximum allowed limit.",
+  "rule_evidence.no_connector": "No connector is configured for this rule. The result could not be verified through an external data source.",
   "connector_field.atlassian_email": "Atlassian email",
   "connector_field.api_token": "API Token",
   "connector_field.base_url": "Base URL",

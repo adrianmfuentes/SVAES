@@ -1120,6 +1120,7 @@
   "rule_evidence.ok.has_blocking_issues": "No se detectaron issues bloqueantes para esta entrega.",
   "rule_evidence.ok.meets_minimum_test_coverage": "La cobertura de tests supera el umbral mínimo requerido.",
   "rule_evidence.ok.meets_maximum_complexity": "La complejidad del código está dentro del límite máximo permitido.",
+  "rule_evidence.no_connector": "No hay conector configurado para esta regla. El resultado no pudo verificarse a través de una fuente de datos externa.",
   "connector_field.atlassian_email": "Correo electrónico de Atlassian",
   "connector_field.api_token": "Token de API",
   "connector_field.base_url": "URL base",

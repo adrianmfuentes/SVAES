@@ -11,8 +11,8 @@ overrides:
   undici: '>=7.28.0'
 
 allowBuilds:
-  '@openapitools/openapi-generator-cli': set this to true or false
-  '@parcel/watcher': set this to true or false
-  esbuild: set this to true or false
-  lmdb: set this to true or false
-  msgpackr-extract: set this to true or false
+  '@openapitools/openapi-generator-cli': false
+  '@parcel/watcher': true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true

@@ -279,9 +279,13 @@ def _enrich_rule_results(
     for rule_result in result_data.get("rule_results", []):
         rid = rule_result.get("rule_id", "")
         rule_result["rule_name"] = RULE_NAMES.get(rid, rid)
-        rule_result["connector"] = _get_connector_for_rule(
+        connector = _get_connector_for_rule(
             rid, rule_result, rule_lookup, connector_names, artifact_type_connector
         )
+        rule_result["connector"] = connector
+        if not connector and rule_result.get("status") == "OK" and rid != "artifact_fetch_error":
+            rule_result["status"] = "NO_EVALUADA"
+            rule_result["message"] = "rule_evidence.no_connector"
         rule_result["evidence"] = rule_result.get("message", "")
         if not rule_result["evidence"] and rule_result.get("status") == "OK":
             rule_result["evidence"] = RULE_OK_EVIDENCE.get(rid, "rule_evidence.ok.default")

@@ -708,3 +708,67 @@ class TestGetConnectorForRule:
         artifact_type_connector = {"CODIGO": "GitHub", "TAREA": "Jira"}
         result = self.fn("RV-03", {}, {"RV-03": rule}, {}, artifact_type_connector)
         assert result == "GitHub"
+
+
+# ── 10. _enrich_rule_results ─────────────────────────────────────────────────
+
+class TestEnrichRuleResults:
+    """Unit tests for verification_worker._enrich_rule_results — no-connector override."""
+
+    @pytest.fixture(autouse=True)
+    def _import(self):
+        from infrastructure.workers.verification_worker import _enrich_rule_results
+        self.fn = _enrich_rule_results
+
+    def _make_rule(self, connector_instance_id=None):
+        from domain.entities.verification_rule import VerificationRule
+        return VerificationRule(
+            profile_id=uuid4(),
+            rule_template="RV-01",
+            connector_instance_id=connector_instance_id,
+            params={},
+        )
+
+    def test_ok_with_no_connector_becomes_no_evaluada(self):
+        """Rule returns OK but has no connector → status overridden to NO_EVALUADA."""
+        rule = self._make_rule()
+        result_data = {
+            "rule_results": [{"rule_id": "RV-01", "status": "OK", "message": None}]
+        }
+        self.fn(result_data, {"RV-01": rule}, {}, {})
+        rr = result_data["rule_results"][0]
+        assert rr["status"] == "NO_EVALUADA"
+        assert rr["evidence"] == "rule_evidence.no_connector"
+        assert rr["connector"] == ""
+
+    def test_ok_with_connector_stays_ok(self):
+        """Rule returns OK and has a connector → status remains OK."""
+        from uuid import uuid4
+        cid = uuid4()
+        rule = self._make_rule(connector_instance_id=cid)
+        result_data = {
+            "rule_results": [{"rule_id": "RV-01", "status": "OK", "message": None}]
+        }
+        self.fn(result_data, {"RV-01": rule}, {cid: "Jira"}, {})
+        rr = result_data["rule_results"][0]
+        assert rr["status"] == "OK"
+        assert rr["connector"] == "Jira"
+
+    def test_error_with_no_connector_stays_error(self):
+        """Rule returns ERROR with no connector → status stays ERROR (only OK is overridden)."""
+        rule = self._make_rule()
+        result_data = {
+            "rule_results": [{"rule_id": "RV-01", "status": "ERROR", "message": "some error"}]
+        }
+        self.fn(result_data, {"RV-01": rule}, {}, {})
+        rr = result_data["rule_results"][0]
+        assert rr["status"] == "ERROR"
+
+    def test_artifact_fetch_error_ok_not_overridden(self):
+        """artifact_fetch_error entries with OK are never overridden regardless of connector."""
+        result_data = {
+            "rule_results": [{"rule_id": "artifact_fetch_error", "status": "OK", "message": None, "connector_instance_id": ""}]
+        }
+        self.fn(result_data, {}, {}, {})
+        rr = result_data["rule_results"][0]
+        assert rr["status"] == "OK"

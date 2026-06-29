@@ -231,13 +231,11 @@ interface VerificationResult {
                           {{ translateRuleResult(rule.status ?? rule.result ?? '') }}
                         </span>
                       </td>
-                      <td class="cell-evidence" [attr.data-label]="'release_detail.rule_evidence' | t" (click)="$event.stopPropagation()">
+                      <td class="cell-evidence" [attr.data-label]="'release_detail.rule_evidence' | t">
                         @let evidenceText = translateEvidence(rule.evidence || rule.message);
                         @if (evidenceText) {
-                          <span>{{ evidenceText | slice:0:100 }}{{ evidenceText.length > 100 ? '…' : '' }}</span>
-                          @if (evidenceText.length > 100) {
-                            <button class="btn-expand" (click)="toggleEvidence(i)">{{ 'release_detail.see_more_btn' | t }}</button>
-                          }
+                          <span class="evidence-text">{{ evidenceText }}</span>
+                          <button class="btn-expand" (click)="toggleEvidence(i); $event.stopPropagation()">{{ 'release_detail.see_more_btn' | t }}</button>
                         } @else {
                           <span class="cell-muted">{{ 'common.dash' | t }}</span>
                         }
@@ -825,12 +823,14 @@ interface VerificationResult {
     .data-table tbody tr { cursor: default; }
 
     .col-id { width: 5rem; }
-    .col-connector { width: 8.75rem; }
-    .col-result { width: 7.5rem; }
+    .col-name { width: 14rem; }
+    .col-connector { width: 6rem; }
+    .col-result { width: 5.5rem; }
 
     .cell-primary { font-weight: 500; }
     .cell-muted { color: var(--muted); }
-    .cell-evidence { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cell-evidence { display: flex; align-items: center; gap: var(--spacing-xs); min-width: 0; }
+    .evidence-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
     .cell-action { text-align: right; }
 
     .mono-sm {
@@ -858,13 +858,13 @@ interface VerificationResult {
     .result-unevaluated { color: var(--verdict-unevaluated); background: var(--verdict-unevaluated-bg); border-color: var(--verdict-unevaluated-border); }
 
     .btn-expand {
+      flex-shrink: 0;
       font-size: 0.6875rem;
       color: var(--accent-dark);
       background: none;
       border: none;
       cursor: pointer;
       padding: 0;
-      margin-left: var(--spacing-sm);
     }
 
     .btn-expand:hover { color: var(--ink); }
