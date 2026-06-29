@@ -351,42 +351,42 @@ class _HeaderFlowable(Flowable):
         c.drawRightString(self._content_w, 5 * mm, _t(self._lang, "report_title").upper())
 
 
-class _VerdictBanner(Flowable):
-    def __init__(self, content_w: float, banner_h: float, bg, bd, fg,
-                 stripe_w: float, verdict_text: str, result_id: str, exec_at: str):
-        self._content_w = content_w
-        self._banner_h = banner_h
-        self._bg = bg
-        self._bd = bd
-        self._fg = fg
-        self._stripe_w = stripe_w
+class _VerdictBlock(Flowable):
+    """Clean typographic verdict — thin left stripe, no colored fill."""
+
+    _STRIPE = 3       # stripe width in points
+    _PAD    = 4 * mm  # text left-offset from stripe
+    _H      = 18 * mm # total height
+
+    def __init__(self, content_w: float, verdict_text: str, result_id: str,
+                 exec_at: str, fg):
+        self._content_w  = content_w
         self._verdict_text = verdict_text
-        self._result_id = result_id
-        self._exec_at = exec_at
+        self._result_id  = result_id
+        self._exec_at    = exec_at
+        self._fg         = fg
 
     def wrap(self, aW: float, aH: float) -> tuple[float, float]:  # NOSONAR
-        return self._content_w, self._banner_h
+        return self._content_w, self._H
 
     def draw(self):
-        c = self.canv
-        c.setFillColorRGB(*self._bg)
-        c.rect(0, 0, self._content_w, self._banner_h, fill=1, stroke=0)
-        c.setStrokeColorRGB(*self._bd)
-        c.setLineWidth(0.75)
-        c.rect(0, 0, self._content_w, self._banner_h, fill=0, stroke=1)
+        c  = self.canv
+        tx = self._STRIPE + self._PAD
+
+        # thin left accent stripe
         c.setFillColorRGB(*self._fg)
-        c.rect(0, 0, self._stripe_w, self._banner_h, fill=1, stroke=0)
-        mid = self._banner_h / 2
-        c.setFont("Helvetica-Bold", 10)
-        lx = self._stripe_w + 6 * mm
-        c.drawString(lx, mid - 1.5 * mm, self._verdict_text)
+        c.rect(0, 0, self._STRIPE, self._H, fill=1, stroke=0)
+
+        # verdict text
+        c.setFont("Helvetica-Bold", 15)
+        c.drawString(tx, self._H * 0.50, self._verdict_text)
+
+        # meta: truncated ID on left, execution date on right
         c.setFillColorRGB(*_MUTED)
-        c.setFont("Courier", 8)
-        w = c.stringWidth(self._verdict_text, "Helvetica-Bold", 10)
-        sep = lx + w + 6 * mm
-        c.drawString(sep, mid - 1 * mm, self._result_id[:8] + "...")
+        c.setFont("Courier", 7.5)
+        c.drawString(tx, 2.5 * mm, self._result_id[:8] + "…")
         c.setFont("Helvetica", 8)
-        c.drawRightString(self._content_w - 5 * mm, mid - 1 * mm, self._exec_at)
+        c.drawRightString(self._content_w, 2.5 * mm, self._exec_at)
 
 
 def _section_label(text: str, content_w: float, muted_c, border_c) -> list:
@@ -421,9 +421,9 @@ def _build_rules_table(rules: list, ok_count: int, err_count: int, warn_count: i
     tmg_s = ParagraphStyle("TMG", fontName="Helvetica", fontSize=7.5,
                           textColor=muted_c, leading=10)
 
-    COL_ID = 1.4 * cm
-    COL_NM = 4.9 * cm
-    COL_ST = 1.9 * cm
+    COL_ID  = 1.6 * cm
+    COL_NM  = 7.0 * cm
+    COL_ST  = 2.0 * cm
     COL_MSG = content_w - COL_ID - COL_NM - COL_ST
 
     data_rows = [[
@@ -439,10 +439,9 @@ def _build_rules_table(rules: list, ok_count: int, err_count: int, warn_count: i
         msg = rule.get("message")
         if msg is None or str(msg).strip().lower() == "none":
             msg = _t(lang, "no_detail")
-        fg, _, _ = _status_colors(status)
         st_label = _t(lang, f"status_{status.lower()}") or status
-        st_s = ParagraphStyle("ST", fontName="Helvetica-Bold", fontSize=8,
-                             textColor=colors.Color(*fg), leading=10)
+        st_s = ParagraphStyle("ST", fontName="Helvetica", fontSize=8,
+                             textColor=ink_c, leading=10)
         data_rows.append([
             Paragraph(rule_id, tid_s),
             Paragraph(_rule_name(lang, rule_id), tnm_s),
@@ -485,7 +484,7 @@ def _build_pdf(pdf_path: str, result, release, lang: str) -> None:
     # ── computed values ───────────────────────────────────────────────────────
     verdict_str  = result.verdict.value if hasattr(result.verdict, "value") else str(result.verdict)
     verdict_text = _verdict_label(lang, result.verdict)
-    fg_v, bg_v, bd_v = _verdict_colors(verdict_str)
+    fg_v, _, _ = _verdict_colors(verdict_str)
 
     rules      = result.rule_results or []
     ok_count   = sum(1 for r in rules if (r.get("status") or "").upper() == "OK")
@@ -509,9 +508,6 @@ def _build_pdf(pdf_path: str, result, release, lang: str) -> None:
     LOGO_SZ   = 14 * mm
     LOGO_OFF  = (LOGO_SZ + 3 * mm) if _use_logo else 0
 
-    BANNER_H = 20 * mm
-    STRIPE_W = 4
-
     # ── story ─────────────────────────────────────────────────────────────────
     story: list = []
 
@@ -530,11 +526,16 @@ def _build_pdf(pdf_path: str, result, release, lang: str) -> None:
     story.append(Paragraph(
         f"{r_name}  ·  {r_version}  ·  {_t(lang, 'field_executed_at')}: {exec_at}",
         ParagraphStyle("Meta", fontName="Helvetica", fontSize=8,
-                      textColor=muted_c, leading=11, spaceAfter=6 * mm),
+                      textColor=muted_c, leading=11, spaceAfter=4 * mm),
     ))
 
-    story.append(_VerdictBanner(CONTENT_W, BANNER_H, bg_v, bd_v, fg_v, STRIPE_W,
-                                 verdict_text, str(result.id)[:8], exec_at))
+    story.append(HRFlowable(
+        width=CONTENT_W, thickness=0.5, color=border_c, spaceAfter=0,
+    ))
+    story.append(_VerdictBlock(CONTENT_W, verdict_text, str(result.id), exec_at, fg_v))
+    story.append(HRFlowable(
+        width=CONTENT_W, thickness=0.5, color=border_c, spaceAfter=5 * mm,
+    ))
 
     # ── Delivery info ─────────────────────────────────────────────────────────
     story.extend(_section_label(_t(lang, "section_release"), CONTENT_W, muted_c, border_c))

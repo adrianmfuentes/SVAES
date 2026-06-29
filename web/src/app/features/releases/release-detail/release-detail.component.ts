@@ -2246,7 +2246,16 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `verification_${result.id}.pdf`;
+      const lang = this.ts.currentLang ?? 'es';
+      const slugify = (s: string) =>
+        s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+         .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const orgName  = slugify(this.release()?.organization_name ?? 'org');
+      const dateStr  = result.executed_at
+        ? new Date(result.executed_at).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+      const word     = lang === 'en' ? 'verification' : 'verificacion';
+      a.download = `${orgName}-${dateStr}-${word}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     });
