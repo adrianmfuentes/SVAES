@@ -16,6 +16,7 @@ class IReleaseService(ABC):
         project_id: UUID,
         user_id: UUID,
         description: str = "",
+        profile_id: Optional[UUID] = None,
     ) -> Release:
         pass
 
