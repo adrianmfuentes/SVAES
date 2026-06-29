@@ -77,7 +77,7 @@ describe('TranslationService', () => {
   describe('loadTranslationsWithCache', () => {
     it('should return cached translations when available', async () => {
       const cached = { hello: 'Hello cached', world: 'World cached' };
-      localStorage.setItem('svaes-i18n-en', JSON.stringify(cached));
+      localStorage.setItem('svaes-i18n-v2-en', JSON.stringify(cached));
 
       const promise = firstValueFrom(service.loadTranslationsWithCache('en'));
 
@@ -99,7 +99,7 @@ describe('TranslationService', () => {
 
       const result = await promise;
       expect(result).toEqual(data);
-      expect(localStorage.getItem('svaes-i18n-es')).toBe(JSON.stringify(data));
+      expect(localStorage.getItem('svaes-i18n-v2-es')).toBe(JSON.stringify(data));
     });
   });
 
