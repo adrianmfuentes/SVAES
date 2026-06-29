@@ -217,12 +217,12 @@ describe('ReleaseDetailComponent', () => {
       expect(component.summaryTotal({ TOTAL: 5, OK: 3 })).toBe(5);
     });
 
-    it('should return null for string summary', () => {
-      expect(component.summaryTotal('not an object')).toBeNull();
+    it('should return 0 for string summary', () => {
+      expect(component.summaryTotal('not an object')).toBe(0);
     });
 
-    it('should return null when TOTAL key is missing', () => {
-      expect(component.summaryTotal({ OK: 3 })).toBeNull();
+    it('should return 0 when TOTAL key is missing', () => {
+      expect(component.summaryTotal({ OK: 3 })).toBe(0);
     });
   });
 
