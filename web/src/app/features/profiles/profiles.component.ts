@@ -65,7 +65,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                 <th scope="col">{{ 'profiles.table_name' | t }}</th>
                 <th scope="col">{{ 'common.description' | t }}</th>
                 <th scope="col">{{ 'profiles.table_rules' | t }}</th>
-                <th scope="col" *ngIf="canManage"></th>
+                <th scope="col" *ngIf="canManage">{{ 'common.actions' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -84,7 +84,7 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                     {{ deletingId() === p.id ? ('profiles.deleting' | t) : ('common.delete' | t) }}
                   </button>
                 </td>
-                <td *ngIf="canManage && (p.is_default || p.is_system)" class="cell-muted" [attr.data-label]="'common.actions' | t">
+                <td *ngIf="canManage && (p.is_default || p.is_system)" class="cell-actions cell-actions-centered" [attr.data-label]="'common.actions' | t">
                   <button class="btn-ghost btn-xs" (click)="openEdit(p)">{{ 'profiles.view_rules' | t }}</button>
                 </td>
               </tr>
@@ -284,6 +284,10 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
       gap: var(--spacing-sm);
       justify-content: flex-end;
       align-items: center;
+    }
+
+    .cell-actions-centered {
+      justify-content: center;
     }
 
     .btn-ghost {

@@ -1539,10 +1539,30 @@ class TestUsersCoverage:
 
     def test_export_user_data_success(self):
         from fastapi.testclient import TestClient
-        self.svc.get_user_by_id = AsyncMock(return_value=self._make_user())
+        user = self._make_user()
+        self.svc.get_user_by_id = AsyncMock(return_value=user)
         client = TestClient(self.app)
         resp = client.get("/api/v1/users/me/export", headers=self._headers())
         assert resp.status_code == 200
+        body = resp.json()
+        assert body["schema_version"] == "1.0"
+        assert body["export_format"] == "GDPR Art.20 Data Portability"
+        assert body["user"]["id"] == str(self.user_id)
+        assert body["user"]["email"] == user.email
+        assert body["user"]["display_name"] == user.display_name
+        assert body["user"]["role"] == "OPERATOR"
+        assert body["user"]["is_active"] is True
+        assert body["user"]["created_at"] is not None
+        assert body["user"]["updated_at"] is not None
+        assert body["user"]["terms_accepted_at"] is not None
+        assert body["user"]["privacy_accepted_at"] is not None
+        assert body["user"]["organization_ids"] == [str(self.org_id)]
+
+    def test_export_user_data_unauthorized_401(self):
+        from fastapi.testclient import TestClient
+        client = TestClient(self.app)
+        resp = client.get("/api/v1/users/me/export")
+        assert resp.status_code == 401
 
     def test_export_user_data_not_found_404(self):
         from fastapi.testclient import TestClient

@@ -376,6 +376,20 @@ interface UserProfile {
           </div>
         </div>
 
+        <!-- Download my data card -->
+        <div class="card export-data-card">
+          <h2 class="card-title">{{ 'profile_page.export_data_title' | t }}</h2>
+          <p class="export-data-desc">{{ 'profile_page.export_data_desc' | t }}</p>
+          <div class="form-footer" style="border-top:none; padding-top:0; margin-top: var(--spacing-md);">
+            <button class="btn-danger" (click)="downloadData()"
+              [disabled]="exportDataDownloading()"
+              [title]="exportDataDownloading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+              {{ exportDataDownloading() ? ('profile_page.export_data_downloading' | t) : ('profile_page.export_data_btn' | t) }}
+            </button>
+          </div>
+          <div *ngIf="exportDataError()" class="alert-error" style="margin-top: var(--spacing-sm);">{{ exportDataError() }}</div>
+        </div>
+
         <!-- Delete account card -->
         <div class="card delete-account-card" *ngIf="!isAdmin()">
           <h2 class="card-title">{{ 'profile_page.delete_account_title' | t }}</h2>
@@ -467,7 +481,7 @@ interface UserProfile {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: var(--spacing-lg);
-      align-items: start;
+      align-items: stretch;
     }
 
     .card {
@@ -793,6 +807,17 @@ interface UserProfile {
     }
 
     .delete-account-desc {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin: 0 0 var(--spacing-sm);
+      line-height: 1.5;
+    }
+
+    .export-data-card {
+      border-color: var(--verdict-invalid-border);
+    }
+
+    .export-data-desc {
       font-size: 0.8125rem;
       color: var(--muted);
       margin: 0 0 var(--spacing-sm);
@@ -1167,6 +1192,9 @@ export class ProfileComponent implements OnInit {
   mustTransferFirst = signal(false);
   deleteAccountChecking = signal(false);
 
+  exportDataDownloading = signal(false);
+  exportDataError = signal<string | null>(null);
+
   ngOnInit(): void {
     this.http.get<UserProfile>('/api/v1/users/me')
       .pipe(catchError(() => of(null)))
@@ -1459,6 +1487,32 @@ export class ProfileComponent implements OnInit {
           }, 2000);
         }
         this.deleteAccountDeleting.set(false);
+      });
+  }
+
+  downloadData(): void {
+    this.exportDataDownloading.set(true);
+    this.exportDataError.set(null);
+
+    this.http.get<object>('/api/v1/users/me/export')
+      .pipe(catchError((err: HttpErrorResponse) => {
+        this.exportDataError.set(this.ts.translateInstant('profile_page.export_data_error'));
+        this.exportDataDownloading.set(false);
+        return of(null);
+      }))
+      .subscribe(res => {
+        if (res) {
+          const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'svaes-user-data.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }
+        this.exportDataDownloading.set(false);
       });
   }
 }

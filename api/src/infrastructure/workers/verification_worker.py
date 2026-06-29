@@ -236,7 +236,9 @@ def _get_connector_for_rule(
 
     profile_rule = rule_lookup.get(rid)
     if profile_rule and profile_rule.connector_instance_id:
-        return connector_names.get(profile_rule.connector_instance_id, "")
+        name = connector_names.get(profile_rule.connector_instance_id, "")
+        if name:
+            return name
 
     if artifact_type_connector:
         params = profile_rule.params if profile_rule else {}

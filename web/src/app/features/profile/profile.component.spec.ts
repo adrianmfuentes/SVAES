@@ -583,6 +583,71 @@ describe('ProfileComponent', () => {
     });
   });
 
+  describe('downloadData', () => {
+    let createObjectURLSpy: ReturnType<typeof vi.fn>;
+    let revokeObjectURLSpy: ReturnType<typeof vi.fn>;
+    let anchorClickSpy: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.hasOrg.set(true);
+      component.isAdmin.set(false);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/users/me').flush(mockUser);
+      httpCtrl.expectOne('/api/v1/users/u1/api-keys').flush([]);
+
+      createObjectURLSpy = vi.fn().mockReturnValue('blob:test-url');
+      revokeObjectURLSpy = vi.fn();
+      anchorClickSpy = vi.fn();
+
+      (window.URL as any).createObjectURL = createObjectURLSpy;
+      (window.URL as any).revokeObjectURL = revokeObjectURLSpy;
+
+      const origCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tag: string): any => {
+        if (tag === 'a') {
+          return {
+            href: '',
+            download: '',
+            click: anchorClickSpy,
+          };
+        }
+        return origCreateElement(tag);
+      });
+
+      vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node): any => node);
+      vi.spyOn(document.body, 'removeChild').mockImplementation((child: Node): any => child);
+    });
+
+    it('should fetch export data and trigger download on success', () => {
+      const data = { schema_version: '1.0', export_format: 'GDPR Art.20 Data Portability', user: {} };
+
+      component.downloadData();
+      httpCtrl.expectOne('/api/v1/users/me/export').flush(data);
+
+      expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
+      expect(anchorClickSpy).toHaveBeenCalledTimes(1);
+      expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:test-url');
+      expect(component.exportDataDownloading()).toBe(false);
+      expect(component.exportDataError()).toBeNull();
+    });
+
+    it('should set error on failure', () => {
+      component.downloadData();
+      httpCtrl.expectOne('/api/v1/users/me/export').flush(
+        { detail: 'Server error' },
+        { status: 500, statusText: 'Internal Server Error' },
+      );
+
+      expect(component.exportDataError()).toBe('profile_page.export_data_error');
+      expect(component.exportDataDownloading()).toBe(false);
+      expect(createObjectURLSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('template rendering', () => {
     const renderTemplate = (flushInitRequests = true) => {
       fixture.detectChanges();
@@ -770,6 +835,47 @@ describe('ProfileComponent', () => {
       renderTemplate();
       const success = fixture.nativeElement.querySelector('.alert-success');
       expect(success).not.toBeNull();
+    });
+
+    it('should render export data card', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.isAdmin.set(false);
+      component.hasOrg.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      renderTemplate();
+      const card = fixture.nativeElement.querySelector('.export-data-card');
+      expect(card).not.toBeNull();
+    });
+
+    it('should render export data downloading state on button', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.isAdmin.set(false);
+      component.hasOrg.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      component.exportDataDownloading.set(true);
+      renderTemplate();
+      const btn = fixture.nativeElement.querySelector('.export-data-card .btn-danger');
+      expect(btn).not.toBeNull();
+      expect(btn.textContent).toContain('profile_page.export_data_downloading');
+      expect((btn as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('should render export data error message in card', () => {
+      component.loading.set(false);
+      component.profile.set(mockUser);
+      component.isAdmin.set(false);
+      component.hasOrg.set(true);
+      component.apiKeys.set([]);
+      component.keysLoading.set(false);
+      component.exportDataError.set('test error');
+      renderTemplate();
+      const err = fixture.nativeElement.querySelector('.export-data-card .alert-error');
+      expect(err).not.toBeNull();
+      expect(err.textContent).toContain('test error');
     });
   });
 });

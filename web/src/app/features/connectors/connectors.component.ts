@@ -79,7 +79,7 @@ interface ConnectorTypesResponse {
                 <th scope="col">{{ 'connectors.table_type' | t }}</th>
                 <th scope="col">{{ 'connectors.table_status' | t }}</th>
                 <th scope="col">{{ 'connectors.last_tested' | t }}</th>
-                <th scope="col" *ngIf="canManage"></th>
+                <th scope="col" *ngIf="canManage">{{ 'common.actions' | t }}</th>
               </tr>
             </thead>
             <tbody>

@@ -636,3 +636,75 @@ class TestPseudonymize:
         value = "test@example.com"
         expected = "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
         assert _hash_value(value) == expected
+
+
+# ── 9. _get_connector_for_rule ───────────────────────────────────────────────
+
+class TestGetConnectorForRule:
+    """Unit tests for verification_worker._get_connector_for_rule."""
+
+    @pytest.fixture(autouse=True)
+    def _import(self):
+        from infrastructure.workers.verification_worker import _get_connector_for_rule
+        self.fn = _get_connector_for_rule
+
+    def _make_rule(self, connector_instance_id=None, params=None):
+        from domain.entities.verification_rule import VerificationRule
+        return VerificationRule(
+            profile_id=uuid4(),
+            rule_template="RV-03",
+            connector_instance_id=connector_instance_id,
+            params=params or {},
+        )
+
+    def test_returns_name_when_connector_found(self):
+        """Rule has connector_instance_id that exists in connector_names → returns name."""
+        cid = uuid4()
+        rule = self._make_rule(connector_instance_id=cid)
+        connector_names = {cid: "Jira"}
+        result = self.fn("RV-03", {}, {"RV-03": rule}, connector_names)
+        assert result == "Jira"
+
+    def test_falls_through_to_artifact_type_when_connector_missing(self):
+        """Rule has connector_instance_id but it's not in connector_names →
+        falls back to artifact_type_connector (the bug-fix case)."""
+        cid = uuid4()
+        rule = self._make_rule(connector_instance_id=cid)
+        connector_names = {}  # connector deleted / not found
+        artifact_type_connector = {"TAREA": "Jira"}
+        result = self.fn("RV-03", {}, {"RV-03": rule}, connector_names, artifact_type_connector)
+        assert result == "Jira"
+
+    def test_returns_empty_when_no_connector_and_no_artifact_type(self):
+        """Rule has no connector_instance_id and rule not in RULE_DEFAULT_ARTIFACT_TYPES."""
+        rule = self._make_rule()
+        result = self.fn("RV-01", {}, {"RV-01": rule}, {}, {})
+        assert result == ""
+
+    def test_uses_artifact_type_fallback_when_no_connector_instance(self):
+        """Rule with no connector_instance_id uses RULE_DEFAULT_ARTIFACT_TYPES fallback."""
+        rule = self._make_rule()
+        artifact_type_connector = {"TAREA": "Taiga"}
+        result = self.fn("RV-03", {}, {"RV-03": rule}, {}, artifact_type_connector)
+        assert result == "Taiga"
+
+    def test_artifact_fetch_error_uses_connector_instance_id_from_result(self):
+        """artifact_fetch_error entries use connector_instance_id from the rule_result dict."""
+        cid = uuid4()
+        connector_names = {cid: "Sonar"}
+        rule_result = {"connector_instance_id": str(cid)}
+        result = self.fn("artifact_fetch_error", rule_result, {}, connector_names)
+        assert result == "Sonar"
+
+    def test_artifact_fetch_error_returns_empty_on_invalid_uuid(self):
+        """artifact_fetch_error with bad UUID → returns empty string."""
+        rule_result = {"connector_instance_id": "not-a-uuid"}
+        result = self.fn("artifact_fetch_error", rule_result, {}, {})
+        assert result == ""
+
+    def test_params_artifact_type_overrides_default(self):
+        """Rule with explicit artifact_type in params takes precedence over RULE_DEFAULT_ARTIFACT_TYPES."""
+        rule = self._make_rule(params={"artifact_type": "CODIGO"})
+        artifact_type_connector = {"CODIGO": "GitHub", "TAREA": "Jira"}
+        result = self.fn("RV-03", {}, {"RV-03": rule}, {}, artifact_type_connector)
+        assert result == "GitHub"
