@@ -287,7 +287,7 @@ def _enrich_rule_results(
         rule_result["connector"] = connector
         if not connector and rule_result.get("status") == "OK" and rid != "artifact_fetch_error":
             connector_types_needed = RULE_CONNECTOR_TYPES.get(rid)
-            if connector_types_needed is None or len(connector_types_needed) > 0:
+            if connector_types_needed is None or len(connector_types_needed) == 0:
                 rule_result["status"] = "NO_EVALUADA"
                 rule_result["message"] = "rule_evidence.no_connector"
                 rule_result["message_params"] = None

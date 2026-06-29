@@ -3,7 +3,10 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from core.email import email_service
+from core.config import settings
 from . import ERROR_INTERNO
+
+_log = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Feedback"])
 
@@ -25,9 +28,11 @@ async def submit_feedback(payload: FeedbackPayload):
             "rating": payload.rating,
             "comments": payload.comments,
         })
+        _log.info("Feedback received and email sent from %s", payload.email)
         return {"status": "ok"}
     except Exception:
+        _log.exception("Feedback email failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=ERROR_INTERNO,
+            detail="No se pudo enviar el feedback. Por favor, inténtalo de nuevo más tarde.",
         )
