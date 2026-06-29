@@ -1,3 +1,4 @@
+use serde_json::json;
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 
 /// RV-07: Confirma la presencia de un artefacto específico que actúe como "marcador"
@@ -28,9 +29,8 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             return RuleEvaluation {
                 rule_id: rule_config.id.clone(),
                 status: RuleStatus::NoEvaluada,
-                message: Some(
-                    "Parámetro 'artifact_type' no configurado — regla no aplicable".to_string(),
-                ),
+                message: Some("rule_evidence.no_evaluada.RV-07".to_string()),
+                message_params: None,
             };
         }
     };
@@ -51,23 +51,23 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
                     RuleEvaluation {
                         rule_id: rule_config.id.clone(),
                         status: RuleStatus::Ok,
-                        message: Some(format!(
-                            "Marcador de registro externo '{}' encontrado en artefacto '{}'",
-                            artifact_type,
-                            artifact.id
-                        )),
+                        message: Some("rule_evidence.ok.RV-07.found".to_string()),
+                        message_params: Some(json!({
+                            "artifact_type": artifact_type,
+                            "artifact_id": artifact.id,
+                        })),
                     }
                 }
                 _ => {
                     RuleEvaluation {
                         rule_id: rule_config.id.clone(),
                         status: RuleStatus::Error,
-                        message: Some(format!(
-                            "Artefacto '{}' de tipo '{}' encontrado pero '{}' no es true",
-                            artifact.id,
-                            artifact_type,
-                            marker_field
-                        )),
+                        message: Some("rule_evidence.error.RV-07.not_true".to_string()),
+                        message_params: Some(json!({
+                            "artifact_id": artifact.id,
+                            "artifact_type": artifact_type,
+                            "marker_field": marker_field,
+                        })),
                     }
                 }
             }
@@ -76,10 +76,10 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             RuleEvaluation {
                 rule_id: rule_config.id.clone(),
                 status: RuleStatus::Error,
-                message: Some(format!(
-                    "No se encontró artefacto marcador de tipo '{}' que indique registro externo",
-                    artifact_type
-                )),
+                message: Some("rule_evidence.error.RV-07.not_found".to_string()),
+                message_params: Some(json!({
+                    "artifact_type": artifact_type,
+                })),
             }
         }
     }
@@ -152,7 +152,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("TAREA"));
+        assert_eq!(msg, "rule_evidence.error.RV-07.not_found");
+        let params = result.message_params.unwrap();
+        assert!(params["artifact_type"].as_str().unwrap().contains("TAREA"));
     }
 
     #[test]
@@ -166,7 +168,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("T-001"));
+        assert_eq!(msg, "rule_evidence.error.RV-07.not_true");
+        let params = result.message_params.unwrap();
+        assert!(params["artifact_id"].as_str().unwrap().contains("T-001"));
     }
 
     #[test]

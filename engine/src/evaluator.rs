@@ -30,6 +30,7 @@ pub fn evaluate(payload: VerificationPayload) -> EngineResult {
                     rule_id: rule_config.id.clone(),
                     status: RuleStatus::NoEvaluada,
                     message: Some("Regla excluida en el perfil".to_string()),
+                    message_params: None,
                 };
             }
                                                                                     
@@ -58,6 +59,7 @@ pub fn evaluate(payload: VerificationPayload) -> EngineResult {
                     rule_id: rule_config.id.clone(),
                     status: RuleStatus::NoEvaluada,
                     message: Some("ID de regla no reconocido en el catálogo".to_string()),
+                    message_params: None,
                 },
             }
         }) // Mapeamos cada regla a su resultado de evaluación, obteniendo un iterador de RuleEvaluation

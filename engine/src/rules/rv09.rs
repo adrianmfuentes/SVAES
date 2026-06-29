@@ -1,3 +1,4 @@
+use serde_json::json;
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 
 /// RV-09: Verifica que las referencias de origen (links o ramas) en la metadata
@@ -34,15 +35,16 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Ok,
             message: None,
+            message_params: None,
         }
     } else {
         RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Error,
-            message: Some(format!(
-                "Referencias inválidas o inaccesibles encontradas: {:?}",
-                invalid_refs
-            )),
+            message: Some("rule_evidence.error.RV-09".to_string()),
+            message_params: Some(json!({
+                "invalid_refs": format!("{:?}", invalid_refs),
+            })),
         }
     }
 }
@@ -206,7 +208,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("C-002/link"));
+        assert_eq!(msg, "rule_evidence.error.RV-09");
+        let params = result.message_params.unwrap();
+        assert!(params["invalid_refs"].as_str().unwrap().contains("C-002/link"));
     }
 
     /// Branch: invalid branch name (empty) → Error
@@ -226,7 +230,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("C-003/branch"));
+        assert_eq!(msg, "rule_evidence.error.RV-09");
+        let params = result.message_params.unwrap();
+        assert!(params["invalid_refs"].as_str().unwrap().contains("C-003/branch"));
     }
 
     /// Branch: accessible field is false → Error
@@ -246,7 +252,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("no accesible"));
+        assert_eq!(msg, "rule_evidence.error.RV-09");
+        let params = result.message_params.unwrap();
+        assert!(params["invalid_refs"].as_str().unwrap().contains("no accesible"));
     }
 
     /// Branch: artifact does not match artifact_type → skipped (OK)
@@ -346,7 +354,10 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("C-008/link"));
-        assert!(msg.contains("C-009/accessible"));
+        assert_eq!(msg, "rule_evidence.error.RV-09");
+        let params = result.message_params.unwrap();
+        let refs = params["invalid_refs"].as_str().unwrap();
+        assert!(refs.contains("C-008/link"));
+        assert!(refs.contains("C-009/accessible"));
     }
 }

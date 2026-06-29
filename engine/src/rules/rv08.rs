@@ -1,3 +1,4 @@
+use serde_json::json;
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 use std::collections::HashSet;
 
@@ -28,7 +29,8 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             return RuleEvaluation {
                 rule_id: rule_config.id.clone(),
                 status: RuleStatus::NoEvaluada,
-                message: Some("Parámetro 'master_artifact_id' no proporcionado".to_string()),
+                message: Some("rule_evidence.no_evaluada.RV-08".to_string()),
+                message_params: None,
             };
         }
     };
@@ -49,7 +51,10 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             return RuleEvaluation {
                 rule_id: rule_config.id.clone(),
                 status: RuleStatus::Error,
-                message: Some(format!("Artefacto maestro '{}' no encontrado", master_id)),
+                message: Some("rule_evidence.error.RV-08.master_not_found".to_string()),
+                message_params: Some(json!({
+                    "master_id": master_id,
+                })),
             };
         }
     };
@@ -62,10 +67,11 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
                     return RuleEvaluation {
                         rule_id: rule_config.id.clone(),
                         status: RuleStatus::Error,
-                        message: Some(format!(
-                            "Campo '{}' en maestro '{}' no es un array válido",
-                            master_field, master_id
-                        )),
+                        message: Some("rule_evidence.error.RV-08.field_not_array".to_string()),
+                        message_params: Some(json!({
+                            "master_field": master_field,
+                            "master_id": master_id,
+                        })),
                     };
                 }
             }
@@ -74,10 +80,11 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             return RuleEvaluation {
                 rule_id: rule_config.id.clone(),
                 status: RuleStatus::Error,
-                message: Some(format!(
-                    "Campo '{}' no encontrado en artefacto maestro '{}'",
-                    master_field, master_id
-                )),
+                message: Some("rule_evidence.error.RV-08.field_not_found".to_string()),
+                message_params: Some(json!({
+                    "master_field": master_field,
+                    "master_id": master_id,
+                })),
             };
         }
     };
@@ -98,18 +105,19 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Ok,
             message: None,
+            message_params: None,
         }
     } else {
         RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Error,
-            message: Some(format!(
-                "Discrepancia entre lista declarada y payload. IDs declarados en '{}' del maestro '{}' que no están en artefactos '{}': {:?}",
-                master_field,
-                master_id,
-                target_type,
-                missing_in_payload
-            )),
+            message: Some("rule_evidence.error.RV-08.discrepancy".to_string()),
+            message_params: Some(json!({
+                "master_field": master_field,
+                "master_id": master_id,
+                "target_type": target_type,
+                "missing_ids": format!("{:?}", missing_in_payload),
+            })),
         }
     }
 }
@@ -162,7 +170,7 @@ mod tests {
         let result = evaluate(&[], &rule);
         assert_eq!(result.status, RuleStatus::NoEvaluada);
         let msg = result.message.unwrap();
-        assert!(msg.contains("master_artifact_id"));
+        assert_eq!(msg, "rule_evidence.no_evaluada.RV-08");
     }
 
     #[test]
@@ -176,7 +184,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("PLAN-999"));
+        assert_eq!(msg, "rule_evidence.error.RV-08.master_not_found");
+        let params = result.message_params.unwrap();
+        assert!(params["master_id"].as_str().unwrap().contains("PLAN-999"));
     }
 
     #[test]
@@ -192,7 +202,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("T-003"));
+        assert_eq!(msg, "rule_evidence.error.RV-08.discrepancy");
+        let params = result.message_params.unwrap();
+        assert!(params["missing_ids"].as_str().unwrap().contains("T-003"));
     }
 
     #[test]

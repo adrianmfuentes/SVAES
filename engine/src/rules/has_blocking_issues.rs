@@ -1,4 +1,5 @@
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
+use serde_json::json;
 
 /// has_blocking_issues: Verifica que ningún artefacto tenga issues bloqueantes
 /// por encima del umbral permitido.
@@ -20,7 +21,10 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         return RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::NoEvaluada,
-            message: Some(format!("No hay artefactos de tipo '{}' en la entrega — regla no aplicable", artifact_type)),
+            message: Some("rule_evidence.no_evaluada.no_artifacts_of_type".to_string()),
+            message_params: Some(json!({
+                "artifact_type": artifact_type,
+            })),
         };
     }
 
@@ -37,12 +41,16 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Ok,
             message: None,
+            message_params: None,
         }
     } else {
         RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Error,
-            message: Some(format!("Artefactos con issues bloqueantes: {:?}", violations)),
+            message: Some("rule_evidence.error.has_blocking_issues".to_string()),
+            message_params: Some(json!({
+                "violations": format!("{:?}", violations),
+            })),
         }
     }
 }
@@ -78,5 +86,7 @@ mod tests {
     fn no_artifacts_returns_no_evaluada() {
         let result = evaluate(&[], &make_rule(json!({})));
         assert_eq!(result.status, RuleStatus::NoEvaluada);
+        assert_eq!(result.message.unwrap(), "rule_evidence.no_evaluada.no_artifacts_of_type");
+        assert_eq!(result.message_params.unwrap()["artifact_type"].as_str().unwrap(), "TAREA");
     }
 }

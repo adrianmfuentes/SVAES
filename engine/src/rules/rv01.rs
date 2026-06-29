@@ -18,13 +18,15 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Error,
-            message: Some("La lista de artefactos está vacía. Se requiere al menos un artefacto para proceder.".to_string()),
+            message: Some("rule_evidence.error.RV-01".to_string()),
+            message_params: None,
         }
     } else {
         RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Ok,
             message: None,
+            message_params: None,
         }
     }
 }
@@ -73,6 +75,6 @@ mod tests {
         let result = evaluate(&artifacts, &rule);
 
         assert_eq!(result.status, RuleStatus::Error);
-        assert!(result.message.unwrap().contains("vacía"));
+        assert_eq!(result.message.unwrap(), "rule_evidence.error.RV-01");
     }
 }

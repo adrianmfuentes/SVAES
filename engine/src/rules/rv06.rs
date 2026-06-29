@@ -1,3 +1,4 @@
+use serde_json::json;
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 
 /// RV-06: Compara un atributo específico (como la versión) presente en los metadatos
@@ -24,7 +25,8 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         return RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::NoEvaluada,
-            message: Some("No hay artefactos disponibles para evaluar esta regla.".to_string()),
+            message: Some("rule_evidence.no_evaluada.empty_artifacts".to_string()),
+            message_params: None,
         };
     }
 
@@ -52,10 +54,10 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         return RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::NoEvaluada,
-            message: Some(format!(
-                "No se encontraron artefactos de tipo '{}' para evaluar",
-                artifact_type
-            )),
+            message: Some("rule_evidence.no_evaluada.RV-06".to_string()),
+            message_params: Some(json!({
+                "artifact_type": artifact_type,
+            })),
         };
     }
 
@@ -75,18 +77,18 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Ok,
             message: None,
+            message_params: None,
         }
     } else {
         RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Error,
-            message: Some(format!(
-                "Artefactos con valor de '{}' diferente a '{}' (atributo '{}'): {:?}",
-                attribute,
-                expected_value,
-                attribute,
-                mismatched_artifacts
-            )),
+            message: Some("rule_evidence.error.RV-06".to_string()),
+            message_params: Some(json!({
+                "attribute": attribute,
+                "expected_value": expected_value,
+                "mismatched_artifacts": format!("{:?}", mismatched_artifacts),
+            })),
         }
     }
 }
@@ -140,7 +142,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("D-002"));
+        assert_eq!(msg, "rule_evidence.error.RV-06");
+        let params = result.message_params.unwrap();
+        assert!(params["mismatched_artifacts"].as_str().unwrap().contains("D-002"));
     }
 
     #[test]

@@ -60,6 +60,7 @@ mod tests {
             rule_id: rule_id.to_string(),
             status,
             message: None,
+            message_params: None,
         }
     }
 

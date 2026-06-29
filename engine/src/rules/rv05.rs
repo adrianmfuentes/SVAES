@@ -1,3 +1,4 @@
+use serde_json::json;
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 
 /// RV-05: Verifica que existan artefactos de tipo "DOCUMENTO" y que tengan
@@ -37,10 +38,10 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         return RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Error,
-            message: Some(format!(
-                "No se encontraron artefactos de tipo '{}'",
-                artifact_type
-            )),
+            message: Some("rule_evidence.error.RV-05.no_docs".to_string()),
+            message_params: Some(json!({
+                "artifact_type": artifact_type,
+            })),
         };
     }
 
@@ -60,16 +61,17 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Ok,
             message: None,
+            message_params: None,
         }
     } else {
         RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Error,
-            message: Some(format!(
-                "Documentos inaccesibles (flag '{}' no es true): {:?}",
-                accessible_field,
-                inaccessible_docs
-            )),
+            message: Some("rule_evidence.error.RV-05.inaccessible".to_string()),
+            message_params: Some(json!({
+                "accessible_field": accessible_field,
+                "inaccessible_docs": format!("{:?}", inaccessible_docs),
+            })),
         }
     }
 }
@@ -120,7 +122,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("DOCUMENTO"));
+        assert_eq!(msg, "rule_evidence.error.RV-05.no_docs");
+        let params = result.message_params.unwrap();
+        assert!(params["artifact_type"].as_str().unwrap().contains("DOCUMENTO"));
     }
 
     #[test]
@@ -135,7 +139,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("D-002"));
+        assert_eq!(msg, "rule_evidence.error.RV-05.inaccessible");
+        let params = result.message_params.unwrap();
+        assert!(params["inaccessible_docs"].as_str().unwrap().contains("D-002"));
     }
 
     #[test]

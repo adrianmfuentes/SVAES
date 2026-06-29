@@ -1,3 +1,4 @@
+use serde_json::json;
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 
 /// RV-10: Busca un artefacto de un tipo concreto que posea un atributo de estado
@@ -50,23 +51,23 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             RuleEvaluation {
                 rule_id: rule_config.id.clone(),
                 status: RuleStatus::Ok,
-                message: Some(format!(
-                    "Artefacto '{}' de tipo '{}' encontrado con estado aprobatorio: '{}'",
-                    artifact.id,
-                    artifact_type,
-                    artifact.metadata.get(status_field).and_then(|v| v.as_str()).unwrap_or("desconocido")
-                )),
+                message: Some("rule_evidence.ok.RV-10.found".to_string()),
+                message_params: Some(json!({
+                    "artifact_id": artifact.id,
+                    "artifact_type": artifact_type,
+                    "approved_status": artifact.metadata.get(status_field).and_then(|v| v.as_str()).unwrap_or("desconocido"),
+                })),
             }
         }
         None => {
             RuleEvaluation {
                 rule_id: rule_config.id.clone(),
                 status: RuleStatus::Error,
-                message: Some(format!(
-                    "No se encontró artefacto de tipo '{}' con estado aprobatorio (estados aceptados: {:?})",
-                    artifact_type,
-                    approved_states
-                )),
+                message: Some("rule_evidence.error.RV-10".to_string()),
+                message_params: Some(json!({
+                    "artifact_type": artifact_type,
+                    "approved_states": format!("{:?}", approved_states),
+                })),
             }
         }
     }
@@ -106,7 +107,10 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Ok);
         let msg = result.message.unwrap();
-        assert!(msg.contains("D-001") && msg.contains("APROBADO"));
+        assert_eq!(msg, "rule_evidence.ok.RV-10.found");
+        let params = result.message_params.unwrap();
+        assert!(params["artifact_id"].as_str().unwrap().contains("D-001"));
+        assert!(params["approved_status"].as_str().unwrap().contains("APROBADO"));
     }
 
     #[test]
@@ -122,7 +126,9 @@ mod tests {
         let result = evaluate(&artifacts, &make_rule("RV-10"));
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("DOCUMENTO"));
+        assert_eq!(msg, "rule_evidence.error.RV-10");
+        let params = result.message_params.unwrap();
+        assert!(params["artifact_type"].as_str().unwrap().contains("DOCUMENTO"));
     }
 
     #[test]

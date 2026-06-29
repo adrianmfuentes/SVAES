@@ -42,6 +42,8 @@ pub struct RuleEvaluation {
     pub rule_id: String,
     pub status: RuleStatus,
     pub message: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message_params: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -288,9 +288,12 @@ def _enrich_rule_results(
         if not connector and rule_result.get("status") == "OK" and rid != "artifact_fetch_error":
             rule_result["status"] = "NO_EVALUADA"
             rule_result["message"] = "rule_evidence.no_connector"
+            rule_result["message_params"] = None
         rule_result["evidence"] = rule_result.get("message", "")
+        rule_result["evidence_params"] = rule_result.get("message_params")
         if not rule_result["evidence"] and rule_result.get("status") == "OK":
             rule_result["evidence"] = RULE_OK_EVIDENCE.get(rid, "rule_evidence.ok.default")
+            rule_result["evidence_params"] = None
 
 
 async def _notify_user(release_id: uuid.UUID, release: Any, saved_result: Any) -> None:
@@ -368,17 +371,21 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
             "rule_id": "artifact_fetch_error",
             "rule_name": "Error al recuperar artefacto",
             "status": "WARNING",
-            "message": (
-                f"No se pudo obtener el artefacto '{ref}' "
-                f"(tipo: {fe['artifact_type']}) desde el conector '{fe['connector']}': {fe['error']}"
-            ),
+            "message": "rule_evidence.warning.artifact_fetch_error",
+            "message_params": {
+                "ref": ref,
+                "artifact_type": fe["artifact_type"],
+                "connector": fe["connector"],
+                "error": fe["error"],
+            },
             "connector": fe["connector"],
             "connector_instance_id": fe.get("connector_instance_id", ""),
-            "evidence": (
-                f"No se pudo recuperar '{ref}' "
-                f"de tipo {fe['artifact_type']} desde el conector '{fe['connector']}'. "
-                f"Verifique que la referencia externa '{ref}' existe y es accesible con las credenciales configuradas."
-            ),
+            "evidence": "rule_evidence.warning.artifact_fetch_error.evidence",
+            "evidence_params": {
+                "ref": ref,
+                "artifact_type": fe["artifact_type"],
+                "connector": fe["connector"],
+            },
         })
 
     _enrich_rule_results(result_data, rule_lookup, connector_names, artifact_type_connector)

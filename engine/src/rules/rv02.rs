@@ -1,3 +1,4 @@
+use serde_json::json;
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 
 /// RV-02: Implementa una búsqueda cruzada para verificar trazabilidad.
@@ -23,7 +24,8 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         return RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::NoEvaluada,
-            message: Some("No hay artefactos disponibles para evaluar esta regla.".to_string()),
+            message: Some("rule_evidence.no_evaluada.empty_artifacts".to_string()),
+            message_params: None,
         };
     }
 
@@ -65,18 +67,19 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Ok,
             message: None,
+            message_params: None,
         }
     } else {
         RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Error,
-            message: Some(format!(
-                "Referencias huérfanas detectadas: '{}'. Los siguientes IDs referenciados en artefactos '{}' no existen como '{}': {:?}",
-                missing_references.len(),
-                source_type,
-                target_type,
-                missing_references
-            )),
+            message: Some("rule_evidence.error.RV-02".to_string()),
+            message_params: Some(json!({
+                "count": missing_references.len().to_string(),
+                "source_type": source_type,
+                "target_type": target_type,
+                "missing_refs": format!("{:?}", missing_references),
+            })),
         }
     }
 }
@@ -135,7 +138,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("T-999"));
+        assert_eq!(msg, "rule_evidence.error.RV-02");
+        let params = result.message_params.unwrap();
+        assert!(params["missing_refs"].as_str().unwrap().contains("T-999"));
     }
 
     #[test]

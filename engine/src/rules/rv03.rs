@@ -1,3 +1,4 @@
+use serde_json::json;
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 
 /// RV-03: Comprueba que todos los artefactos de un tipo específico coincidan
@@ -24,7 +25,8 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         return RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::NoEvaluada,
-            message: Some("No hay artefactos disponibles para evaluar esta regla.".to_string()),
+            message: Some("rule_evidence.no_evaluada.empty_artifacts".to_string()),
+            message_params: None,
         };
     }
 
@@ -66,16 +68,17 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Ok,
             message: None,
+            message_params: None,
         }
     } else {
         RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Error,
-            message: Some(format!(
-                "Artefactos con estado inválido (permitidos: {:?}): {:?}",
-                allowed_states,
-                invalid_artifacts
-            )),
+            message: Some("rule_evidence.error.RV-03".to_string()),
+            message_params: Some(json!({
+                "allowed_states": format!("{:?}", allowed_states),
+                "invalid_artifacts": format!("{:?}", invalid_artifacts),
+            })),
         }
     }
 }
@@ -129,7 +132,9 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("T-002"));
+        assert_eq!(msg, "rule_evidence.error.RV-03");
+        let params = result.message_params.unwrap();
+        assert!(params["invalid_artifacts"].as_str().unwrap().contains("T-002"));
     }
 
     #[test]

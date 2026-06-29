@@ -1,3 +1,4 @@
+use serde_json::json;
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 
 /// RV-04: Asegura que campos numéricos o de esfuerzo en la metadata no sean nulos ni menores a cero.
@@ -21,7 +22,8 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         return RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::NoEvaluada,
-            message: Some("No hay artefactos disponibles para evaluar esta regla.".to_string()),
+            message: Some("rule_evidence.no_evaluada.empty_artifacts".to_string()),
+            message_params: None,
         };
     }
 
@@ -63,16 +65,17 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Ok,
             message: None,
+            message_params: None,
         }
     } else {
         RuleEvaluation {
             rule_id: rule_config.id.clone(),
             status: RuleStatus::Error,
-            message: Some(format!(
-                "Artefactos con campos numéricos inválidos o negativos (campos: {:?}): {:?}",
-                numeric_fields,
-                invalid_artifacts
-            )),
+            message: Some("rule_evidence.error.RV-04".to_string()),
+            message_params: Some(json!({
+                "numeric_fields": format!("{:?}", numeric_fields),
+                "invalid_artifacts": format!("{:?}", invalid_artifacts),
+            })),
         }
     }
 }
@@ -126,7 +129,9 @@ mod tests {
         let result = evaluate(&artifacts, &make_rule("RV-04"));
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
-        assert!(msg.contains("T-001"));
+        assert_eq!(msg, "rule_evidence.error.RV-04");
+        let params = result.message_params.unwrap();
+        assert!(params["invalid_artifacts"].as_str().unwrap().contains("T-001"));
     }
 
     #[test]

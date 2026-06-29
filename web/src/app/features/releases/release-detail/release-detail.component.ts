@@ -52,6 +52,7 @@ interface RuleResult {
   result?: string;
   message?: string;
   evidence?: string;
+  evidence_params?: Record<string, string | number>;
   severity?: string;
 }
 
@@ -200,7 +201,7 @@ interface VerificationResult {
                 <ul class="fetch-errors-list">
                   @for (fe of fetchErrors(); track fe.rule_id + '_' + $index) {
                     <li class="fetch-error-item">
-                      <span class="fetch-error-detail">{{ translateEvidence(fe.evidence || fe.message) }}</span>
+                      <span class="fetch-error-detail">{{ translateEvidence(fe.evidence || fe.message, fe.evidence_params ?? undefined) }}</span>
                     </li>
                   }
                 </ul>
@@ -232,7 +233,7 @@ interface VerificationResult {
                         </span>
                       </td>
                       <td [attr.data-label]="'release_detail.rule_evidence' | t">
-                        @let evidenceText = translateEvidence(rule.evidence || rule.message);
+                        @let evidenceText = translateEvidence(rule.evidence || rule.message, rule.evidence_params ?? undefined);
                         @if (evidenceText) {
                           <div class="cell-evidence-inner">
                             <span class="evidence-text">{{ evidenceText }}</span>
@@ -1856,8 +1857,9 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     if (idx === null) return null;
     const results = this.latestResult()?.rule_results;
     if (!results || idx >= results.length) return null;
-    const raw = results[idx].evidence || results[idx].message || null;
-    return raw ? this.ts.translateInstant(raw) : null;
+    const rule = results[idx];
+    const raw = rule.evidence || rule.message || null;
+    return raw ? this.ts.translateInstant(raw, rule.evidence_params ?? undefined) : null;
   });
 
   fetchErrors = computed(() => {
@@ -2352,9 +2354,9 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     return translated;
   }
 
-  translateEvidence(raw: string | null | undefined): string {
+  translateEvidence(raw: string | null | undefined, params?: Record<string, string | number>): string {
     if (!raw) return '';
-    const translated = this.ts.translateInstant(raw);
+    const translated = this.ts.translateInstant(raw, params);
     return translated;
   }
 
