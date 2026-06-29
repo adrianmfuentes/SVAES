@@ -71,6 +71,8 @@ describe('ReleaseDetailComponent', () => {
     fixture = TestBed.createComponent(ReleaseDetailComponent);
     component = fixture.componentInstance;
     httpCtrl = TestBed.inject(HttpTestingController);
+    (component as any).releaseId = '';
+    (component as any).verifying.set?.(false);
   });
 
   afterEach(() => {
@@ -292,20 +294,14 @@ describe('ReleaseDetailComponent', () => {
   });
 
   describe('launchVerification', () => {
-    afterEach(() => {
-      vi.useRealTimers();
-      vi.restoreAllMocks();
-    });
-
     it('should POST verify and reload on success', () => {
-      vi.useFakeTimers();
-
       const mockNotification = { permission: 'default', requestPermission: vi.fn().mockResolvedValue('granted') };
       vi.stubGlobal('Notification', mockNotification);
+      const mockArtifact = { id: 'art-1', release_id: 'release-abc', connector_instance_id: 'ci1', connector_implementation: 'JIRA', artifact_type: 'TAREA', external_ref: 'REF-1' };
 
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
-      httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([]);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([mockArtifact]);
       httpCtrl.expectOne('/api/v1/releases/release-abc/results').flush([mockResult]);
 
       component.launchVerification();
@@ -320,14 +316,14 @@ describe('ReleaseDetailComponent', () => {
       httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
 
       expect(component.verifying()).toBe(false);
-
-      vi.useRealTimers();
     });
 
     it('should set error and stop verifying on failure', () => {
+      const mockArtifact = { id: 'art-1', release_id: 'release-abc', connector_instance_id: 'ci1', connector_implementation: 'JIRA', artifact_type: 'TAREA', external_ref: 'REF-1' };
+
       component.ngOnInit();
       httpCtrl.expectOne('/api/v1/releases/release-abc').flush(mockRelease);
-      httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([]);
+      httpCtrl.expectOne('/api/v1/releases/release-abc/artifacts').flush([mockArtifact]);
       httpCtrl.expectOne('/api/v1/releases/release-abc/results').flush([]);
 
       component.launchVerification();

@@ -306,8 +306,8 @@ interface VerificationResult {
                 } @else {
                   <button
                     class="btn-accent"
-                    [disabled]="verifying() || missingConnectorTypes().length > 0"
-                    [title]="verifying() ? ('common.disabled_tooltip.verification_in_progress' | t) : (missingConnectorTypes().length > 0 ? ('release_detail.missing_connectors_btn_disabled' | t) : '')"
+                    [disabled]="verifying() || artifacts().length === 0"
+                    [title]="verifying() ? ('common.disabled_tooltip.verification_in_progress' | t) : (artifacts().length === 0 ? ('release_detail.no_artifacts_btn_disabled' | t) : '')"
                     (click)="launchVerification()">
                     @if (verifying()) { {{ 'release_detail.verifying_label' | t }} } @else { {{ 'release_detail.verify_label' | t }} }
                   </button>
@@ -2132,7 +2132,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   launchVerification(): void {
     if (!this.releaseId || this.verifying()) return;
-    if (this.missingConnectorTypes().length > 0) return;
+    if (this.artifacts().length === 0) return;
     this.verifying.set(true);
     if ('Notification' in globalThis && Notification.permission === 'default') {
       Notification.requestPermission();
@@ -2433,9 +2433,11 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
       const a = document.createElement('a');
       a.href = url;
       const lang = this.ts.currentLang ?? 'es';
-      const slugify = (s: string) =>
-        s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-         .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const slugify = (s: string) => {
+        const normalized = s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const dashed = normalized.replace(/[^a-z0-9]+/g, '-');
+        return dashed.replace(/^-+/, '').replace(/-+$/, '');
+      };
       const orgName  = slugify(this.release()?.organization_name ?? 'org');
       const dateStr  = result.executed_at
         ? new Date(result.executed_at).toISOString().slice(0, 10)

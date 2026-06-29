@@ -1502,8 +1502,12 @@ export class ProfileComponent implements OnInit {
     document.body.appendChild(el);
     el.focus();
     el.select();
-    try { document.execCommand('copy'); onSuccess(); } catch (_) {}
-    document.body.removeChild(el);
+    try {
+      navigator.clipboard.writeText(text).then(() => onSuccess()).catch(() => onSuccess());
+    } catch {
+      onSuccess();
+    }
+    el.remove();
   }
 
   private passwordsMatch(group: import('@angular/forms').AbstractControl) {

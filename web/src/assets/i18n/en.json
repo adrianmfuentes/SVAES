@@ -618,6 +618,7 @@
   "release_detail.fetch_errors_title": "Warning: some artifacts could not be retrieved",
   "release_detail.missing_connectors_warn": "Missing connectors required by the profile rules:",
   "release_detail.missing_connectors_btn_disabled": "Configure the required connectors before verifying",
+  "release_detail.no_artifacts_btn_disabled": "Add at least one artifact before verifying",
   "release_detail.go_configure_connectors": "Go to connectors",
   "release_new.back_link": "← Releases",
   "release_new.form_title": "Release details",

@@ -28,7 +28,7 @@ async def submit_feedback(payload: FeedbackPayload):
             "rating": payload.rating,
             "comments": payload.comments,
         })
-        _log.info("Feedback received and email sent from %s", payload.email)
+        _log.info("Feedback received and email sent")
         return {"status": "ok"}
     except Exception:
         _log.exception("Feedback email failed")

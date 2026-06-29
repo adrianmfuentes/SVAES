@@ -618,6 +618,7 @@
   "release_detail.fetch_errors_title": "Aviso: algunos artefactos no se pudieron recuperar",
   "release_detail.missing_connectors_warn": "Faltan conectores requeridos por las reglas del perfil:",
   "release_detail.missing_connectors_btn_disabled": "Configura los conectores necesarios antes de verificar",
+  "release_detail.no_artifacts_btn_disabled": "Añade al menos un artefacto antes de verificar",
   "release_detail.go_configure_connectors": "Ir a conectores",
   "release_new.back_link": "← Entregas",
   "release_new.form_title": "Datos de la entrega",
