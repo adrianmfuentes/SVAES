@@ -47,7 +47,7 @@ export class SuccessRateChartComponent implements OnChanges {
         display: true,
         position: 'bottom',
         labels: {
-          font: { family: 'IBM Plex Sans', size: 11, weight: '500' },
+          font: { family: 'IBM Plex Sans', size: 11, weight: 500 },
           color: '#7A7670',
           usePointStyle: true,
           pointStyle: 'line',
