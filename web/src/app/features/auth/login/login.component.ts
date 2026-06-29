@@ -68,7 +68,6 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
           <div class="login-context">
             <div class="context-brand">
               SVAES
-              <span class="brand-badge">{{ 'common.beta' | t }}</span>
             </div>
             <h1 class="context-title">
               {{ 'login.context_title_line1' | t }}<br />{{ 'login.context_title_line2' | t }}<br />{{ 'login.context_title_line3' | t }}

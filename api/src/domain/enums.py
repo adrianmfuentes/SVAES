@@ -159,3 +159,5 @@ class ArtifactType(str, Enum):
     TAREA = "TAREA"
     CODIGO = "CODIGO"
     DOCUMENTO = "DOCUMENTO"
+    PLAN = "PLAN"
+    CAMBIO = "CAMBIO"

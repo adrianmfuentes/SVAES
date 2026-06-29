@@ -15,7 +15,19 @@ _ARTIFACT_TYPE_TO_CONNECTOR_TYPE = {
     ArtifactType.TAREA: ConnectorType.GESTOR_TAREAS,
     ArtifactType.CODIGO: ConnectorType.REPO_CODIGO,
     ArtifactType.DOCUMENTO: ConnectorType.SISTEMA_DOCUMENTAL,
+    ArtifactType.PLAN: ConnectorType.HERRAMIENTA_PLANIFICACION,
+    ArtifactType.CAMBIO: ConnectorType.GESTION_CAMBIOS,
 }
+
+
+def _connector_implementation_matches_type(implementation: str, expected_type: str) -> bool:
+    from infrastructure.secondary.connectors import create_registered_connector_registry
+    registry = create_registered_connector_registry()
+    try:
+        impl = registry.get_by_implementation(implementation)
+        return impl.get_connector_type() == expected_type
+    except KeyError:
+        return False
 
 
 class ArtifactService(IArtifactService):
@@ -57,10 +69,13 @@ class ArtifactService(IArtifactService):
 
         expected_connector_type = _ARTIFACT_TYPE_TO_CONNECTOR_TYPE.get(artifact_type)
         if expected_connector_type and connector.connector_type != expected_connector_type.value:
-            raise ValidationError(
-                f"Tipo de artefacto '{artifact_type.value}' no es compatible con conector de tipo '{connector.connector_type}'. "
-                f"Expected: {expected_connector_type.value}"
-            )
+            if not _connector_implementation_matches_type(
+                connector.connector_implementation, expected_connector_type.value
+            ):
+                raise ValidationError(
+                    f"Tipo de artefacto '{artifact_type.value}' no es compatible con conector de tipo '{connector.connector_type}'. "
+                    f"Expected: {expected_connector_type.value}"
+                )
 
         artifact = Artifact(
             release_id=release_id,

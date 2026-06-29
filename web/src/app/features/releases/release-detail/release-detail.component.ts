@@ -76,7 +76,8 @@ const CONNECTOR_TYPE_TO_ARTIFACT: Record<string, string> = {
   'GESTOR_TAREAS': 'TAREA',
   'REPO_CODIGO': 'CODIGO',
   'SISTEMA_DOCUMENTAL': 'DOCUMENTO',
-  'GESTION_CAMBIOS': 'TAREA',
+  'HERRAMIENTA_PLANIFICACION': 'PLAN',
+  'GESTION_CAMBIOS': 'CAMBIO',
 };
 
 interface VerificationResult {
@@ -280,6 +281,19 @@ interface VerificationResult {
         }
 
         <!-- Artifacts section -->
+        @if (missingConnectorTypes().length > 0 && !loading()) {
+          <div class="missing-connectors-banner">
+            <span class="missing-connectors-icon">&#9888;</span>
+            <span>{{ 'release_detail.missing_connectors_warn' | t }}</span>
+            <div class="missing-connectors-types">
+              @for (ct of missingConnectorTypes(); track ct) {
+                <span class="connector-type-badge">{{ 'connector_type.' + ct | t }}</span>
+              }
+            </div>
+            <a routerLink="/app/connectors" class="missing-connectors-link">{{ 'release_detail.go_configure_connectors' | t }}</a>
+          </div>
+        }
+
         <div class="card artifacts-section">
           <div class="section-header">
             <h2 class="card-title">{{ 'release_detail.artifacts_title' | t : { n: artifacts().length } }}</h2>
@@ -292,8 +306,8 @@ interface VerificationResult {
                 } @else {
                   <button
                     class="btn-accent"
-                    [disabled]="verifying()"
-                    [title]="verifying() ? ('common.disabled_tooltip.verification_in_progress' | t) : ''"
+                    [disabled]="verifying() || missingConnectorTypes().length > 0"
+                    [title]="verifying() ? ('common.disabled_tooltip.verification_in_progress' | t) : (missingConnectorTypes().length > 0 ? ('release_detail.missing_connectors_btn_disabled' | t) : '')"
                     (click)="launchVerification()">
                     @if (verifying()) { {{ 'release_detail.verifying_label' | t }} } @else { {{ 'release_detail.verify_label' | t }} }
                   </button>
@@ -381,6 +395,8 @@ interface VerificationResult {
                   <option value="TAREA">{{ 'artifact_type.TAREA' | t }}</option>
                   <option value="CODIGO">{{ 'artifact_type.CODIGO' | t }}</option>
                   <option value="DOCUMENTO">{{ 'artifact_type.DOCUMENTO' | t }}</option>
+                  <option value="PLAN">{{ 'artifact_type.PLAN' | t }}</option>
+                  <option value="CAMBIO">{{ 'artifact_type.CAMBIO' | t }}</option>
                 </select>
               </div>
 
@@ -1223,6 +1239,10 @@ interface VerificationResult {
     /* Modal */
     .modal-overlay {
       position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       inset: 0;
       background: var(--overlay);
       z-index: 100;
@@ -1523,6 +1543,10 @@ interface VerificationResult {
     /* ===== VERIFY LAUNCH NOTICE OVERLAY ===== */
     .verify-overlay {
       position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       inset: 0;
       background: rgba(13, 15, 18, 0.68);
       backdrop-filter: blur(4px);
@@ -1807,6 +1831,51 @@ interface VerificationResult {
     .fetch-error-detail {
       word-break: break-word;
     }
+
+    /* Missing connectors warning banner */
+    .missing-connectors-banner {
+      background: var(--verdict-warning-bg);
+      border: 0.0625rem solid var(--verdict-warning-border);
+      border-left: 0.25rem solid var(--verdict-warning);
+      border-radius: var(--rounded-md);
+      padding: 0.75rem 1rem;
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .missing-connectors-icon {
+      font-size: 1.125rem;
+      flex-shrink: 0;
+    }
+
+    .missing-connectors-types {
+      display: flex;
+      gap: 0.375rem;
+      flex-wrap: wrap;
+    }
+
+    .connector-type-badge {
+      font-family: var(--font-sans);
+      font-size: 0.625rem;
+      font-weight: 500;
+      padding: 0.125rem 0.4375rem;
+      border-radius: var(--rounded-sm);
+      background: var(--verdict-warning);
+      color: #1a1a1a;
+    }
+
+    .missing-connectors-link {
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-left: auto;
+      text-decoration: underline;
+      cursor: pointer;
+    }
   `],
 })
 export class ReleaseDetailComponent implements OnInit, OnDestroy {
@@ -1837,6 +1906,8 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   importDescription = signal('');
   importing = signal(false);
   importError = signal<string | null>(null);
+
+  missingConnectorTypes = signal<string[]>([]);
 
   browseItems = signal<BrowseItem[]>([]);
   browseLoading = signal(false);
@@ -1877,12 +1948,40 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   private releaseId = '';
   private orgId = '';
+  private profileRules: { rule_template: string; connector_types: string[] }[] = [];
+
+  private loadProfileRules(profileId: string): void {
+    this.http.get<{ rules: { rule_template: string; connector_types: string[] }[] }>(`/api/v1/profiles/${profileId}`)
+      .pipe(catchError(() => of(null)))
+      .subscribe(data => {
+        if (data?.rules) {
+          this.profileRules = data.rules;
+          this.computeMissingConnectorTypes();
+        }
+      });
+  }
+
+  private computeMissingConnectorTypes(): void {
+    const availableTypes = new Set(this.orgConnectors().map(c => c.connector_type));
+    const required = new Set<string>();
+    for (const rule of this.profileRules) {
+      for (const ct of rule.connector_types) {
+        required.add(ct);
+      }
+    }
+    const missing: string[] = [];
+    for (const ct of required) {
+      if (!availableTypes.has(ct)) {
+        missing.push(ct);
+      }
+    }
+    this.missingConnectorTypes.set(missing);
+  }
   private readonly browseSearchSubject = new Subject<string>();
   private browseSearchSub?: Subscription;
   private activeBrowseConn: ConnectorApiItem | null = null;
   private seenEnVerificacion = false;
   private pollingInterval?: ReturnType<typeof setInterval>;
-  private progressInterval?: ReturnType<typeof setInterval>;
 
   ngOnInit(): void {
     this.route.paramMap
@@ -1926,7 +2025,12 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
             .subscribe(connectors => {
               this.orgConnectors.set(connectors);
               this.connectorsLoading.set(false);
+              this.computeMissingConnectorTypes();
             });
+        }
+        const profileId = data.release?.profile_id;
+        if (profileId && orgId) {
+          this.loadProfileRules(profileId);
         }
         if (data.release?.status === 'EN_VERIFICACION' && data.release.pending_task_id && !this.pollingInterval) {
           this.taskId.set(data.release.pending_task_id);
@@ -1939,6 +2043,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   launchVerification(): void {
     if (!this.releaseId || this.verifying()) return;
+    if (this.missingConnectorTypes().length > 0) return;
     this.verifying.set(true);
     if ('Notification' in globalThis && Notification.permission === 'default') {
       Notification.requestPermission();
@@ -1994,52 +2099,44 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   private refreshAndPoll(): void {
     this.stopPolling();
-    this.poll();
-    this.pollProgress();
-    this.pollingInterval = setInterval(() => this.poll(), 3000);
-    this.progressInterval = setInterval(() => this.pollProgress(), 2000);
+    this.pollOnce();
+    this.pollingInterval = setInterval(() => this.pollOnce(), 3000);
   }
 
-  private pollProgress(): void {
+  private pollOnce(): void {
     const tid = this.taskId();
-    if (!tid) return;
-    this.http.get<{ progress?: VerificationProgress }>(`/api/v1/tasks/${tid}`)
-      .pipe(catchError(() => of(null)))
-      .subscribe(data => {
-        if (data?.progress) {
-          this.verificationProgress.set(data.progress);
-        }
-      });
-  }
+    const taskObs = tid
+      ? this.http.get<{ progress?: VerificationProgress }>(`/api/v1/tasks/${tid}`).pipe(catchError(() => of(null)))
+      : of(null);
 
-  private poll(): void {
-    this.http.get<ReleaseDetail>(`/api/v1/releases/${this.releaseId}`)
-      .pipe(catchError(() => of(null)))
-      .subscribe(release => {
-        if (!release) return;
-        this.release.set(release);
-        if (release.status === 'EN_VERIFICACION') {
-          this.seenEnVerificacion = true;
-          return;
-        }
-        if (!this.seenEnVerificacion) return;
-        this.seenEnVerificacion = false;
-        this.stopPolling();
-        this.verifying.set(false);
-        this.showVerifyNotice.set(false);
-        this.reloadData();
-        const TERMINAL = ['VALIDA', 'NO_VALIDA', 'CON_ADVERTENCIAS'];
-        if (TERMINAL.includes(release.status)) {
-          this.toast.info(this.ts.translateInstant('release_detail.verify_complete_toast'), 6000);
-          this.showBrowserNotification(release);
-        } else {
-          this.toast.error(this.ts.translateInstant('release_detail.verify_failed_toast'), 6000);
-        }
-      });
+    forkJoin({
+      release: this.http.get<ReleaseDetail>(`/api/v1/releases/${this.releaseId}`).pipe(catchError(() => of(null))),
+      task: taskObs,
+    }).subscribe(({ release, task }) => {
+      if (task?.progress) this.verificationProgress.set(task.progress);
+      if (!release) return;
+      this.release.set(release);
+      if (release.status === 'EN_VERIFICACION') {
+        this.seenEnVerificacion = true;
+        return;
+      }
+      if (!this.seenEnVerificacion) return;
+      this.seenEnVerificacion = false;
+      this.stopPolling();
+      this.verifying.set(false);
+      this.showVerifyNotice.set(false);
+      this.reloadData();
+      const TERMINAL = ['VALIDA', 'NO_VALIDA', 'CON_ADVERTENCIAS'];
+      if (TERMINAL.includes(release.status)) {
+        this.toast.info(this.ts.translateInstant('release_detail.verify_complete_toast'), 6000);
+        this.showBrowserNotification(release);
+      } else {
+        this.toast.error(this.ts.translateInstant('release_detail.verify_failed_toast'), 6000);
+      }
+    });
   }
 
   private reloadData(): void {
-    this.loading.set(true);
     this.error.set(null);
     forkJoin({
       release: this.http.get<ReleaseDetail>(`/api/v1/releases/${this.releaseId}`).pipe(
@@ -2059,7 +2156,6 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
       if (results.length > 0) {
         this.latestResult.set(results[0]);
       }
-      this.loading.set(false);
     });
   }
 
@@ -2067,10 +2163,6 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     if (this.pollingInterval !== undefined) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = undefined;
-    }
-    if (this.progressInterval !== undefined) {
-      clearInterval(this.progressInterval);
-      this.progressInterval = undefined;
     }
     this.verificationProgress.set(null);
   }

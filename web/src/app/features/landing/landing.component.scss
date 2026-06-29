@@ -598,6 +598,21 @@
   a { color: var(--muted); &:hover { color: var(--ink); } }
 }
 
+.feedback-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--muted);
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.feedback-btn:hover {
+  color: var(--ink);
+}
+
 // ─── Responsive ───────────────────────────────────────────────
 
 // ≤1200px — large desktop tighten

@@ -47,6 +47,7 @@ class ConnectorService(IConnectorService):
         initial_status = ConnectorStatus.ERROR
         connector_impl = self._get_connector_impl(connector_implementation)
         if connector_impl:
+            connector_type = connector_impl.get_connector_type()
             try:
                 initial_status = ConnectorStatus.ACTIVO if await connector_impl.test_connection(config) else ConnectorStatus.ERROR
             except Exception:

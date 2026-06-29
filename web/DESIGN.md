@@ -1,5 +1,5 @@
 ---
-version: beta
+version: 0.0.1
 name: SVAES
 description: >
   Automatic Software Delivery Verification System.

@@ -887,6 +887,10 @@ interface UserNotificationPreferences {
 
     .modal-overlay {
       position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       inset: 0;
       background: var(--overlay);
       z-index: 100;
@@ -1125,6 +1129,7 @@ interface UserNotificationPreferences {
       padding: var(--spacing-sm) 0;
       border-bottom: 0.0625rem solid var(--border);
       cursor: pointer;
+      -webkit-user-select: none;
       user-select: none;
     }
 
@@ -1479,10 +1484,26 @@ export class ProfileComponent implements OnInit {
   copyKey(): void {
     const key = this.newKeyValue();
     if (!key) return;
-    navigator.clipboard.writeText(key).then(() => {
+    const markCopied = () => {
       this.keyCopied.set(true);
       setTimeout(() => this.keyCopied.set(false), 2000);
-    });
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(key).then(markCopied).catch(() => this.fallbackCopy(key, markCopied));
+    } else {
+      this.fallbackCopy(key, markCopied);
+    }
+  }
+
+  private fallbackCopy(text: string, onSuccess: () => void): void {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(el);
+    el.focus();
+    el.select();
+    try { document.execCommand('copy'); onSuccess(); } catch (_) {}
+    document.body.removeChild(el);
   }
 
   private passwordsMatch(group: import('@angular/forms').AbstractControl) {

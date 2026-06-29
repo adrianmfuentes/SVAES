@@ -39,6 +39,10 @@ import { TranslationService } from '../../i18n/translation.service';
   styles: [`
     .dialog-overlay {
       position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       inset: 0;
       background: var(--overlay);
       display: flex;

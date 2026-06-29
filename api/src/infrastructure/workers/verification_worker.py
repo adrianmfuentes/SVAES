@@ -23,7 +23,7 @@ from infrastructure.secondary.database.repositories.user_repository import SqlUs
 from infrastructure.secondary.database.repositories.notification_repository import SqlNotificationRepository
 from infrastructure.secondary.connectors import create_registered_connector_registry
 from infrastructure.secondary.database.repositories.connector_repository import SqlConnectorRepository
-from core.rule_names import RULE_NAMES, RULE_DEFAULT_ARTIFACT_TYPES
+from core.rule_names import RULE_NAMES, RULE_DEFAULT_ARTIFACT_TYPES, RULE_CONNECTOR_TYPES
 
 
 RULE_OK_EVIDENCE: dict[str, str] = {
@@ -286,9 +286,11 @@ def _enrich_rule_results(
         )
         rule_result["connector"] = connector
         if not connector and rule_result.get("status") == "OK" and rid != "artifact_fetch_error":
-            rule_result["status"] = "NO_EVALUADA"
-            rule_result["message"] = "rule_evidence.no_connector"
-            rule_result["message_params"] = None
+            connector_types_needed = RULE_CONNECTOR_TYPES.get(rid)
+            if connector_types_needed is None or len(connector_types_needed) > 0:
+                rule_result["status"] = "NO_EVALUADA"
+                rule_result["message"] = "rule_evidence.no_connector"
+                rule_result["message_params"] = None
         rule_result["evidence"] = rule_result.get("message", "")
         rule_result["evidence_params"] = rule_result.get("message_params")
         if not rule_result["evidence"] and rule_result.get("status") == "OK":

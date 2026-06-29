@@ -17,6 +17,29 @@ RULE_DEFAULT_ARTIFACT_TYPES: dict[str, str] = {
     "meets_maximum_complexity": "CODIGO",
 }
 
+RULE_CONNECTOR_TYPES: dict[str, list[str]] = {
+    "RV-01": [],
+    "RV-02": ["GESTOR_TAREAS", "REPO_CODIGO"],
+    "RV-03": ["GESTOR_TAREAS"],
+    "RV-04": ["GESTOR_TAREAS"],
+    "RV-05": ["SISTEMA_DOCUMENTAL"],
+    "RV-06": ["SISTEMA_DOCUMENTAL"],
+    "RV-07": [],
+    "RV-08": ["GESTOR_TAREAS", "HERRAMIENTA_PLANIFICACION"],
+    "RV-09": ["REPO_CODIGO"],
+    "RV-10": ["SISTEMA_DOCUMENTAL"],
+    "has_duplicated_code": ["REPO_CODIGO"],
+    "has_high_severity_vulnerabilities": ["REPO_CODIGO"],
+    "has_critical_vulnerabilities": ["REPO_CODIGO"],
+    "has_open_high_priority_issues": ["GESTOR_TAREAS"],
+    "has_code_smells": ["REPO_CODIGO"],
+    "has_security_hotspots": ["REPO_CODIGO"],
+    "has_uncovered_code": ["REPO_CODIGO"],
+    "has_blocking_issues": ["GESTOR_TAREAS"],
+    "meets_minimum_test_coverage": ["REPO_CODIGO"],
+    "meets_maximum_complexity": ["REPO_CODIGO"],
+}
+
 RULE_NAMES: dict[str, str] = {
     "RV-01": "Artefactos existentes",
     "RV-02": "Coherencia IDs",

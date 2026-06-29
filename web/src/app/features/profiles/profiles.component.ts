@@ -28,6 +28,7 @@ interface ProfileRule {
   params: Record<string, unknown>;
   display_order: number;
   is_active: boolean;
+  connector_types: string[];
 }
 
 interface ProfileWithRules extends Profile {
@@ -35,6 +36,59 @@ interface ProfileWithRules extends Profile {
 }
 
 type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+const RULE_CONNECTOR_TYPES_FRONTEND: Record<string, string[]> = {
+  'RV-01': [],
+  'RV-02': ['GESTOR_TAREAS', 'REPO_CODIGO'],
+  'RV-03': ['GESTOR_TAREAS'],
+  'RV-04': ['GESTOR_TAREAS'],
+  'RV-05': ['SISTEMA_DOCUMENTAL'],
+  'RV-06': ['SISTEMA_DOCUMENTAL'],
+  'RV-07': [],
+  'RV-08': ['GESTOR_TAREAS', 'HERRAMIENTA_PLANIFICACION'],
+  'RV-09': ['REPO_CODIGO'],
+  'RV-10': ['SISTEMA_DOCUMENTAL'],
+  'has_duplicated_code': ['REPO_CODIGO'],
+  'has_high_severity_vulnerabilities': ['REPO_CODIGO'],
+  'has_critical_vulnerabilities': ['REPO_CODIGO'],
+  'has_open_high_priority_issues': ['GESTOR_TAREAS'],
+  'has_code_smells': ['REPO_CODIGO'],
+  'has_security_hotspots': ['REPO_CODIGO'],
+  'has_uncovered_code': ['REPO_CODIGO'],
+  'has_blocking_issues': ['GESTOR_TAREAS'],
+  'meets_minimum_test_coverage': ['REPO_CODIGO'],
+  'meets_maximum_complexity': ['REPO_CODIGO'],
+};
+
+const RULE_DEFAULT_ARTIFACT_TYPES_FRONTEND: Record<string, string> = {
+  'RV-03': 'TAREA',
+  'RV-04': 'TAREA',
+  'RV-05': 'DOCUMENTO',
+  'RV-06': 'DOCUMENTO',
+  'RV-09': 'CODIGO',
+  'RV-10': 'DOCUMENTO',
+  'has_duplicated_code': 'CODIGO',
+  'has_high_severity_vulnerabilities': 'CODIGO',
+  'has_critical_vulnerabilities': 'CODIGO',
+  'has_open_high_priority_issues': 'TAREA',
+  'has_code_smells': 'CODIGO',
+  'has_security_hotspots': 'CODIGO',
+  'has_uncovered_code': 'CODIGO',
+  'has_blocking_issues': 'TAREA',
+  'meets_minimum_test_coverage': 'CODIGO',
+  'meets_maximum_complexity': 'CODIGO',
+  'RV-08': 'TAREA',
+};
+
+const ARTIFACT_TYPES = ['TAREA', 'CODIGO', 'DOCUMENTO', 'PLAN', 'CAMBIO'];
+
+function ruleSupportsArtifactType(template: string): boolean {
+  return template in RULE_DEFAULT_ARTIFACT_TYPES_FRONTEND;
+}
+
+function defaultArtifactType(template: string): string {
+  return RULE_DEFAULT_ARTIFACT_TYPES_FRONTEND[template] ?? 'TAREA';
+}
 
 @Component({
   selector: 'app-profiles',
@@ -144,6 +198,17 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                   </select>
                 </div>
               </div>
+              @if (ruleSupportsArtifactType(selectedRuleTemplate())) {
+                <div class="form-group">
+                  <label for="rule-artifact-type">{{ 'profiles.artifact_type_label' | t }}</label>
+                  <select id="rule-artifact-type" [formControl]="ruleFormControl('artifactType')">
+                    <option value="">{{ 'profiles.artifact_type_default' | t }} ({{ artifactTypeLabel(defaultArtifactType(selectedRuleTemplate())) }})</option>
+                    @for (at of artifactTypeOptions(); track at) {
+                      <option [value]="at">{{ artifactTypeLabel(at) }}</option>
+                    }
+                  </select>
+                </div>
+              }
               <div class="rule-form-actions">
                 <button type="button" class="btn-secondary btn-sm" (click)="cancelRuleForm()">{{ 'common.cancel' | t }}</button>
                 <button type="button" class="btn-primary btn-sm" [disabled]="savingRule()" [title]="savingRule() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''" (click)="submitRule()">
@@ -157,6 +222,10 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
                 <div class="rule-info">
                   <span class="rule-template">{{ formatRuleName(rule.rule_template) }}</span>
                   <span class="severity-badge" [ngClass]="'severity-' + rule.severity.toLowerCase()">{{ 'severity.' + rule.severity | t }}</span>
+                  <span *ngFor="let ct of rule.connector_types" class="connector-type-badge">{{ 'connector_type.' + ct | t }}</span>
+                  @if (ruleConfiguredArtifactType(rule)) {
+                    <span class="artifact-type-badge">{{ artifactTypeLabel(ruleConfiguredArtifactType(rule)!) }}</span>
+                  }
                 </div>
                 <div class="rule-actions" *ngIf="editingProfile() && isEditableProfile()">
                   <button type="button" class="btn-ghost btn-xs" (click)="openEditRule(rule)">{{ 'common.edit' | t }}</button>
@@ -386,6 +455,10 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
     .modal-overlay {
       position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       inset: 0;
       background: var(--overlay);
       z-index: 100;
@@ -492,6 +565,28 @@ type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     .severity-medium { background: #fff8e1; color: #f57f17; }
     .severity-high { background: #ffebee; color: #c62828; }
     .severity-critical { background: #4a0e0e; color: #ff6659; }
+
+    .connector-type-badge {
+      font-family: var(--font-sans);
+      font-size: 0.625rem;
+      font-weight: 500;
+      padding: 0.0625rem 0.375rem;
+      border-radius: var(--rounded-sm);
+      background: var(--paper);
+      color: var(--muted);
+      border: 0.0625rem solid var(--border);
+    }
+
+    .artifact-type-badge {
+      font-family: var(--font-sans);
+      font-size: 0.625rem;
+      font-weight: 500;
+      padding: 0.0625rem 0.4375rem;
+      border-radius: var(--rounded-sm);
+      background: var(--paper-secondary);
+      color: var(--muted);
+      border: 0.0625rem solid var(--border);
+    }
 
     .rule-actions {
       display: flex;
@@ -777,6 +872,7 @@ export class ProfilesComponent implements OnInit {
   ruleForm = this.fb.group({
     rule_template: ['', [Validators.required]],
     severity: ['HIGH' as SeverityType, [Validators.required]],
+    artifactType: [''],
   });
 
   ngOnInit(): void {
@@ -826,7 +922,7 @@ export class ProfilesComponent implements OnInit {
 
   openAddRule(): void {
     this.editingRule.set(null);
-    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType });
+    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '' });
     this.showRuleForm.set(true);
   }
 
@@ -835,18 +931,41 @@ export class ProfilesComponent implements OnInit {
     this.ruleForm.patchValue({
       rule_template: rule.rule_template,
       severity: rule.severity,
+      artifactType: (rule.params as any)?.['artifact_type'] ?? '',
     });
     this.showRuleForm.set(true);
   }
 
   cancelRuleForm(): void {
     this.editingRule.set(null);
-    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType });
+    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '' });
     this.showRuleForm.set(false);
   }
 
   ruleFormControl(name: string): any {
     return this.ruleForm.get(name);
+  }
+
+  ruleSupportsArtifactType = ruleSupportsArtifactType;
+  artifactTypeOptions = () => ARTIFACT_TYPES;
+  defaultArtifactType = defaultArtifactType;
+  selectedRuleTemplate = () => this.ruleForm.get('rule_template')?.value ?? '';
+
+  artifactTypeLabel(at: string): string {
+    return this.ts.translateInstant('artifact_type.' + at) || at;
+  }
+
+  ruleArtifactTypeLabel(rule: ProfileRule): string {
+    const configured = (rule.params as any)?.['artifact_type'];
+    if (configured) {
+      return this.artifactTypeLabel(configured as string);
+    }
+    return '';
+  }
+
+  ruleConfiguredArtifactType(rule: ProfileRule): string | null {
+    const configured = (rule.params as any)?.['artifact_type'];
+    return (configured && typeof configured === 'string') ? configured : null;
   }
 
   formatRuleName(template: string): string {
@@ -893,10 +1012,17 @@ export class ProfilesComponent implements OnInit {
     this.savingRule.set(true);
     const profileId = this.editingProfile()!.id;
     const editing = this.editingRule();
+    const template = this.ruleForm.value.rule_template ?? '';
+    const severity = this.ruleForm.value.severity;
+    const artifactType = this.ruleForm.value.artifactType;
+    const params = (artifactType && ruleSupportsArtifactType(template))
+      ? { artifact_type: artifactType }
+      : {};
 
     if (editing) {
       this.http.patch<{ id: string; is_active: boolean }>(`/api/v1/rules/${editing.id}`, {
-        severity: this.ruleForm.value.severity,
+        severity,
+        params,
       }).pipe(
         catchError((err: HttpErrorResponse) => {
           this.modalError.set(err.error?.detail ?? this.ts.translateInstant('profiles.rule_saving_error'));
@@ -906,7 +1032,7 @@ export class ProfilesComponent implements OnInit {
       ).subscribe(data => {
         if (data) {
           this.profileRules.update(rules => rules.map(r =>
-            r.id === data.id ? { ...r, severity: this.ruleForm.value.severity as SeverityType } : r
+            r.id === data.id ? { ...r, severity: severity as SeverityType, params } : r
           ));
           this.cancelRuleForm();
         }
@@ -914,8 +1040,9 @@ export class ProfilesComponent implements OnInit {
       });
     } else {
       this.http.post<{ id: string; rule_template: string }>(`/api/v1/profiles/${profileId}/rules`, {
-        rule_template: this.ruleForm.value.rule_template,
-        severity: this.ruleForm.value.severity,
+        rule_template: template,
+        severity,
+        params,
       }).pipe(
         catchError((err: HttpErrorResponse) => {
           this.modalError.set(err.error?.detail ?? this.ts.translateInstant('profiles.rule_saving_error'));
@@ -927,10 +1054,11 @@ export class ProfilesComponent implements OnInit {
           const newRule: ProfileRule = {
             id: data.id,
             rule_template: data.rule_template,
-            severity: this.ruleForm.value.severity as SeverityType,
-            params: {},
+            severity: severity as SeverityType,
+            params,
             display_order: 0,
             is_active: true,
+            connector_types: RULE_CONNECTOR_TYPES_FRONTEND[data.rule_template] ?? [],
           };
           this.profileRules.update(rules => [...rules, newRule]);
           this.cancelRuleForm();

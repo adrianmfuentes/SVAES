@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import smtplib
+from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -184,7 +185,7 @@ class EmailService:
                         font-size:0.6875rem;font-weight:600;letter-spacing:0.08em;
                         text-transform:uppercase;">
                 Restablecer contraseña
-              </a>
+               </a>
               <p style="color:#7A7670;font-size:0.75rem;margin:24px 0 0;">
                 Este enlace expira en 1 hora. Si no solicitaste este cambio, ignora este mensaje y tu contraseña no cambiará.
               </p>
@@ -198,6 +199,69 @@ class EmailService:
             _log.info("Password reset email sent to %s", to_email)
         except Exception:
             _log.exception("Failed to send password reset email to %s", to_email)
+            raise
+
+    async def send_feedback_email(
+        self,
+        feedback: dict,
+    ) -> None:
+        stars = "★" * feedback["rating"] + "☆" * (5 - feedback["rating"])
+        subject = f"SVAES — Nuevo feedback UX ({feedback['rating']}/5)"
+
+        plain = (
+            f"Nuevo feedback recibido\n"
+            f"{'=' * 40}\n\n"
+            f"Calificación: {feedback['rating']}/5 ({stars})\n"
+            f"Remitente: {feedback['name']} <{feedback.get('email', 'sin email')}>\n"
+            f"{'=' * 40}\n\n"
+            f"Comentarios:\n{feedback['comments']}\n"
+        )
+
+        html = f"""
+        <html>
+          <body style="font-family:IBM Plex Sans,Arial,sans-serif;background:#F6F4F0;padding:40px;">
+            <div style="max-width:540px;margin:0 auto;background:#fff;border:1px solid #D4CFC7;border-radius:6px;overflow:hidden;">
+              <div style="background:#0D0F12;padding:24px 32px;">
+                <span style="font-family:IBM Plex Sans,Arial,sans-serif;font-size:0.6875rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(232,213,163,0.85);">SVAES</span>
+                <span style="float:right;color:rgba(246,244,240,0.6);font-size:0.6875rem;">Feedback UX</span>
+              </div>
+              <div style="padding:32px;">
+                <h1 style="font-family:DM Serif Display,Georgia,serif;font-size:1.5rem;font-weight:400;color:#0D0F12;margin:0 0 8px;">
+                  Nuevo feedback de usuario
+                </h1>
+                <p style="color:#7A7670;font-size:0.75rem;margin:0 0 24px;">{datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding:16px;background:#F6F4F0;border-radius:6px;">
+                  <div>
+                    <p style="font-size:0.6875rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#7A7670;margin:0 0 4px;">Calificación</p>
+                    <p style="font-size:1.75rem;color:#0D0F12;margin:0;">{feedback['rating']}/5</p>
+                    <p style="font-size:1.25rem;color:#E8D5A3;margin:4px 0 0;">{stars}</p>
+                  </div>
+                </div>
+
+                <div style="margin-bottom:24px;">
+                  <p style="font-size:0.6875rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#7A7670;margin:0 0 4px;">Remitente</p>
+                  <p style="color:#0D0F12;font-size:0.9375rem;margin:0;">{feedback['name']}</p>
+                  <p style="color:#7A7670;font-size:0.875rem;margin:4px 0 0;">{feedback.get('email', 'Sin email')}</p>
+                </div>
+
+                <div>
+                  <p style="font-size:0.6875rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#7A7670;margin:0 0 8px;">Comentarios</p>
+                  <div style="background:#F6F4F0;border:1px solid #D4CFC7;border-radius:6px;padding:16px;">
+                    <p style="color:#0D0F12;font-size:0.9375rem;line-height:1.65;margin:0;white-space:pre-wrap;">{feedback['comments']}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>
+        """
+
+        try:
+            await asyncio.to_thread(_send_smtp, settings.admin_email, subject, html, plain)
+            _log.info("Feedback email sent to %s", settings.admin_email)
+        except Exception:
+            _log.exception("Failed to send feedback email")
             raise
 
 

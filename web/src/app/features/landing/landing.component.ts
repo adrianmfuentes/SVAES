@@ -2,11 +2,12 @@ import { AfterViewInit, Component, ElementRef, ViewChild, inject } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../core/components/lang-toggle/lang-toggle.component';
+import { FeedbackModalComponent } from './feedback-modal/feedback-modal.component';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [RouterModule, TranslatePipe, LangToggleComponent],
+  imports: [RouterModule, TranslatePipe, LangToggleComponent, FeedbackModalComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })
@@ -15,8 +16,20 @@ export class LandingComponent implements AfterViewInit {
 
   @ViewChild('accessInner') private readonly accessInnerRef!: ElementRef<HTMLElement>;
 
+  showFeedback = false;
+
   navigateToRequestAccess(): void {
     this.router.navigate(['/request-access']);
+  }
+
+  openFeedback(): void {
+    this.showFeedback = true;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeFeedback(): void {
+    this.showFeedback = false;
+    document.body.style.overflow = '';
   }
 
   ngAfterViewInit(): void {

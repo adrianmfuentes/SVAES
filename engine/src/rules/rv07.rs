@@ -1,51 +1,60 @@
 use serde_json::json;
 use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 
-/// RV-07: Confirma la presencia de un artefacto específico que actúe como "marcador"
+/// RV-07: Confirma la presencia de un artefacto que actúe como "marcador"
 /// de que la operación ha sido registrada en herramientas externas de gestión.
 ///
 /// # Parámetros
 /// * `artifacts` - Slice de artefactos a verificar.
 /// * `rule_config` - Configuración de la regla con parámetros:
-///   - `artifact_type`: Tipo de artefacto marcador a buscar. OBLIGATORIO — si no se
-///     proporciona, la regla devuelve `NoEvaluada` porque no hay tipo concreto que buscar.
+///   - `artifact_type`: Tipo de artefacto marcador a buscar. Opcional — si no se
+///     proporciona, busca en todos los tipos de artefacto.
 ///   - `marker_field`: Campo en metadata que indica registro externo (default: "external_registered").
 ///
 /// # Lógica
-/// 1. Si `artifact_type` no está configurado, devuelve NoEvaluada (regla no aplicable sin config).
-/// 2. Busca un artefacto del tipo especificado.
-/// 3. Si no existe, devuelve Error.
-/// 4. Si existe, verifica que el campo marker sea `true`; si no, Error.
+/// 1. Si `artifact_type` está configurado, busca solo ese tipo.
+/// 2. Si no, busca en todos los tipos de artefacto.
+/// 3. Si no encuentra ningún artefacto con el marcador, devuelve Error.
+/// 4. Si encuentra y el campo marker es `true`, devuelve Ok.
 ///
 /// # Retorno
 /// `RuleEvaluation` con el estado correspondiente indicando si el marcador fue encontrado.
+const PERMITIDOS: &[&str] = &["TAREA", "CAMBIO"];
+
 pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleEvaluation {
-    let artifact_type = match rule_config.params
+    let artifact_type = rule_config.params
         .get("artifact_type")
-        .and_then(|v| v.as_str())
-    {
-        Some(t) => t,
-        None => {
+        .and_then(|v| v.as_str());
+
+    if let Some(t) = artifact_type {
+        if !PERMITIDOS.contains(&t) {
             return RuleEvaluation {
                 rule_id: rule_config.id.clone(),
-                status: RuleStatus::NoEvaluada,
-                message: Some("rule_evidence.no_evaluada.RV-07".to_string()),
-                message_params: None,
+                status: RuleStatus::Error,
+                message: Some("rule_evidence.error.RV-07.tipo_no_permitido".to_string()),
+                message_params: Some(json!({
+                    "artifact_type": t,
+                    "tipos_permitidos": PERMITIDOS,
+                })),
             };
         }
-    };
+    }
 
     let marker_field = rule_config.params
         .get("marker_field")
         .and_then(|v| v.as_str())
         .unwrap_or("external_registered");
 
-    let marker_artifact = artifacts
-        .iter()
-        .find(|a| a.artifact_type == artifact_type);
+    let marker_artifact = match artifact_type {
+        Some(t) => artifacts.iter().find(|a| a.artifact_type == t),
+        None => artifacts.iter().find(|a| {
+            a.metadata.get(marker_field).and_then(|v| v.as_bool()).unwrap_or(false)
+        }),
+    };
 
     match marker_artifact {
         Some(artifact) => {
+            let found_type = artifact_type.unwrap_or(&artifact.artifact_type);
             match artifact.metadata.get(marker_field) {
                 Some(val) if val.as_bool() == Some(true) => {
                     RuleEvaluation {
@@ -53,7 +62,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
                         status: RuleStatus::Ok,
                         message: Some("rule_evidence.ok.RV-07.found".to_string()),
                         message_params: Some(json!({
-                            "artifact_type": artifact_type,
+                            "artifact_type": found_type,
                             "artifact_id": artifact.id,
                         })),
                     }
@@ -65,7 +74,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
                         message: Some("rule_evidence.error.RV-07.not_true".to_string()),
                         message_params: Some(json!({
                             "artifact_id": artifact.id,
-                            "artifact_type": artifact_type,
+                            "artifact_type": found_type,
                             "marker_field": marker_field,
                         })),
                     }
@@ -78,7 +87,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
                 status: RuleStatus::Error,
                 message: Some("rule_evidence.error.RV-07.not_found".to_string()),
                 message_params: Some(json!({
-                    "artifact_type": artifact_type,
+                    "artifact_type": artifact_type.unwrap_or("any"),
                 })),
             }
         }
@@ -130,7 +139,7 @@ mod tests {
     }
 
     #[test]
-    fn no_artifact_type_param_returns_no_evaluada() {
+    fn no_artifact_type_searches_all_types() {
         let artifacts = vec![
             make_artifact("T-001", "TAREA", json!({"external_registered": true})),
         ];
@@ -138,7 +147,19 @@ mod tests {
 
         let result = evaluate(&artifacts, &rule);
 
-        assert_eq!(result.status, RuleStatus::NoEvaluada);
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn no_artifact_type_no_marker_found_returns_error() {
+        let artifacts = vec![
+            make_artifact("C-001", "CODIGO", json!({})),
+        ];
+        let rule = make_rule_no_params("RV-07");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
     }
 
     #[test]
@@ -183,5 +204,19 @@ mod tests {
         let result = evaluate(&artifacts, &rule);
 
         assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    #[test]
+    fn tipo_no_permitido_devuelve_error() {
+        let artifacts = vec![
+            make_artifact("D-001", "DOCUMENTO", json!({"external_registered": true})),
+        ];
+        let rule = make_rule_with_type("RV-07", "DOCUMENTO");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert_eq!(msg, "rule_evidence.error.RV-07.tipo_no_permitido");
     }
 }
