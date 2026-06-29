@@ -2362,10 +2362,10 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     return typeof summary === 'string';
   }
 
-  summaryTotal(summary: Record<string, number> | string): number | null {
-    if (typeof summary !== 'object' || summary === null) return null;
+  summaryTotal(summary: Record<string, number> | string): number {
+    if (typeof summary !== 'object' || summary === null) return 0;
     const total = summary['TOTAL'];
-    return typeof total === 'number' ? total : null;
+    return typeof total === 'number' ? total : 0;
   }
 
   summaryStatusItems(summary: Record<string, number> | string): Array<[string, number]> {
