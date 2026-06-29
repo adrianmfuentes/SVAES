@@ -72,12 +72,12 @@ interface BrowseItem {
   subtitle: string;
 }
 
-const CONNECTOR_TYPE_TO_ARTIFACT: Record<string, string> = {
-  'GESTOR_TAREAS': 'TAREA',
-  'REPO_CODIGO': 'CODIGO',
-  'SISTEMA_DOCUMENTAL': 'DOCUMENTO',
-  'HERRAMIENTA_PLANIFICACION': 'PLAN',
-  'GESTION_CAMBIOS': 'CAMBIO',
+const CONNECTOR_TYPE_TO_ARTIFACT: Record<string, string[]> = {
+  'GESTOR_TAREAS': ['TAREA', 'CAMBIO'],
+  'REPO_CODIGO': ['CODIGO'],
+  'SISTEMA_DOCUMENTAL': ['DOCUMENTO'],
+  'HERRAMIENTA_PLANIFICACION': ['PLAN'],
+  'GESTION_CAMBIOS': ['CAMBIO', 'TAREA'],
 };
 
 interface VerificationResult {
@@ -366,7 +366,20 @@ interface VerificationResult {
                 <button class="modal-close" (click)="closeImportModal()" [attr.aria-label]="'common.close' | t">&times;</button>
               </div>
 
-              <!-- Connector selector -->
+              <!-- Step indicator -->
+              <div class="import-steps">
+                <div class="step" [class.active]="!importConnector()">
+                  <span class="step-num">1</span>
+                  <span class="step-label">{{ 'release.step_select_connector' | t }}</span>
+                </div>
+                <div class="step-divider"></div>
+                <div class="step" [class.active]="!!importConnector()" [class.disabled]="!importConnector()">
+                  <span class="step-num">2</span>
+                  <span class="step-label">{{ 'release.step_select_artifact' | t }}</span>
+                </div>
+              </div>
+
+              <!-- Step 1: Connector selector -->
               <div class="form-group">
                 <label class="form-label" for="import-connector">{{ 'release.artifact_connector' | t }}</label>
                 @if (connectorsLoading()) {
@@ -389,15 +402,17 @@ interface VerificationResult {
                 }
               </div>
 
-              <div class="form-group">
+              <!-- Step 2: Artifact type selector -->
+              <div class="form-group" [class.step-locked]="!importConnector()">
                 <label class="form-label" for="import-type">{{ 'release.artifact_type' | t }}</label>
-                <select id="import-type" class="form-select" [value]="importArtifactType()" (change)="importArtifactType.set($any($event.target).value)">
-                  <option value="TAREA">{{ 'artifact_type.TAREA' | t }}</option>
-                  <option value="CODIGO">{{ 'artifact_type.CODIGO' | t }}</option>
-                  <option value="DOCUMENTO">{{ 'artifact_type.DOCUMENTO' | t }}</option>
-                  <option value="PLAN">{{ 'artifact_type.PLAN' | t }}</option>
-                  <option value="CAMBIO">{{ 'artifact_type.CAMBIO' | t }}</option>
+                <select id="import-type" class="form-select" [value]="importArtifactType()" (change)="importArtifactType.set($any($event.target).value)" [disabled]="!importConnector()">
+                  @for (type of availableArtifactTypes(); track type) {
+                    <option [value]="type">{{ 'artifact_type.' + type | t }}</option>
+                  }
                 </select>
+                @if (!importConnector()) {
+                  <p class="form-hint">{{ 'release.select_connector_first' | t }}</p>
+                }
               </div>
 
               @if (importConnector()) {
@@ -1353,6 +1368,74 @@ interface VerificationResult {
       padding: var(--spacing-sm) var(--spacing-md);
     }
 
+    .import-steps {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-lg);
+      padding: var(--spacing-md);
+      background: var(--paper-secondary);
+      border-radius: var(--rounded-md);
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      opacity: 0.5;
+      transition: opacity 0.2s ease;
+    }
+
+    .step.active {
+      opacity: 1;
+    }
+
+    .step.disabled {
+      opacity: 0.35;
+    }
+
+    .step-num {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--paper);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .step.active .step-num {
+      background: var(--accent-dark);
+    }
+
+    .step.disabled .step-num {
+      background: var(--muted);
+    }
+
+    .step-label {
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+
+    .step-divider {
+      flex: 1;
+      height: 0.0625rem;
+      background: var(--border-strong);
+    }
+
+    .step-locked {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .step-locked .form-select {
+      background: var(--paper-secondary);
+      cursor: not-allowed;
+    }
+
     .connector-meta {
       display: flex;
       gap: var(--spacing-sm);
@@ -1923,6 +2006,12 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     );
   });
 
+  availableArtifactTypes = computed(() => {
+    const conn = this.importConnector();
+    if (!conn) return ['TAREA', 'CODIGO', 'DOCUMENTO', 'PLAN', 'CAMBIO'];
+    return CONNECTOR_TYPE_TO_ARTIFACT[conn.connector_type] ?? ['TAREA'];
+  });
+
   expandedEvidence = computed(() => {
     const idx = this.expandedRule();
     if (idx === null) return null;
@@ -2210,8 +2299,8 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     if (!conn) return;
 
     this.activeBrowseConn = conn;
-    const autoType = CONNECTOR_TYPE_TO_ARTIFACT[conn.connector_type] ?? 'TAREA';
-    this.importArtifactType.set(autoType);
+    const artifactTypes = CONNECTOR_TYPE_TO_ARTIFACT[conn.connector_type] ?? ['TAREA'];
+    this.importArtifactType.set(artifactTypes[0]);
 
     const releaseName = this.release()?.name ?? '';
     this.browseSearch.set(releaseName);
