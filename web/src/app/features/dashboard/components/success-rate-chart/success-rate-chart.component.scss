@@ -2,20 +2,39 @@
   display: block;
 }
 
-.chart-title {
+.chart-card {
+  position: relative;
+}
+
+.chart-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.chart-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.chart-subtitle {
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
 }
 
 .chart-wrapper {
-  height: 17rem;
+  height: 21rem;
   position: relative;
 }
 
 .chart-skeleton {
-  height: 17rem;
-}
-
-.skeleton {
+  height: 21rem;
   border-radius: var(--rounded-md);
   background: linear-gradient(
     90deg,
@@ -28,7 +47,7 @@
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
+  0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
@@ -42,7 +61,7 @@
 }
 
 .chart-empty {
-  height: 15rem;
+  height: 19rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,8 +71,9 @@
 
 @media (max-width: 35rem) {
   .chart-wrapper,
-  .chart-skeleton,
+  .chart-skeleton { height: 16rem; }
+
   .chart-empty { height: 14rem; }
 
-  .chart-title { margin-bottom: var(--spacing-md); }
+  .chart-title { font-size: 0.9375rem; }
 }

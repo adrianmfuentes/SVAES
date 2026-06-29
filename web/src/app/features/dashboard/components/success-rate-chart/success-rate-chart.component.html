@@ -1,8 +1,13 @@
 <div class="chart-card card">
-  <h2 class="chart-title">{{ 'dashboard.success_rate_chart' | t }}</h2>
+  <div class="chart-header">
+    <h2 class="chart-title">{{ 'dashboard.success_rate_chart' | t }}</h2>
+    @if (data.length > 0) {
+      <span class="chart-subtitle">{{ 'dashboard.last_n_periods' | t : { n: data.length } }}</span>
+    }
+  </div>
 
   @if (loading) {
-    <div class="chart-skeleton skeleton"></div>
+    <div class="chart-skeleton"></div>
   } @else if (error) {
     <div class="error-banner">{{ error }}</div>
   } @else if (data.length === 0) {

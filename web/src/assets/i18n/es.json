@@ -268,6 +268,7 @@
   "dashboard.recent_releases": "Entregas recientes",
   "dashboard.top_failed_rules": "Reglas que más fallan",
   "dashboard.success_rate_chart": "Evolución de la tasa de éxito",
+  "dashboard.last_n_periods": "Últimos {{n}} períodos",
   "dashboard.empty_data": "Sin datos para el período seleccionado",
   "dashboard.period": "Período",
   "dashboard.last_30_days": "Últimos 30 días",

@@ -290,7 +290,7 @@ class ConnectorService(IConnectorService):
         try:
             await connector_impl.fetch_artifact(external_ref, config)
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 404:
+            if exc.response.status_code == 404 and connector.status == ConnectorStatus.ACTIVO:
                 raise ValidationError(
                     f"La referencia externa '{external_ref}' no existe en el conector '{connector.connector_implementation}'. "
                     f"Verifique que el identificador es correcto y que las credenciales tienen acceso."
