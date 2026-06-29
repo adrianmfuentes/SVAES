@@ -4,7 +4,7 @@ from infrastructure.secondary.connectors.base_http_connector import BaseHttpConn
 
 class ClickUpConnector(BaseHttpConnector):
     BASE_URL = "https://api.clickup.com/api/v2"
-    CONNECTOR_TYPE = "HERRAMIENTA_PLANIFICACION"
+    CONNECTOR_TYPE = "GESTOR_TAREAS"
     CONNECTOR_IMPLEMENTATION = "CLICKUP"
 
     def get_artifact_types(self) -> List[str]:

@@ -485,7 +485,7 @@ class TestPlaneConnector:
         return PlaneConnector()
 
     def test_properties(self, conn):
-        assert conn.CONNECTOR_TYPE == "HERRAMIENTA_PLANIFICACION"
+        assert conn.CONNECTOR_TYPE == "GESTOR_TAREAS"
         assert conn.CONNECTOR_IMPLEMENTATION == "PLANE"
         assert "issue" in conn.get_artifact_types()
 
@@ -679,7 +679,7 @@ class TestClickUpConnector:
         return ClickUpConnector()
 
     def test_properties(self, conn):
-        assert conn.CONNECTOR_TYPE == "HERRAMIENTA_PLANIFICACION"
+        assert conn.CONNECTOR_TYPE == "GESTOR_TAREAS"
         assert conn.CONNECTOR_IMPLEMENTATION == "CLICKUP"
         assert "task" in conn.get_artifact_types()
 
@@ -1109,7 +1109,7 @@ class TestTaigaConnector:
         return TaigaConnector()
 
     def test_properties(self, conn):
-        assert conn.CONNECTOR_TYPE == "HERRAMIENTA_PLANIFICACION"
+        assert conn.CONNECTOR_TYPE == "GESTOR_TAREAS"
         assert conn.CONNECTOR_IMPLEMENTATION == "TAIGA"
         assert "task" in conn.get_artifact_types()
         assert "userstory" in conn.get_artifact_types()

@@ -4,7 +4,7 @@ from infrastructure.secondary.connectors.base_http_connector import BaseHttpConn
 
 class PlaneConnector(BaseHttpConnector):
     BASE_URL = "https://api.plane.so/api/v1"
-    CONNECTOR_TYPE = "HERRAMIENTA_PLANIFICACION"
+    CONNECTOR_TYPE = "GESTOR_TAREAS"
     CONNECTOR_IMPLEMENTATION = "PLANE"
 
     def get_artifact_types(self) -> List[str]:
