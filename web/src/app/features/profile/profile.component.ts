@@ -686,7 +686,6 @@ interface UserNotificationPreferences {
       margin-bottom: var(--spacing-md);
     }
 
-    .api-keys-card,
     .twofa-card {
       grid-column: 1 / -1;
     }
