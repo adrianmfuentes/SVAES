@@ -122,6 +122,7 @@ async def _fetch_artifacts(
                 )
                 fetch_errors.append({
                     "artifact_id": str(artifact.id),
+                    "external_ref": artifact.external_ref,
                     "artifact_type": artifact.artifact_type,
                     "connector": artifact.connector_implementation,
                     "connector_instance_id": str(artifact.connector_instance_id),
@@ -143,6 +144,7 @@ async def _fetch_artifacts(
             )
             fetch_errors.append({
                 "artifact_id": str(artifact.id),
+                "external_ref": artifact.external_ref,
                 "artifact_type": artifact.artifact_type,
                 "connector": artifact.connector_implementation,
                 "connector_instance_id": str(artifact.connector_instance_id),
@@ -361,20 +363,21 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
     artifact_type_connector = await _build_artifact_type_connector_map(release.artifacts or [])
 
     for fe in fetch_errors:
+        ref = fe.get("external_ref") or fe["artifact_id"]
         result_data.setdefault("rule_results", []).append({
             "rule_id": "artifact_fetch_error",
             "rule_name": "Error al recuperar artefacto",
             "status": "WARNING",
             "message": (
-                f"No se pudo obtener el artefacto '{fe['artifact_id']}' "
+                f"No se pudo obtener el artefacto '{ref}' "
                 f"(tipo: {fe['artifact_type']}) desde el conector '{fe['connector']}': {fe['error']}"
             ),
             "connector": fe["connector"],
             "connector_instance_id": fe.get("connector_instance_id", ""),
             "evidence": (
-                f"No se pudo recuperar el artefacto '{fe['artifact_id']}' "
+                f"No se pudo recuperar '{ref}' "
                 f"de tipo {fe['artifact_type']} desde el conector '{fe['connector']}'. "
-                f"Verifique que la referencia externa sea válida y que el conector esté activo."
+                f"Verifique que la referencia externa '{ref}' existe y es accesible con las credenciales configuradas."
             ),
         })
 
