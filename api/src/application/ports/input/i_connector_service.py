@@ -59,3 +59,10 @@ class IConnectorService(ABC):
         self, connector_id: UUID, query: str = ""
     ) -> List[Dict[str, Any]]:
         pass
+
+    @abstractmethod
+    async def verify_artifact_ref(
+        self, connector_id: UUID, external_ref: str
+    ) -> None:
+        """Raises ValidationError if external_ref does not exist in the connector."""
+        pass

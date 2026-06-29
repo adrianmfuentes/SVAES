@@ -263,13 +263,16 @@ class TestReleasesCoverage:
     def _setup(self):
         from main import app
         from core.dependencies import (
-            get_release_service, get_artifact_service, get_verification_service,
+            get_release_service, get_artifact_service, get_connector_service,
+            get_verification_service,
             get_export_service, get_project_repository, get_organization_repository,
             get_release_repository,
         )
         self.app = app
         self.rel_svc = AsyncMock()
         self.art_svc = AsyncMock()
+        self.conn_svc = AsyncMock()
+        self.conn_svc.verify_artifact_ref = AsyncMock(return_value=None)
         self.ver_svc = AsyncMock()
         self.exp_svc = AsyncMock()
         self.proj_repo = AsyncMock()
@@ -291,6 +294,7 @@ class TestReleasesCoverage:
 
         app.dependency_overrides[get_release_service] = lambda: self.rel_svc
         app.dependency_overrides[get_artifact_service] = lambda: self.art_svc
+        app.dependency_overrides[get_connector_service] = lambda: self.conn_svc
         app.dependency_overrides[get_verification_service] = lambda: self.ver_svc
         app.dependency_overrides[get_export_service] = lambda: self.exp_svc
         app.dependency_overrides[get_project_repository] = lambda: self.proj_repo

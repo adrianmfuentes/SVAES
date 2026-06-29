@@ -262,6 +262,50 @@ class ConnectorService(IConnectorService):
             return []
 
 
+    async def verify_artifact_ref(
+        self, connector_id: UUID, external_ref: str
+    ) -> None:
+        import httpx
+        from cryptography.fernet import Fernet
+        connector = await self._connector_repo.get_by_id(connector_id)
+        if not connector:
+            raise EntityNotFoundError(f"Conector no encontrado: {connector_id}")
+
+        try:
+            connector_impl = self._connector_registry.get_by_implementation(
+                connector.connector_implementation
+            )
+        except KeyError:
+            raise ValidationError(
+                f"Implementación '{connector.connector_implementation}' no soportada"
+            )
+
+        fernet = Fernet(settings.encryption_key.encode())  # pyright: ignore[reportOptionalMemberAccess]
+        try:
+            config = ast.literal_eval(fernet.decrypt(connector.encrypted_credentials).decode())
+        except Exception as exc:
+            _log.error("verify_ref: credential decrypt failed connector_id=%s: %s", connector_id, exc)
+            return
+
+        try:
+            await connector_impl.fetch_artifact(external_ref, config)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                raise ValidationError(
+                    f"La referencia externa '{external_ref}' no existe en el conector '{connector.connector_implementation}'. "
+                    f"Verifique que el identificador es correcto y que las credenciales tienen acceso."
+                )
+            _log.warning(
+                "verify_ref: non-404 HTTP error for ref=%s connector=%s: %s",
+                external_ref, connector.connector_implementation, exc,
+            )
+        except Exception as exc:
+            _log.warning(
+                "verify_ref: could not verify ref=%s connector=%s (connectivity issue): %s",
+                external_ref, connector.connector_implementation, exc,
+            )
+
+
 def _normalize_browse_items(items: list, implementation: str, config: dict) -> list:
     impl = implementation.upper()
     result = []

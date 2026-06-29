@@ -9,10 +9,11 @@ from starlette.responses import Response
 
 from application.ports.input.i_release_service import IReleaseService
 from application.ports.input.i_artifact_service import IArtifactService
+from application.ports.input.i_connector_service import IConnectorService
 from application.ports.input.i_verification_service import IVerificationService
 from application.ports.input.i_export_service import IExportService
 
-from core.dependencies import get_release_service, get_artifact_service, get_verification_service, get_export_service, get_current_user, CurrentUser, ProjectAccess, require_permission, require_project_access, require_release_access, require_role
+from core.dependencies import get_release_service, get_artifact_service, get_connector_service, get_verification_service, get_export_service, get_current_user, CurrentUser, ProjectAccess, require_permission, require_project_access, require_release_access, require_role
 from domain.enums import ArtifactType, ReleaseStatus, Permission, UserRole
 from domain.exceptions import ValidationError, EntityNotFoundError, DuplicateEntityError
 from . import ERROR_INTERNO
@@ -332,6 +333,7 @@ async def add_artifact(
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.UPDATE_OWN_RELEASES))],
     _: Annotated[None, Depends(require_release_access())],
     service: Annotated[IArtifactService, Depends(get_artifact_service)],
+    connector_service: Annotated[IConnectorService, Depends(get_connector_service)],
 ):
     """Agrega un nuevo artefacto a una release específica por su ID.
 
@@ -350,6 +352,10 @@ async def add_artifact(
         - 500 Internal Server Error para cualquier otro error inesperado
     """
     try:
+        await connector_service.verify_artifact_ref(
+            connector_id=payload.connector_instance_id,
+            external_ref=payload.external_ref,
+        )
         artifact = await service.add_artifact(
             release_id=id,
             connector_instance_id=payload.connector_instance_id,
@@ -653,6 +659,7 @@ async def import_artifacts(
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.UPDATE_OWN_RELEASES))],
     _: Annotated[None, Depends(require_release_access())],
     service: Annotated[IArtifactService, Depends(get_artifact_service)],
+    connector_service: Annotated[IConnectorService, Depends(get_connector_service)],
 ):
     """Importa múltiples artefactos a una release desde un fichero CSV.
 
@@ -674,6 +681,10 @@ async def import_artifacts(
     try:
         imported = []
         for artifact_data in payload.artifacts:
+            await connector_service.verify_artifact_ref(
+                connector_id=artifact_data.connector_instance_id,
+                external_ref=artifact_data.external_ref,
+            )
             artifact = await service.add_artifact(
                 release_id=id,
                 connector_instance_id=artifact_data.connector_instance_id,
