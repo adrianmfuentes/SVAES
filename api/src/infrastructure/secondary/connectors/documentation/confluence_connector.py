@@ -56,3 +56,16 @@ class ConfluenceConnector(BaseHttpConnector):
 
     def _get_results_key(self) -> str:
         return "results"
+
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        data["accessible"] = True
+        version_obj = data.get("version") or {}
+        if isinstance(version_obj, dict):
+            data["version"] = str(version_obj.get("number", ""))
+        return data
+
+    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        url = self._get_fetch_url(ref, config)
+        response = await self._get(url, config, self._get_fetch_params(config))
+        response.raise_for_status()
+        return self._normalize(response.json())

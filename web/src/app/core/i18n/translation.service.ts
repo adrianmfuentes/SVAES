@@ -4,7 +4,7 @@ import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
 
 const STORAGE_KEY = 'svaes-lang';
 const DEFAULT_LANG = 'es';
-const I18N_CACHE_PREFIX = 'svaes-i18n-';
+const I18N_CACHE_PREFIX = 'svaes-i18n-v2-';
 
 @Injectable({ providedIn: 'root' })
 export class TranslationService {

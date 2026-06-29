@@ -180,7 +180,7 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/ 2>/dev/null || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 3

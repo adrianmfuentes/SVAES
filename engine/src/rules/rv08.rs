@@ -27,7 +27,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         None => {
             return RuleEvaluation {
                 rule_id: rule_config.id.clone(),
-                status: RuleStatus::Error,
+                status: RuleStatus::NoEvaluada,
                 message: Some("Parámetro 'master_artifact_id' no proporcionado".to_string()),
             };
         }
@@ -153,14 +153,14 @@ mod tests {
     }
 
     #[test]
-    fn missing_master_artifact_id_param_returns_error() {
+    fn missing_master_artifact_id_param_returns_no_evaluada() {
         let rule = VerificationRule {
             id: "RV-08".to_string(),
             severity: "OBLIGATORIA".to_string(),
             params: serde_json::json!({}),
         };
         let result = evaluate(&[], &rule);
-        assert_eq!(result.status, RuleStatus::Error);
+        assert_eq!(result.status, RuleStatus::NoEvaluada);
         let msg = result.message.unwrap();
         assert!(msg.contains("master_artifact_id"));
     }

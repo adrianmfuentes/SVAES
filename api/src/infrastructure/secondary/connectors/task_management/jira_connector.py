@@ -4,6 +4,9 @@ from infrastructure.secondary.connectors.base_http_connector import (
     BaseHttpConnector,
     AtlassianAuthMixin,
 )
+import logging
+
+_log = logging.getLogger(__name__)
 
 
 class JiraConnector(AtlassianAuthMixin, BaseHttpConnector):
@@ -52,3 +55,16 @@ class JiraConnector(AtlassianAuthMixin, BaseHttpConnector):
 
     def _get_results_key(self) -> str:
         return "issues"
+
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        fields = data.get("fields") or {}
+        status_obj = fields.get("status") or {}
+        if isinstance(status_obj, dict) and "name" in status_obj:
+            data["status"] = status_obj["name"]
+        return data
+
+    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        url = self._get_fetch_url(ref, config)
+        response = await self._get(url, config, self._get_fetch_params(config))
+        response.raise_for_status()
+        return self._normalize(response.json())
