@@ -615,7 +615,7 @@ describe('ProfileComponent', () => {
 
       (document as any).createElement = vi.fn(((tag: string, ...args: unknown[]) => {
         if (tag === 'a') {
-          return { href: '', download: '', click: anchorClickSpy };
+          return { href: '', download: '', click: anchorClickSpy, remove: vi.fn() };
         }
         return (origCreateElement as any)(tag, ...args);
       }));
