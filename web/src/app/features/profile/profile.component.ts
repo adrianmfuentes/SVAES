@@ -1503,14 +1503,14 @@ export class ProfileComponent implements OnInit {
       .subscribe(res => {
         if (res) {
           const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
-          const url = window.URL.createObjectURL(blob);
+          const url = globalThis.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
           a.download = 'svaes-user-data.json';
           document.body.appendChild(a);
           a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
+          a.remove();
+          globalThis.URL.revokeObjectURL(url);
         }
         this.exportDataDownloading.set(false);
       });

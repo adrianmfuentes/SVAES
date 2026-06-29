@@ -587,6 +587,7 @@ describe('ProfileComponent', () => {
     let createObjectURLSpy: ReturnType<typeof vi.fn>;
     let revokeObjectURLSpy: ReturnType<typeof vi.fn>;
     let anchorClickSpy: ReturnType<typeof vi.fn>;
+    let removeSpy: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
       component.loading.set(false);
@@ -602,9 +603,10 @@ describe('ProfileComponent', () => {
       createObjectURLSpy = vi.fn().mockReturnValue('blob:test-url');
       revokeObjectURLSpy = vi.fn();
       anchorClickSpy = vi.fn();
+      removeSpy = vi.fn();
 
-      (window.URL as any).createObjectURL = createObjectURLSpy;
-      (window.URL as any).revokeObjectURL = revokeObjectURLSpy;
+      (globalThis.URL as any).createObjectURL = createObjectURLSpy;
+      (globalThis.URL as any).revokeObjectURL = revokeObjectURLSpy;
 
       const origCreateElement = document.createElement.bind(document);
       vi.spyOn(document, 'createElement').mockImplementation((tag: string): any => {
@@ -613,13 +615,20 @@ describe('ProfileComponent', () => {
             href: '',
             download: '',
             click: anchorClickSpy,
+            remove: removeSpy,
           };
         }
         return origCreateElement(tag);
       });
 
       vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node): any => node);
-      vi.spyOn(document.body, 'removeChild').mockImplementation((child: Node): any => child);
+    });
+
+    afterEach(() => {
+      // Restore DOM spies to prevent interference with Angular TestBed in subsequent tests
+      (document.createElement as any).mockRestore?.();
+      (document.body.appendChild as any).mockRestore?.();
+
     });
 
     it('should fetch export data and trigger download on success', () => {

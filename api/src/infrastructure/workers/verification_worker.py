@@ -218,6 +218,29 @@ async def _build_artifact_type_connector_map(release_artifacts: list) -> dict[st
     return artifact_type_to_connector
 
 
+def _get_artifact_fetch_error_connector(
+    rule_result: dict, connector_names: dict
+) -> str:
+    ciid_str = rule_result.get("connector_instance_id", "")
+    if ciid_str:
+        try:
+            return connector_names.get(uuid.UUID(ciid_str), "")
+        except (ValueError, KeyError):
+            return ""
+    return ""
+
+
+def _get_artifact_type_fallback(
+    rid: str, rule_lookup: dict, artifact_type_connector: dict[str, str]
+) -> str:
+    profile_rule = rule_lookup.get(rid)
+    params = profile_rule.params if profile_rule else {}
+    artifact_type = params.get("artifact_type") or RULE_DEFAULT_ARTIFACT_TYPES.get(rid)
+    if artifact_type:
+        return artifact_type_connector.get(artifact_type, "")
+    return ""
+
+
 def _get_connector_for_rule(
     rid: str,
     rule_result: dict,
@@ -226,13 +249,7 @@ def _get_connector_for_rule(
     artifact_type_connector: dict[str, str] | None = None,
 ) -> str:
     if rid == "artifact_fetch_error":
-        ciid_str = rule_result.get("connector_instance_id", "")
-        if ciid_str:
-            try:
-                return connector_names.get(uuid.UUID(ciid_str), "")
-            except (ValueError, KeyError):
-                return ""
-        return ""
+        return _get_artifact_fetch_error_connector(rule_result, connector_names)
 
     profile_rule = rule_lookup.get(rid)
     if profile_rule and profile_rule.connector_instance_id:
@@ -241,10 +258,7 @@ def _get_connector_for_rule(
             return name
 
     if artifact_type_connector:
-        params = profile_rule.params if profile_rule else {}
-        artifact_type = params.get("artifact_type") or RULE_DEFAULT_ARTIFACT_TYPES.get(rid)
-        if artifact_type:
-            return artifact_type_connector.get(artifact_type, "")
+        return _get_artifact_type_fallback(rid, rule_lookup, artifact_type_connector)
 
     return ""
 
