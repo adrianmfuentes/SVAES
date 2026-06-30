@@ -6,6 +6,7 @@ from application.ports.input.i_organization_service import IOrganizationService
 from core.dependencies import (
     get_organization_service,
     get_current_user_or_api_key,
+    get_current_user_api_key_only,
     get_current_user,
     CurrentUser,
     require_permission,
@@ -52,7 +53,7 @@ class ProjectCreateRequest(BaseModel):
 @rate_limit_api_key()
 async def list_organizations(
     request: Request,
-    current_user: Annotated[CurrentUser, Depends(get_current_user_or_api_key)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user_api_key_only)],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
     skip: int = 0,
     limit: int = 100,
