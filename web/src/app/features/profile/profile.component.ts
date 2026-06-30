@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { catchError, of } from 'rxjs';
+import { catchError, of, EMPTY } from 'rxjs';
 import { AuthService, TotpSetupResponse } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
@@ -1649,16 +1649,14 @@ export class ProfileComponent implements OnInit {
           this.deleteAccountError.set(this.ts.translateInstant('profile_page.delete_account_error'));
         }
         this.deleteAccountDeleting.set(false);
-        return of(null);
+        return EMPTY;
       }))
-      .subscribe(res => {
-        if (res !== null) {
-          this.deleteAccountSuccess.set(true);
-          setTimeout(() => {
-            this.authService.logout();
-          }, 2000);
-        }
+      .subscribe(() => {
+        this.deleteAccountSuccess.set(true);
         this.deleteAccountDeleting.set(false);
+        setTimeout(() => {
+          this.authService.logout();
+        }, 2000);
       });
   }
 
