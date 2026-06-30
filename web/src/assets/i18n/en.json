@@ -204,9 +204,9 @@
   "activate.step1_desc": "Enter the activation code you received by email.",
   "activate.step2_desc": "Create a strong password for your account.",
   "activate.code_label": "Activation code",
-  "activate.code_placeholder": "8 characters",
+  "activate.code_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "activate.code_required": "Activation code is required.",
-  "activate.code_length": "The code must be 8 characters.",
+  "activate.code_length": "The activation code is not valid.",
   "activate.password_label": "New password",
   "activate.password_placeholder": "At least 8 characters",
   "activate.password_required": "Password is required.",
@@ -1293,9 +1293,6 @@
   "common.na": "N/A",
   "common.dash": "—",
   "common.placeholder_dash": "—",
-  "common.delete": "Delete",
-  "common.confirm": "Confirm",
-  "common.cancel": "Cancel",
   "a11y.cancel_and_close": "Cancel and close dialog",
   "a11y.confirm_action": "Confirm action"
 }

@@ -204,9 +204,9 @@
   "activate.step1_desc": "Introduzca el código de activación que ha recibido por correo electrónico.",
   "activate.step2_desc": "Cree una contraseña segura para su cuenta.",
   "activate.code_label": "Código de activación",
-  "activate.code_placeholder": "8 caracteres",
+  "activate.code_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "activate.code_required": "El código de activación es obligatorio.",
-  "activate.code_length": "El código debe tener 8 caracteres.",
+  "activate.code_length": "El código de activación no es válido.",
   "activate.password_label": "Nueva contraseña",
   "activate.password_placeholder": "Mínimo 8 caracteres",
   "activate.password_required": "La contraseña es obligatoria.",
@@ -1293,9 +1293,6 @@
   "common.na": "N/A",
   "common.dash": "—",
   "common.placeholder_dash": "—",
-  "common.delete": "Eliminar",
-  "common.confirm": "Confirmar",
-  "common.cancel": "Cancelar",
   "a11y.cancel_and_close": "Cancelar y cerrar dialogo",
   "a11y.confirm_action": "Confirmar accion"
 }
