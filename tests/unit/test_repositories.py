@@ -29,10 +29,9 @@ pytestmark = pytest.mark.unit
 def _make_mock_session():
     """Return an (AsyncMock, context manager factory) that simulates SQLAlchemy session."""
     session = AsyncMock()
-    # session.add/delete are synchronous in SQLAlchemy; AsyncMock would leave
-    # unawaited coroutines and emit RuntimeWarning.
+    # session.add is synchronous in SQLAlchemy; session.delete is awaited in repos.
     session.add = MagicMock()
-    session.delete = MagicMock()
+    session.delete = AsyncMock()
     session_mgr = MagicMock()
     session_mgr.__aenter__ = AsyncMock(return_value=session)
     session_mgr.__aexit__ = AsyncMock(return_value=None)
