@@ -1,5 +1,6 @@
 import logging
 import uuid
+from typing import Annotated
 from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.future import select
@@ -56,7 +57,7 @@ async def submit_feedback(payload: FeedbackPayload):
 
 
 @router.get("/api/v1/feedback/public")
-async def list_public_feedback(x_feedback_sync_key: str | None = Header(default=None)):
+async def list_public_feedback(x_feedback_sync_key: Annotated[str | None, Header(default=None)]):
     if not settings.feedback_sync_key or x_feedback_sync_key != settings.feedback_sync_key:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 

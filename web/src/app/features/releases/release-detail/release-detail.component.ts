@@ -2176,18 +2176,21 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     const availableTypes = new Set(this.orgConnectors().map(c => c.connector_type));
     const missing = new Set<string>();
     for (const rule of this.profileRules) {
-      if (rule.connector_types_mode === 'ANY') {
-        const anyAvailable = rule.connector_types.some(ct => availableTypes.has(ct));
-        if (!anyAvailable) {
-          for (const ct of rule.connector_types) missing.add(ct);
-        }
-      } else {
-        for (const ct of rule.connector_types) {
-          if (!availableTypes.has(ct)) missing.add(ct);
-        }
-      }
+      this.collectMissingTypesForRule(rule, availableTypes, missing);
     }
     this.missingConnectorTypes.set([...missing]);
+  }
+
+  private collectMissingTypesForRule(rule: { connector_types: string[]; connector_types_mode: string }, availableTypes: Set<string>, missing: Set<string>): void {
+    if (rule.connector_types_mode === 'ANY') {
+      if (!rule.connector_types.some(ct => availableTypes.has(ct))) {
+        for (const ct of rule.connector_types) missing.add(ct);
+      }
+    } else {
+      for (const ct of rule.connector_types) {
+        if (!availableTypes.has(ct)) missing.add(ct);
+      }
+    }
   }
   private readonly browseSearchSubject = new Subject<string>();
   private browseSearchSub?: Subscription;
