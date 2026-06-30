@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { provideRouter, Router } from '@angular/router';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../../core/services/auth.service';
@@ -40,6 +40,10 @@ describe('LoginComponent', () => {
     const fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
     router = TestBed.inject(Router);
+  });
+
+  afterEach(() => {
+    component.ngOnDestroy();
   });
 
   describe('ngOnInit', () => {
@@ -162,10 +166,30 @@ describe('LoginComponent', () => {
       expect(component.errorKey).toBe('login.error.pending_activation');
     });
 
-    it('should set too_many error for 429', () => {
+    it('should set too_many error for 429 and start a cooldown', () => {
       authMock.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 429 })));
       component.onSubmit();
       expect(component.errorKey).toBe('login.error.too_many');
+      expect(component.cooldownSeconds).toBeGreaterThan(0);
+    });
+
+    it('should use Retry-After header for the cooldown duration', () => {
+      authMock.login.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 429, headers: new HttpHeaders({ 'Retry-After': '12' }) })),
+      );
+      component.onSubmit();
+      expect(component.errorKey).toBe('login.error.too_many');
+      expect(component.cooldownSeconds).toBe(12);
+      expect(component.errorParams).toEqual({ seconds: 12 });
+    });
+
+    it('should block resubmission while cooldown is active', () => {
+      authMock.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 429 })));
+      component.onSubmit();
+      vi.clearAllMocks();
+      component.loginForm.setValue({ email: 'x@x.com', password: 'pass' });
+      component.onSubmit();
+      expect(authMock.login).not.toHaveBeenCalled();
     });
 
     it('should set server error for 502', () => {

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
@@ -96,7 +96,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
                   <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                   <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
-                <span>{{ errorKey | t }}</span>
+                <span>{{ errorKey | t: errorParams }}</span>
               </div>
 
               <div class="form-group">
@@ -137,12 +137,13 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
               <button
                 type="submit"
                 class="btn-primary full-width btn-submit"
-                [disabled]="loginForm.invalid || loading"
+                [disabled]="loginForm.invalid || loading || cooldownSeconds > 0"
                 [title]="loginForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
                 [class.btn-loading]="loading"
               >
-                <span *ngIf="!loading">{{ 'login.submit' | t }}</span>
+                <span *ngIf="!loading && cooldownSeconds === 0">{{ 'login.submit' | t }}</span>
                 <span *ngIf="loading">{{ 'login.verifying' | t }}</span>
+                <span *ngIf="!loading && cooldownSeconds > 0">{{ 'login.error.too_many_short' | t: errorParams }}</span>
               </button>
             </form>
             <p class="form-footer-link">
@@ -166,7 +167,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
                   <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                   <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
-                <span>{{ errorKey | t }}</span>
+                <span>{{ errorKey | t: errorParams }}</span>
               </div>
 
               <div class="form-group">
@@ -193,12 +194,13 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
               <button
                 type="submit"
                 class="btn-primary full-width btn-submit"
-                [disabled]="totpForm.invalid || loading"
+                [disabled]="totpForm.invalid || loading || cooldownSeconds > 0"
                 [title]="totpForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
                 [class.btn-loading]="loading"
               >
-                <span *ngIf="!loading">{{ 'login.2fa_verify' | t }}</span>
+                <span *ngIf="!loading && cooldownSeconds === 0">{{ 'login.2fa_verify' | t }}</span>
                 <span *ngIf="loading">{{ 'login.verifying' | t }}</span>
+                <span *ngIf="!loading && cooldownSeconds > 0">{{ 'login.error.too_many_short' | t: errorParams }}</span>
               </button>
             </form>
             <p class="form-footer-link">
@@ -621,7 +623,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
     `,
   ],
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
@@ -643,16 +645,61 @@ export class LoginComponent implements OnInit {
 
   loading = false;
   errorKey: string | null = null;
+  errorParams: Record<string, string | number> | undefined;
   totpRequired = false;
   forgotMode = false;
   forgotSent = false;
+  cooldownSeconds = 0;
   private pendingTotpToken: string | null = null;
   private pendingEmail = '';
+  private cooldownTimer?: ReturnType<typeof setInterval>;
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
       this.router.navigate(['/app/dashboard']);
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.cooldownTimer) {
+      clearInterval(this.cooldownTimer);
+    }
+  }
+
+  private handleError(err: HttpErrorResponse): void {
+    if (err.status === 429) {
+      this.startCooldown(err);
+      return;
+    }
+    this.errorKey = parseLoginErrorKey(err);
+    this.errorParams = undefined;
+  }
+
+  private startCooldown(err: HttpErrorResponse): void {
+    const retryAfterHeader = err.headers?.get('Retry-After');
+    const parsed = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
+    const seconds = Number.isFinite(parsed) && parsed > 0 ? parsed : 60;
+
+    if (this.cooldownTimer) {
+      clearInterval(this.cooldownTimer);
+    }
+    this.cooldownSeconds = seconds;
+    this.errorKey = 'login.error.too_many';
+    this.errorParams = { seconds: this.cooldownSeconds };
+
+    this.cooldownTimer = setInterval(() => {
+      this.cooldownSeconds -= 1;
+      if (this.cooldownSeconds <= 0) {
+        clearInterval(this.cooldownTimer);
+        this.cooldownTimer = undefined;
+        this.cooldownSeconds = 0;
+        this.errorKey = null;
+        this.errorParams = undefined;
+      } else {
+        this.errorParams = { seconds: this.cooldownSeconds };
+      }
+      this.cdr.detectChanges();
+    }, 1000);
   }
 
   fieldHasError(name: string): boolean {
@@ -661,13 +708,14 @@ export class LoginComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.loginForm.invalid || this.loading) {
+    if (this.loginForm.invalid || this.loading || this.cooldownSeconds > 0) {
       this.loginForm.markAllAsTouched();
       return;
     }
 
     this.loading = true;
     this.errorKey = null;
+    this.errorParams = undefined;
 
     const { email, password } = this.loginForm.value;
     this.pendingEmail = email!;
@@ -680,7 +728,7 @@ export class LoginComponent implements OnInit {
           this.cdr.detectChanges();
         }),
         catchError((err: HttpErrorResponse) => {
-          this.errorKey = parseLoginErrorKey(err);
+          this.handleError(err);
           return of(null);
         }),
       )
@@ -711,13 +759,14 @@ export class LoginComponent implements OnInit {
   }
 
   onSubmitTotp(): void {
-    if (this.totpForm.invalid || this.loading || !this.pendingTotpToken) {
+    if (this.totpForm.invalid || this.loading || this.cooldownSeconds > 0 || !this.pendingTotpToken) {
       this.totpForm.markAllAsTouched();
       return;
     }
 
     this.loading = true;
     this.errorKey = null;
+    this.errorParams = undefined;
 
     const { code } = this.totpForm.value;
 
@@ -729,7 +778,7 @@ export class LoginComponent implements OnInit {
           this.cdr.detectChanges();
         }),
         catchError((err: HttpErrorResponse) => {
-          this.errorKey = parseLoginErrorKey(err);
+          this.handleError(err);
           return of(null);
         }),
       )

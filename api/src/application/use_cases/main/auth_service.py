@@ -92,8 +92,10 @@ class AuthService(IAuthService):
                 resource_id=user.id,
                 details={"reason": "invalid_password"},
             ))
-            remaining = MAX_LOGIN_ATTEMPTS - user.failed_login_attempts
-            raise ValidationError(f"Credenciales inválidas. Intentos restantes: {remaining}")
+            # Same generic message as the "user not found" branch above: the remaining-attempts
+            # count used to be appended here, which made the login error inconsistent and also
+            # leaked brute-force calibration info to an attacker.
+            raise ValidationError("Credenciales inválidas")
 
         needs_update = user.failed_login_attempts > 0 or user.locked_until is not None
         if self._password_hasher.needs_rehash(user.hashed_password):

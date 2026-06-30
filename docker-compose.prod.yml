@@ -95,6 +95,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
       APP_BASE_URL: ${APP_BASE_URL}
+      FEEDBACK_SYNC_KEY: ${FEEDBACK_SYNC_KEY}
     logging:
       driver: "json-file"
       options:
