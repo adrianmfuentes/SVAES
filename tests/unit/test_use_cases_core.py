@@ -724,7 +724,7 @@ class TestEnrichRuleResults:
         from domain.entities.verification_rule import VerificationRule
         return VerificationRule(
             profile_id=uuid4(),
-            rule_template="RV-01",
+            rule_template="RV-03",
             connector_instance_id=connector_instance_id,
             params={},
         )
@@ -733,9 +733,9 @@ class TestEnrichRuleResults:
         """Rule returns OK but has no connector → status overridden to NO_EVALUADA."""
         rule = self._make_rule()
         result_data = {
-            "rule_results": [{"rule_id": "RV-01", "status": "OK", "message": None}]
+            "rule_results": [{"rule_id": "RV-03", "status": "OK", "message": None}]
         }
-        self.fn(result_data, {"RV-01": rule}, {}, {})
+        self.fn(result_data, {"RV-03": rule}, {}, {})
         rr = result_data["rule_results"][0]
         assert rr["status"] == "NO_EVALUADA"
         assert rr["evidence"] == "rule_evidence.no_connector"
@@ -747,22 +747,34 @@ class TestEnrichRuleResults:
         cid = uuid4()
         rule = self._make_rule(connector_instance_id=cid)
         result_data = {
-            "rule_results": [{"rule_id": "RV-01", "status": "OK", "message": None}]
+            "rule_results": [{"rule_id": "RV-03", "status": "OK", "message": None}]
         }
-        self.fn(result_data, {"RV-01": rule}, {cid: "Jira"}, {})
+        self.fn(result_data, {"RV-03": rule}, {cid: "Jira"}, {})
         rr = result_data["rule_results"][0]
         assert rr["status"] == "OK"
         assert rr["connector"] == "Jira"
 
-    def test_error_with_no_connector_stays_error(self):
-        """Rule returns ERROR with no connector → status stays ERROR (only OK is overridden)."""
+    def test_error_with_no_connector_becomes_no_evaluada(self):
+        """Rule returns ERROR with no connector → status overridden to NO_EVALUADA too (no linked artifact means the rule was never actually evaluated)."""
         rule = self._make_rule()
         result_data = {
-            "rule_results": [{"rule_id": "RV-01", "status": "ERROR", "message": "some error"}]
+            "rule_results": [{"rule_id": "RV-03", "status": "ERROR", "message": "some error"}]
+        }
+        self.fn(result_data, {"RV-03": rule}, {}, {})
+        rr = result_data["rule_results"][0]
+        assert rr["status"] == "NO_EVALUADA"
+
+    def test_rv01_always_shows_dash_and_keeps_status(self):
+        """RV-01 checks artifact existence (no connector involved) → connector is always '-' and status is never overridden."""
+        rule = self._make_rule()
+        rule.rule_template = "RV-01"
+        result_data = {
+            "rule_results": [{"rule_id": "RV-01", "status": "OK", "message": None}]
         }
         self.fn(result_data, {"RV-01": rule}, {}, {})
         rr = result_data["rule_results"][0]
-        assert rr["status"] == "ERROR"
+        assert rr["status"] == "OK"
+        assert rr["connector"] == "-"
 
     def test_artifact_fetch_error_ok_not_overridden(self):
         """artifact_fetch_error entries with OK are never overridden regardless of connector."""
