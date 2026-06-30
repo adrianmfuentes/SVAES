@@ -15,6 +15,7 @@ from infrastructure.secondary.database.models.custom_role_model import CustomRol
 from infrastructure.secondary.database.models.template_model import TemplateModel
 from infrastructure.secondary.database.models.notification_subscription_model import NotificationSubscriptionModel
 from infrastructure.secondary.database.models.notification_channel_model import NotificationChannelModel
+from infrastructure.secondary.database.models.feedback_model import FeedbackModel
 
 __all__ = [
     "ReleaseModel",
@@ -33,4 +34,5 @@ __all__ = [
     "TemplateModel",
     "NotificationSubscriptionModel",
     "NotificationChannelModel",
+    "FeedbackModel",
 ]

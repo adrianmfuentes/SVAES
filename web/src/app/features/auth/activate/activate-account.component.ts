@@ -164,15 +164,15 @@ export function passwordStrengthValidator(control: AbstractControl): ValidationE
                   </div>
                   <div class="checklist-item" [class.checklist-item--met]="passwordChecks.uppercase">
                     <span class="checklist-icon">{{ passwordChecks.uppercase ? '✓' : '○' }}</span>
-                    <span>{{ 'activate.password_strength_good' | t }}</span>
+                    <span>{{ 'activate.password_requires_uppercase' | t }}</span>
                   </div>
                   <div class="checklist-item" [class.checklist-item--met]="passwordChecks.number">
                     <span class="checklist-icon">{{ passwordChecks.number ? '✓' : '○' }}</span>
-                    <span>{{ 'activate.password_strength_fair' | t }}</span>
+                    <span>{{ 'activate.password_requires_number' | t }}</span>
                   </div>
                   <div class="checklist-item" [class.checklist-item--met]="passwordChecks.specialChar">
                     <span class="checklist-icon">{{ passwordChecks.specialChar ? '✓' : '○' }}</span>
-                    <span>{{ 'activate.password_strength_strong' | t }}</span>
+                    <span>{{ 'activate.password_requires_special' | t }}</span>
                   </div>
                 </div>
 

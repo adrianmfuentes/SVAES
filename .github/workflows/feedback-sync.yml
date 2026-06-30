@@ -1,0 +1,37 @@
+name: Sync feedback to README
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Sync feedback into README
+        env:
+          FEEDBACK_API_URL: ${{ secrets.APP_BASE_URL || vars.APP_BASE_URL }}
+          FEEDBACK_SYNC_KEY: ${{ secrets.FEEDBACK_SYNC_KEY || vars.FEEDBACK_SYNC_KEY }}
+        run: python scripts/sync_feedback_readme.py
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if git diff --cached --quiet; then
+            echo "No hay feedback nuevo que sincronizar."
+          else
+            git commit -m "chore: sync user feedback into README [skip ci]"
+            git push
+          fi

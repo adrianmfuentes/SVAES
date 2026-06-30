@@ -2,11 +2,13 @@ import { Component, inject, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeedbackService, FeedbackPayload } from '../../../core/services/feedback.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../core/i18n/translation.service';
 
 @Component({
   selector: 'app-feedback-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   template: `
     <div class="modal-overlay"
          role="dialog"
@@ -15,19 +17,19 @@ import { FeedbackService, FeedbackPayload } from '../../../core/services/feedbac
          (click)="onOverlayClick($event)"
          (keydown.escape)="onClose()">
       <div class="modal" role="document">
-        <button class="modal-close" (click)="onClose()" aria-label="Cerrar">
+        <button class="modal-close" (click)="onClose()" [attr.aria-label]="'common.close' | t">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </button>
 
-        <h2 id="feedback-title" class="modal-title">Feedback UX</h2>
-        <p class="modal-subtitle">Ayúdame a mejorar SVAES — tu opinión cuenta</p>
+        <h2 id="feedback-title" class="modal-title">{{ 'feedback.modal_title' | t }}</h2>
+        <p class="modal-subtitle">{{ 'feedback.modal_subtitle' | t }}</p>
 
         @if (submitted) {
           <div class="alert-success" role="alert">
             <span class="alert-success-icon">✓</span>
-            <span>¡Gracias por tu feedback!</span>
+            <span>{{ 'feedback.success' | t }}</span>
           </div>
         } @else {
           @if (error) {
@@ -39,7 +41,7 @@ import { FeedbackService, FeedbackPayload } from '../../../core/services/feedbac
 
           <form (ngSubmit)="onSubmit()" #feedbackForm="ngForm">
             <div class="form-group">
-              <label for="fb-name">Nombre *</label>
+              <label for="fb-name">{{ 'feedback.field_name' | t }}</label>
               <input
                 type="text"
                 id="fb-name"
@@ -47,31 +49,31 @@ import { FeedbackService, FeedbackPayload } from '../../../core/services/feedbac
                 [(ngModel)]="payload.name"
                 required
                 maxlength="100"
-                placeholder="Tu nombre"
+                [placeholder]="'feedback.name_placeholder' | t"
               />
             </div>
 
             <div class="form-group">
-              <label for="fb-email">Email (opcional)</label>
+              <label for="fb-email">{{ 'feedback.field_email' | t }}</label>
               <input
                 type="email"
                 id="fb-email"
                 name="email"
                 [(ngModel)]="payload.email"
                 maxlength="255"
-                placeholder="tu@email.com"
+                [placeholder]="'feedback.email_placeholder' | t"
               />
             </div>
 
             <div class="form-group">
-              <label>Calificación UX *</label>
-              <div class="stars" role="radiogroup" aria-label="Calificación del 0 al 5">
+              <label>{{ 'feedback.field_rating' | t }}</label>
+              <div class="stars" role="radiogroup" [attr.aria-label]="'feedback.rating_aria' | t">
                 @for (star of [1, 2, 3, 4, 5]; track star) {
                   <button
                     type="button"
                     class="star-btn"
                     [class.filled]="payload.rating >= star"
-                    [attr.aria-label]="star + ' estrella'"
+                    [attr.aria-label]="'feedback.star_aria' | t:{ n: star }"
                     (click)="payload.rating = star"
                   >
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
@@ -84,7 +86,7 @@ import { FeedbackService, FeedbackPayload } from '../../../core/services/feedbac
             </div>
 
             <div class="form-group">
-              <label for="fb-comments">Comentarios *</label>
+              <label for="fb-comments">{{ 'feedback.field_comments' | t }}</label>
               <textarea
                 id="fb-comments"
                 name="comments"
@@ -92,18 +94,20 @@ import { FeedbackService, FeedbackPayload } from '../../../core/services/feedbac
                 required
                 maxlength="2000"
                 rows="4"
-                placeholder="¿Qué está bien? ¿Qué falla? ¿Qué mejorarías?"
+                [placeholder]="'feedback.comments_placeholder' | t"
               ></textarea>
               <span class="char-count">{{ payload.comments.length }}/2000</span>
             </div>
 
+            <p class="disclosure">{{ 'feedback.disclosure' | t }}</p>
+
             <div class="modal-actions">
-              <button type="button" class="btn-secondary" (click)="onClose()">Cancelar</button>
+              <button type="button" class="btn-secondary" (click)="onClose()">{{ 'common.cancel' | t }}</button>
               <button type="submit" class="btn-accent" [disabled]="!isValid || loading">
                 @if (loading) {
-                  Enviando...
+                  {{ 'feedback.submitting' | t }}
                 } @else {
-                  Enviar Feedback
+                  {{ 'feedback.submit' | t }}
                 }
               </button>
             </div>
@@ -288,6 +292,13 @@ import { FeedbackService, FeedbackPayload } from '../../../core/services/feedbac
       margin-top: var(--spacing-xs);
     }
 
+    .disclosure {
+      font-size: 0.75rem;
+      line-height: 1.5;
+      color: var(--muted);
+      margin: var(--spacing-md) 0 0;
+    }
+
     .modal-actions {
       display: flex;
       gap: var(--spacing-sm);
@@ -355,6 +366,7 @@ import { FeedbackService, FeedbackPayload } from '../../../core/services/feedbac
 })
 export class FeedbackModalComponent {
   private readonly feedbackService = inject(FeedbackService);
+  private readonly ts = inject(TranslationService);
 
   readonly closed = output<void>();
 
@@ -376,15 +388,8 @@ export class FeedbackModalComponent {
   }
 
   get ratingLabel(): string {
-    const labels = [
-      'Sin calificar',
-      'Muy malo',
-      'Malo',
-      'Regular',
-      'Bueno',
-      'Excelente'
-    ];
-    return labels[this.payload.rating] || 'Sin calificar';
+    const key = `feedback.rating_${this.payload.rating}`;
+    return this.ts.translateInstant(key) || this.ts.translateInstant('feedback.rating_0');
   }
 
   onOverlayClick(event: MouseEvent): void {
@@ -410,7 +415,7 @@ export class FeedbackModalComponent {
         setTimeout(() => this.onClose(), 1500);
       },
       error: () => {
-        this.error = 'No se pudo enviar el feedback. Inténtalo de nuevo.';
+        this.error = this.ts.translateInstant('feedback.error');
         this.loading = false;
       },
     });

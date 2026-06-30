@@ -304,7 +304,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
       }
 
       .login-back:hover {
-        color: var(--ink);
+        color: var(--accent);
       }
 
       .login-back svg {

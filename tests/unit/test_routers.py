@@ -1344,6 +1344,129 @@ class TestAccessRequestsCoverage:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# TestFeedbackRouter
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestFeedbackRouter:
+    def _mock_session(self):
+        mock_session = AsyncMock()
+        mock_session.add = MagicMock()
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=False)
+        return mock_session
+
+    def test_submit_feedback_success(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        mock_session = self._mock_session()
+        with patch(
+            "infrastructure.primary.routers.api.v1.feedback.AsyncSessionLocal",
+            return_value=mock_session,
+        ), patch(
+            "infrastructure.primary.routers.api.v1.feedback.email_service.send_feedback_email",
+            new_callable=AsyncMock,
+        ) as mock_email:
+            client = TestClient(app)
+            resp = client.post("/api/v1/feedback", json={
+                "name": "Ada", "email": "ada@test.com", "rating": 5, "comments": "Great tool",
+            })
+            assert resp.status_code == 201
+            assert resp.json() == {"status": "ok"}
+            mock_session.add.assert_called_once()
+            mock_session.commit.assert_awaited_once()
+            mock_email.assert_awaited_once()
+
+    def test_submit_feedback_without_email_is_accepted(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        mock_session = self._mock_session()
+        with patch(
+            "infrastructure.primary.routers.api.v1.feedback.AsyncSessionLocal",
+            return_value=mock_session,
+        ), patch(
+            "infrastructure.primary.routers.api.v1.feedback.email_service.send_feedback_email",
+            new_callable=AsyncMock,
+        ):
+            client = TestClient(app)
+            resp = client.post("/api/v1/feedback", json={
+                "name": "Ada", "rating": 4, "comments": "Nice",
+            })
+            assert resp.status_code == 201
+
+    def test_submit_feedback_email_failure_still_persists(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        mock_session = self._mock_session()
+        with patch(
+            "infrastructure.primary.routers.api.v1.feedback.AsyncSessionLocal",
+            return_value=mock_session,
+        ), patch(
+            "infrastructure.primary.routers.api.v1.feedback.email_service.send_feedback_email",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("smtp down"),
+        ):
+            client = TestClient(app)
+            resp = client.post("/api/v1/feedback", json={
+                "name": "Ada", "rating": 3, "comments": "Meh", "email": "ada@test.com",
+            })
+            assert resp.status_code == 201
+            mock_session.commit.assert_awaited_once()
+
+    def test_submit_feedback_db_failure_500(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        mock_session = self._mock_session()
+        mock_session.commit = AsyncMock(side_effect=RuntimeError("db down"))
+        with patch(
+            "infrastructure.primary.routers.api.v1.feedback.AsyncSessionLocal",
+            return_value=mock_session,
+        ):
+            client = TestClient(app)
+            resp = client.post("/api/v1/feedback", json={
+                "name": "Ada", "rating": 3, "comments": "Meh",
+            })
+            assert resp.status_code == 500
+
+    def test_public_feedback_requires_sync_key(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        client = TestClient(app)
+        resp = client.get("/api/v1/feedback/public")
+        assert resp.status_code == 403
+
+    def test_public_feedback_wrong_sync_key_403(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        with patch("infrastructure.primary.routers.api.v1.feedback.settings.feedback_sync_key", "right-key"):
+            client = TestClient(app)
+            resp = client.get("/api/v1/feedback/public", headers={"X-Feedback-Sync-Key": "wrong-key"})
+            assert resp.status_code == 403
+
+    def test_public_feedback_success_omits_email(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        row = MagicMock(name="Ada", rating=5, comments="Great tool", created_at=datetime.now(timezone.utc))
+        row.name = "Ada"
+        mock_session = self._mock_session()
+        mock_session.execute = AsyncMock(
+            return_value=MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[row]))))
+        )
+        with patch("infrastructure.primary.routers.api.v1.feedback.settings.feedback_sync_key", "right-key"), patch(
+            "infrastructure.primary.routers.api.v1.feedback.AsyncSessionLocal",
+            return_value=mock_session,
+        ):
+            client = TestClient(app)
+            resp = client.get("/api/v1/feedback/public", headers={"X-Feedback-Sync-Key": "right-key"})
+            assert resp.status_code == 200
+            body = resp.json()
+            assert body == [{
+                "name": "Ada", "rating": 5, "comments": "Great tool",
+                "created_at": row.created_at.isoformat(),
+            }]
+            assert "email" not in body[0]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # TestNotificationsCoverage  (from test_routers_coverage.py)
 # ═══════════════════════════════════════════════════════════════════════════════
 

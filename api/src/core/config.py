@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     smtp_from: str = "noreply@svaes.local"
     app_base_url: str = "http://localhost:4200"
 
+    # Shared secret used by the feedback-sync GitHub Action to read public feedback
+    feedback_sync_key: str = ""
+
     model_config = {"env_file": _ROOT_ENV, "env_file_encoding": "utf-8", "extra": "ignore"}
 
     @field_validator("allowed_origins", mode="before")

@@ -252,6 +252,7 @@ Base de datos PostgreSQL:
 | `ENCRYPTION_KEY`     | Clave Fernet para cifrado de credenciales       | Sí          |
 | `ENVIRONMENT`        | `development` o `production`                    | No          |
 | `ALLOWED_ORIGINS`    | Orígenes CORS separados por coma                | No          |
+| `FEEDBACK_SYNC_KEY`  | Secreto compartido para que la GitHub Action lea `/api/v1/feedback/public` | No |
 
 Generar `ENCRYPTION_KEY`:
 
@@ -299,6 +300,13 @@ Documentación interactiva: `http://localhost:8000/docs`
 | `GET`  | `/connectors/types`     | Cualquier usuario | Listar tipos e implementaciones |
 | `POST` | `/connectors/{id}/test` | MANAGER+          | Probar conexión                 |
 
+### Feedback
+
+| Método | Ruta                    | Auth   | Descripción                                          |
+| ------ | ----------------------- | ------ | ----------------------------------------------------- |
+| `POST` | `/feedback`              | No     | Enviar feedback desde el footer de la landing         |
+| `GET`  | `/feedback/public`       | Secreto compartido | Listado público (sin email) usado por la GitHub Action de sincronización |
+
 ---
 
 # 14. Ejecución
@@ -334,7 +342,19 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ---
 
-# 15. Conclusión
+# 15. Feedback de usuarios
+
+Los usuarios pueden enviar feedback (valoración 1-5 y comentario) desde un formulario en el footer de la landing page. Cada envío notifica por correo a la dirección configurada en `ADMIN_EMAIL` y queda almacenado en la base de datos.
+
+Una GitHub Action programada ([`feedback-sync.yml`](.github/workflows/feedback-sync.yml)) sincroniza periódicamente el feedback recibido (nombre, valoración y comentario — nunca el email) en la sección siguiente, para que quede constancia pública de que el sistema tiene usuarios reales:
+
+<!-- FEEDBACK:START -->
+_Todavía no hay feedback publicado. Sé el primero en dejar tu opinión desde la landing page._
+<!-- FEEDBACK:END -->
+
+---
+
+# 16. Conclusión
 
 El proyecto ha sido finalizado como Trabajo Fin de Grado en la Universidad de Oviedo (2025/2026), pendiente de entrega y defensa. El sistema proporciona una solución desacoplada, extensible y robusta para la verificación automática de entregas de software, actualmente desplegada en producción.
 
@@ -351,4 +371,4 @@ El sistema está completamente operativo con:
 
 ---
 
-_Última actualización: 25 de junio de 2026 — Adrián Martínez Fuentes (UO295454)_
+_Última actualización: 30 de junio de 2026 — Adrián Martínez Fuentes (UO295454)_

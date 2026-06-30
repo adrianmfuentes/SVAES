@@ -162,12 +162,12 @@ _I18N: dict[str, dict[str, str]] = {
         "col_message":          "Detalle",
         "status_ok":            "Correcto",
         "status_error":         "Error",
-        "status_warning":       "Aviso",
-        "status_unknown":       "N/E",
-        "verdict_VALID":        "VÁLIDA",
-        "verdict_INVALID":      "NO VÁLIDA",
-        "verdict_WITH_WARNINGS":"CON ADVERTENCIAS",
-        "verdict_NOT_EVALUATED":"NO EVALUADA",
+        "status_warning":       "Advertencia",
+        "status_unknown":       "No evaluada",
+        "verdict_VALID":        "Válida",
+        "verdict_INVALID":      "No válida",
+        "verdict_WITH_WARNINGS":"Con advertencias",
+        "verdict_NOT_EVALUATED":"No evaluada",
         "no_detail":            "Verificación superada",
         "duration_ms":          "ms",
         "na":                   "N/D",
@@ -176,6 +176,62 @@ _I18N: dict[str, dict[str, str]] = {
         "summary_errors":       "errores",
         "summary_warnings":     "advertencias",
         "summary_rules":        "reglas evaluadas",
+        "rule_evidence.ok.default": "Regla superada correctamente.",
+        "rule_evidence.ok.RV-01": "Se encontraron artefactos registrados en la entrega.",
+        "rule_evidence.ok.RV-02": "Todos los IDs de artefactos son únicos y coherentes entre sí.",
+        "rule_evidence.ok.RV-03": "Todos los artefactos de tipo tarea tienen un estado válido.",
+        "rule_evidence.ok.RV-04": "Todos los campos de estimación y esfuerzo contienen valores numéricos correctos.",
+        "rule_evidence.ok.RV-05": "Se encontraron los documentos requeridos en la entrega.",
+        "rule_evidence.ok.RV-06": "Todos los documentos tienen su versión correctamente especificada.",
+        "rule_evidence.ok.RV-07": "La release está correctamente registrada en el sistema de planificación.",
+        "rule_evidence.ok.RV-08": "La planificación de la release es coherente con los artefactos registrados.",
+        "rule_evidence.ok.RV-09": "Todas las referencias de código están correctamente vinculadas a la entrega.",
+        "rule_evidence.ok.RV-10": "Se encontró el informe de pruebas con estado aprobatorio.",
+        "rule_evidence.ok.has_duplicated_code": "No se detectó código duplicado por encima del umbral configurado.",
+        "rule_evidence.ok.has_high_severity_vulnerabilities": "No se detectaron vulnerabilidades de alta severidad en el código.",
+        "rule_evidence.ok.has_critical_vulnerabilities": "No se detectaron vulnerabilidades críticas en el código.",
+        "rule_evidence.ok.has_open_high_priority_issues": "No hay issues de alta prioridad abiertos.",
+        "rule_evidence.ok.has_code_smells": "No se detectaron code smells significativos.",
+        "rule_evidence.ok.has_security_hotspots": "No se detectaron security hotspots en el código.",
+        "rule_evidence.ok.has_uncovered_code": "La cobertura de tests se encuentra dentro del umbral aceptable.",
+        "rule_evidence.ok.has_blocking_issues": "No se detectaron issues bloqueantes para esta entrega.",
+        "rule_evidence.ok.meets_minimum_test_coverage": "La cobertura de tests supera el umbral mínimo requerido.",
+        "rule_evidence.ok.meets_maximum_complexity": "La complejidad del código está dentro del límite máximo permitido.",
+        "rule_evidence.ok.RV-07.found": "Marcador de registro externo '{{artifact_type}}' encontrado en artefacto '{{artifact_id}}'",
+        "rule_evidence.ok.RV-10.found": "Artefacto '{{artifact_id}}' de tipo '{{artifact_type}}' encontrado con estado aprobatorio: '{{approved_status}}'",
+        "rule_evidence.no_connector": "No hay conector configurado para esta regla. El resultado no pudo verificarse a través de una fuente de datos externa.",
+        "rule_evidence.error.RV-01": "La lista de artefactos está vacía. Se requiere al menos un artefacto para proceder.",
+        "rule_evidence.error.RV-02": "Referencias huérfanas detectadas: {{count}}. Los siguientes IDs referenciados en artefactos '{{source_type}}' no existen como '{{target_type}}': {{missing_refs}}",
+        "rule_evidence.error.RV-03": "Artefactos con estado inválido (permitidos: {{allowed_states}}): {{invalid_artifacts}}",
+        "rule_evidence.error.RV-04": "Artefactos con campos numéricos inválidos o negativos (campos: {{numeric_fields}}): {{invalid_artifacts}}",
+        "rule_evidence.error.RV-05.no_docs": "No se encontraron artefactos de tipo '{{artifact_type}}'",
+        "rule_evidence.error.RV-05.inaccessible": "Documentos inaccesibles (flag '{{accessible_field}}' no es true): {{inaccessible_docs}}",
+        "rule_evidence.error.RV-06": "Artefactos con valor de '{{attribute}}' diferente a '{{expected_value}}': {{mismatched_artifacts}}",
+        "rule_evidence.error.RV-07.not_found": "No se encontró artefacto marcador de tipo '{{artifact_type}}' que indique registro externo",
+        "rule_evidence.error.RV-07.not_true": "Artefacto '{{artifact_id}}' de tipo '{{artifact_type}}' encontrado pero '{{marker_field}}' no es true",
+        "rule_evidence.error.RV-08.master_not_found": "Artefacto maestro '{{master_id}}' no encontrado",
+        "rule_evidence.error.RV-08.field_not_array": "Campo '{{master_field}}' en maestro '{{master_id}}' no es un array válido",
+        "rule_evidence.error.RV-08.field_not_found": "Campo '{{master_field}}' no encontrado en artefacto maestro '{{master_id}}'",
+        "rule_evidence.error.RV-08.discrepancy": "Discrepancia entre lista declarada y payload. IDs declarados en '{{master_field}}' del maestro '{{master_id}}' que no están en artefactos '{{target_type}}': {{missing_ids}}",
+        "rule_evidence.error.RV-09": "Referencias inválidas o inaccesibles encontradas: {{invalid_refs}}",
+        "rule_evidence.error.RV-10": "No se encontró artefacto de tipo '{{artifact_type}}' con estado aprobatorio (estados aceptados: {{approved_states}})",
+        "rule_evidence.error.has_duplicated_code": "Artefactos con código duplicado excesivo: {{violations}}",
+        "rule_evidence.error.has_high_severity_vulnerabilities": "Artefactos con vulnerabilidades de alta severidad: {{violations}}",
+        "rule_evidence.error.has_critical_vulnerabilities": "Artefactos con vulnerabilidades críticas: {{violations}}",
+        "rule_evidence.error.has_open_high_priority_issues": "Artefactos con issues de alta prioridad abiertos: {{violations}}",
+        "rule_evidence.error.has_code_smells": "Artefactos con code smells: {{violations}}",
+        "rule_evidence.error.has_security_hotspots": "Artefactos con hotspots de seguridad sin revisar: {{violations}}",
+        "rule_evidence.error.has_uncovered_code": "Artefactos con código sin cobertura: {{violations}}",
+        "rule_evidence.error.has_blocking_issues": "Artefactos con issues bloqueantes: {{violations}}",
+        "rule_evidence.error.meets_minimum_test_coverage": "Artefactos que no alcanzan la cobertura mínima: {{violations}}",
+        "rule_evidence.error.meets_maximum_complexity": "Artefactos que superan la complejidad máxima: {{violations}}",
+        "rule_evidence.warning.artifact_fetch_error": "No se pudo obtener el artefacto '{{ref}}' (tipo: {{artifact_type}}) desde el conector '{{connector}}': {{error}}",
+        "rule_evidence.warning.artifact_fetch_error.evidence": "No se pudo recuperar '{{ref}}' de tipo {{artifact_type}} desde el conector '{{connector}}'. Verifique que la referencia externa '{{ref}}' existe y es accesible con las credenciales configuradas.",
+        "rule_evidence.no_evaluada.empty_artifacts": "No hay artefactos disponibles para evaluar esta regla.",
+        "rule_evidence.no_evaluada.RV-06": "No se encontraron artefactos de tipo '{{artifact_type}}' para evaluar",
+        "rule_evidence.no_evaluada.RV-07": "Parámetro 'artifact_type' no configurado — regla no aplicable",
+        "rule_evidence.no_evaluada.RV-08": "Parámetro 'master_artifact_id' no proporcionado",
+        "rule_evidence.no_evaluada.no_artifacts_of_type": "No hay artefactos de tipo '{{artifact_type}}' en la entrega — regla no aplicable",
     },
     "en": {
         "report_title":         "Verification Report",
@@ -195,11 +251,11 @@ _I18N: dict[str, dict[str, str]] = {
         "status_ok":            "Passed",
         "status_error":         "Error",
         "status_warning":       "Warning",
-        "status_unknown":       "N/E",
-        "verdict_VALID":        "VALID",
-        "verdict_INVALID":      "INVALID",
-        "verdict_WITH_WARNINGS":"WITH WARNINGS",
-        "verdict_NOT_EVALUATED":"NOT EVALUATED",
+        "status_unknown":       "Not evaluated",
+        "verdict_VALID":        "Valid",
+        "verdict_INVALID":      "Invalid",
+        "verdict_WITH_WARNINGS":"With warnings",
+        "verdict_NOT_EVALUATED":"Not evaluated",
         "no_detail":            "Rule passed successfully",
         "duration_ms":          "ms",
         "na":                   "N/A",
@@ -208,6 +264,62 @@ _I18N: dict[str, dict[str, str]] = {
         "summary_errors":       "errors",
         "summary_warnings":     "warnings",
         "summary_rules":        "rules evaluated",
+        "rule_evidence.ok.default": "Rule passed successfully.",
+        "rule_evidence.ok.RV-01": "Artifacts were found registered in the release.",
+        "rule_evidence.ok.RV-02": "All artifact IDs are unique and consistent.",
+        "rule_evidence.ok.RV-03": "All task-type artifacts have a valid status.",
+        "rule_evidence.ok.RV-04": "All estimation and effort fields contain valid numeric values.",
+        "rule_evidence.ok.RV-05": "The required documents were found in the release.",
+        "rule_evidence.ok.RV-06": "All documents have their version correctly specified.",
+        "rule_evidence.ok.RV-07": "The release is correctly registered in the planning system.",
+        "rule_evidence.ok.RV-08": "The release planning is consistent with the registered artifacts.",
+        "rule_evidence.ok.RV-09": "All code references are correctly linked to the release.",
+        "rule_evidence.ok.RV-10": "The test report with approval status was found.",
+        "rule_evidence.ok.has_duplicated_code": "No duplicate code detected above the configured threshold.",
+        "rule_evidence.ok.has_high_severity_vulnerabilities": "No high-severity vulnerabilities detected in the code.",
+        "rule_evidence.ok.has_critical_vulnerabilities": "No critical vulnerabilities detected in the code.",
+        "rule_evidence.ok.has_open_high_priority_issues": "No open high-priority issues.",
+        "rule_evidence.ok.has_code_smells": "No significant code smells detected.",
+        "rule_evidence.ok.has_security_hotspots": "No security hotspots detected in the code.",
+        "rule_evidence.ok.has_uncovered_code": "Test coverage is within the acceptable threshold.",
+        "rule_evidence.ok.has_blocking_issues": "No blocking issues detected for this release.",
+        "rule_evidence.ok.meets_minimum_test_coverage": "Test coverage exceeds the minimum required threshold.",
+        "rule_evidence.ok.meets_maximum_complexity": "Code complexity is within the maximum allowed limit.",
+        "rule_evidence.ok.RV-07.found": "External registration marker '{{artifact_type}}' found in artifact '{{artifact_id}}'",
+        "rule_evidence.ok.RV-10.found": "Artifact '{{artifact_id}}' of type '{{artifact_type}}' found with approval status: '{{approved_status}}'",
+        "rule_evidence.no_connector": "No connector configured for this rule. The result could not be verified through an external data source.",
+        "rule_evidence.error.RV-01": "The artifact list is empty. At least one artifact is required to proceed.",
+        "rule_evidence.error.RV-02": "Orphan references detected: {{count}}. The following IDs referenced in '{{source_type}}' artifacts do not exist as '{{target_type}}': {{missing_refs}}",
+        "rule_evidence.error.RV-03": "Artifacts with invalid status (allowed: {{allowed_states}}): {{invalid_artifacts}}",
+        "rule_evidence.error.RV-04": "Artifacts with invalid or negative numeric fields (fields: {{numeric_fields}}): {{invalid_artifacts}}",
+        "rule_evidence.error.RV-05.no_docs": "No artifacts of type '{{artifact_type}}' found",
+        "rule_evidence.error.RV-05.inaccessible": "Inaccessible documents (flag '{{accessible_field}}' is not true): {{inaccessible_docs}}",
+        "rule_evidence.error.RV-06": "Artifacts with '{{attribute}}' value different from '{{expected_value}}': {{mismatched_artifacts}}",
+        "rule_evidence.error.RV-07.not_found": "No marker artifact of type '{{artifact_type}}' found indicating external registration",
+        "rule_evidence.error.RV-07.not_true": "Artifact '{{artifact_id}}' of type '{{artifact_type}}' found but '{{marker_field}}' is not true",
+        "rule_evidence.error.RV-08.master_not_found": "Master artifact '{{master_id}}' not found",
+        "rule_evidence.error.RV-08.field_not_array": "Field '{{master_field}}' in master '{{master_id}}' is not a valid array",
+        "rule_evidence.error.RV-08.field_not_found": "Field '{{master_field}}' not found in master artifact '{{master_id}}'",
+        "rule_evidence.error.RV-08.discrepancy": "Discrepancy between declared list and payload. IDs declared in '{{master_field}}' of master '{{master_id}}' that are not in '{{target_type}}' artifacts: {{missing_ids}}",
+        "rule_evidence.error.RV-09": "Invalid or inaccessible references found: {{invalid_refs}}",
+        "rule_evidence.error.RV-10": "No artifact of type '{{artifact_type}}' with approval status found (accepted states: {{approved_states}})",
+        "rule_evidence.error.has_duplicated_code": "Artifacts with excessive duplicate code: {{violations}}",
+        "rule_evidence.error.has_high_severity_vulnerabilities": "Artifacts with high-severity vulnerabilities: {{violations}}",
+        "rule_evidence.error.has_critical_vulnerabilities": "Artifacts with critical vulnerabilities: {{violations}}",
+        "rule_evidence.error.has_open_high_priority_issues": "Artifacts with open high-priority issues: {{violations}}",
+        "rule_evidence.error.has_code_smells": "Artifacts with code smells: {{violations}}",
+        "rule_evidence.error.has_security_hotspots": "Artifacts with unreviewed security hotspots: {{violations}}",
+        "rule_evidence.error.has_uncovered_code": "Artifacts with uncovered code: {{violations}}",
+        "rule_evidence.error.has_blocking_issues": "Artifacts with blocking issues: {{violations}}",
+        "rule_evidence.error.meets_minimum_test_coverage": "Artifacts not meeting minimum coverage: {{violations}}",
+        "rule_evidence.error.meets_maximum_complexity": "Artifacts exceeding maximum complexity: {{violations}}",
+        "rule_evidence.warning.artifact_fetch_error": "Could not fetch artifact '{{ref}}' (type: {{artifact_type}}) from connector '{{connector}}': {{error}}",
+        "rule_evidence.warning.artifact_fetch_error.evidence": "Could not retrieve '{{ref}}' of type {{artifact_type}} from connector '{{connector}}'. Verify that the external reference '{{ref}}' exists and is accessible with the configured credentials.",
+        "rule_evidence.no_evaluada.empty_artifacts": "No artifacts available to evaluate this rule.",
+        "rule_evidence.no_evaluada.RV-06": "No artifacts of type '{{artifact_type}}' found to evaluate",
+        "rule_evidence.no_evaluada.RV-07": "'artifact_type' parameter not configured — rule not applicable",
+        "rule_evidence.no_evaluada.RV-08": "'master_artifact_id' parameter not provided",
+        "rule_evidence.no_evaluada.no_artifacts_of_type": "No artifacts of type '{{artifact_type}}' in the release — rule not applicable",
     },
 }
 
@@ -267,6 +379,14 @@ _UNEVAL_BDR  = (192/255, 192/255, 192/255)
 
 def _t(lang: str, key: str) -> str:
     return _I18N.get(lang, _I18N["es"]).get(key, key)
+
+
+def _translate_evidence(lang: str, evidence_key: str, params: dict | None = None) -> str:
+    text = _t(lang, evidence_key)
+    if params:
+        for k, v in params.items():
+            text = text.replace(f"{{{{{k}}}}}", str(v))
+    return text
 
 
 def _rule_name(lang: str, rule_id: str) -> str:
@@ -436,9 +556,14 @@ def _build_rules_table(rules: list, ok_count: int, err_count: int, warn_count: i
     for rule in rules:
         rule_id = rule.get("rule_id") or "–"
         status = (rule.get("status") or "").upper()
-        msg = rule.get("message")
-        if msg is None or str(msg).strip().lower() == "none":
-            msg = _t(lang, "no_detail")
+        evidence_key = rule.get("evidence") or rule.get("message")
+        evidence_params = rule.get("evidence_params")
+        if evidence_key is None or str(evidence_key).strip().lower() == "none":
+            detail = _t(lang, "no_detail")
+        else:
+            detail = _translate_evidence(lang, evidence_key, evidence_params)
+            if detail == evidence_key and status == "OK":
+                detail = _t(lang, "no_detail")
         st_label = _t(lang, f"status_{status.lower()}") or status
         st_s = ParagraphStyle("ST", fontName="Helvetica", fontSize=8,
                              textColor=ink_c, leading=10)
@@ -446,7 +571,7 @@ def _build_rules_table(rules: list, ok_count: int, err_count: int, warn_count: i
             Paragraph(rule_id, tid_s),
             Paragraph(_rule_name(lang, rule_id), tnm_s),
             Paragraph(st_label, st_s),
-            Paragraph(str(msg), tmg_s),
+            Paragraph(detail, tmg_s),
         ])
 
     rules_table = Table(data_rows, colWidths=[COL_ID, COL_NM, COL_ST, COL_MSG], repeatRows=1)

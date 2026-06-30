@@ -417,7 +417,17 @@ interface VerificationResult {
 
               @if (importConnector()) {
                 <div class="form-group">
-                  <label class="form-label">{{ 'release.external_ref' | t }}</label>
+                  <div class="form-label-row">
+                    <label class="form-label">{{ 'release.external_ref' | t }}</label>
+                    <button type="button" class="btn-info" (click)="showArtifactTypeHelp.set(true)"
+                      [attr.aria-label]="'release.artifact_type_help_aria' | t">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                    </button>
+                  </div>
 
                   @if (browseLoading()) {
                     <p class="form-hint">{{ 'release.browse_loading' | t }}</p>
@@ -497,6 +507,25 @@ interface VerificationResult {
                   (click)="importArtifacts()">
                   {{ importing() ? ('release.importing' | t) : ('release.import' | t) }}
                 </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (showArtifactTypeHelp()) {
+          <div class="help-overlay" (click)="showArtifactTypeHelp.set(false)" role="dialog" aria-modal="true" aria-labelledby="artifact-help-title">
+            <div class="help-panel" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h3 class="modal-title" id="artifact-help-title">{{ 'artifact_type.' + importArtifactType() | t }}</h3>
+                <button class="modal-close" (click)="showArtifactTypeHelp.set(false)" [attr.aria-label]="'common.close' | t">&times;</button>
+              </div>
+              <p class="help-text">{{ 'artifact_type_help.' + importArtifactType() | t }}</p>
+              <div class="help-format">
+                <span class="help-format-label">{{ 'release.artifact_type_help_format' | t }}</span>
+                <code class="help-format-code">{{ 'artifact_type_help.format.' + importArtifactType() | t }}</code>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn-secondary" (click)="showArtifactTypeHelp.set(false)">{{ 'common.close' | t }}</button>
               </div>
             </div>
           </div>
@@ -1959,6 +1988,98 @@ interface VerificationResult {
       text-decoration: underline;
       cursor: pointer;
     }
+
+    .form-label-row {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .form-label-row .form-label {
+      margin-bottom: 0;
+    }
+
+    .btn-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      padding: 0.125rem;
+      cursor: pointer;
+      color: var(--muted);
+      line-height: 1;
+      flex-shrink: 0;
+      border-radius: var(--rounded-sm);
+    }
+
+    .btn-info:hover { color: var(--ink); }
+
+    .btn-info:focus-visible {
+      outline: 0.1875rem solid rgba(232, 213, 163, 0.6);
+      outline-offset: 0.125rem;
+    }
+
+    .help-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-md);
+    }
+
+    .help-panel {
+      background: var(--surface-raised);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-lg);
+      padding: var(--spacing-lg);
+      width: 26rem;
+      max-width: calc(100vw - 3rem);
+      animation: scaleIn 0.12s ease-out;
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .help-text {
+      font-family: var(--font-sans);
+      font-size: 0.9375rem;
+      color: var(--ink);
+      line-height: 1.65;
+      margin: 0 0 var(--spacing-md);
+    }
+
+    .help-format {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      background: var(--paper);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .help-format-label {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .help-format-code {
+      font-family: var(--font-mono, monospace);
+      font-size: 0.875rem;
+      color: var(--ink);
+    }
   `],
 })
 export class ReleaseDetailComponent implements OnInit, OnDestroy {
@@ -1989,6 +2110,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   importDescription = signal('');
   importing = signal(false);
   importError = signal<string | null>(null);
+  showArtifactTypeHelp = signal(false);
 
   missingConnectorTypes = signal<string[]>([]);
 

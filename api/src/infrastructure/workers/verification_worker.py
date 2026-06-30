@@ -281,16 +281,23 @@ def _enrich_rule_results(
     for rule_result in result_data.get("rule_results", []):
         rid = rule_result.get("rule_id", "")
         rule_result["rule_name"] = RULE_NAMES.get(rid, rid)
-        connector = _get_connector_for_rule(
-            rid, rule_result, rule_lookup, connector_names, artifact_type_connector
-        )
-        rule_result["connector"] = connector
-        if not connector and rule_result.get("status") == "OK" and rid != "artifact_fetch_error":
-            connector_types_needed = RULE_CONNECTOR_TYPES.get(rid)
-            if connector_types_needed is None or len(connector_types_needed) == 0:
+
+        if rid == "RV-01":
+            # RV-01 checks artifact existence — no connector involved; always show dash
+            rule_result["connector"] = "-"
+        else:
+            connector = _get_connector_for_rule(
+                rid, rule_result, rule_lookup, connector_names, artifact_type_connector
+            )
+            rule_result["connector"] = connector
+            # A rule with no linked artifact cannot be OK or ERROR: mark not evaluated
+            if (not connector
+                    and rule_result.get("status") in ("OK", "ERROR")
+                    and rid != "artifact_fetch_error"):
                 rule_result["status"] = "NO_EVALUADA"
                 rule_result["message"] = "rule_evidence.no_connector"
                 rule_result["message_params"] = None
+
         rule_result["evidence"] = rule_result.get("message", "")
         rule_result["evidence_params"] = rule_result.get("message_params")
         if not rule_result["evidence"] and rule_result.get("status") == "OK":

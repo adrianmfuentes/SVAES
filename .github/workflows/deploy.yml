@@ -239,6 +239,7 @@ jobs:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || vars.ADMIN_PASSWORD }}
           APP_BASE_URL: ${{ secrets.APP_BASE_URL || vars.APP_BASE_URL }}
           API_KEY_PEPPER: ${{ secrets.API_KEY_PEPPER || vars.API_KEY_PEPPER }}
+          FEEDBACK_SYNC_KEY: ${{ secrets.FEEDBACK_SYNC_KEY || vars.FEEDBACK_SYNC_KEY }}
         run: |
           {
             printf 'REGISTRY=%s\n'               "$REGISTRY"
@@ -261,6 +262,7 @@ jobs:
             printf 'ADMIN_PASSWORD=%s\n'          "$ADMIN_PASSWORD"
             printf 'APP_BASE_URL=%s\n'            "$APP_BASE_URL"
             printf 'API_KEY_PEPPER=%s\n'          "$API_KEY_PEPPER"
+            printf 'FEEDBACK_SYNC_KEY=%s\n'       "$FEEDBACK_SYNC_KEY"
             printf 'JWT_EXPIRE_MINUTES=60\n'
             printf 'ENVIRONMENT=production\n'
           } > .env.prod

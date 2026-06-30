@@ -253,6 +253,7 @@ Base de données PostgreSQL :
 | `ENCRYPTION_KEY`     | Clé Fernet pour le chiffrement des credentials | Oui     |
 | `ENVIRONMENT`        | `development` ou `production`                  | Non     |
 | `ALLOWED_ORIGINS`    | Origines CORS séparées par virgule             | Non     |
+| `FEEDBACK_SYNC_KEY`  | Secret partagé utilisé par la GitHub Action de synchronisation pour lire `/api/v1/feedback/public` | Non |
 
 Générer `ENCRYPTION_KEY` :
 
@@ -300,6 +301,13 @@ Documentation interactive : `http://localhost:8000/docs`
 | `GET`   | `/connectors/types`     | Tout utilisateur | Lister types et implémentations |
 | `POST`  | `/connectors/{id}/test` | MANAGER+         | Tester connexion                |
 
+### Feedback
+
+| Méthode | Chemin              | Auth            | Description                                                          |
+| ------- | -------------------- | --------------- | ---------------------------------------------------------------------- |
+| `POST`  | `/feedback`           | Non             | Envoyer un avis depuis le pied de page de la landing page              |
+| `GET`   | `/feedback/public`    | Secret partagé  | Liste publique (sans email) utilisée par la GitHub Action de synchro   |
+
 ---
 
 # 14. Exécution du système
@@ -335,7 +343,21 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ---
 
-# 15. Conclusion
+# 15. Avis des utilisateurs
+
+Les utilisateurs peuvent envoyer un avis (note de 1 à 5 et commentaire) via un formulaire dans le pied de page de la landing page. Chaque envoi déclenche un e-mail de notification à l'adresse configurée dans `ADMIN_EMAIL` et est stocké en base de données.
+
+Une GitHub Action planifiée ([`feedback-sync.yml`](.github/workflows/feedback-sync.yml)) synchronise périodiquement les avis reçus (nom, note et commentaire — jamais l'email) dans la section ci-dessous, comme preuve visible que le système a de vrais utilisateurs :
+
+<!-- FEEDBACK:START -->
+_Aucun avis publié pour le moment. Soyez le premier à partager votre opinion depuis la landing page._
+<!-- FEEDBACK:END -->
+
+Cette section n'est mise à jour automatiquement que dans le [README espagnol](README.md) ; cette copie traduite reflète la structure mais n'est pas resynchronisée à chaque exécution.
+
+---
+
+# 16. Conclusion
 
 Le projet a été terminé comme Mémoire de Fin de Licence à l'Université d'Oviedo (2025/2026), en attente de soumission et soutenance. Le système fournit une solution découplée, extensible et robuste pour la vérification automatique des livraisons de logiciels, actuellement déployée en production.
 

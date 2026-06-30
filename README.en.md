@@ -253,6 +253,7 @@ PostgreSQL database:
 | `ENCRYPTION_KEY`     | Fernet key for credential encryption          | Yes      |
 | `ENVIRONMENT`        | `development` or `production`                 | No       |
 | `ALLOWED_ORIGINS`    | CORS origins separated by comma               | No       |
+| `FEEDBACK_SYNC_KEY`  | Shared secret used by the feedback-sync GitHub Action to read `/api/v1/feedback/public` | No |
 
 Generate `ENCRYPTION_KEY`:
 
@@ -300,6 +301,13 @@ Interactive documentation: `http://localhost:8000/docs`
 | `GET`  | `/connectors/types`     | Any user | List types and implementations |
 | `POST` | `/connectors/{id}/test` | MANAGER+ | Test connection                |
 
+### Feedback
+
+| Method | Path                | Auth           | Description                                                       |
+| ------ | -------------------- | -------------- | ------------------------------------------------------------------ |
+| `POST` | `/feedback`           | No             | Submit feedback from the landing page footer                       |
+| `GET`  | `/feedback/public`    | Shared secret  | Public listing (no email) used by the README sync GitHub Action    |
+
 ---
 
 # 14. Running the system
@@ -335,7 +343,21 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ---
 
-# 15. Conclusion
+# 15. User feedback
+
+Users can submit feedback (a 1-5 rating and a comment) through a form in the landing page footer. Every submission triggers a notification email to the address configured in `ADMIN_EMAIL` and is stored in the database.
+
+A scheduled GitHub Action ([`feedback-sync.yml`](.github/workflows/feedback-sync.yml)) periodically syncs the feedback received (name, rating and comment — never the email) into the section below, as visible proof that the system has real users:
+
+<!-- FEEDBACK:START -->
+_No feedback published yet. Be the first to share your opinion from the landing page._
+<!-- FEEDBACK:END -->
+
+This section is kept up to date automatically only in the [Spanish README](README.md); this translated copy reflects the structure but is not re-synced on every run.
+
+---
+
+# 16. Conclusion
 
 The project has been completed as a Final Degree Project at the University of Oviedo (2025/2026), pending submission and defense. The system provides a decoupled, extensible, and robust solution for automatic software delivery verification, currently deployed in production.
 
@@ -353,3 +375,4 @@ The system is fully operational with:
 ---
 
 _Last updated: June 30, 2026 — Adrián Martínez Fuentes (UO295454)_
+
