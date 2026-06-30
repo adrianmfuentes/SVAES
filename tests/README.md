@@ -1,25 +1,25 @@
 # Tests — Plan de Pruebas (ISO 29119-4)
 
-> **TFG terminado** — All test suites passing as of final delivery.
+> **TFG terminado** (30/06/2026) — All test suites passing as of final delivery.
 
 All tests follow a structured **Plan de Pruebas** with unique test case identifiers.
 
 ```
-unit/           Unit tests — 200+ cases (TC-UNI-*): services, connectors, endpoints, domain, factories, gaps
-integration/    Integration tests — 16 cases (TC-INT-*): full flow, rate limit, resilience, state transitions
+unit/           Unit tests — 1,106 cases (TC-UNI-*): services, connectors, endpoints, domain, factories, gaps
+integration/    Integration tests — 27 cases (TC-INT-*): full flow, rate limit, resilience, state transitions
 security/       Security tests — 5 cases (TC-SEC-*): brute force, JWT, SQLi, XSS, credential encryption
-performance/    Performance tests — 4 Locust cases (TC-PER-*) + 3 Rust benchmarks (tc_per_pf_*)
-acceptance/     E2E acceptance tests — 12 Cypress cases (TC-ACP-*): visual, multi-res, forms, usability
+performance/    Performance tests — 47 cases + 3 Rust benchmarks (tc_per_pf_*)
+acceptance/     E2E acceptance tests — 12 pytest + 43 Cypress cases (TC-ACP-*): visual, multi-res, forms, usability
 ```
 
 | Level | Cases | Technique |
 |---|---|---|
-| TC-UNI | 200+ | Branch Coverage, CE+VL, Base Choice |
-| TC-INT | 16 | Flow, Limit, Resilience, State Transition, Migration |
+| TC-UNI | 1,106 | Branch Coverage, CE+VL, Base Choice |
+| TC-INT | 27 | Flow, Limit, Resilience, State Transition, Migration, API Key Auth |
 | TC-SEC | 5 | Auth, Injection, Encryption |
-| TC-PER | 4 + 3 | Locust load + Rust benchmarks |
-| TC-ACP | 12 | Cypress E2E + Usability |
-| Engine | 27 + inline | Rust `#[cfg(test)]` in all 11 source files |
+| TC-PER | 47 + 3 | Locust load + Rust benchmarks |
+| TC-ACP | 12 + 43 | Cypress E2E + Usability |
+| Engine | 103 + inline | Rust `#[cfg(test)]` in 21 source files |
 
 ## Run
 

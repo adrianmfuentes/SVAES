@@ -1,6 +1,6 @@
 # Security Tests — Plan de Pruebas
 
-> **TFG terminado** — All 5 security tests passing.
+> **TFG terminado** (30/06/2026) — All 5 security tests passing.
 
 Validates protection against common attack vectors: brute force, JWT manipulation, SQL injection, XSS, and credential encryption. Runs against the real app with a test database.
 

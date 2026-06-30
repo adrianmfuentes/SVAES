@@ -1,4 +1,4 @@
-import { Component, inject, HostListener } from '@angular/core';
+import { Component, inject, HostListener, signal, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
@@ -14,11 +14,23 @@ import { ToastComponent } from '../../../core/components/toast/toast.component';
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
 })
-export class ShellComponent {
+export class ShellComponent implements OnInit {
   readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
 
   sidebarOpen = false;
+  orgName = signal<string>('');
+
+  ngOnInit(): void {
+    const user = this.authService.getUser();
+    const orgId = user?.organization_id;
+    if (orgId) {
+      this.authService.getOrganization(orgId).subscribe({
+        next: (org) => this.orgName.set(org?.name ?? ''),
+        error: () => this.orgName.set(''),
+      });
+    }
+  }
 
   toggleSidebar(): void { this.sidebarOpen = !this.sidebarOpen; }
   closeSidebar(): void { this.sidebarOpen = false; }

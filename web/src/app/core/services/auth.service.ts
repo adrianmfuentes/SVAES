@@ -171,4 +171,8 @@ export class AuthService {
   getOrganizations(): Observable<Organization[]> {
     return this.http.get<Organization[]>('/api/v1/organizations');
   }
+
+  getOrganization(organizationId: string): Observable<Organization | null> {
+    return this.http.get<Organization>(`/api/v1/organizations/${organizationId}`);
+  }
 }

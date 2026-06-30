@@ -1,12 +1,13 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { ShellComponent } from './shell.component';
 
 describe('ShellComponent', () => {
   let fixture: ComponentFixture<ShellComponent>;
   let component: ShellComponent;
-  let authServiceMock: { isAdmin: ReturnType<typeof vi.fn>; logout: ReturnType<typeof vi.fn>; getUser: ReturnType<typeof vi.fn>; getUserRole: ReturnType<typeof vi.fn> };
+  let authServiceMock: { isAdmin: ReturnType<typeof vi.fn>; logout: ReturnType<typeof vi.fn>; getUser: ReturnType<typeof vi.fn>; getUserRole: ReturnType<typeof vi.fn>; getOrganization: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     authServiceMock = {
@@ -14,6 +15,7 @@ describe('ShellComponent', () => {
       logout: vi.fn(),
       getUser: vi.fn().mockReturnValue({ id: 'u1', email: 'test@test.com', display_name: 'Test' }),
       getUserRole: vi.fn().mockReturnValue('ADMIN'),
+      getOrganization: vi.fn().mockReturnValue(of({ id: 'org-1', name: 'Test Org', slug: 'test-org' })),
     };
 
     await TestBed.configureTestingModule({

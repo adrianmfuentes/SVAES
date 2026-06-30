@@ -1,6 +1,6 @@
 # Integration Tests — Plan de Pruebas
 
-> **TFG terminado** — All 16 integration tests passing.
+> **TFG terminado** (30/06/2026) — All 27 integration tests passing.
 
 Validates interactions between real components using ephemeral PostgreSQL + Redis containers. The FastAPI app is served via `ASGITransport` — no running HTTP server required.
 
@@ -107,4 +107,4 @@ docker compose -f docker-compose.test.yml down --volumes
 - **Rust toolchain** (only for Rust tests: `cargo test --test http_pipeline`)
 - The `run_integration_tests.ps1` script handles all infrastructure automatically — no manual DB setup needed
 
-## Total: 16 Python integration test cases + 8 Rust HTTP integration tests
+## Total: 27 Python integration test cases + 8 Rust HTTP integration tests

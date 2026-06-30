@@ -146,6 +146,7 @@
       </button>
       <div class="topbar-user">
         <span class="topbar-name">{{ displayName }}</span>
+        <span class="topbar-org" *ngIf="orgName()">{{ orgName() }}</span>
         <span class="topbar-role">{{ roleLabel }}</span>
       </div>
     </header>

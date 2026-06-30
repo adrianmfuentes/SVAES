@@ -2037,10 +2037,10 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   private releaseId = '';
   private orgId = '';
-  private profileRules: { rule_template: string; connector_types: string[] }[] = [];
+  private profileRules: { rule_template: string; connector_types: string[]; connector_types_mode: string }[] = [];
 
   private loadProfileRules(profileId: string): void {
-    this.http.get<{ rules: { rule_template: string; connector_types: string[] }[] }>(`/api/v1/profiles/${profileId}`)
+    this.http.get<{ rules: { rule_template: string; connector_types: string[]; connector_types_mode: string }[] }>(`/api/v1/profiles/${profileId}`)
       .pipe(catchError(() => of(null)))
       .subscribe(data => {
         if (data?.rules) {
@@ -2052,19 +2052,20 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   private computeMissingConnectorTypes(): void {
     const availableTypes = new Set(this.orgConnectors().map(c => c.connector_type));
-    const required = new Set<string>();
+    const missing = new Set<string>();
     for (const rule of this.profileRules) {
-      for (const ct of rule.connector_types) {
-        required.add(ct);
+      if (rule.connector_types_mode === 'ANY') {
+        const anyAvailable = rule.connector_types.some(ct => availableTypes.has(ct));
+        if (!anyAvailable) {
+          for (const ct of rule.connector_types) missing.add(ct);
+        }
+      } else {
+        for (const ct of rule.connector_types) {
+          if (!availableTypes.has(ct)) missing.add(ct);
+        }
       }
     }
-    const missing: string[] = [];
-    for (const ct of required) {
-      if (!availableTypes.has(ct)) {
-        missing.push(ct);
-      }
-    }
-    this.missingConnectorTypes.set(missing);
+    this.missingConnectorTypes.set([...missing]);
   }
   private readonly browseSearchSubject = new Subject<string>();
   private browseSearchSub?: Subscription;

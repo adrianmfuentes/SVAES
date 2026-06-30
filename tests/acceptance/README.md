@@ -1,6 +1,6 @@
 # Acceptance Tests — Plan de Pruebas
 
-> **TFG terminado** — All E2E acceptance tests passing.
+> **TFG terminado** (30/06/2026) — All E2E acceptance tests passing.
 
 End-to-end tests with Cypress against the Angular frontend. Follow ISO 29119-4 structured test case IDs.
 
@@ -81,4 +81,4 @@ npx cypress run --config-file tests/acceptance/cypress.config.js
 2. API backend running at `http://localhost:8000`
 3. Cypress installed: `npm install cypress`
 
-## Total: 10 acceptance test cases
+## Total: 12 pytest + 43 Cypress acceptance test cases

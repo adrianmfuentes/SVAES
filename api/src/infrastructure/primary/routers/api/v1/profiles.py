@@ -7,7 +7,7 @@ from application.ports.input.i_profile_service import IProfileService
 from core.dependencies import get_profile_service, get_current_user, CurrentUser, require_permission, require_role, require_org_access, require_profile_access, require_rule_access
 from domain.enums import SeverityType, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError
-from core.rule_names import RULE_CONNECTOR_TYPES
+from core.rule_names import RULE_CONNECTOR_TYPES, RULE_CONNECTOR_TYPES_MODE
 from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Profiles"])
@@ -223,6 +223,7 @@ async def get_profile(
                     "display_order": r.display_order,
                     "is_active": r.is_active,
                     "connector_types": RULE_CONNECTOR_TYPES.get(r.rule_template, []),
+                    "connector_types_mode": RULE_CONNECTOR_TYPES_MODE.get(r.rule_template, "ALL"),
                 }
                 for r in profile.rules
             ],

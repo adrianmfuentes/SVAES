@@ -295,7 +295,7 @@ interface UserNotificationPreferences {
         </div>
 
         <!-- API Keys card -->
-        <div class="card api-keys-card">
+        <div class="card api-keys-card" *ngIf="!isAdmin()">
           <h2 class="card-title">{{ 'profile_page.api_keys' | t }}</h2>
 
           <div *ngIf="newKeyValue()" class="new-key-banner">
@@ -384,7 +384,7 @@ interface UserNotificationPreferences {
         </div>
 
         <!-- Notification preferences card -->
-        <div class="card notif-prefs-card">
+        <div class="card notif-prefs-card" *ngIf="!isAdmin()">
           <h2 class="card-title">{{ 'profile_page.notif_prefs_title' | t }}</h2>
           <p class="notif-prefs-desc">{{ 'profile_page.notif_prefs_desc' | t }}</p>
 
@@ -439,7 +439,7 @@ interface UserNotificationPreferences {
         </div>
 
         <!-- Download my data card -->
-        <div class="card export-data-card">
+        <div class="card export-data-card" *ngIf="!isAdmin()">
           <h2 class="card-title">{{ 'profile_page.export_data_title' | t }}</h2>
           <p class="export-data-desc">{{ 'profile_page.export_data_desc' | t }}</p>
           <div class="form-footer" style="border-top:none; padding-top:0; margin-top: var(--spacing-md);">

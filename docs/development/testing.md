@@ -1,6 +1,6 @@
 # SVAES Testing Guide — Plan de Pruebas
 
-> **TFG terminado** — All test suites passing as of final delivery (June 2026)
+> **TFG terminado** (30/06/2026) — All test suites passing as of final delivery
 
 Overview of the test infrastructure, conventions, and execution procedures for the SVAES project. All tests follow the **Plan de Pruebas** structured according to **ISO 29119-4** with unique test case identifiers (TC-*).
 
@@ -345,4 +345,4 @@ Tests run automatically via GitHub Actions:
 
 ---
 
-*Last updated: 25 June 2026 — Adrián Martínez Fuentes*
+*Last updated: 30 June 2026 — Adrián Martínez Fuentes*

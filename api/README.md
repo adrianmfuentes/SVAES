@@ -1,6 +1,6 @@
 # SVAES API
 
-> **TFG terminado** — FastAPI backend for the SVAES system (Sistema de Verificación Automática de Entregas de Software).
+> **TFG terminado** (30/06/2026) — FastAPI backend for the SVAES system (Sistema de Verificación Automática de Entregas de Software).
 
 FastAPI backend for the SVAES system (Static Verification and Approval Engine System).
 

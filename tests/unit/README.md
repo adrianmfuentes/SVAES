@@ -1,6 +1,6 @@
 # Unit Tests — Plan de Pruebas
 
-> **TFG terminado** — 200+ unit tests across 14 files, all passing.
+> **TFG terminado** (30/06/2026) — 1,106 unit tests across 12 files, all passing.
 
 Isolated component tests. All dependencies (repos, HTTP, task queue) are mocked via `unittest.mock.AsyncMock`. No database or external services needed.
 
@@ -95,8 +95,8 @@ pytest tests/unit/ tests/integration/ tests/security/ --cov=api/src --cov-report
 cargo test --lib
 ```
 
-## Total: 150+ unit test cases across 12 files
+## Total: 1,106 unit test cases across 12 files
 
-## Cobertura global del proyecto: 70%
+## Cobertura global del proyecto: 70%+
 
 Ver `tests/README.md` para detalles sobre exclusiones y configuracion de cobertura.

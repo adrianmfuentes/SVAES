@@ -1,6 +1,6 @@
 # SVAES — Web Frontend
 
-> **TFG terminado** — Frontend application for the **Automatic Software Delivery Verification System (SVAES)**
+> **TFG terminado** (30/06/2026) — Frontend application for the **Automatic Software Delivery Verification System (SVAES)**
 > built with **Angular 21** (standalone components, zoneless).
 
 ---
@@ -88,7 +88,7 @@ web/
 | **AuthGuard**              | Done    | `CanActivateFn` — blocks unauthenticated access, redirects to login. |
 | **RoleGuard**              | Done    | `CanActivateFn` — checks route `data.role` against the user's role. |
 | **AppShell layout**        | Done    | Sidebar nav (Dashboard, Entregas, Conectores, Perfiles) + top bar with logout. |
-| **REST client**            | Done    | Typed API client generated from the backend OpenAPI 3.1 spec (63 endpoints). |
+| **REST client**            | Done    | Typed API client generated from the backend OpenAPI 3.1 spec (101 endpoints). |
 | **Dashboard**              | Done    | Full dashboard with KPI cards, success rate chart, top failed rules, recent releases table. |
 | **Releases / Entregas**    | Done    | Full release management: list with filters, create, detail view, artifact management. |
 | **Connectors / Conectores**| Done    | Full connector management: list, create, test connection, edit, delete with form validation. |
@@ -97,7 +97,7 @@ web/
 | **Projects**               | Done    | Project management with create/archive functionality. |
 | **Audit logs**             | Done    | Audit log viewer with filtering. |
 | **Profile settings**       | Done    | User profile with 2FA setup, password change, data export. |
-| **i18n (ES/EN)**           | Done    | Full internationalization across all modules. |
+| **i18n (ES/EN/FR)**           | Done    | Full internationalization across all modules. |
 | **Responsive design**      | Done    | Hamburger sidebar ≤1024px, horizontal table scroll, grid collapse at ≤768px across all components. |
 | **Accessibility (WCAG 2.1 AA)** | Done | Skip links, ARIA roles/labels, `scope=col` on tables, `role=alert` on live regions, focus-visible, sr-only helpers, colour+text status indicators. |
 

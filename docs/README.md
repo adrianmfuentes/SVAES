@@ -1,6 +1,6 @@
 # SVAES — Automatic Software Delivery Verification System
 
-> **Final Degree Project — Completed** — Software Engineering Degree, University of Oviedo (2025/2026)
+> **Final Degree Project — Completed** (30/06/2026) — Software Engineering Degree, University of Oviedo (2025/2026)
 > Author: Adrian Martinez Fuentes
 > Status: **Deployed in production**
 
@@ -299,4 +299,4 @@ Custom roles with granular permissions are also supported.
 
 ---
 
-*Last updated: 25 June 2026 — Adrián Martínez Fuentes*
+*Last updated: 30 June 2026 — Adrián Martínez Fuentes*

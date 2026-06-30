@@ -17,6 +17,10 @@ RULE_DEFAULT_ARTIFACT_TYPES: dict[str, str] = {
     "meets_maximum_complexity": "CODIGO",
 }
 
+RULE_CONNECTOR_TYPES_MODE: dict[str, str] = {
+    "RV-07": "ANY",
+}
+
 RULE_CONNECTOR_TYPES: dict[str, list[str]] = {
     "RV-01": [],
     "RV-02": ["GESTOR_TAREAS", "REPO_CODIGO"],
