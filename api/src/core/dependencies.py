@@ -6,7 +6,6 @@ Estas dependencias pueden ser utilizadas para manejar la autenticación, autoriz
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from functools import wraps
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -100,14 +99,6 @@ async def get_current_user_or_api_key(
         )
         try:
             payload = handler.decode_token(credentials.credentials)
-            api_key_repo = SqlAPIKeyRepository()
-            user_keys = await api_key_repo.list_by_user(payload.user_id)
-            active_keys = [
-                k for k in user_keys
-                if k.is_active and (k.expires_at is None or k.expires_at > datetime.now(timezone.utc))
-            ]
-            if active_keys:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
             return CurrentUser(
                 user_id=payload.user_id,
                 role=UserRole(payload.role),
