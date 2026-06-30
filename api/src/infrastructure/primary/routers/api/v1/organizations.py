@@ -24,7 +24,7 @@ router = APIRouter(tags=["Organizations"])
 @rate_limit_api_key()
 async def get_me(
     request: Request,
-    current_user: Annotated[CurrentUser, Depends(get_current_user_or_api_key)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user_api_key_only)],
 ):
     """Devuelve la identidad del token o API key actual: user_id, organization_id y role.
     Útil para que clientes con API key descubran su propio organization_id sin necesitar acceso de ADMIN.

@@ -174,7 +174,7 @@ async def test_tc_api_auth_01_valid_key_on_protected_endpoint(
     plaintext, _ = await api_key_factory(str(user_id), jwt_headers, "valid-key")
 
     resp = await client.get(
-        "/api/v1/organizations",
+        "/api/v1/me",
         headers={_API_KEY_HDR: plaintext, **jwt_headers},
     )
     assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"
@@ -194,7 +194,7 @@ async def test_tc_api_auth_02_missing_header_returns_401(
     _, user_id, jwt_headers = org_with_admin
     await api_key_factory(str(user_id), jwt_headers, "missing-hdr-key")
 
-    resp = await client.get("/api/v1/organizations", headers=jwt_headers)
+    resp = await client.get("/api/v1/me", headers=jwt_headers)
     assert resp.status_code == 401, f"Expected 401, got {resp.status_code}"
 
 
@@ -209,7 +209,7 @@ async def test_tc_api_auth_03_malformed_key_returns_401(client, org_with_admin):
     _, _, jwt_headers = org_with_admin
 
     resp = await client.get(
-        "/api/v1/organizations",
+        "/api/v1/me",
         headers={_API_KEY_HDR: "not_a_valid_key_at_all_12345", **jwt_headers},
     )
     assert resp.status_code == 401, f"Expected 401, got {resp.status_code}"
@@ -232,7 +232,7 @@ async def test_tc_api_auth_04_revoked_key_returns_401(
     await _revoke_key(client, str(user_id), key_id, jwt_headers)
 
     resp = await client.get(
-        "/api/v1/organizations",
+        "/api/v1/me",
         headers={_API_KEY_HDR: plaintext, **jwt_headers},
     )
     assert resp.status_code == 401, f"Expected 401 after revocation, got {resp.status_code}"
@@ -270,7 +270,7 @@ async def test_tc_api_auth_05_expired_key_returns_401(
         result.scalar_one_or_none()
 
     resp = await client.get(
-        "/api/v1/organizations",
+        "/api/v1/me",
         headers={_API_KEY_HDR: plaintext, **jwt_headers},
     )
     assert resp.status_code == 401, f"Expected 401 for expired key, got {resp.status_code}"
@@ -397,7 +397,7 @@ async def test_tc_api_auth_09_rate_limit_429(
 
     for _ in range(101):
         resp = await client.get(
-            "/api/v1/organizations",
+            "/api/v1/me",
             headers={_API_KEY_HDR: plaintext, **jwt_headers},
         )
         if resp.status_code == 429:
