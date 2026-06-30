@@ -18,6 +18,24 @@ from . import ERROR_INTERNO
 
 router = APIRouter(tags=["Organizations"])
 
+
+@router.get("/api/v1/me")
+@rate_limit_api_key()
+async def get_me(
+    request: Request,
+    current_user: Annotated[CurrentUser, Depends(get_current_user_or_api_key)],
+):
+    """Devuelve la identidad del token o API key actual: user_id, organization_id y role.
+    Útil para que clientes con API key descubran su propio organization_id sin necesitar acceso de ADMIN.
+    """
+    return {
+        "user_id": str(current_user.user_id),
+        "organization_id": str(current_user.organization_id) if current_user.organization_id else None,
+        "role": current_user.role.value,
+        "auth_via_api_key": current_user.auth_via_api_key,
+    }
+
+
 class OrganizationCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     name: str = Field(..., min_length=1, max_length=100)
