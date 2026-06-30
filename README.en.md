@@ -49,7 +49,7 @@ Design and implement an extensible, decoupled system capable of automatically ve
 | ---------------- | -------------- |
 | FastAPI Backend  | Full REST API with 101 endpoints, 16 routers, 178 Python files |
 | Angular Frontend | SPA with auth, dashboard, releases, connectors, profile, admin, i18n ES/EN/FR, 2FA, responsive design, WCAG 2.1 AA accessibility, account deletion with automatic ownership transfer, Feedback modal |
-| Rust Engine      | Complete engine in engine/, parallel evaluator + 19 rules (10 RV + 9 SonarQube) |
+| Rust Engine      | Complete engine in engine/, parallel evaluator + 19 rules |
 | Celery Worker    | Real worker in verification_worker.py                     |
 | Connectors       | 20 connectors in 5 functional categories                  |
 | Deployment       | Deployed to production with Docker Compose + Oracle Cloud |
@@ -63,7 +63,7 @@ The system covers the following capabilities:
 
 - Organization management (multi-tenant)
 - Project and release management
-- **External connector configuration (18 implementations)**
+- **External connector configuration (20 implementations)**
 - Verification profile definition
 - Automatic verification execution
 - Result recording and audit
@@ -348,7 +348,7 @@ The system is fully operational with:
 - WCAG 2.1 AA accessibility: skip links, ARIA roles, colour+text status indicators, focus-visible
 - Complete multi-tenant isolation with GDPR audit trail
 - RBAC with three predefined roles (OPERATOR, MANAGER, ADMIN)
-- Comprehensive test suite: 1,240 Python unit tests, 103 Rust tests, 721 Vitest tests, 27 integration tests, 5 security tests, 47 performance tests, 12 acceptance tests, 43 Cypress E2E tests
+- Comprehensive test suite: 200+ unit tests, 16 integration tests, 5 security tests, 4 performance tests, 12 acceptance tests
 
 ---
 

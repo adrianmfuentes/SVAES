@@ -49,7 +49,7 @@ Concevoir et implémenter un système extensible et découplé capable de vérif
 | ---------------- | ---------------- |
 | Backend FastAPI  | API REST complète avec 101 endpoints, 16 routers, 178 fichiers Python |
 | Frontend Angular | SPA avec authentification, dashboard, releases, connecteurs, profil, admin, i18n ES/EN/FR, 2FA, design responsive, accessibilité WCAG 2.1 AA, suppression de compte avec transfert automatique de propriété, Feedback modal |
-| Moteur Rust      | Moteur complet dans engine/, évaluateur parallèle + 19 règles (10 RV + 9 SonarQube) |
+| Moteur Rust      | Moteur complet dans engine/, évaluateur parallèle + 19 règles |
 | Worker Celery    | Worker réel dans verification_worker.py                     |
 | Connecteurs      | 20 connecteurs dans 5 catégories fonctionnelles                 |
 | Déploiement      | Déployé en production avec Docker Compose + Oracle Cloud        |
@@ -348,7 +348,7 @@ Le système est pleinement opérationnel avec :
 - Accessibilité WCAG 2.1 AA : skip links, ARIA, indicateurs couleur+texte, focus-visible
 - Isolation multi-tenant complète avec piste d'audit RGPD
 - RBAC avec trois rôles prédéfinis (OPERATOR, MANAGER, ADMIN)
-- Suite de tests complète : 1,240 tests unitaires Python, 103 tests Rust, 721 tests Vitest, 27 tests intégration, 5 tests sécurité, 47 tests performance, 12 tests acceptation, 43 tests Cypress E2E
+- Suite de tests complète : 200+ tests unitaires, 16 tests d'intégration, 5 tests de sécurité, 4 tests de performance, 12 tests d'acceptation
 
 ---
 
