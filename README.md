@@ -18,7 +18,7 @@ Curso: 2025/2026
 
 # 1. Introducción
 
-El Sistema de Verificación Automática de Entregas de Software (SVAES) es una plataforma diseñada para automatizar la validación de entregas de software dentro de procesos de desarrollo modernos basados en integración continua.
+El Sistema de Verificación Automática de Entregas de Software (SVAES) es una plataforma diseñada para automatizar la verificación de entregas de software dentro de procesos de desarrollo modernos basados en integración continua.
 
 El sistema actúa como un mecanismo de control de calidad (Quality Gate), evaluando de forma automática la coherencia, integridad y completitud de los artefactos asociados a una release, mediante la integración con múltiples sistemas externos.
 
@@ -34,7 +34,7 @@ Diseñar e implementar un sistema extensible y desacoplado capaz de verificar au
 
 ## 2.2 Objetivos específicos
 
-- Automatizar la validación de releases
+- Automatizar la verificación de releases
 - Garantizar trazabilidad completa de verificaciones
 - Integrarse con herramientas externas sin acoplamiento
 - Proporcionar métricas y observabilidad del proceso de calidad
@@ -48,7 +48,7 @@ Diseñar e implementar un sistema extensible y desacoplado capaz de verificar au
 | ---------------- | ---------------- |
 | Backend FastAPI  | API REST completa con 101 endpoints, 16 routers, 178 archivos Python |
 | Frontend Angular | SPA con autenticación, dashboard, releases, conectores, perfil, admin, i18n ES/EN/FR, 2FA, diseño responsivo, accesibilidad WCAG 2.1 AA, eliminación de cuenta con transferencia automática de propiedad, Feedback modal |
-| Motor Rust       | Motor completo en engine/, evaluador paralelo + 19 reglas (10 RV + 9 SonarQube) |
+| Motor Rust       | Motor completo en engine/, evaluador paralelo + 19 reglas |
 | Worker Celery    | Worker real en verification_worker.py                     |
 | Conectores       | 20 conectores en 5 categorías funcionales                 |
 | Despliegue       | Desplegado en producción con Docker Compose + Oracle Cloud |
@@ -162,15 +162,15 @@ Un manager configura en su organización qué implementaciones concretas quiere 
 
 Entidades principales:
 
-- **Organization** — Tenant principal con owner
-- **User** — Usuario con rol y organización
-- **Project** — Pertenece a una org, tiene perfil de verificación
-- **Release** — Versión de software con estado y artefactos
-- **Artifact** — Referencia externa vinculada a una release
-- **ConnectorInstance** — Configuración de un conector en una org
-- **VerificationProfile** — Conjunto de reglas para un proyecto
-- **VerificationRule** — Plantilla con severidad y parámetros
-- **VerificationResult** — Resultado de una verificación con veredicto
+- **Organization** - Tenant principal con owner
+- **User** - Usuario con rol y organización
+- **Project** - Pertenece a una org, tiene perfil de verificación
+- **Release** - Versión de software con estado y artefactos
+- **Artifact** - Referencia externa vinculada a una release
+- **ConnectorInstance** - Configuración de un conector en una org
+- **VerificationProfile** - Conjunto de reglas para un proyecto
+- **VerificationRule** - Plantilla con severidad y parámetros
+- **VerificationResult** - Resultado de una verificación con veredicto
 
 ---
 
