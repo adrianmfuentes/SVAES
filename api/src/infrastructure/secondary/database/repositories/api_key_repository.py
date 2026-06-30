@@ -94,7 +94,7 @@ class SqlAPIKeyRepository(IAPIKeyRepository):
             model = await session.get(APIKeyModel, api_key_id)
             if not model:
                 raise ValueError("API key not found")
-            session.delete(model)
+            await session.delete(model)
             await session.commit()
 
     _API_KEY_HASH_SALT = b"svk_api_key_pepper_v1"

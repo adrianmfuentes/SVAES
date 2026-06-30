@@ -127,5 +127,5 @@ class SqlUserRepository(IUserRepository):
             user_model = await session.get(UserModel, user_id)
             if not user_model:
                 raise ValueError("User not found")
-            session.delete(user_model)  # pyright: ignore[reportUnusedCoroutine]
+            await session.delete(user_model)
             await session.commit()

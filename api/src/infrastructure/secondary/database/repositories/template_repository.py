@@ -87,5 +87,5 @@ class SqlTemplateRepository(ITemplateRepository):
             if not model:
                 raise ValueError("Template not found")
 
-            session.delete(model)  # pyright: ignore[reportUnusedCoroutine]
+            await session.delete(model)
             await session.commit()

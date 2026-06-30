@@ -78,5 +78,5 @@ class SqlCustomRoleRepository(ICustomRoleRepository):
             if not model:
                 raise ValueError("Custom role not found")
 
-            session.delete(model)  # pyright: ignore[reportUnusedCoroutine]
+            await session.delete(model)
             await session.commit()

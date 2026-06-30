@@ -83,5 +83,5 @@ class SqlVerificationRuleRepository(IVerificationRuleRepository):
             model = await session.get(VerificationRuleModel, rule_id)
             if not model:
                 raise ValueError("Rule not found")
-            session.delete(model)  # pyright: ignore[reportUnusedCoroutine]
+            await session.delete(model)
             await session.commit()

@@ -152,5 +152,5 @@ class SqlProfileRepository(IProfileRepository):
             if not profile_model:
                 raise ValueError("Profile not found")
 
-            session.delete(profile_model)  # pyright: ignore[reportUnusedCoroutine]
+            await session.delete(profile_model)
             await session.commit()

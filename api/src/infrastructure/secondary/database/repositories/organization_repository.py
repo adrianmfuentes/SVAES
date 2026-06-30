@@ -89,5 +89,5 @@ class SqlOrganizationRepository(IOrganizationRepository):
             org_model = await session.get(OrganizationModel, organization_id)
             if not org_model:
                 raise ValueError("Organization not found")
-            session.delete(org_model)  # pyright: ignore[reportUnusedCoroutine]
+            await session.delete(org_model)
             await session.commit()
