@@ -92,6 +92,13 @@ class Settings(BaseSettings):
 
         errors: list[str] = []
 
+        import os as _os
+        if not _os.getenv("ENCRYPTION_KEY"):
+            errors.append(
+                "ENCRYPTION_KEY is not set. An ephemeral key is being used — all encrypted connector "
+                "credentials will be permanently lost on every container restart."
+            )
+
         _UNSAFE_ADMIN_EMAILS = {"admin@example.com", "admin@svaes.local", "admin@test.local"}
         if self.admin_email.lower() in _UNSAFE_ADMIN_EMAILS:
             errors.append(f"ADMIN_EMAIL is set to a placeholder value ({self.admin_email!r}). Use a real address.")

@@ -235,6 +235,8 @@ async def list_organization_users(
         - 403 Forbidden si el usuario no tiene acceso a la organización.
         - 500 Internal Server Error para cualquier otro error inesperado.
     """
+    if current_user.role != UserRole.U3 and current_user.organization_id != org_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta organización")
     users = await service.list_organization_users(organization_id=org_id, skip=skip, limit=limit)
     return [
         {

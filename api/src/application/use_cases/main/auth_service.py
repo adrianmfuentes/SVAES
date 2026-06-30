@@ -228,16 +228,16 @@ class AuthService(IAuthService):
             return None
 
         access_token = self._token_service.create_access_token(
-            user_id=payload.user_id,
-            role=payload.role,
-            email=payload.email,
+            user_id=user.id,
+            role=user.role.value,
+            email=user.email,
             organization_id=user.organization_id,
             expires_in=3600,
         )
         new_refresh_token = self._token_service.create_refresh_token(
-            user_id=payload.user_id,
-            role=payload.role,
-            email=payload.email,
+            user_id=user.id,
+            role=user.role.value,
+            email=user.email,
             organization_id=user.organization_id,
         )
 

@@ -96,6 +96,11 @@ class CreateReleaseUseCase(IReleaseService):
         if description is not None:
             release.description = description
         if status is not None:
+            _MANUAL_ALLOWED = {ReleaseStatus.BORRADOR, ReleaseStatus.PENDIENTE, ReleaseStatus.ARCHIVADA}
+            if status not in _MANUAL_ALLOWED:
+                raise ValidationError(
+                    f"El estado '{status.value}' solo puede ser asignado por el motor de verificación."
+                )
             release.status = status
         await self.release_repository.update(release)
         return release

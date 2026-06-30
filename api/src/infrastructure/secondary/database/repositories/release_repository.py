@@ -180,26 +180,18 @@ class SqlReleaseRepository(IReleaseRepository):
     async def get_artifact_by_id(self, artifact_id: uuid.UUID):
         async with AsyncSessionLocal() as session:
             result = await session.execute(
-                select(ReleaseModel).where(ReleaseModel.artifacts.any(id=artifact_id))
+                select(ArtifactModel).where(ArtifactModel.id == artifact_id)
             )
-            release_row = result.scalar_one_or_none()
-            if not release_row:
+            artifact_row = result.scalar_one_or_none()
+            if not artifact_row:
                 return None
-
-            artifact = next((a for a in release_row.artifacts if a.id == artifact_id), None)
-            return artifact
+            return _artifact_from_row(artifact_row)
 
 
     async def delete_artifact(self, artifact_id: uuid.UUID) -> None:
         async with AsyncSessionLocal() as session:
-            result = await session.execute(
-                select(ReleaseModel).where(ReleaseModel.artifacts.any(id=artifact_id))
-            )
-            release_row = result.scalar_one_or_none()
-            if not release_row:
+            artifact_model = await session.get(ArtifactModel, artifact_id)
+            if not artifact_model:
                 raise EntityNotFoundError("Artifact no encontrado")
-
-            artifact = next((a for a in release_row.artifacts if a.id == artifact_id), None)
-            if artifact:
-                release_row.artifacts.remove(artifact)
-                await session.commit()
+            await session.delete(artifact_model)
+            await session.commit()

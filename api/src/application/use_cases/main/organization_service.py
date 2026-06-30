@@ -195,12 +195,20 @@ class OrganizationService(IOrganizationService):
         skip: int = 0,
         limit: int = 50,
     ) -> List[Project]:
-        orgs = await self._org_repo.list_all(active_only=True, skip=0, limit=1000)
-        projects: List[Project] = []
-        for org in orgs:
-            org_projects = await self._project_repo.list_by_organization(org.id, skip=0, limit=1000)
-            projects.extend(org_projects)
-        return projects[skip : skip + limit]
+        if self._user_repo:
+            user = await self._user_repo.get_by_id(user_id)
+            if user and user.role == UserRole.U3:
+                orgs = await self._org_repo.list_all(active_only=True, skip=0, limit=1000)
+                projects: List[Project] = []
+                for org in orgs:
+                    org_projects = await self._project_repo.list_by_organization(org.id, skip=0, limit=1000)
+                    projects.extend(org_projects)
+                return projects[skip : skip + limit]
+            if user and user.organization_id:
+                return await self._project_repo.list_by_organization(
+                    user.organization_id, skip=skip, limit=limit
+                )
+        return []
 
     async def restore_organization(self, organization_id: UUID) -> Organization:
         org = await self._org_repo.get_by_id(organization_id)

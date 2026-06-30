@@ -107,7 +107,8 @@ class TestAuthenticateUserUseCase:
         user = _make_user(role=UserRole.U2)
         user_repo.get_by_email = AsyncMock(return_value=user)
         pw_hasher.verify_password = MagicMock(return_value=True)
-        token_svc.create_access_token = MagicMock(side_effect=["access-token", "refresh-token"])
+        token_svc.create_access_token = MagicMock(return_value="access-token")
+        token_svc.create_refresh_token = MagicMock(return_value="refresh-token")
 
         result = await use_case.execute(user.email, "correct-password")
 
@@ -117,19 +118,18 @@ class TestAuthenticateUserUseCase:
         assert result.role == UserRole.U2
         assert result.token_type == "bearer"
 
-        token_svc.create_access_token.assert_any_call(
+        token_svc.create_access_token.assert_called_once_with(
             user_id=user.id,
             role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
             expires_in=3600,
         )
-        token_svc.create_access_token.assert_any_call(
+        token_svc.create_refresh_token.assert_called_once_with(
             user_id=user.id,
             role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
-            expires_in=86400,
         )
 
 

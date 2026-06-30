@@ -94,7 +94,7 @@ class SqlUserRepository(IUserRepository):
             user_model.email = user.email  # pyright: ignore[reportAttributeAccessIssue]
             user_model.hashed_password = user.hashed_password  # pyright: ignore[reportAttributeAccessIssue]
             user_model.display_name = user.display_name  # pyright: ignore[reportAttributeAccessIssue]
-            user_model.role = user.role  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.role = user.role.value  # pyright: ignore[reportAttributeAccessIssue]
             user_model.organization_id = user.organization_id  # pyright: ignore[reportAttributeAccessIssue]
             user_model.is_active = user.is_active  # pyright: ignore[reportAttributeAccessIssue]
             user_model.failed_login_attempts = user.failed_login_attempts  # pyright: ignore[reportAttributeAccessIssue]

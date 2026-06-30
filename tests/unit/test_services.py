@@ -2327,10 +2327,11 @@ class TestOrganizationServiceGaps:
         assert result.name == "p"
 
     async def test_list_accessible_projects(self, svc):
-        """Branch: list_accessible_projects iterates orgs and aggregates projects"""
-        service, org_repo, project_repo, _ = svc
+        """Branch: U3 admin sees projects from all orgs aggregated"""
+        service, org_repo, project_repo, user_repo = svc
         from domain.entities.organization import Organization
         from domain.entities.project import Project
+        from domain.enums import UserRole
 
         org1 = Organization(id=uuid4(), name="o1", slug="o1")
         org2 = Organization(id=uuid4(), name="o2", slug="o2")
@@ -2339,6 +2340,8 @@ class TestOrganizationServiceGaps:
         p1 = Project(id=uuid4(), name="p1", organization_id=org1.id, description="d", profile_id=uuid4())
         p2 = Project(id=uuid4(), name="p2", organization_id=org2.id, description="d", profile_id=uuid4())
         project_repo.list_by_organization = AsyncMock(side_effect=[[p1], [p2]])
+
+        user_repo.get_by_id = AsyncMock(return_value=_make_user(role=UserRole.U3))
 
         results = await service.list_accessible_projects(uuid4())
         assert len(results) == 2
