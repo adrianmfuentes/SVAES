@@ -34,7 +34,8 @@ class GitLabConnector(BaseHttpConnector, BearerAuthMixin):
         base = self._get_base_url(config)
         if sub_ref.isdigit():
             return f"{base}/projects/{project_id}/merge_requests/{sub_ref}"
-        if len(sub_ref) == 40 and all(c in "0123456789abcdefABCDEF" for c in sub_ref):
+        # Accept both full (40-char) and abbreviated (git's conventional 7-char minimum) SHAs.
+        if 7 <= len(sub_ref) <= 40 and all(c in "0123456789abcdefABCDEF" for c in sub_ref):
             return f"{base}/projects/{project_id}/repository/commits/{sub_ref}"
         return f"{base}/projects/{project_id}/repository/tags/{sub_ref}"
 

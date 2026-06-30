@@ -38,12 +38,16 @@ class GitHubConnector(BaseHttpConnector, BearerAuthMixin):
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
         parts = ref.split("/", 2)
         if len(parts) == 3:
-            owner, repo, issue_number = parts
+            owner, repo, sub_ref = parts
         else:
             owner = config.get("owner", "")
             repo = config.get("repo", "")
-            issue_number = parts[-1]
-        return f"{self._get_base_url(config)}/repos/{owner}/{repo}/pulls/{issue_number}"
+            sub_ref = parts[-1]
+        base = f"{self._get_base_url(config)}/repos/{owner}/{repo}"
+        if sub_ref.isdigit():
+            return f"{base}/pulls/{sub_ref}"
+        # /commits/{ref} resolves a commit SHA (full or short), a branch name or a tag name.
+        return f"{base}/commits/{sub_ref}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None

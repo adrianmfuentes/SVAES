@@ -28,12 +28,16 @@ class GiteaConnector(BaseHttpConnector):
     def _get_fetch_url(self, ref: str, config: Dict[str, Any]) -> str:
         parts = ref.split("/", 2)
         if len(parts) == 3:
-            owner, repo, pr_number = parts
+            owner, repo, sub_ref = parts
         else:
             owner = config.get("owner", "")
             repo = config.get("repo", "")
-            pr_number = parts[-1]
-        return f"{self._get_base_url(config)}/repos/{owner}/{repo}/pulls/{pr_number}"
+            sub_ref = parts[-1]
+        base = f"{self._get_base_url(config)}/repos/{owner}/{repo}"
+        if sub_ref.isdigit():
+            return f"{base}/pulls/{sub_ref}"
+        # /git/commits/{sha} resolves a commit sha (full or short), a branch name or a tag name.
+        return f"{base}/git/commits/{sub_ref}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None

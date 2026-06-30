@@ -563,6 +563,17 @@ class TestGiteaConnector:
         url = conn._get_fetch_url("myrepo/5", {"base_url": "https://gitea.example", "owner": "myowner", "repo": "myrepo"})
         assert "/repos/myowner/myrepo/pulls/5" in url
 
+    def test_get_fetch_url_commit_sha(self, conn):
+        """Branch: non-numeric ref -> /git/commits/{sha}, which resolves sha, branch or tag"""
+        url = conn._get_fetch_url("owner/repo/a1b2c3d", {"base_url": "https://gitea.example"})
+        assert "/repos/owner/repo/git/commits/a1b2c3d" in url
+        assert "pulls" not in url
+
+    def test_get_fetch_url_release_tag(self, conn):
+        url = conn._get_fetch_url("owner/repo/v1.0.0", {"base_url": "https://gitea.example"})
+        assert "/repos/owner/repo/git/commits/v1.0.0" in url
+        assert "pulls" not in url
+
     def test_get_list_url_with_owner_repo(self, conn):
         url = conn._get_list_url({}, {"owner": "o", "repo": "r"})
         assert "/repos/o/r/pulls" in url
@@ -974,6 +985,20 @@ class TestConnectorImplementations:
         url = c._get_fetch_url(sha, {"project_id": "99"})
         assert f"/projects/99/repository/commits/{sha}" in url
 
+    def test_gitlab_connector_get_fetch_url_short_commit_sha(self):
+        """Branch: ref is an abbreviated (7-char) hex SHA -> still uses /repository/commits/ endpoint"""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        url = c._get_fetch_url("a1b2c3d", {"project_id": "99"})
+        assert "/projects/99/repository/commits/a1b2c3d" in url
+
+    def test_gitlab_connector_get_fetch_url_short_hex_below_minimum_treated_as_tag(self):
+        """Branch: hex-looking ref shorter than git's 7-char minimum -> falls back to tags endpoint"""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        url = c._get_fetch_url("abc12", {"project_id": "99"})
+        assert "/projects/99/repository/tags/abc12" in url
+
     def test_gitlab_connector_get_base_url_normalizes_missing_api_v4(self):
         """Branch: base_url without /api/v4 -> /api/v4 is appended"""
         from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
@@ -1319,6 +1344,17 @@ class TestBitbucketConnector:
         url = conn._get_fetch_url("myrepo/123", {"owner": "myowner", "repo": "myrepo"})
         assert "/repositories/myowner/myrepo/pullrequests/123" in url
 
+    def test_get_fetch_url_commit_sha(self, conn):
+        """Branch: non-numeric ref -> /commit/{revision}, which resolves SHA, branch or tag"""
+        url = conn._get_fetch_url("owner/repo/a1b2c3d", {})
+        assert "/repositories/owner/repo/commit/a1b2c3d" in url
+        assert "pullrequests" not in url
+
+    def test_get_fetch_url_release_tag(self, conn):
+        url = conn._get_fetch_url("owner/repo/v1.0.0", {})
+        assert "/repositories/owner/repo/commit/v1.0.0" in url
+        assert "pullrequests" not in url
+
     def test_get_fetch_params(self, conn):
         params = conn._get_fetch_params({})
         assert params is None
@@ -1417,6 +1453,17 @@ class TestGitHubConnector:
     def test_get_fetch_url_two_parts_uses_config_owner(self, conn):
         url = conn._get_fetch_url("myrepo/42", {"owner": "myowner", "repo": "myrepo"})
         assert "/repos/myowner/myrepo/pulls/42" in url
+
+    def test_get_fetch_url_commit_sha(self, conn):
+        """Branch: non-numeric ref -> /commits/{ref}, which resolves SHA, branch or tag"""
+        url = conn._get_fetch_url("owner/repo/a1b2c3d", {})
+        assert "/repos/owner/repo/commits/a1b2c3d" in url
+        assert "pulls" not in url
+
+    def test_get_fetch_url_release_tag(self, conn):
+        url = conn._get_fetch_url("owner/repo/v1.0.0", {})
+        assert "/repos/owner/repo/commits/v1.0.0" in url
+        assert "pulls" not in url
 
     def test_get_fetch_params(self, conn):
         params = conn._get_fetch_params({})
