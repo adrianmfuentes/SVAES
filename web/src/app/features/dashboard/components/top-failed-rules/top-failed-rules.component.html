@@ -16,7 +16,7 @@
          [queryParams]="{ rule_id: rule.rule_id, period: activePeriod }">
         <div class="rule-meta">
           <span class="rule-id">{{ rule.rule_id }}</span>
-          <span class="rule-name">{{ rule.rule_name }}</span>
+          <span class="rule-name">{{ translateRuleName(rule.rule_id, rule.rule_name) }}</span>
           <span class="rule-count">{{ rule.count }}</span>
         </div>
         <div class="rule-bar-row">

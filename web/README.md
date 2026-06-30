@@ -82,7 +82,7 @@ web/
 
 | Feature                    | Status  | Details |
 | -------------------------- | ------- | ------- |
-| **Authentication**         | Done    | Login page at `/auth/login` with reactive form (email, password, organization selector). JWT stored in localStorage. |
+| **Authentication**         | Done    | Login page at `/auth/login` with reactive form (email, password, organisation selector). JWT stored in localStorage. |
 | **JWT interceptor**        | Done    | Attaches `Authorization: Bearer <token>` to all outgoing requests. |
 | **401 error interceptor**  | Done    | Clears token and redirects to `/auth/login` on 401 responses. |
 | **AuthGuard**              | Done    | `CanActivateFn` — blocks unauthenticated access, redirects to login. |
@@ -93,7 +93,7 @@ web/
 | **Releases / Entregas**    | Done    | Full release management: list with filters, create, detail view, artifact management. |
 | **Connectors / Conectores**| Done    | Full connector management: list, create, test connection, edit, delete with form validation. |
 | **Profiles / Perfiles**    | Done    | Full profile management: list, create, duplicate, update, delete, rule configuration. |
-| **Admin panel**            | Done    | Global administration: organizations, users, access requests management. |
+| **Admin panel**            | Done    | Global administration: organisations, users, access requests management. |
 | **Projects**               | Done    | Project management with create/archive functionality. |
 | **Audit logs**             | Done    | Audit log viewer with filtering. |
 | **Profile settings**       | Done    | User profile with 2FA setup, password change, data export. |

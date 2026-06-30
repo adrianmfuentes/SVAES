@@ -124,8 +124,8 @@ function defaultArtifactType(template: string): string {
             </thead>
             <tbody>
               <tr *ngFor="let p of orgProfiles()">
-                <td class="cell-primary" [attr.data-label]="'profiles.table_name' | t">{{ p.name }}</td>
-                <td class="cell-muted" [attr.data-label]="'common.description' | t">{{ p.description ?? '—' }}</td>
+                <td class="cell-primary" [attr.data-label]="'profiles.table_name' | t">{{ translateProfileField(p.name) }}</td>
+                <td class="cell-muted" [attr.data-label]="'common.description' | t">{{ translateProfileField(p.description) }}</td>
                 <td [attr.data-label]="'profiles.table_rules' | t">{{ p.rules_count ?? '—' }}</td>
                 <td *ngIf="canManage && !p.is_default && !p.is_system" class="cell-actions" [attr.data-label]="'common.actions' | t">
                   <button class="btn-ghost" (click)="openEdit(p)">{{ 'common.edit' | t }}</button>
@@ -984,6 +984,12 @@ export class ProfilesComponent implements OnInit {
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
+  }
+
+  translateProfileField(value: string | undefined | null): string {
+    if (!value) return '—';
+    const translated = this.ts.translateInstant(value);
+    return (translated && !translated.startsWith(value + '.')) ? translated : value;
   }
 
   isEditableProfile(): boolean {

@@ -6,7 +6,7 @@ FastAPI backend for the SVAES system (Static Verification and Approval Engine Sy
 
 ## Description
 
-RESTful API for managing organizations, projects, releases, and artifact verification. Implements hexagonal architecture (Ports & Adapters) with JWT authentication and role-based access control (RBAC).
+RESTful API for managing organisations, projects, releases, and artifact verification. Implements hexagonal architecture (Ports & Adapters) with JWT authentication and role-based access control (RBAC).
 
 ## Features
 
@@ -14,7 +14,7 @@ RESTful API for managing organizations, projects, releases, and artifact verific
 - JWT authentication with refresh tokens
 - TOTP two-factor authentication (2FA) via pyotp + segno
 - RBAC with 3 role levels (OPERATOR, MANAGER, ADMIN) and 20 granular permissions
-- Multi-tenancy with organization-level isolation
+- Multi-tenancy with organisation-level isolation
 - Account deletion with automatic ownership transfer
 - Rate limiting per endpoint (slowapi)
 - GDPR-compliant audit logging (audit_log table)

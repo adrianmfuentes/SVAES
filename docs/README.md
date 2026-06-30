@@ -182,12 +182,12 @@ Base: `http://localhost:8000/api/v1`
 | `GET`  | `/organizations/{org_id}/connectors` | List configured connectors                         |
 | `POST` | `/organizations/{org_id}/connectors` | Register a new connector                           |
 
-### Organizations & Users
+### Organisations & Users
 
 | Method | Path             | Description            |
 | ------ | ---------------- | ---------------------- |
-| `GET`  | `/organizations` | List all organizations |
-| `POST` | `/organizations` | Create organization    |
+| `GET`  | `/organizations` | List all organisations |
+| `POST`  | `/organizations` | Create organisation    |
 | `GET`  | `/users`         | List users             |
 | `POST` | `/users`         | Create user            |
 
@@ -243,7 +243,7 @@ SVAES/
 | ------------ | --------------------------------------------------------- |
 | **Operator** | Create releases, trigger verifications, manage artifacts  |
 | **Manager**  | Configure connectors, profiles, projects; view audit logs |
-| **Admin**    | Manage users, organizations, system configuration         |
+| **Admin**    | Manage users, organisations, system configuration         |
 
 Custom roles with granular permissions are also supported.
 

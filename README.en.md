@@ -61,7 +61,7 @@ Design and implement an extensible, decoupled system capable of automatically ve
 
 The system covers the following capabilities:
 
-- Organization management (multi-tenant)
+- Organisation management (multi-tenant)
 - Project and release management
 - **External connector configuration (20 implementations)**
 - Verification profile definition
@@ -145,7 +145,7 @@ The connector system follows a **two-level design**:
 | **ConnectorType**           | Generic functional type | `GESTOR_TAREAS`, `REPO_CODIGO`, `SISTEMA_DOCUMENTAL` |
 | **ConnectorImplementation** | Concrete implementation | `JIRA`, `GITHUB`, `CONFLUENCE`, `LINEAR`             |
 
-A manager configures in their organization which concrete implementations they want to use for each functional type.
+A manager configures in their organisation which concrete implementations they want to use for each functional type.
 
 ## 6.2 Available functional types
 
@@ -163,8 +163,8 @@ A manager configures in their organization which concrete implementations they w
 
 Main entities:
 
-- **Organization** — Main tenant with owner
-- **User** — User with role and organization
+- **Organisation** — Main tenant with owner
+- **User** — User with role and organisation
 - **Project** — Belongs to an org, has verification profile
 - **Release** — Software version with status and artifacts
 - **Artifact** — External reference linked to a release
@@ -276,7 +276,7 @@ Interactive documentation: `http://localhost:8000/docs`
 | `POST` | `/auth/refresh`        | No   | Refresh token                          |
 | `POST` | `/auth/register`       | No   | Register with terms acceptance         |
 
-### Organizations
+### Organisations
 
 | Method | Path                                 | Auth     | Description        |
 | ------ | ------------------------------------ | -------- | ------------------ |
@@ -342,7 +342,7 @@ The project has been completed as a Final Degree Project at the University of Ov
 The system is fully operational with:
 
 - 20 connector implementations across 5 functional types
-- Angular frontend with 2FA authentication, dashboard, release and connector management, account deletion with automatic organization ownership transfer
+- Angular frontend with 2FA authentication, dashboard, release and connector management, account deletion with automatic organisation ownership transfer
 - ES/EN/FR internationalisation across all frontend modules
 - Responsive design: hamburger sidebar ≤1024px, horizontal table scroll, grid collapse at ≤768px
 - WCAG 2.1 AA accessibility: skip links, ARIA roles, colour+text status indicators, focus-visible
