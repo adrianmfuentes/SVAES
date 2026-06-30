@@ -349,7 +349,11 @@ Los usuarios pueden enviar feedback (valoración 1-5 y comentario) desde un form
 Una GitHub Action programada ([`feedback-sync.yml`](.github/workflows/feedback-sync.yml)) sincroniza periódicamente el feedback recibido (nombre, valoración y comentario) en la sección siguiente, para que quede constancia pública:
 
 <!-- FEEDBACK:START -->
-_Todavía no hay feedback publicado. Sé el primero en dejar tu opinión desde la landing page._
+> ★★★★★ "Interfaz muy intuitiva y visualmente bonita. Proyecto con gran ambición y de gran utilidad para el desarrollo general de software"
+> — Daniel
+
+> ★★★★★ "En general, la navegación es muy intuitiva y el atractivo de la web es sobresaliente, me encantan los colores escogidos y la tipografía. No obstante, he detectado durante mi tiempo de prueba con la aplicación algunos aspectos que considero…"
+> — Vicente
 <!-- FEEDBACK:END -->
 
 ---
