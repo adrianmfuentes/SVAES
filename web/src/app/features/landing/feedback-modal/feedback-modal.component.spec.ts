@@ -1,7 +1,24 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FeedbackModalComponent } from './feedback-modal.component';
 import { FeedbackService, FeedbackPayload } from '../../../core/services/feedback.service';
+import { TranslationService } from '../../../core/i18n/translation.service';
 import { of, throwError } from 'rxjs';
+
+const FEEDBACK_TRANSLATIONS: Record<string, string> = {
+  'feedback.rating_0': 'Sin calificar',
+  'feedback.rating_1': 'Muy malo',
+  'feedback.rating_2': 'Malo',
+  'feedback.rating_3': 'Regular',
+  'feedback.rating_4': 'Bueno',
+  'feedback.rating_5': 'Excelente',
+  'feedback.error': 'No se pudo enviar el feedback. Inténtalo de nuevo.',
+};
+
+const tsMock = {
+  translateInstant: vi.fn((key: string) => FEEDBACK_TRANSLATIONS[key] ?? key),
+  currentLang: 'es',
+  lang$: of('es'),
+};
 
 describe('FeedbackModalComponent', () => {
   let fixture: ComponentFixture<FeedbackModalComponent>;
@@ -18,7 +35,8 @@ describe('FeedbackModalComponent', () => {
     await TestBed.configureTestingModule({
       imports: [FeedbackModalComponent],
       providers: [
-        { provide: FeedbackService, useValue: mockFeedbackService }
+        { provide: FeedbackService, useValue: mockFeedbackService },
+        { provide: TranslationService, useValue: tsMock }
       ]
     }).compileComponents();
 
