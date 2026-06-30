@@ -346,7 +346,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 Los usuarios pueden enviar feedback (valoración 1-5 y comentario) desde un formulario en el footer de la landing page. Cada envío notifica por correo a la dirección configurada en `ADMIN_EMAIL` y queda almacenado en la base de datos.
 
-Una GitHub Action programada ([`feedback-sync.yml`](.github/workflows/feedback-sync.yml)) sincroniza periódicamente el feedback recibido (nombre, valoración y comentario — nunca el email) en la sección siguiente, para que quede constancia pública de que el sistema tiene usuarios reales:
+Una GitHub Action programada ([`feedback-sync.yml`](.github/workflows/feedback-sync.yml)) sincroniza periódicamente el feedback recibido (nombre, valoración y comentario) en la sección siguiente, para que quede constancia pública:
 
 <!-- FEEDBACK:START -->
 _Todavía no hay feedback publicado. Sé el primero en dejar tu opinión desde la landing page._
