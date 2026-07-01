@@ -48,6 +48,18 @@ class TrelloConnector(IConnector):
             )
             return response.status_code == 200
 
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # Trello cards have no "status" field - the closest native signals are
+        # "dueComplete" (the due-date checkbox) and "closed" (archived). Map
+        # them to the flat "status" vocabulary rules like RV-03 expect.
+        if data.get("dueComplete"):
+            data["status"] = "completed"
+        elif data.get("closed"):
+            data["status"] = "archived"
+        else:
+            data["status"] = "open"
+        return data
+
     async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {**self._build_auth_params(config)}
@@ -56,7 +68,7 @@ class TrelloConnector(IConnector):
                 params=params,
             )
             response.raise_for_status()
-            return response.json()
+            return self._normalize(response.json())
 
     async def list_artifacts(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

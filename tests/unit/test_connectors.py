@@ -356,6 +356,25 @@ class TestTrelloConnector:
             mock_client_cls.return_value = mock_client
             result = await conn.fetch_artifact("card1", {"api_key": "k", "token": "t"})
             assert result["id"] == "card1"
+            assert result["status"] == "open"
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact_maps_due_complete_and_closed_to_status(self, conn):
+        """Trello cards have no "status" field - map dueComplete/closed to the
+        flat "status" vocabulary rules like RV-03 expect."""
+        with patch("httpx.AsyncClient") as mock_client_cls:
+            mock_client = MagicMock()
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=None)
+            mock_client_cls.return_value = mock_client
+
+            mock_client.get = AsyncMock(return_value=_mock_response(200, {"id": "c1", "dueComplete": True}))
+            result = await conn.fetch_artifact("c1", {"api_key": "k", "token": "t"})
+            assert result["status"] == "completed"
+
+            mock_client.get = AsyncMock(return_value=_mock_response(200, {"id": "c2", "closed": True}))
+            result = await conn.fetch_artifact("c2", {"api_key": "k", "token": "t"})
+            assert result["status"] == "archived"
 
     @pytest.mark.asyncio
     async def test_list_artifacts_with_board(self, conn):
@@ -409,9 +428,19 @@ class TestLinearConnector:
 
     @pytest.mark.asyncio
     async def test_fetch_artifact(self, conn):
+        """Regression guard: fetch_artifact must unwrap the GraphQL envelope
+        ({"data": {"issue": {...}}}) - returning the raw envelope made every
+        field (status, id, etc.) unreachable to the rule engine."""
         conn._post = AsyncMock(return_value=_mock_response(200, {"data": {"issue": {"id": "i1"}}}))
         result = await conn.fetch_artifact("i1", {"api_key": "key"})
-        assert "data" in result
+        assert result == {"id": "i1"}
+        assert "data" not in result
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact_flattens_state_to_status(self, conn):
+        conn._post = AsyncMock(return_value=_mock_response(200, {"data": {"issue": {"id": "i1", "state": {"name": "In Progress"}}}}))
+        result = await conn.fetch_artifact("i1", {"api_key": "key"})
+        assert result["status"] == "In Progress"
 
     @pytest.mark.asyncio
     async def test_list_artifacts(self, conn):
@@ -450,9 +479,28 @@ class TestWikiJsConnector:
 
     @pytest.mark.asyncio
     async def test_fetch_artifact(self, conn):
+        """Regression guard: fetch_artifact must unwrap the GraphQL envelope
+        ({"data": {"page": {...}}}) - returning the raw envelope made every
+        field unreachable to the rule engine."""
         conn._post = AsyncMock(return_value=_mock_response(200, {"data": {"page": {"id": "1"}}}))
         result = await conn.fetch_artifact("home", {"token": "t", "base_url": "http://w"})
-        assert "data" in result
+        assert result["id"] == "1"
+        assert "data" not in result
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact_maps_is_published_to_status_and_accessible(self, conn):
+        """A published page counts as 'current'/accessible, a draft doesn't -
+        reusing the same vocabulary as Confluence so RV-05/RV-10 work the same
+        way for WikiJS out of the box."""
+        conn._post = AsyncMock(return_value=_mock_response(200, {"data": {"page": {"id": "1", "isPublished": True}}}))
+        result = await conn.fetch_artifact("home", {"token": "t", "base_url": "http://w"})
+        assert result["status"] == "current"
+        assert result["accessible"] is True
+
+        conn._post = AsyncMock(return_value=_mock_response(200, {"data": {"page": {"id": "2", "isPublished": False}}}))
+        result = await conn.fetch_artifact("draft-page", {"token": "t", "base_url": "http://w"})
+        assert result["status"] == "draft"
+        assert result["accessible"] is False
 
     @pytest.mark.asyncio
     async def test_list_artifacts(self, conn):
@@ -524,6 +572,16 @@ class TestPlaneConnector:
         conn._get = AsyncMock(return_value=_mock_response(200, {"id": "iss-1"}))
         result = await conn.fetch_artifact("iss-1", {"api_key": "k", "instance_url": "u", "workspace": "ws"})
         assert result["id"] == "iss-1"
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact_flattens_state_detail_to_status(self, conn):
+        """Plane's "state" field is just a UUID - the readable name lives under
+        state_detail. Rules like RV-03 need a flat "status" string."""
+        conn._get = AsyncMock(return_value=_mock_response(200, {
+            "id": "iss-1", "state": "uuid-1", "state_detail": {"name": "Done", "group": "completed"},
+        }))
+        result = await conn.fetch_artifact("iss-1", {"api_key": "k", "instance_url": "u", "workspace": "ws"})
+        assert result["status"] == "Done"
 
     @pytest.mark.asyncio
     async def test_list_artifacts(self, conn):
@@ -604,6 +662,18 @@ class TestGiteaConnector:
         assert result["id"] == 5
 
     @pytest.mark.asyncio
+    async def test_fetch_artifact_flattens_html_url_and_head_ref(self, conn):
+        """RV-09 reads flat "link"/"branch" keys - Gitea's real PR JSON (mirroring
+        GitHub's shape) nests them under "html_url" and "head.ref"."""
+        conn._get = AsyncMock(return_value=_mock_response(200, {
+            "id": 5, "html_url": "https://gitea.io/o/r/pulls/5", "head": {"ref": "feature/x"},
+        }))
+        result = await conn.fetch_artifact("o/r/5", {"token": "t", "base_url": "https://g"})
+        assert result["link"] == "https://gitea.io/o/r/pulls/5"
+        assert result["branch"] == "feature/x"
+        assert result["accessible"] is True
+
+    @pytest.mark.asyncio
     async def test_list_artifacts_with_owner_repo(self, conn):
         resp = _mock_response(200, {})
         conn._get = AsyncMock(return_value=resp)
@@ -616,6 +686,37 @@ class TestGiteaConnector:
         conn._get = AsyncMock(return_value=resp)
         result = await conn.list_artifacts({}, {"token": "t"})
         assert result == []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TestBookStackConnector
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestBookStackConnector:
+    @pytest.fixture
+    def conn(self):
+        from infrastructure.secondary.connectors.documentation.bookstack_connector import BookStackConnector
+        return BookStackConnector()
+
+    def test_properties(self, conn):
+        assert conn.CONNECTOR_TYPE == "SISTEMA_DOCUMENTAL"
+        assert conn.CONNECTOR_IMPLEMENTATION == "BOOKSTACK"
+        assert "page" in conn.get_artifact_types()
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact_maps_draft_to_status_and_accessible(self, conn):
+        """BookStack pages have no "status"/"accessible" fields directly - map
+        "draft" to the same "current"/"draft" vocabulary as Confluence/Wiki.js
+        so RV-05/RV-10 work the same way across every document connector."""
+        conn._get = AsyncMock(return_value=_mock_response(200, {"id": 1, "draft": False, "revision_count": 3}))
+        result = await conn.fetch_artifact("1", {"token": "t"})
+        assert result["status"] == "current"
+        assert result["accessible"] is True
+        assert result["version"] == "3"
+
+        conn._get = AsyncMock(return_value=_mock_response(200, {"id": 2, "draft": True}))
+        result = await conn.fetch_artifact("2", {"token": "t"})
+        assert result["status"] == "draft"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -741,6 +842,18 @@ class TestClickUpConnector:
         conn._get = AsyncMock(return_value=_mock_response(200, {"id": "task1"}))
         result = await conn.fetch_artifact("task1", {"token": "t"})
         assert result["id"] == "task1"
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact_flattens_nested_status_to_string(self, conn):
+        """ClickUp's native status is a nested object, not a flat string - rules
+        like RV-03/RV-10 read metadata['status'] as a plain string and would
+        silently treat every ClickUp artifact as invalid/unapproved otherwise."""
+        conn._get = AsyncMock(return_value=_mock_response(200, {
+            "id": "task1",
+            "status": {"status": "in progress", "color": "#000", "type": "custom"},
+        }))
+        result = await conn.fetch_artifact("task1", {"token": "t"})
+        assert result["status"] == "in progress"
 
     @pytest.mark.asyncio
     async def test_fetch_artifact_flattens_custom_fields_by_name(self, conn):
@@ -1043,6 +1156,19 @@ class TestConnectorImplementations:
         url = c._get_fetch_url("abc12", {"project_id": "99"})
         assert "/projects/99/repository/tags/abc12" in url
 
+    async def test_gitlab_connector_fetch_artifact_flattens_web_url_and_source_branch(self):
+        """RV-09 reads flat "link"/"branch" keys - GitLab's real MR JSON uses
+        "web_url" and "source_branch"."""
+        from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
+        c = GitLabConnector()
+        c._get = AsyncMock(return_value=_mock_response(200, {
+            "id": 1, "web_url": "https://gitlab.com/o/r/-/merge_requests/1", "source_branch": "feature/x",
+        }))
+        result = await c.fetch_artifact("123/1", {"token": "tok"})
+        assert result["link"] == "https://gitlab.com/o/r/-/merge_requests/1"
+        assert result["branch"] == "feature/x"
+        assert result["accessible"] is True
+
     def test_gitlab_connector_get_base_url_normalizes_missing_api_v4(self):
         """Branch: base_url without /api/v4 -> /api/v4 is appended"""
         from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector
@@ -1135,6 +1261,21 @@ class TestNotionConnector:
 
     def test_get_results_key(self, conn):
         assert conn._get_results_key() == "results"
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact_maps_archived_to_status_and_accessible(self, conn):
+        """Notion pages have no "status"/"accessible" field - "archived" is the
+        closest native live/dead signal, reusing the same "current" vocabulary
+        as the other document connectors so RV-05/RV-10 work consistently."""
+        conn._get = AsyncMock(return_value=_mock_response(200, {"id": "p1", "archived": False}))
+        result = await conn.fetch_artifact("p1", {"token": "t"})
+        assert result["status"] == "current"
+        assert result["accessible"] is True
+
+        conn._get = AsyncMock(return_value=_mock_response(200, {"id": "p2", "archived": True}))
+        result = await conn.fetch_artifact("p2", {"token": "t"})
+        assert result["status"] == "trashed"
+        assert result["accessible"] is False
 
     @pytest.mark.asyncio
     async def test_test_connection_success(self, conn):
@@ -1247,6 +1388,17 @@ class TestTaigaConnector:
         assert result["id"] == 42
 
     @pytest.mark.asyncio
+    async def test_fetch_artifact_flattens_status_extra_info_to_status(self, conn):
+        """Taiga's "status" is just the numeric status ID (FK) - the readable
+        name lives in "status_extra_info". Rules like RV-03 need a flat
+        "status" string."""
+        conn._get = AsyncMock(return_value=_mock_response(200, {
+            "id": 42, "status": 3, "status_extra_info": {"name": "Closed", "is_closed": True},
+        }))
+        result = await conn.fetch_artifact("42", {"token": "tok"})
+        assert result["status"] == "Closed"
+
+    @pytest.mark.asyncio
     async def test_list_artifacts_with_project_slug(self, conn):
         conn._get = AsyncMock(return_value=_mock_response(200, []))
         result = await conn.list_artifacts({"status": "open"}, {"token": "tok", "project_slug": "my-project"})
@@ -1330,9 +1482,25 @@ class TestAsanaConnector:
 
     @pytest.mark.asyncio
     async def test_fetch_artifact(self, conn):
+        """Regression guard: Asana wraps single-resource GETs in {"data": {...}}
+        just like its list endpoints - without unwrapping, every field
+        (including "completed") would be unreachable to the rule engine."""
         conn._get = AsyncMock(return_value=_mock_response(200, {"data": {"id": "task-123", "name": "Test"}}))
         result = await conn.fetch_artifact("task-123", {"token": "tok"})
-        assert result["data"]["id"] == "task-123"
+        assert result["id"] == "task-123"
+        assert "data" not in result
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact_maps_completed_to_status(self, conn):
+        """Asana tasks have no "status" field, only a "completed" boolean -
+        map it to the flat "status" vocabulary rules like RV-03 expect."""
+        conn._get = AsyncMock(return_value=_mock_response(200, {"data": {"id": "t1", "completed": True}}))
+        result = await conn.fetch_artifact("t1", {"token": "tok"})
+        assert result["status"] == "completed"
+
+        conn._get = AsyncMock(return_value=_mock_response(200, {"data": {"id": "t2", "completed": False}}))
+        result = await conn.fetch_artifact("t2", {"token": "tok"})
+        assert result["status"] == "incomplete"
 
     @pytest.mark.asyncio
     async def test_list_artifacts_with_project(self, conn):
@@ -1440,6 +1608,20 @@ class TestBitbucketConnector:
         conn._get = AsyncMock(return_value=_mock_response(200, {"id": 123, "title": "PR Title"}))
         result = await conn.fetch_artifact("owner/repo/123", {"token": "tok"})
         assert result["id"] == 123
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact_flattens_links_and_source_branch(self, conn):
+        """RV-09 reads flat "link"/"branch" keys - Bitbucket's real PR JSON nests
+        them under "links.html.href" and "source.branch.name"."""
+        conn._get = AsyncMock(return_value=_mock_response(200, {
+            "id": 123,
+            "links": {"html": {"href": "https://bitbucket.org/o/r/pull-requests/123"}},
+            "source": {"branch": {"name": "feature/x"}},
+        }))
+        result = await conn.fetch_artifact("owner/repo/123", {"token": "tok"})
+        assert result["link"] == "https://bitbucket.org/o/r/pull-requests/123"
+        assert result["branch"] == "feature/x"
+        assert result["accessible"] is True
 
     @pytest.mark.asyncio
     async def test_list_artifacts_with_owner_repo(self, conn):
@@ -1550,6 +1732,18 @@ class TestGitHubConnector:
         conn._get = AsyncMock(return_value=_mock_response(200, {"id": 42, "title": "PR Title"}))
         result = await conn.fetch_artifact("owner/repo/42", {"token": "tok"})
         assert result["id"] == 42
+
+    @pytest.mark.asyncio
+    async def test_fetch_artifact_flattens_html_url_and_head_ref(self, conn):
+        """RV-09 reads flat "link"/"branch" keys - GitHub's real PR JSON nests
+        them under "html_url" and "head.ref"."""
+        conn._get = AsyncMock(return_value=_mock_response(200, {
+            "id": 42, "html_url": "https://github.com/o/r/pull/42", "head": {"ref": "feature/x"},
+        }))
+        result = await conn.fetch_artifact("owner/repo/42", {"token": "tok"})
+        assert result["link"] == "https://github.com/o/r/pull/42"
+        assert result["branch"] == "feature/x"
+        assert result["accessible"] is True
 
     @pytest.mark.asyncio
     async def test_list_artifacts_with_owner_repo(self, conn):

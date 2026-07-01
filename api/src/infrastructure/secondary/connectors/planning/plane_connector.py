@@ -33,6 +33,22 @@ class PlaneConnector(BaseHttpConnector):
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
 
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # Plane's "state" field is just the state's UUID, not a readable value -
+        # the human-readable name/group is under the expanded "state_detail".
+        # Flatten it to a flat "status" string so rules like RV-03 can read it
+        # the same way as every other GESTOR_TAREAS connector.
+        state_detail = data.get("state_detail") or {}
+        if isinstance(state_detail, dict) and state_detail.get("name"):
+            data["status"] = state_detail["name"]
+        return data
+
+    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        url = self._get_fetch_url(ref, config)
+        response = await self._get(url, config, self._get_fetch_params(config))
+        response.raise_for_status()
+        return self._normalize(response.json())
+
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         workspace = config.get("workspace")
         project = config.get("project")

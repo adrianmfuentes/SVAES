@@ -20,7 +20,22 @@ class AsanaConnector(BaseHttpConnector, BearerAuthMixin):
         return f"{self._get_base_url(config)}/tasks/{ref}"
 
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
-        return {"opt_fields": "name,status,assignee,created_at,modified_at"}
+        # Asana tasks have no "status" field - only a "completed" boolean.
+        return {"opt_fields": "name,completed,assignee,created_at,modified_at"}
+
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # Map the boolean "completed" flag to the same flat "status" string
+        # vocabulary rules like RV-03 expect from every GESTOR_TAREAS connector.
+        data["status"] = "completed" if data.get("completed") else "incomplete"
+        return data
+
+    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        url = self._get_fetch_url(ref, config)
+        response = await self._get(url, config, self._get_fetch_params(config))
+        response.raise_for_status()
+        # Asana wraps single-resource responses in {"data": {...}}, same as its
+        # list endpoints - without unwrapping, every field would be unreachable.
+        return self._normalize(response.json().get("data", {}))
 
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         project_gid = config.get("project_gid")

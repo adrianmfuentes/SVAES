@@ -36,11 +36,22 @@ class WikiJsConnector(BaseGraphQLConnector):
         response = await self._post(self._get_health_url(config), config, query)
         return response.status_code == 200
 
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # Wiki.js has no Confluence-style numeric page version, but a page's
+        # isPublished flag is an equivalent live/draft signal: reuse the same
+        # "current"/"draft" vocabulary so RV-05/RV-10 work the same way across
+        # every document connector, not just Confluence.
+        published = bool(data.get("isPublished", False))
+        data["accessible"] = published
+        data["status"] = "current" if published else "draft"
+        return data
+
     async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        query = f'{{ page(location: "{{{{ path: "{ref}" }}}}") {{ id title content updatedAt }} }}'
+        query = f'{{ page(path: "{ref}", locale: "en") {{ id title content isPublished updatedAt }} }}'
         response = await self._post(self._get_fetch_url(ref, config), config, {"query": query})
         response.raise_for_status()
-        return response.json()
+        page = response.json().get("data", {}).get("page", {}) or {}
+        return self._normalize(page)
 
     async def list_artifacts(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

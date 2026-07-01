@@ -21,13 +21,20 @@ class LinearConnector(BaseGraphQLConnector):
         response = await self._post(self._get_base_url(config), config, query)
         return response.status_code == 200
 
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        state = data.get("state") or {}
+        if isinstance(state, dict) and "name" in state:
+            data["status"] = state["name"]
+        return data
+
     async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
         query = {
             "query": f"{{ issue(id: \"{ref}\") {{ id identifier title state {{ name }} assignee {{ name }} createdAt updatedAt }} }}"
         }
         response = await self._post(self._get_base_url(config), config, query)
         response.raise_for_status()
-        return response.json()
+        issue = response.json().get("data", {}).get("issue", {})
+        return self._normalize(issue)
 
     async def list_artifacts(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

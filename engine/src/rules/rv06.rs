@@ -85,10 +85,24 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule, release_
     let mismatched_artifacts: Vec<&str> = target_artifacts
         .iter()
         .filter(|a| {
-            match a.metadata.get(attribute) {
-                Some(val) => val.as_str() != Some(expected_value),
-                None => true,
+            let attribute_matches = a.metadata.get(attribute)
+                .and_then(|v| v.as_str())
+                .map(|s| s == expected_value)
+                .unwrap_or(false);
+            if attribute_matches {
+                return false;
             }
+            // Fallback: many documents are versioned by embedding the version
+            // in their title (e.g. "Informe de pruebas v1.0.0") rather than
+            // relying on a connector-native version counter - Confluence's
+            // "version" field, for instance, is just an edit-revision count
+            // (e.g. 1, 2, 9...), unrelated to the product's semantic release
+            // version, so it will essentially never match by coincidence.
+            let title_contains_expected = a.metadata.get("title")
+                .and_then(|v| v.as_str())
+                .map(|title| title.contains(expected_value))
+                .unwrap_or(false);
+            !title_contains_expected
         })
         .map(|a| a.id.as_str())
         .collect();
@@ -177,6 +191,44 @@ mod tests {
         let result = evaluate(&artifacts, &rule, Some("1.0.0"));
 
         assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn title_containing_expected_version_matches_even_if_version_field_differs() {
+        // Confluence's native "version" is an edit-revision counter (e.g. "1"
+        // for a never-edited page), unrelated to the product's semantic release
+        // version - but many pages embed the real version in their title
+        // instead (e.g. "Informe de pruebas v1.0.0"), which should count.
+        let artifacts = vec![make_artifact(
+            "D-001", "DOCUMENTO",
+            json!({"version": "1", "title": "Informe de pruebas v1.0.0"}),
+        )];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({}),
+        };
+
+        let result = evaluate(&artifacts, &rule, Some("1.0.0"));
+
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn title_not_containing_expected_version_still_flagged() {
+        let artifacts = vec![make_artifact(
+            "D-001", "DOCUMENTO",
+            json!({"version": "1", "title": "Informe de pruebas v0.9.0"}),
+        )];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({}),
+        };
+
+        let result = evaluate(&artifacts, &rule, Some("1.0.0"));
+
+        assert_eq!(result.status, RuleStatus::Error);
     }
 
     #[test]

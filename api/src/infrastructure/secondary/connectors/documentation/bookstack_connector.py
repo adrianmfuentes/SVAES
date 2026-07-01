@@ -31,6 +31,24 @@ class BookStackConnector(BaseHttpConnector):
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
 
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # BookStack pages have no Confluence-style "status"/"version" fields
+        # directly, but "draft" and "revision_count" are the equivalent native
+        # signals - reuse the same "current"/"draft" vocabulary as Confluence
+        # and Wiki.js so RV-05/RV-06/RV-10 work the same way across every
+        # document connector.
+        data["accessible"] = True
+        data["status"] = "draft" if data.get("draft") else "current"
+        if "revision_count" in data:
+            data["version"] = str(data.get("revision_count", ""))
+        return data
+
+    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        url = self._get_fetch_url(ref, config)
+        response = await self._get(url, config, self._get_fetch_params(config))
+        response.raise_for_status()
+        return self._normalize(response.json())
+
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         return f"{self._get_base_url(config)}/pages"
 

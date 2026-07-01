@@ -29,6 +29,23 @@ class NotionConnector(BaseHttpConnector, BearerAuthMixin):
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
 
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # Notion pages have no native "status"/"accessible" field - "archived"
+        # is the closest native live/dead signal. Reuse the same "current"
+        # vocabulary as Confluence/Wiki.js/BookStack so RV-05/RV-10 work the
+        # same way across every document connector. Notion has no simple
+        # numeric page version, so "version" is intentionally left unset.
+        archived = bool(data.get("archived"))
+        data["accessible"] = not archived
+        data["status"] = "trashed" if archived else "current"
+        return data
+
+    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        url = self._get_fetch_url(ref, config)
+        response = await self._get(url, config, self._get_fetch_params(config))
+        response.raise_for_status()
+        return self._normalize(response.json())
+
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         database_id = config.get("database_id")
         if database_id:

@@ -26,6 +26,15 @@ class ClickUpConnector(BaseHttpConnector):
         return None
 
     def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # ClickUp's native "status" is a nested object ({"status": "in progress",
+        # "color": ..., "type": ...}), not a flat string - rules like RV-03/RV-10
+        # read metadata["status"] as a plain string, so without this it would
+        # always be None (nested dict, not str) and every ClickUp task/doc-like
+        # artifact would silently fail those rules regardless of its real state.
+        status_obj = data.get("status")
+        if isinstance(status_obj, dict) and "status" in status_obj:
+            data["status"] = status_obj["status"]
+
         # Expose each ClickUp custom field as a flat top-level key using its own
         # name, so any field a user creates in ClickUp (e.g. "planned_tasks") can
         # be referenced directly by rule params without connector-side hardcoding.

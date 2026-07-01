@@ -22,6 +22,22 @@ class TaigaConnector(BaseHttpConnector):
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
 
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # Taiga's "status" is just the numeric status ID (FK), not a readable
+        # value - the API includes the human-readable name in "status_extra_info".
+        # Flatten it to a flat "status" string so rules like RV-03 can read it
+        # the same way as every other GESTOR_TAREAS connector.
+        status_extra = data.get("status_extra_info") or {}
+        if isinstance(status_extra, dict) and status_extra.get("name"):
+            data["status"] = status_extra["name"]
+        return data
+
+    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        url = self._get_fetch_url(ref, config)
+        response = await self._get(url, config, self._get_fetch_params(config))
+        response.raise_for_status()
+        return self._normalize(response.json())
+
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         return f"{self._get_base_url(config)}/tasks"
 

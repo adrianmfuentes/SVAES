@@ -52,6 +52,25 @@ class GitHubConnector(BaseHttpConnector, BearerAuthMixin):
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
 
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # RV-09 reads flat "link"/"branch"/"accessible" keys, but GitHub's real
+        # PR/commit JSON uses "html_url" and a nested "head.ref" - flatten them
+        # so the rule can actually validate something instead of silently
+        # skipping every artifact because those keys never exist.
+        if data.get("html_url"):
+            data["link"] = data["html_url"]
+        head = data.get("head") or {}
+        if isinstance(head, dict) and head.get("ref"):
+            data["branch"] = head["ref"]
+        data["accessible"] = True
+        return data
+
+    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        url = self._get_fetch_url(ref, config)
+        response = await self._get(url, config, self._get_fetch_params(config))
+        response.raise_for_status()
+        return self._normalize(response.json())
+
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         owner = config.get("owner")
         repo = config.get("repo")
