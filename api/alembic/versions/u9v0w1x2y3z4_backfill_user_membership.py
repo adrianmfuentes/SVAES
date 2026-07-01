@@ -30,7 +30,12 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     bind = op.get_bind()
     users = bind.execute(
-        sa.text('SELECT id, organization_id, role FROM "user" WHERE organization_id IS NOT NULL')
+        sa.text(
+            'SELECT u.id, u.organization_id, u.role '
+            'FROM "user" u '
+            'INNER JOIN organization o ON o.id = u.organization_id '
+            'WHERE u.organization_id IS NOT NULL'
+        )
     ).fetchall()
 
     for user_id, organization_id, role in users:
