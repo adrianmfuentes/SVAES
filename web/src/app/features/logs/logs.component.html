@@ -38,7 +38,8 @@
       <!-- Data when available -->
       <ng-container *ngIf="!loading() && !notAvailable()">
         <div class="filters-bar">
-          <select class="filter-select" [(ngModel)]="filterCategory" (ngModelChange)="applyFilters()">
+          <label for="filterCategory" class="sr-only">{{ 'logs.all_categories' | t }}</label>
+          <select id="filterCategory" class="filter-select" [(ngModel)]="filterCategory" (ngModelChange)="applyFilters()">
             <option value="">{{ 'logs.all_categories' | t }}</option>
             <option value="auth">{{ 'logs.category_auth' | t }}</option>
             <option value="admin">{{ 'logs.category_admin' | t }}</option>
@@ -46,7 +47,8 @@
             <option value="connector">{{ 'logs.category_connector' | t }}</option>
             <option value="config">{{ 'logs.category_config' | t }}</option>
           </select>
-          <select class="filter-select" [(ngModel)]="filterResult" (ngModelChange)="applyFilters()">
+          <label for="filterResult" class="sr-only">{{ 'logs.all_results' | t }}</label>
+          <select id="filterResult" class="filter-select" [(ngModel)]="filterResult" (ngModelChange)="applyFilters()">
             <option value="">{{ 'logs.all_results' | t }}</option>
             <option value="success">{{ 'logs.result_success' | t }}</option>
             <option value="failure">{{ 'logs.result_failure' | t }}</option>
