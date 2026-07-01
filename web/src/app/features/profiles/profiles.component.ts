@@ -225,6 +225,20 @@ function defaultArtifactType(template: string): string {
                   <p class="form-hint">{{ 'profiles.approved_states_hint' | t }}</p>
                 </div>
               }
+              @if (selectedRuleTemplate() === 'RV-08') {
+                <div class="form-group">
+                  <label for="rule-master-artifact-id">{{ 'profiles.master_artifact_id_label' | t }}</label>
+                  <input id="rule-master-artifact-id" type="text" [formControl]="ruleFormControl('masterArtifactId')"
+                    [placeholder]="'profiles.master_artifact_id_placeholder' | t" />
+                  <p class="form-hint">{{ 'profiles.master_artifact_id_hint' | t }}</p>
+                </div>
+                <div class="form-group">
+                  <label for="rule-master-field">{{ 'profiles.master_field_label' | t }}</label>
+                  <input id="rule-master-field" type="text" [formControl]="ruleFormControl('masterField')"
+                    [placeholder]="'profiles.master_field_placeholder' | t" />
+                  <p class="form-hint">{{ 'profiles.master_field_hint' | t }}</p>
+                </div>
+              }
               <div class="rule-form-actions">
                 <button type="button" class="btn-secondary btn-sm" (click)="cancelRuleForm()">{{ 'common.cancel' | t }}</button>
                 <button type="button" class="btn-primary btn-sm" [disabled]="savingRule()" [title]="savingRule() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''" (click)="submitRule()">
@@ -891,6 +905,8 @@ export class ProfilesComponent implements OnInit {
     artifactType: [''],
     expectedValue: [''],
     approvedStates: [''],
+    masterArtifactId: [''],
+    masterField: [''],
   });
 
   ngOnInit(): void {
@@ -940,7 +956,7 @@ export class ProfilesComponent implements OnInit {
 
   openAddRule(): void {
     this.editingRule.set(null);
-    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '', expectedValue: '', approvedStates: '' });
+    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '', expectedValue: '', approvedStates: '', masterArtifactId: '', masterField: '' });
     this.showRuleForm.set(true);
   }
 
@@ -953,13 +969,15 @@ export class ProfilesComponent implements OnInit {
       artifactType: (rule.params as any)?.['artifact_type'] ?? '',
       expectedValue: (rule.params as any)?.['expected_value'] ?? '',
       approvedStates: Array.isArray(approvedStates) ? approvedStates.join(',') : '',
+      masterArtifactId: (rule.params as any)?.['master_artifact_id'] ?? '',
+      masterField: (rule.params as any)?.['master_field'] ?? '',
     });
     this.showRuleForm.set(true);
   }
 
   cancelRuleForm(): void {
     this.editingRule.set(null);
-    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '', expectedValue: '', approvedStates: '' });
+    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '', expectedValue: '', approvedStates: '', masterArtifactId: '', masterField: '' });
     this.showRuleForm.set(false);
   }
 
@@ -1044,6 +1062,8 @@ export class ProfilesComponent implements OnInit {
     const artifactType = this.ruleForm.value.artifactType;
     const expectedValue = this.ruleForm.value.expectedValue;
     const approvedStates = this.ruleForm.value.approvedStates;
+    const masterArtifactId = this.ruleForm.value.masterArtifactId;
+    const masterField = this.ruleForm.value.masterField;
     const params: Record<string, unknown> = {};
     if (artifactType && ruleSupportsArtifactType(template)) {
       params['artifact_type'] = artifactType;
@@ -1053,6 +1073,14 @@ export class ProfilesComponent implements OnInit {
     }
     if (template === 'RV-10' && approvedStates) {
       params['approved_states'] = approvedStates.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    }
+    if (template === 'RV-08') {
+      if (masterArtifactId) {
+        params['master_artifact_id'] = masterArtifactId.trim();
+      }
+      if (masterField) {
+        params['master_field'] = masterField.trim();
+      }
     }
 
     if (editing) {

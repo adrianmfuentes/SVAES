@@ -214,6 +214,7 @@ _I18N: dict[str, dict[str, str]] = {
         "rule_evidence.error.RV-08.field_not_array": "Campo '{{master_field}}' en maestro '{{master_id}}' no es un array válido",
         "rule_evidence.error.RV-08.field_not_found": "Campo '{{master_field}}' no encontrado en artefacto maestro '{{master_id}}'",
         "rule_evidence.error.RV-08.discrepancy": "Discrepancia entre lista declarada y payload. IDs declarados en '{{master_field}}' del maestro '{{master_id}}' que no están en artefactos '{{target_type}}': {{missing_ids}}",
+        "rule_evidence.error.RV-08.multiple_masters_found": "Se encontraron varios artefactos de tipo '{{master_type}}' ({{count}}); especifique 'master_artifact_id' para desambiguar",
         "rule_evidence.error.RV-09": "Referencias inválidas o inaccesibles encontradas: {{invalid_refs}}",
         "rule_evidence.error.RV-10": "No se encontró artefacto de tipo '{{artifact_type}}' con estado aprobatorio (estados aceptados: {{approved_states}})",
         "rule_evidence.error.has_duplicated_code": "Artefactos con código duplicado excesivo: {{violations}}",
@@ -231,7 +232,7 @@ _I18N: dict[str, dict[str, str]] = {
         "rule_evidence.no_evaluada.empty_artifacts": "No hay artefactos disponibles para evaluar esta regla.",
         "rule_evidence.no_evaluada.RV-06": "No se encontraron artefactos de tipo '{{artifact_type}}' para evaluar",
         "rule_evidence.no_evaluada.RV-07": "Parámetro 'artifact_type' no configurado — regla no aplicable",
-        "rule_evidence.no_evaluada.RV-08": "Parámetro 'master_artifact_id' no proporcionado",
+        "rule_evidence.no_evaluada.RV-08": "No se encontró ningún artefacto de tipo '{{master_type}}' que actúe como maestro, y no se especificó 'master_artifact_id'",
         "rule_evidence.no_evaluada.no_artifacts_of_type": "No hay artefactos de tipo '{{artifact_type}}' en la entrega — regla no aplicable",
     },
     "en": {
@@ -303,6 +304,7 @@ _I18N: dict[str, dict[str, str]] = {
         "rule_evidence.error.RV-08.field_not_array": "Field '{{master_field}}' in master '{{master_id}}' is not a valid array",
         "rule_evidence.error.RV-08.field_not_found": "Field '{{master_field}}' not found in master artifact '{{master_id}}'",
         "rule_evidence.error.RV-08.discrepancy": "Discrepancy between declared list and payload. IDs declared in '{{master_field}}' of master '{{master_id}}' that are not in '{{target_type}}' artifacts: {{missing_ids}}",
+        "rule_evidence.error.RV-08.multiple_masters_found": "Multiple artifacts of type '{{master_type}}' found ({{count}}); specify 'master_artifact_id' to disambiguate",
         "rule_evidence.error.RV-09": "Invalid or inaccessible references found: {{invalid_refs}}",
         "rule_evidence.error.RV-10": "No artifact of type '{{artifact_type}}' with approval status found (accepted states: {{approved_states}})",
         "rule_evidence.error.has_duplicated_code": "Artifacts with excessive duplicate code: {{violations}}",
@@ -320,7 +322,7 @@ _I18N: dict[str, dict[str, str]] = {
         "rule_evidence.no_evaluada.empty_artifacts": "No artifacts available to evaluate this rule.",
         "rule_evidence.no_evaluada.RV-06": "No artifacts of type '{{artifact_type}}' found to evaluate",
         "rule_evidence.no_evaluada.RV-07": "'artifact_type' parameter not configured — rule not applicable",
-        "rule_evidence.no_evaluada.RV-08": "'master_artifact_id' parameter not provided",
+        "rule_evidence.no_evaluada.RV-08": "No artifact of type '{{master_type}}' found to act as the master, and 'master_artifact_id' was not specified",
         "rule_evidence.no_evaluada.no_artifacts_of_type": "No artifacts of type '{{artifact_type}}' in the release — rule not applicable",
     },
 }

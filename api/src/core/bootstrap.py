@@ -16,12 +16,14 @@ from core.rule_names import RULE_NAMES
 
 _log = logging.getLogger(__name__)
 
-# RV-06/RV-08 need a value specific to each release (a document version, a
-# master artifact's UUID) - there's no universal default that makes sense
-# system-wide, so they're seeded without params and stay NO_EVALUADA until a
-# per-release profile configures them. RV-07's "PLAN" default is different: a
-# PLAN-type artifact's mere existence in the release IS the external-registration
-# marker (see rv07.rs), so it's meaningful out of the box for every release.
+# RV-06 needs a value specific to each release (a document version) - there's
+# no universal default that makes sense system-wide, so it's seeded without
+# params and stays NO_EVALUADA until a per-release profile configures it.
+# RV-07 and RV-08 don't need per-release params: a PLAN-type artifact's mere
+# existence in the release IS the external-registration marker for RV-07 (see
+# rv07.rs), and RV-08 auto-detects that same PLAN artifact as its "master" when
+# `master_artifact_id` is left unset (see rv08.rs) - both are meaningful out of
+# the box for every release without touching the shared system profile.
 _SYSTEM_RULES = [
     ("RV-01", SeverityType.HIGH,   RULE_NAMES["RV-01"], {}),
     ("RV-02", SeverityType.HIGH,   RULE_NAMES["RV-02"], {}),

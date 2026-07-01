@@ -8,10 +8,18 @@ use std::collections::HashSet;
 /// # Parámetros
 /// * `artifacts` - Slice de artefactos a verificar.
 /// * `rule_config` - Configuración de la regla con parámetros:
-///   - `master_artifact_id`: ID (UUID interno de SVAES) del artefacto maestro que
-///     contiene la lista de IDs declarados. Identifica cuál de los artefactos de
-///     esta entrega actúa como "maestro" - no requiere que ninguna herramienta
-///     externa lo conozca, solo distingue una fila del payload de las demás.
+///   - `master_artifact_id` (opcional): ID (UUID interno de SVAES) del artefacto
+///     maestro que contiene la lista de IDs declarados. Permite fijar explícitamente
+///     cuál de los artefactos de esta entrega actúa como "maestro". Si se omite,
+///     el maestro se autodetecta (ver `master_type`) para que la regla funcione
+///     sin configuración adicional en el perfil por defecto del sistema, ya que el
+///     UUID interno cambia en cada entrega/organización y no puede fijarse a nivel
+///     de perfil compartido.
+///   - `master_type`: Tipo de artefacto que se autodetecta como maestro cuando no
+///     se especifica `master_artifact_id` (default: "PLAN"). Debe existir
+///     exactamente un artefacto de este tipo en la entrega; si no hay ninguno la
+///     regla queda No evaluada, y si hay más de uno se requiere `master_artifact_id`
+///     para desambiguar.
 ///   - `master_field`: Campo en metadata del maestro que contiene la lista de
 ///     IDs declarados (default: "planned_tasks"). Acepta un array JSON o una
 ///     cadena separada por comas (para campos de texto simples en el conector,
@@ -19,7 +27,8 @@ use std::collections::HashSet;
 ///   - `target_type`: Tipo de artefactos a comparar con la lista del maestro (default: "TAREA").
 ///
 /// # Lógica
-/// 1. Busca el artefacto maestro por su ID interno.
+/// 1. Determina el artefacto maestro: por `master_artifact_id` si se indica, o
+///    autodetectando el único artefacto de tipo `master_type` en la entrega.
 /// 2. Extrae la lista de IDs declarados desde el campo especificado de su metadata.
 /// 3. Recopila la **referencia externa** (`_svaes_external_ref`, la que el usuario
 ///    introdujo al importar el artefacto, p. ej. "SVAES-1") de los artefactos del
@@ -32,15 +41,51 @@ use std::collections::HashSet;
 /// # Retorno
 /// `RuleEvaluation` con el estado correspondiente y lista de IDs faltantes/sobrantes.
 pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleEvaluation {
-    let master_id = match rule_config.params.get("master_artifact_id").and_then(|v| v.as_str()) {
-        Some(id) => id,
+    let master_type = rule_config.params
+        .get("master_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("PLAN");
+
+    let master = match rule_config.params.get("master_artifact_id").and_then(|v| v.as_str()) {
+        Some(master_id) => match artifacts.iter().find(|a| a.id == master_id) {
+            Some(a) => a,
+            None => {
+                return RuleEvaluation {
+                    rule_id: rule_config.id.clone(),
+                    status: RuleStatus::Error,
+                    message: Some("rule_evidence.error.RV-08.master_not_found".to_string()),
+                    message_params: Some(json!({
+                        "master_id": master_id,
+                    })),
+                };
+            }
+        },
         None => {
-            return RuleEvaluation {
-                rule_id: rule_config.id.clone(),
-                status: RuleStatus::NoEvaluada,
-                message: Some("rule_evidence.no_evaluada.RV-08".to_string()),
-                message_params: None,
-            };
+            let candidates: Vec<&Artifact> = artifacts.iter().filter(|a| a.artifact_type == master_type).collect();
+            match candidates.as_slice() {
+                [] => {
+                    return RuleEvaluation {
+                        rule_id: rule_config.id.clone(),
+                        status: RuleStatus::NoEvaluada,
+                        message: Some("rule_evidence.no_evaluada.RV-08".to_string()),
+                        message_params: Some(json!({
+                            "master_type": master_type,
+                        })),
+                    };
+                }
+                [single] => *single,
+                multiple => {
+                    return RuleEvaluation {
+                        rule_id: rule_config.id.clone(),
+                        status: RuleStatus::Error,
+                        message: Some("rule_evidence.error.RV-08.multiple_masters_found".to_string()),
+                        message_params: Some(json!({
+                            "master_type": master_type,
+                            "count": multiple.len(),
+                        })),
+                    };
+                }
+            }
         }
     };
 
@@ -53,20 +98,6 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         .get("target_type")
         .and_then(|v| v.as_str())
         .unwrap_or("TAREA");
-
-    let master = match artifacts.iter().find(|a| a.id == master_id) {
-        Some(a) => a,
-        None => {
-            return RuleEvaluation {
-                rule_id: rule_config.id.clone(),
-                status: RuleStatus::Error,
-                message: Some("rule_evidence.error.RV-08.master_not_found".to_string()),
-                message_params: Some(json!({
-                    "master_id": master_id,
-                })),
-            };
-        }
-    };
 
     let declared_ids: HashSet<&str> = match master.metadata.get(master_field) {
         Some(val) => {
@@ -84,7 +115,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
                     message: Some("rule_evidence.error.RV-08.field_not_array".to_string()),
                     message_params: Some(json!({
                         "master_field": master_field,
-                        "master_id": master_id,
+                        "master_id": master.id.as_str(),
                     })),
                 };
             }
@@ -96,7 +127,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
                 message: Some("rule_evidence.error.RV-08.field_not_found".to_string()),
                 message_params: Some(json!({
                     "master_field": master_field,
-                    "master_id": master_id,
+                    "master_id": master.id.as_str(),
                 })),
             };
         }
@@ -130,7 +161,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             message: Some("rule_evidence.error.RV-08.discrepancy".to_string()),
             message_params: Some(json!({
                 "master_field": master_field,
-                "master_id": master_id,
+                "master_id": master.id.as_str(),
                 "target_type": target_type,
                 "missing_ids": format!("{:?}", missing_in_payload),
             })),
@@ -262,5 +293,61 @@ mod tests {
         let result = evaluate(&artifacts, &rule);
 
         assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    fn make_rule_without_master_id(id: &str) -> VerificationRule {
+        VerificationRule {
+            id: id.to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({}),
+        }
+    }
+
+    /// The system default profile ships RV-08 with no `master_artifact_id` (that
+    /// UUID is release/org-specific and can't be fixed at the shared-profile
+    /// level) - the rule must still pass by auto-detecting the single PLAN
+    /// artifact as master, e.g. the ClickUp "Release x.y.z" item.
+    #[test]
+    fn auto_detects_single_plan_artifact_as_master_when_id_not_given() {
+        let artifacts = vec![
+            make_artifact("uuid-plan", "PLAN", json!({"planned_tasks": "SVAES-1,SVAES-2"})),
+            make_tarea("uuid-t1", "SVAES-1"),
+            make_tarea("uuid-t2", "SVAES-2"),
+        ];
+        let rule = make_rule_without_master_id("RV-08");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn no_plan_artifact_and_no_master_id_returns_no_evaluada_with_master_type() {
+        let artifacts = vec![make_tarea("uuid-t1", "SVAES-1")];
+        let rule = make_rule_without_master_id("RV-08");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::NoEvaluada);
+        let params = result.message_params.unwrap();
+        assert_eq!(params["master_type"].as_str().unwrap(), "PLAN");
+    }
+
+    #[test]
+    fn multiple_plan_artifacts_without_master_id_returns_error() {
+        let artifacts = vec![
+            make_artifact("uuid-plan-1", "PLAN", json!({"planned_tasks": ["SVAES-1"]})),
+            make_artifact("uuid-plan-2", "PLAN", json!({"planned_tasks": ["SVAES-1"]})),
+            make_tarea("uuid-t1", "SVAES-1"),
+        ];
+        let rule = make_rule_without_master_id("RV-08");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Error);
+        let msg = result.message.unwrap();
+        assert_eq!(msg, "rule_evidence.error.RV-08.multiple_masters_found");
+        let params = result.message_params.unwrap();
+        assert_eq!(params["count"].as_u64().unwrap(), 2);
     }
 }
