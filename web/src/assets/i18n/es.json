@@ -764,6 +764,7 @@
   "org_settings.no_members": "No se encontraron miembros.",
   "org_settings.no_projects": "No se encontraron proyectos.",
   "org_settings.self_tag": "Tú",
+  "org_settings.pending_tag": "Pendiente",
   "org_settings.role_owner": "Propietario",
   "org_settings.role_manager": "Administrador",
   "org_settings.role_operator": "Técnico",

@@ -14,6 +14,7 @@ interface OrgUser {
   email: string;
   display_name: string;
   role: 'OPERATOR' | 'ADMIN' | 'MANAGER';
+  is_active: boolean;
 }
 
 @Component({
@@ -55,6 +56,7 @@ interface OrgUser {
                 <td class="cell-primary" [attr.data-label]="'common.name' | t">
                   {{ member.display_name }}
                   <span class="self-tag" *ngIf="member.id === currentUserId">{{ 'org_settings.self_tag' | t }}</span>
+                  <span class="pending-tag" *ngIf="!member.is_active">{{ 'org_settings.pending_tag' | t }}</span>
                 </td>
                 <td class="cell-muted" [attr.data-label]="'common.email' | t">{{ member.email }}</td>
                 <td [attr.data-label]="'common.role' | t">
@@ -383,6 +385,22 @@ interface OrgUser {
       color: var(--muted);
       background: var(--paper-secondary);
       border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-sm);
+      padding: 0.0625rem 0.3125rem;
+      margin-left: var(--spacing-sm);
+      vertical-align: middle;
+    }
+
+    .pending-tag {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--verdict-warning);
+      background: var(--verdict-warning-bg, rgba(232, 213, 163, 0.15));
+      border: 0.0625rem solid var(--verdict-warning-border, var(--verdict-warning));
       border-radius: var(--rounded-sm);
       padding: 0.0625rem 0.3125rem;
       margin-left: var(--spacing-sm);

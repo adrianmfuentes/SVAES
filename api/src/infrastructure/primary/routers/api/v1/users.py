@@ -340,6 +340,7 @@ async def list_organization_users(
             "email": u.email,
             "display_name": u.display_name,
             "role": u.role.value,
+            "is_active": u.is_active,
         }
         for u in users
     ]

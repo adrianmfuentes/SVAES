@@ -18,6 +18,7 @@ interface MockUser {
   display_name: string;
   role: 'OPERATOR' | 'ADMIN' | 'MANAGER';
   organization_id?: string;
+  is_active: boolean;
 }
 
 const createMockAuthService = (user: MockUser | null) => {
@@ -29,10 +30,10 @@ const createMockAuthService = (user: MockUser | null) => {
 };
 
 const mockMembers: MockUser[] = [
-  { id: 'user-1', email: 'admin@test.com', display_name: 'Admin User', role: 'MANAGER' },
-  { id: 'user-2', email: 'op@test.com', display_name: 'Operator User', role: 'OPERATOR' },
-  { id: 'user-3', email: 'op2@test.com', display_name: 'Operator User 2', role: 'OPERATOR' },
-  { id: 'user-4', email: 'orgadmin@test.com', display_name: 'Org Admin', role: 'ADMIN' },
+  { id: 'user-1', email: 'admin@test.com', display_name: 'Admin User', role: 'MANAGER', is_active: true },
+  { id: 'user-2', email: 'op@test.com', display_name: 'Operator User', role: 'OPERATOR', is_active: true },
+  { id: 'user-3', email: 'op2@test.com', display_name: 'Operator User 2', role: 'OPERATOR', is_active: true },
+  { id: 'user-4', email: 'orgadmin@test.com', display_name: 'Org Admin', role: 'ADMIN', is_active: true },
 ];
 
 describe('OrgSettingsComponent', () => {
@@ -47,6 +48,7 @@ describe('OrgSettingsComponent', () => {
     display_name: 'Admin User',
     role: 'MANAGER',
     organization_id: 'org-1',
+    is_active: true,
   };
 
   beforeEach(() => {
