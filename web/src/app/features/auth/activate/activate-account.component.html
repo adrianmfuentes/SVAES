@@ -1,0 +1,192 @@
+    <div class="activate-page">
+      <header class="activate-header">
+        <span class="activate-logo">SVAES</span>
+      </header>
+
+      <main class="activate-main">
+        <div class="activate-card">
+
+          <div *ngIf="tokenExpired" class="state-card">
+            <div class="state-icon state-icon--error">✕</div>
+            <h1 class="state-title">{{ 'activate.error.invalid_code' | t }}</h1>
+            <p class="state-desc">{{ 'activate.error.generic' | t }}</p>
+          </div>
+
+          <div *ngIf="activationSuccess" class="state-card">
+            <div class="state-icon state-icon--success">✓</div>
+            <h1 class="state-title">{{ 'activate.success_title' | t }}</h1>
+            <p class="state-desc">{{ 'activate.success_desc' | t }}</p>
+          </div>
+
+          <ng-container *ngIf="!tokenExpired && !activationSuccess">
+
+            <div class="stepper">
+              <div class="step" [class.step--active]="step() === 1" [class.step--done]="step() > 1">
+                <div class="step-circle">
+                  <span *ngIf="step() <= 1">1</span>
+                  <span *ngIf="step() > 1">✓</span>
+                </div>
+                <span class="step-label">{{ 'activate.step1_title' | t }}</span>
+              </div>
+              <div class="step-line" [class.step-line--done]="step() > 1"></div>
+              <div class="step" [class.step--active]="step() === 2">
+                <div class="step-circle">2</div>
+                <span class="step-label">{{ 'activate.step2_title' | t }}</span>
+              </div>
+            </div>
+
+            <form [formGroup]="activateForm" (ngSubmit)="onSubmit()" novalidate>
+
+              <div *ngIf="step() === 1" class="step-body">
+                <h1 class="step-title">{{ 'activate.step1_title' | t }}</h1>
+                <p class="step-desc">{{ 'activate.step1_desc' | t }}</p>
+
+                <div class="form-group">
+                  <label for="activationCode">{{ 'activate.code_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                  <input
+                    id="activationCode"
+                    type="text"
+                    formControlName="activation_code"
+                    aria-required="true"
+                    [placeholder]="'activate.code_placeholder' | t"
+                    autocomplete="off"
+                    spellcheck="false"
+                    class="input-mono"
+                  />
+                  <div
+                    *ngIf="activateForm.get('activation_code')?.invalid && activateForm.get('activation_code')?.touched"
+                    class="field-error"
+                  >
+                    {{ 'activate.code_required' | t }}
+                  </div>
+                </div>
+
+                <div class="step-footer">
+                  <button
+                    type="button"
+                    class="btn-primary btn-full"
+                    [disabled]="activateForm.get('activation_code')?.invalid"
+                    [title]="activateForm.get('activation_code')?.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ''"
+                    (click)="nextStep()"
+                  >
+                    {{ 'common.continue' | t }}
+                  </button>
+                </div>
+              </div>
+
+              <div *ngIf="step() === 2" class="step-body">
+                <h1 class="step-title">{{ 'activate.step2_title' | t }}</h1>
+                <p class="step-desc">{{ 'activate.step2_desc' | t }}</p>
+
+                <div class="form-group">
+                  <label for="password">{{ 'activate.password_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                  <div class="input-wrap">
+                    <input
+                      id="password"
+                      [type]="showPassword() ? 'text' : 'password'"
+                      formControlName="password"
+                      autocomplete="new-password"
+                      aria-required="true"
+                    />
+                    <button
+                      type="button"
+                      class="btn-reveal"
+                      (click)="showPassword.set(!showPassword())"
+                      [attr.aria-label]="showPassword() ? 'Ocultar' : 'Mostrar'"
+                    >
+                      <svg *ngIf="!showPassword()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                      <svg *ngIf="showPassword()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="password-checklist">
+                  <div class="checklist-item" [class.checklist-item--met]="passwordChecks.minLength">
+                    <span class="checklist-icon">{{ passwordChecks.minLength ? '✓' : '○' }}</span>
+                    <span>{{ 'activate.password_min_length' | t }}</span>
+                  </div>
+                  <div class="checklist-item" [class.checklist-item--met]="passwordChecks.uppercase">
+                    <span class="checklist-icon">{{ passwordChecks.uppercase ? '✓' : '○' }}</span>
+                    <span>{{ 'activate.password_requires_uppercase' | t }}</span>
+                  </div>
+                  <div class="checklist-item" [class.checklist-item--met]="passwordChecks.number">
+                    <span class="checklist-icon">{{ passwordChecks.number ? '✓' : '○' }}</span>
+                    <span>{{ 'activate.password_requires_number' | t }}</span>
+                  </div>
+                  <div class="checklist-item" [class.checklist-item--met]="passwordChecks.specialChar">
+                    <span class="checklist-icon">{{ passwordChecks.specialChar ? '✓' : '○' }}</span>
+                    <span>{{ 'activate.password_requires_special' | t }}</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="passwordConfirm">{{ 'activate.confirm_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                  <div class="input-wrap">
+                    <input
+                      id="passwordConfirm"
+                      [type]="showConfirm() ? 'text' : 'password'"
+                      formControlName="password_confirm"
+                      autocomplete="new-password"
+                      aria-required="true"
+                    />
+                    <button
+                      type="button"
+                      class="btn-reveal"
+                      (click)="showConfirm.set(!showConfirm())"
+                      [attr.aria-label]="showConfirm() ? 'Ocultar' : 'Mostrar'"
+                    >
+                      <svg *ngIf="!showConfirm()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                      <svg *ngIf="showConfirm()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div
+                    *ngIf="activateForm.hasError('mismatch') && activateForm.get('password_confirm')?.touched"
+                    class="field-error"
+                  >
+                    {{ 'activate.confirm_mismatch' | t }}
+                  </div>
+                </div>
+
+                <div *ngIf="submitError" class="alert-error" role="alert">{{ submitError }}</div>
+
+                <div class="step-footer step-footer--two">
+                  <button type="button" class="btn-secondary" (click)="prevStep()">
+                    {{ 'activate.back_login' | t }}
+                  </button>
+                  <button
+                    type="submit"
+                    class="btn-primary"
+                    [disabled]="activateForm.get('password')?.invalid ||
+                                activateForm.get('password_confirm')?.invalid ||
+                                activateForm.hasError('mismatch') ||
+                                loading"
+                    [title]="(activateForm.get('password')?.invalid || activateForm.get('password_confirm')?.invalid || activateForm.hasError('mismatch')) ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
+                  >
+                    <span *ngIf="loading" class="spinner"></span>
+                    <span *ngIf="!loading">{{ 'activate.step2_button' | t }}</span>
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          </ng-container>
+
+        </div>
+      </main>
+
+      <footer class="activate-footer">
+        <span>&copy; 2026 SVAES</span>
+      </footer>
+    </div>

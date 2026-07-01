@@ -1,0 +1,211 @@
+    <div class="request-page">
+      <a routerLink="/" class="request-back">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" focusable="false">
+          <path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        {{ 'login.back_home' | t }}
+      </a>
+
+      <main class="request-main">
+        <div class="request-card">
+
+          <ng-container *ngIf="submitted(); else formBlock">
+            <div class="success-state step-block">
+              <div class="success-icon" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                  <circle cx="12" cy="12" r="10" stroke="var(--verdict-valid)" stroke-width="1.5"/>
+                  <path d="M8 12l3 3 5-5" stroke="var(--verdict-valid)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <h2 class="card-title">{{ 'access_request.success_title' | t }}</h2>
+              <p class="card-desc">{{ 'access_request.success_desc' | t }}</p>
+              <a routerLink="/" class="btn-secondary success-back">{{ 'login.back_home' | t }}</a>
+            </div>
+          </ng-container>
+
+          <ng-template #formBlock>
+
+            <div class="stepper" role="list">
+              <div class="stepper-item" role="listitem"
+                   [class.done]="currentStep() > 1" [class.active]="currentStep() === 1"
+                   [attr.aria-current]="currentStep() === 1 ? 'step' : null">
+                <div class="stepper-dot" aria-hidden="true">
+                  <svg *ngIf="currentStep() > 1" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+                    <path d="M2 5l2.5 2.5L8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span *ngIf="currentStep() <= 1" aria-hidden="true">1</span>
+                </div>
+                <span class="stepper-label">{{ 'access_request.step1' | t }}</span>
+              </div>
+              <div class="stepper-connector" [class.active]="currentStep() > 1" aria-hidden="true"></div>
+              <div class="stepper-item" role="listitem"
+                   [class.done]="currentStep() > 2" [class.active]="currentStep() === 2"
+                   [attr.aria-current]="currentStep() === 2 ? 'step' : null">
+                <div class="stepper-dot" aria-hidden="true">
+                  <svg *ngIf="currentStep() > 2" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+                    <path d="M2 5l2.5 2.5L8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span *ngIf="currentStep() <= 2" aria-hidden="true">2</span>
+                </div>
+                <span class="stepper-label">{{ 'access_request.step2' | t }}</span>
+              </div>
+              <div class="stepper-connector" [class.active]="currentStep() > 2" aria-hidden="true"></div>
+              <div class="stepper-item" role="listitem"
+                   [class.active]="currentStep() === 3"
+                   [attr.aria-current]="currentStep() === 3 ? 'step' : null">
+                <div class="stepper-dot" aria-hidden="true"><span aria-hidden="true">3</span></div>
+                <span class="stepper-label">{{ 'access_request.step3' | t }}</span>
+              </div>
+            </div>
+
+            <form [formGroup]="requestForm" (ngSubmit)="handleFormSubmit()" novalidate>
+
+              <div class="step-block" *ngIf="currentStep() === 1">
+                <h2 class="card-title">{{ 'access_request.step1' | t }}</h2>
+
+                <div class="form-group">
+                  <label for="requester-name">{{ 'access_request.first_name' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                  <input
+                    id="requester-name"
+                    type="text"
+                    formControlName="requester_name"
+                    autocomplete="name"
+                    aria-required="true"
+                    placeholder="Jane Smith"
+                    [class.input-error]="fieldHasError('requester_name')"
+                  />
+                  <div class="field-error" *ngIf="requestForm.get('requester_name')?.hasError('required') && requestForm.get('requester_name')?.touched">
+                    {{ 'access_request.first_name_required' | t }}
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="requester-email">{{ 'access_request.email' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                  <input
+                    id="requester-email"
+                    type="email"
+                    formControlName="requester_email"
+                    autocomplete="email"
+                    aria-required="true"
+                    [placeholder]="'login.email_placeholder' | t"
+                    [class.input-error]="fieldHasError('requester_email')"
+                  />
+                  <div class="field-error" *ngIf="requestForm.get('requester_email')?.hasError('required') && requestForm.get('requester_email')?.touched">
+                    {{ 'access_request.email_required' | t }}
+                  </div>
+                  <div class="field-error" *ngIf="requestForm.get('requester_email')?.hasError('email') && requestForm.get('requester_email')?.touched">
+                    {{ 'access_request.email_invalid' | t }}
+                  </div>
+                </div>
+
+                <div class="step-nav step-nav-end">
+                  <button type="submit" class="btn-primary">{{ 'access_request.next' | t }}</button>
+                </div>
+              </div>
+
+              <div class="step-block" *ngIf="currentStep() === 2">
+                <h2 class="card-title">{{ 'access_request.step2' | t }}</h2>
+
+                <div class="form-group">
+                  <label for="org-name">{{ 'access_request.org_name' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                  <input
+                    id="org-name"
+                    type="text"
+                    formControlName="organization_name"
+                    placeholder="Acme Corp"
+                    aria-required="true"
+                    (input)="updateSlug()"
+                    [class.input-error]="fieldHasError('organization_name')"
+                  />
+                  <div class="slug-preview" *ngIf="slugPreview()">
+                    <span class="slug-label">Slug</span>
+                    <code class="slug-value">{{ slugPreview() }}</code>
+                  </div>
+                  <div class="field-error" *ngIf="requestForm.get('organization_name')?.hasError('required') && requestForm.get('organization_name')?.touched">
+                    {{ 'access_request.org_name_required' | t }}
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="org-description">
+                    {{ 'common.description' | t }}
+                    <span class="optional-tag">{{ 'common.optional' | t }}</span>
+                  </label>
+                  <textarea
+                    id="org-description"
+                    formControlName="organization_description"
+                    [placeholder]="'access_request.step2' | t"
+                    rows="3"
+                    (input)="updateCharCount()"
+                  ></textarea>
+                  <div class="char-counter" [class.char-counter-over]="charCount() > 500">
+                    {{ charCount() }}/500
+                  </div>
+                </div>
+
+                <div class="step-nav">
+                  <button type="button" class="btn-secondary" (click)="prevStep()">{{ 'access_request.back' | t }}</button>
+                  <button type="submit" class="btn-primary">{{ 'access_request.next' | t }}</button>
+                </div>
+              </div>
+
+              <div class="step-block" *ngIf="currentStep() === 3">
+                <h2 class="card-title">{{ 'access_request.review_title' | t }}</h2>
+
+                <div class="alert-error" *ngIf="errorMessage()" role="alert">
+                  <svg class="alert-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
+                    <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
+                    <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                  </svg>
+                  <span>{{ errorMessage() }}</span>
+                </div>
+
+                <div class="review-block">
+                  <div class="review-row">
+                    <span class="review-key">{{ 'access_request.review_name' | t }}</span>
+                    <span class="review-val">{{ requestForm.get('requester_name')?.value }}</span>
+                  </div>
+                  <div class="review-row">
+                    <span class="review-key">{{ 'access_request.review_email' | t }}</span>
+                    <span class="review-val">{{ requestForm.get('requester_email')?.value }}</span>
+                  </div>
+                  <div class="review-row">
+                    <span class="review-key">{{ 'access_request.review_org' | t }}</span>
+                    <span class="review-val">{{ requestForm.get('organization_name')?.value }}</span>
+                  </div>
+                  <div class="review-row" *ngIf="requestForm.get('organization_description')?.value">
+                    <span class="review-key">{{ 'common.description' | t }}</span>
+                    <span class="review-val review-val-desc">{{ requestForm.get('organization_description')?.value }}</span>
+                  </div>
+                </div>
+
+                <div class="step-nav">
+                  <button type="button" class="btn-secondary" (click)="prevStep()" [disabled]="loading()" [title]="loading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">{{ 'access_request.back' | t }}</button>
+                  <button
+                    type="submit"
+                    class="btn-primary btn-submit"
+                    [disabled]="loading()"
+                    [title]="loading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''"
+                    [class.btn-loading]="loading()"
+                  >
+                    <span *ngIf="!loading()">{{ 'access_request.submit' | t }}</span>
+                    <span *ngIf="loading()">{{ 'access_request.submitting' | t }}</span>
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          </ng-template>
+
+        </div>
+      </main>
+
+      <footer class="request-footer">
+        <span>&copy; 2026 SVAES</span>
+        <nav class="footer-links">
+          <a routerLink="/legal/privacidad">{{ 'login.footer_privacy' | t }}</a>
+          <span aria-hidden="true">&middot;</span>
+          <a routerLink="/legal/aviso-legal">{{ 'login.footer_legal' | t }}</a>
+        </nav>
+      </footer>
+    </div>

@@ -1,0 +1,109 @@
+    <div class="logs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-title">{{ 'logs.title' | t }}</h1>
+          <span class="logs-badge">{{ 'logs.audit_badge' | t }}</span>
+        </div>
+      </div>
+
+      <!-- Not implemented notice -->
+      <div *ngIf="notAvailable()" class="unavailable-panel">
+        <div class="unavailable-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M10 6v5M10 13v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="unavailable-body">
+          <div class="unavailable-title">{{ 'logs.unavailable_title' | t }}</div>
+          <p class="unavailable-desc">
+            {{ 'logs.unavailable_desc' | t }}
+            (<code class="inline-mono">GET /api/v1/audit/logs</code>)
+          </p>
+          <ul class="unavailable-list">
+            <li>{{ 'logs.unavailable_item1' | t }}</li>
+            <li>{{ 'logs.unavailable_item2' | t }}</li>
+            <li>{{ 'logs.unavailable_item3' | t }}</li>
+            <li>{{ 'logs.unavailable_item4' | t }}</li>
+          </ul>
+          <div class="unavailable-meta">{{ 'logs.unavailable_meta' | t }}</div>
+        </div>
+      </div>
+
+      <!-- Loading skeleton -->
+      <div *ngIf="loading()" class="skeleton-list">
+        <div class="skeleton skeleton-row" *ngFor="let i of [1,2,3,4,5,6]"></div>
+      </div>
+
+      <!-- Data when available -->
+      <ng-container *ngIf="!loading() && !notAvailable()">
+        <div class="filters-bar">
+          <select class="filter-select" [(ngModel)]="filterCategory" (ngModelChange)="applyFilters()">
+            <option value="">{{ 'logs.all_categories' | t }}</option>
+            <option value="auth">{{ 'logs.category_auth' | t }}</option>
+            <option value="admin">{{ 'logs.category_admin' | t }}</option>
+            <option value="release">{{ 'logs.category_release' | t }}</option>
+            <option value="connector">{{ 'logs.category_connector' | t }}</option>
+            <option value="config">{{ 'logs.category_config' | t }}</option>
+          </select>
+          <select class="filter-select" [(ngModel)]="filterResult" (ngModelChange)="applyFilters()">
+            <option value="">{{ 'logs.all_results' | t }}</option>
+            <option value="success">{{ 'logs.result_success' | t }}</option>
+            <option value="failure">{{ 'logs.result_failure' | t }}</option>
+            <option value="denied">{{ 'logs.result_denied' | t }}</option>
+          </select>
+          <button class="btn-ghost" (click)="resetFilters()">{{ 'logs.clear_btn' | t }}</button>
+        </div>
+
+        <div class="privacy-notice">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <circle cx="6" cy="6" r="5.5" stroke="currentColor" stroke-width="1"/>
+            <path d="M6 5.5v3M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          {{ 'logs.privacy_notice' | t }}
+        </div>
+
+        <div class="data-table-wrap">
+          <table class="data-table" *ngIf="paginated().length > 0; else emptyState">
+            <thead>
+              <tr>
+                <th scope="col">{{ 'logs.col_timestamp' | t }}</th>
+                <th scope="col">{{ 'logs.col_category' | t }}</th>
+                <th scope="col">{{ 'logs.col_action' | t }}</th>
+                <th scope="col">{{ 'logs.col_actor' | t }}</th>
+                <th scope="col">{{ 'logs.col_role' | t }}</th>
+                <th scope="col">{{ 'logs.col_result' | t }}</th>
+                <th scope="col">{{ 'logs.col_ip' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let log of paginated()">
+                <td [attr.data-label]="'logs.col_timestamp' | t"><code class="mono-sm">{{ log.timestamp | date:'dd/MM/yy HH:mm:ss' }}</code></td>
+                <td [attr.data-label]="'logs.col_category' | t"><span class="category-chip">{{ 'logs.category_' + log.category | t }}</span></td>
+                <td class="cell-action" [attr.data-label]="'logs.col_action' | t">{{ 'audit_action.' + log.action | t }}</td>
+                <td [attr.data-label]="'logs.col_actor' | t"><code class="mono-sm">{{ maskId(log.actor_id) }}</code></td>
+                <td class="cell-muted" [attr.data-label]="'logs.col_role' | t">{{ 'logs.actor_role_' + log.actor_role | t }}</td>
+                <td [attr.data-label]="'logs.col_result' | t">
+                  <span class="result-badge" [class]="'result-' + log.result">
+                    {{ resultLabel(log.result) }}
+                  </span>
+                </td>
+                <td [attr.data-label]="'logs.col_ip' | t"><code class="mono-sm">{{ log.ip_address ? maskIp(log.ip_address) : '—' }}</code></td>
+              </tr>
+            </tbody>
+          </table>
+          <ng-template #emptyState>
+            <div class="empty-state">{{ 'logs.empty_filter' | t }}</div>
+          </ng-template>
+
+          <div class="table-footer" *ngIf="filtered().length > 0">
+            <span class="count-label">{{ 'logs.count' | t : { n: filtered().length } }}</span>
+            <div class="pagination" *ngIf="filtered().length > pageSize">
+              <button class="btn-ghost" [disabled]="page() === 0" [title]="page() === 0 ? ('common.disabled_tooltip.first_page' | t) : ''" (click)="prevPage()">{{ 'logs.previous' | t }}</button>
+              <span class="page-info">{{ page() + 1 }} / {{ totalPages() }}</span>
+              <button class="btn-ghost" [disabled]="page() >= totalPages() - 1" [title]="page() >= totalPages() - 1 ? ('common.disabled_tooltip.last_page' | t) : ''" (click)="nextPage()">{{ 'logs.next' | t }}</button>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
