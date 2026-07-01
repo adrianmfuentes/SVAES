@@ -225,7 +225,7 @@ interface VerificationResult {
                     @if (rule.rule_id !== 'artifact_fetch_error') {
                     <tr
                       (click)="toggleEvidence(i)">
-                      <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm">{{ rule.rule_id }}</code></td>
+                      <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm cell-rule-id" [attr.title]="rule.rule_id">{{ rule.rule_id }}</code></td>
                       <td class="cell-primary" [attr.data-label]="'release_detail.rule_name' | t">{{ translateRuleName(rule) || ('common.dash' | t) }}</td>
                       <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ rule.connector || ('common.na' | t) }}</td>
                       <td [attr.data-label]="'release_detail.rule_result' | t">
@@ -912,6 +912,14 @@ interface VerificationResult {
       color: var(--muted);
     }
 
+    .cell-rule-id {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .verdict-badge {
       display: inline-flex;
       align-items: center;
@@ -1194,6 +1202,14 @@ interface VerificationResult {
         white-space: normal;
         overflow: visible;
         text-overflow: unset;
+      }
+
+      .cell-rule-id {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+        text-align: right;
+        word-break: break-word;
       }
 
       .cell-actions {
