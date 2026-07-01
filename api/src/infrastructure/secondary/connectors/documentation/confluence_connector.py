@@ -44,7 +44,7 @@ class ConfluenceConnector(BaseHttpConnector):
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
     ) -> Dict[str, Any] | None:
         space_key = filter_params.get("space_key") or config.get("space_key")
-        cql = filter_params.get("cql", "type page order by lastmodified desc")
+        cql = filter_params.get("cql", "type = page order by lastmodified desc")
         if space_key:
             cql = f"space={space_key} AND {cql}"
         return {"cql": cql, "limit": 50}

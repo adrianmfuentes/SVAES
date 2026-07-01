@@ -657,6 +657,15 @@ class TestConfluenceConnector:
         params = conn._get_list_params({}, {})
         assert "space=" not in params["cql"]
 
+    def test_get_list_params_default_cql_is_valid_syntax(self, conn):
+        """Regression guard: CQL requires an operator between field and value
+        ('type = page'). A bare 'type page' is malformed CQL and Confluence
+        rejects it with 400 'Could not parse cql' - this default is only used
+        when browsing with no search text, so it went untested until then."""
+        params = conn._get_list_params({}, {})
+        assert "type = page" in params["cql"]
+        assert "type page" not in params["cql"]
+
     def test_get_results_key(self, conn):
         assert conn._get_results_key() == "results"
 
