@@ -454,3 +454,5 @@ async def browse_connector_items(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+    except ConnectorConnectionFailedError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))

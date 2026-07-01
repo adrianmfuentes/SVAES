@@ -2433,9 +2433,11 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     const artifactTypes = CONNECTOR_TYPE_TO_ARTIFACT[conn.connector_type] ?? ['TAREA'];
     this.importArtifactType.set(artifactTypes[0]);
 
-    const releaseName = this.release()?.name ?? '';
-    this.browseSearch.set(releaseName);
-    this.fetchBrowseItems(conn, releaseName);
+    // Cargar sin filtro de texto: cada conector expone un listado por defecto
+    // (issues abiertas, páginas recientes, tareas de la lista configurada...).
+    // Precargar con el nombre de la entrega restringía la búsqueda a coincidencias
+    // literales de texto, que casi nunca existen fuera de Confluence.
+    this.fetchBrowseItems(conn, '');
 
     this.browseSearchSub?.unsubscribe();
     this.browseSearchSub = this.browseSearchSubject.pipe(

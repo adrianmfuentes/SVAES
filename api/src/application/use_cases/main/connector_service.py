@@ -1,4 +1,5 @@
 import ast
+import re
 from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
@@ -207,6 +208,7 @@ class ConnectorService(IConnectorService):
         self, connector_id: UUID, query: str = ""
     ) -> List[dict]:
         from cryptography.fernet import Fernet
+        from domain.exceptions import ConnectorConnectionFailedError
         connector = await self._connector_repo.get_by_id(connector_id)
         if not connector:
             raise EntityNotFoundError(f"Conector no encontrado: {connector_id}")
@@ -225,15 +227,20 @@ class ConnectorService(IConnectorService):
             config = ast.literal_eval(fernet.decrypt(connector.encrypted_credentials).decode())
         except Exception as exc:
             _log.error("browse: credential decrypt failed connector_id=%s: %s", connector_id, exc)
-            return []
+            raise ConnectorConnectionFailedError(
+                f"No se pudieron descifrar las credenciales del conector: {connector_id}"
+            ) from exc
 
         filter_params: dict = {}
         if query:
             impl_upper = connector.connector_implementation.upper()
             escaped = query.replace('"', '\\"')
             if impl_upper in ("JIRA", "JIRA_SM"):
+                key_clause = ""
+                if re.match(r"^[A-Za-z][A-Za-z0-9_]+-\d+$", query.strip()):
+                    key_clause = f'key = "{query.strip().upper()}" OR '
                 filter_params["jql"] = (
-                    f'text ~ "{escaped}" OR fixVersion = "{escaped}" ORDER BY updated DESC'
+                    f'{key_clause}text ~ "{escaped}" OR fixVersion = "{escaped}" ORDER BY updated DESC'
                 )
             elif impl_upper == "CONFLUENCE":
                 filter_params["cql"] = f'text ~ "{escaped}" order by lastmodified desc'
@@ -251,7 +258,9 @@ class ConnectorService(IConnectorService):
                 "browse: list_artifacts failed connector_id=%s: %s",
                 connector_id, exc,
             )
-            return []
+            raise ConnectorConnectionFailedError(
+                f"Error al listar elementos del conector: {connector_id}"
+            ) from exc
 
         try:
             return _normalize_browse_items(raw_items, connector.connector_implementation, config)
@@ -260,7 +269,9 @@ class ConnectorService(IConnectorService):
                 "browse: normalization failed connector_id=%s: %s",
                 connector_id, exc,
             )
-            return []
+            raise ConnectorConnectionFailedError(
+                f"Error al normalizar elementos del conector: {connector_id}"
+            ) from exc
 
 
     async def verify_artifact_ref(

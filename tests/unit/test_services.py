@@ -2694,6 +2694,133 @@ class TestConnectorServiceTestConnection:
         assert c.status == ConnectorStatus.ERROR
         connector_repo.update.assert_awaited_once()
 
+
+class TestConnectorServiceBrowse:
+    @pytest.fixture
+    def svc(self):
+        from application.use_cases.main.connector_service import ConnectorService
+        connector_repo = AsyncMock()
+        connector_registry = MagicMock()
+        return ConnectorService(connector_repo, connector_registry), connector_repo, connector_registry
+
+    async def test_browse_maps_items_generically_for_clickup(self, svc):
+        """The browse mapping is generic per implementation (not Confluence-only):
+        CLICKUP raw task items must come back as {ref, title, subtitle}."""
+        service, connector_repo, connector_registry = svc
+        from domain.entities.connector_instance import ConnectorInstance
+        from domain.enums import ConnectorStatus
+        c = ConnectorInstance(
+            id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
+            connector_implementation="CLICKUP", organization_id=uuid4(),
+            encrypted_credentials=b"enc", status=ConnectorStatus.ACTIVO,
+        )
+        connector_repo.get_by_id = AsyncMock(return_value=c)
+
+        mock_impl = MagicMock()
+        mock_impl.list_artifacts = AsyncMock(return_value=[
+            {"id": "868czmkt6", "name": "Release 1.0.0", "status": {"status": "in progress"}},
+        ])
+        connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
+
+        with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \
+             patch("application.use_cases.main.connector_service.settings") as mock_settings:
+            mock_settings.encryption_key = "dummy-key"
+            mock_fernet = MagicMock()
+            mock_fernet.decrypt = MagicMock(return_value=b"{'token': 'tok', 'team_id': '1'}")
+            mock_fernet_cls.return_value = mock_fernet
+
+            items = await service.browse_connector_items(c.id, query="Release")
+
+        assert items == [{"ref": "868czmkt6", "title": "Release 1.0.0", "subtitle": "in progress"}]
+
+    async def test_browse_connector_failure_raises_instead_of_empty_list(self, svc):
+        """Regression guard: a connector-level failure (e.g. HTTP 401) must surface
+        as ConnectorConnectionFailedError, not be swallowed into an empty list -
+        otherwise the UI can't distinguish 'no results' from 'connector broken'."""
+        service, connector_repo, connector_registry = svc
+        from domain.entities.connector_instance import ConnectorInstance
+        from domain.enums import ConnectorStatus
+        from domain.exceptions import ConnectorConnectionFailedError
+        c = ConnectorInstance(
+            id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
+            connector_implementation="CLICKUP", organization_id=uuid4(),
+            encrypted_credentials=b"enc", status=ConnectorStatus.ACTIVO,
+        )
+        connector_repo.get_by_id = AsyncMock(return_value=c)
+
+        mock_impl = MagicMock()
+        mock_impl.list_artifacts = AsyncMock(side_effect=Exception("401 Unauthorized"))
+        connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
+
+        with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \
+             patch("application.use_cases.main.connector_service.settings") as mock_settings:
+            mock_settings.encryption_key = "dummy-key"
+            mock_fernet = MagicMock()
+            mock_fernet.decrypt = MagicMock(return_value=b"{'token': 'bad'}")
+            mock_fernet_cls.return_value = mock_fernet
+
+            with pytest.raises(ConnectorConnectionFailedError):
+                await service.browse_connector_items(c.id, query="Release")
+
+    async def test_browse_jira_query_by_issue_key_adds_key_clause(self, svc):
+        """Regression guard: searching 'SVAES-1' must match by issue key, not only
+        by free-text content - otherwise issues are only found if their key happens
+        to appear in the summary/description text."""
+        service, connector_repo, connector_registry = svc
+        from domain.entities.connector_instance import ConnectorInstance
+        from domain.enums import ConnectorStatus
+        c = ConnectorInstance(
+            id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
+            connector_implementation="JIRA", organization_id=uuid4(),
+            encrypted_credentials=b"enc", status=ConnectorStatus.ACTIVO,
+        )
+        connector_repo.get_by_id = AsyncMock(return_value=c)
+
+        mock_impl = MagicMock()
+        mock_impl.list_artifacts = AsyncMock(return_value=[])
+        connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
+
+        with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \
+             patch("application.use_cases.main.connector_service.settings") as mock_settings:
+            mock_settings.encryption_key = "dummy-key"
+            mock_fernet = MagicMock()
+            mock_fernet.decrypt = MagicMock(return_value=b"{'token': 'tok'}")
+            mock_fernet_cls.return_value = mock_fernet
+
+            await service.browse_connector_items(c.id, query="SVAES-1")
+
+        jql = mock_impl.list_artifacts.call_args[0][0]["jql"]
+        assert 'key = "SVAES-1"' in jql
+
+    async def test_browse_jira_query_freetext_has_no_key_clause(self, svc):
+        """A non-issue-key search (e.g. a document/plan name) should not add a
+        'key =' clause, since it isn't a valid Jira issue key."""
+        service, connector_repo, connector_registry = svc
+        from domain.entities.connector_instance import ConnectorInstance
+        from domain.enums import ConnectorStatus
+        c = ConnectorInstance(
+            id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
+            connector_implementation="JIRA", organization_id=uuid4(),
+            encrypted_credentials=b"enc", status=ConnectorStatus.ACTIVO,
+        )
+        connector_repo.get_by_id = AsyncMock(return_value=c)
+
+        mock_impl = MagicMock()
+        mock_impl.list_artifacts = AsyncMock(return_value=[])
+        connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
+
+        with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \
+             patch("application.use_cases.main.connector_service.settings") as mock_settings:
+            mock_settings.encryption_key = "dummy-key"
+            mock_fernet = MagicMock()
+            mock_fernet.decrypt = MagicMock(return_value=b"{'token': 'tok'}")
+            mock_fernet_cls.return_value = mock_fernet
+
+            await service.browse_connector_items(c.id, query="Plan de pruebas v1.0.0")
+
+        jql = mock_impl.list_artifacts.call_args[0][0]["jql"]
+        assert "key =" not in jql
+
     async def test_test_connection_impl_not_found(self, svc):
         """Branch: test_connector_connection impl not found → ValidationError"""
         service, connector_repo, connector_registry = svc

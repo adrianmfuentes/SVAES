@@ -53,7 +53,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
             match a.metadata.get(status_field) {
                 Some(val) => {
                     match val.as_str() {
-                        Some(state) => !allowed_states.contains(&state),
+                        Some(state) => !allowed_states.iter().any(|allowed| allowed.eq_ignore_ascii_case(state)),
                         None => true,
                     }
                 }
@@ -170,5 +170,20 @@ mod tests {
         let artifacts: Vec<Artifact> = vec![];
         let result = evaluate(&artifacts, &make_rule("RV-03", json!({})));
         assert_eq!(result.status, RuleStatus::NoEvaluada);
+    }
+
+    /// Conectores como Jira devuelven el nombre de estado con la capitalización
+    /// original de su workflow (p. ej. "Done"), no en mayúsculas. La comparación
+    /// contra `allowed_states` debe ser insensible a mayúsculas/minúsculas para
+    /// que un estado como "Done" siga contando como válido frente al valor por
+    /// defecto ["DONE", "CLOSED"].
+    #[test]
+    fn state_comparison_is_case_insensitive() {
+        let artifacts = vec![make_artifact("T-001", "TAREA", "Done")];
+        let rule = make_rule("RV-03", json!({}));
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Ok);
     }
 }
