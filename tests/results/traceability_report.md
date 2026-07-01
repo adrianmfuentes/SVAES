@@ -1,8 +1,6 @@
 # Informe de trazabilidad - SVAES Plan de Pruebas
 
-> **TFG terminado** — 25 de junio de 2026
-
-**Total en plan:** 89  |  **Cubiertas OK:** 78  |  **Fallan:** 0  |  **Sin implementar:** 11
+**Total en plan:** 77  |  **Cubiertas OK:** 75  |  **Fallan:** 0  |  **Sin implementar:** 2
 
 | TC-ID | Nivel | Seccion | Estado | Herramienta | Descripcion |
 |---|---|---|---|---|---|
@@ -25,13 +23,9 @@
 | `TC-UNI-MOT-10` | Unitaria | 7.2.2 | ✅ PASS | cargo test | RV-08 Artefacto con antiguedad > umbral -> WARNING |
 | `TC-UNI-MOT-11` | Unitaria | 7.2.2 | ✅ PASS | cargo test | RV-09 Dos artefactos mismo external_id -> ERROR |
 | `TC-UNI-MOT-12` | Unitaria | 7.2.2 | ✅ PASS | cargo test | RV-10 Documento aprobado existe |
-| `TC-UNI-ACC-01` | Unitaria | 7.2.2a | ✅ PASS | pytest | Owner transfiere propiedad antes de eliminar cuenta |
-| `TC-UNI-ACC-02` | Unitaria | 7.2.2a | ✅ PASS | pytest | Owner unico elimina org antes de cuenta |
-| `TC-UNI-ACC-03` | Unitaria | 7.2.2a | ✅ PASS | pytest | Eliminar organizacion existente/excepcion |
-| `TC-UNI-ACC-04` | Unitaria | 7.2.2a | ✅ PASS | pytest | Repo delete org existente/no encontrado |
 | `TC-UNI-API-00` | Unitaria | 7.2.3 | ✅ PASS | pytest | Base OPERATOR valido+propia+completo -> 201 |
 | `TC-UNI-API-01` | Unitaria | 7.2.3 | ✅ PASS | pytest | rol=ADMIN -> 201 |
-| `TC-UNI-API-02` | Unitaria | 7.2.3 | ✅ PASS | pytest | rol=INVALID -> 403 |
+| `TC-UNI-API-02` | Unitaria | 7.2.3 | ⬜ MISSING | pytest | rol=INVALID -> 403 |
 | `TC-UNI-API-03` | Unitaria | 7.2.3 | ✅ PASS | pytest | autenticacion=token_caducado -> 401 |
 | `TC-UNI-API-04` | Unitaria | 7.2.3 | ✅ PASS | pytest | autenticacion=sin_token -> 401 |
 | `TC-UNI-API-05` | Unitaria | 7.2.3 | ✅ PASS | pytest | org_context=ajena -> 404 |
@@ -43,21 +37,15 @@
 | `TC-UNI-CON-04` | Unitaria | 7.2.4 | ✅ PASS | pytest | VL latencia = timeout exacto -> TimeoutError |
 | `TC-UNI-CON-05` | Unitaria | 7.2.4 | ✅ PASS | pytest | VL latencia = timeout-1ms -> OK |
 | `TC-UNI-CON-06` | Unitaria | 7.2.4 | ✅ PASS | pytest | Conector INACTIVO en verificacion -> sin HTTP |
-| `TC-UNI-FE-GRD-01` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | Token valido, U2/OPERATOR, ruta permitida -> canActivate=true |
-| `TC-UNI-FE-GRD-02` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | Token caducado -> canActivate=false, redirige /login |
-| `TC-UNI-FE-GRD-03` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | Token ausente -> canActivate=false, redirige /login |
-| `TC-UNI-FE-GRD-04` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | U2/OPERATOR en /releases -> canActivate=true |
-| `TC-UNI-FE-SVC-01` | Unitaria | 7.2.5.2 | ⬜ MISSING | Jest | POST /releases 201 -> Observable emite Release, Bearer presente |
-| `TC-UNI-FE-SVC-02` | Unitaria | 7.2.5.2 | ⬜ MISSING | Jest | POST /releases 401 -> Observable emite AuthError |
-| `TC-UNI-FE-SVC-03` | Unitaria | 7.2.5.2 | ⬜ MISSING | Jest | POST /releases 422 -> Observable emite ValidationError |
-| `TC-UNI-FE-DEL-01` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | No muestra boton delete para ADMIN |
-| `TC-UNI-FE-DEL-02` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | Muestra boton delete para no-admin |
-| `TC-UNI-FE-DEL-03` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | Modal advierte eliminacion de org si es unico miembro |
-| `TC-UNI-FE-DEL-04` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | DELETE /me/account con password correcta -> logout |
-| `TC-UNI-FE-DEL-05` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | DELETE /me/account 400/401 -> wrong password |
-| `TC-UNI-FE-DEL-06` | Unitaria | 7.2.5.4 | ✅ PASS | Vitest | DELETE /me/account 403/500 -> error generico |
-| `TC-UNI-FE-NGR-01` | Unitaria | 7.2.5.3 | ⬜ MISSING | Jest | API 202+taskId -> verifyReleaseSuccess con taskId |
-| `TC-UNI-FE-NGR-02` | Unitaria | 7.2.5.3 | ⬜ MISSING | Jest | API 409 -> verifyReleaseFailure con INVALID_STATE |
+| `TC-UNI-FE-GRD-01` | Unitaria | 7.2.5.1 | ✅ PASS | Jest | Token valido, U2/OPERATOR, ruta permitida -> canActivate=true |
+| `TC-UNI-FE-GRD-02` | Unitaria | 7.2.5.1 | ✅ PASS | Jest | Token caducado -> canActivate=false, redirige /login |
+| `TC-UNI-FE-GRD-03` | Unitaria | 7.2.5.1 | ✅ PASS | Jest | Token ausente -> canActivate=false, redirige /login |
+| `TC-UNI-FE-GRD-04` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | U1/OPERATOR en /releases/verify -> canActivate=true |
+| `TC-UNI-FE-SVC-01` | Unitaria | 7.2.5.2 | ✅ PASS | Jest | POST /releases 201 -> Observable emite Release, Bearer presente |
+| `TC-UNI-FE-SVC-02` | Unitaria | 7.2.5.2 | ✅ PASS | Jest | POST /releases 401 -> Observable emite AuthError |
+| `TC-UNI-FE-SVC-03` | Unitaria | 7.2.5.2 | ✅ PASS | Jest | POST /releases 422 -> Observable emite ValidationError |
+| `TC-UNI-FE-NGR-01` | Unitaria | 7.2.5.3 | ✅ PASS | Jest | API 202+taskId -> verifyReleaseSuccess con taskId |
+| `TC-UNI-FE-NGR-02` | Unitaria | 7.2.5.3 | ✅ PASS | Jest | API 409 -> verifyReleaseFailure con INVALID_STATE |
 | `TC-INT-EST-01` | Integracion | 7.3.1 | ✅ PASS | pytest+Docker | T1 BORRADOR->EN_VERIFICACION -> HTTP 202 |
 | `TC-INT-EST-02` | Integracion | 7.3.1 | ✅ PASS | pytest+Docker | T2 EN_VERIFICACION->VALIDA |
 | `TC-INT-EST-03` | Integracion | 7.3.1 | ✅ PASS | pytest+Docker | T3 EN_VERIFICACION->CON_ADVERTENCIAS |
@@ -87,11 +75,22 @@
 | `TC-PER-VL-01` | Rendimiento | 7.5 | ✅ PASS | Locust | Verificacion 10 reglas -> tiempo e2e <=5s p95 (RNF-06) |
 | `TC-PER-VL-02` | Rendimiento | 7.5 | ✅ PASS | Locust | Motor Rust bucle -> p95 <500ms (RNF-07) |
 | `TC-PER-VL-03` | Rendimiento | 7.5 | ✅ PASS | Locust | 50 POST /verify simultaneos -> todas 202 (RNF-06) |
-| `TC-PER-CE-01` | Rendimiento | 7.5 | ⬜ MISSING | Locust | 50 health checks concurrentes -> sin timeout |
-| `TC-PER-CE-02` | Rendimiento | 7.5 | ⬜ MISSING | Locust | Carga sostenida en /releases -> sin errores |
 | `TC-PER-CE-04` | Rendimiento | 7.5 | ✅ PASS | SonarCloud | Suite completa -> SonarCloud cobertura >=70% (RNF-27) |
 | `TC-SEC-AUT-01` | Seguridad | 7.6 | ✅ PASS | pytest | VL fuerza bruta: 5 intentos -> 403 + bloqueo 15min (RNF-14) |
 | `TC-SEC-AUT-02` | Seguridad | 7.6 | ✅ PASS | pytest | JWT manipulado -> 401 (OWASP A2) |
 | `TC-SEC-INY-01` | Seguridad | 7.6 | ✅ PASS | pytest | SQLi en nombre release -> neutralizado (OWASP A3) |
 | `TC-SEC-INY-02` | Seguridad | 7.6 | ✅ PASS | pytest | XSS en release -> escapado al frontend (OWASP A3) |
 | `TC-SEC-CIF-01` | Seguridad | 7.6 | ✅ PASS | pytest | Credenciales cifradas AES-256-GCM en BD (RNF-13) |
+
+## TC-IDs en tests no reconocidos en el plan
+
+- `TC-UNI-AGG-08`
+- `TC-UNI-FE-COM-01`
+- `TC-UNI-FE-GRD-05`
+- `TC-UNI-FE-GRD-06`
+- `TC-UNI-FE-NTR-01`
+- `TC-UNI-FE-NTR-02`
+- `TC-UNI-FE-NTR-03`
+- `TC-UNI-FE-NTR-04`
+- `TC-UNI-FE-NTR-05`
+- `TC-UNI-FE-NTR-06`

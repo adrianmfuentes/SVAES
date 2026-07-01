@@ -366,10 +366,12 @@ class TestAccessGuards:
         org.owner_id = uuid4()
         org_repo = AsyncMock()
         org_repo.get_by_id = AsyncMock(return_value=org)
+        membership_repo = AsyncMock()
+        membership_repo.get = AsyncMock(return_value=None)
 
         dep = require_org_access()
         with pytest.raises(HTTPException) as exc:
-            await dep(org_id=uuid4(), current_user=cu_operator, org_repo=org_repo)
+            await dep(org_id=uuid4(), current_user=cu_operator, org_repo=org_repo, membership_repo=membership_repo)
         assert exc.value.status_code == 403
 
     async def test_require_project_access_admin_bypasses(self, cu_admin):

@@ -2597,3 +2597,128 @@ class TestSqlVerificationResultRepository:
         with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.find_by_release(uuid4())
         assert entities == []
+
+
+# ── SqlUserMembershipRepository ───────────────────────────────────────────────
+
+def _make_membership_row(membership_id=None, user_id=None, organization_id=None, role="OPERATOR"):
+    """Create a mock row resembling UserMembershipModel."""
+    row = MagicMock()
+    row.id = str(membership_id or uuid4())
+    row.user_id = str(user_id or uuid4())
+    row.organization_id = str(organization_id or uuid4())
+    row.role = role
+    row.created_at = datetime.now(timezone.utc)
+    return row
+
+
+class TestSqlUserMembershipRepository:
+    @pytest.fixture
+    def repo(self):
+        from infrastructure.secondary.database.repositories.user_membership_repository import SqlUserMembershipRepository
+        return SqlUserMembershipRepository()
+
+    def _patch_target(self):
+        return "infrastructure.secondary.database.repositories.user_membership_repository.AsyncSessionLocal"
+
+    async def test_create_membership(self, repo):
+        session, mgr = _make_mock_session()
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        membership = UserMembership(id=uuid4(), user_id=uuid4(), organization_id=uuid4(), role=UserRole.U4)
+        with patch(self._patch_target(), return_value=mgr):
+            result = await repo.create(membership)
+        session.add.assert_called_once()
+        session.commit.assert_awaited_once()
+        assert result.role.value == "MANAGER"
+
+    async def test_get_found(self, repo):
+        session, mgr = _make_mock_session()
+        row = _make_membership_row(role="ADMIN")
+        result = _make_scalar_result(row)
+        session.execute = AsyncMock(return_value=result)
+        with patch(self._patch_target(), return_value=mgr):
+            membership = await repo.get(uuid4(), uuid4())
+        assert membership is not None
+        assert membership.role.value == "ADMIN"
+
+    async def test_get_not_found(self, repo):
+        session, mgr = _make_mock_session()
+        result = _make_scalar_result(None)
+        session.execute = AsyncMock(return_value=result)
+        with patch(self._patch_target(), return_value=mgr):
+            membership = await repo.get(uuid4(), uuid4())
+        assert membership is None
+
+    async def test_list_by_user_multiple_orgs(self, repo):
+        """A user with memberships in two orgs, each with a different role."""
+        session, mgr = _make_mock_session()
+        user_id = uuid4()
+        rows = [
+            _make_membership_row(user_id=user_id, role="ADMIN"),
+            _make_membership_row(user_id=user_id, role="OPERATOR"),
+        ]
+        result = _make_scalars_result(rows)
+        session.execute = AsyncMock(return_value=result)
+        with patch(self._patch_target(), return_value=mgr):
+            memberships = await repo.list_by_user(user_id)
+        assert len(memberships) == 2
+        assert {m.role.value for m in memberships} == {"ADMIN", "OPERATOR"}
+
+    async def test_list_by_organization(self, repo):
+        session, mgr = _make_mock_session()
+        org_id = uuid4()
+        rows = [_make_membership_row(organization_id=org_id)]
+        result = _make_scalars_result(rows)
+        session.execute = AsyncMock(return_value=result)
+        with patch(self._patch_target(), return_value=mgr):
+            memberships = await repo.list_by_organization(org_id)
+        assert len(memberships) == 1
+
+    async def test_update_role_success(self, repo):
+        from domain.enums import UserRole
+        session, mgr = _make_mock_session()
+        row = _make_membership_row(role="OPERATOR")
+        result = _make_scalar_result(row)
+        session.execute = AsyncMock(return_value=result)
+        with patch(self._patch_target(), return_value=mgr):
+            updated = await repo.update_role(uuid4(), uuid4(), UserRole.U3)
+        assert row.role == "ADMIN"
+        session.commit.assert_awaited_once()
+
+    async def test_update_role_not_found_raises(self, repo):
+        from domain.enums import UserRole
+        session, mgr = _make_mock_session()
+        result = _make_scalar_result(None)
+        session.execute = AsyncMock(return_value=result)
+        with patch(self._patch_target(), return_value=mgr):
+            with pytest.raises(ValueError):
+                await repo.update_role(uuid4(), uuid4(), UserRole.U3)
+
+    async def test_delete_existing(self, repo):
+        session, mgr = _make_mock_session()
+        row = _make_membership_row()
+        result = _make_scalar_result(row)
+        session.execute = AsyncMock(return_value=result)
+        with patch(self._patch_target(), return_value=mgr):
+            await repo.delete(uuid4(), uuid4())
+        session.delete.assert_awaited_once()
+        session.commit.assert_awaited_once()
+
+    async def test_delete_missing_is_noop(self, repo):
+        session, mgr = _make_mock_session()
+        result = _make_scalar_result(None)
+        session.execute = AsyncMock(return_value=result)
+        with patch(self._patch_target(), return_value=mgr):
+            await repo.delete(uuid4(), uuid4())
+        session.delete.assert_not_awaited()
+
+    async def test_delete_all_for_user(self, repo):
+        session, mgr = _make_mock_session()
+        rows = [_make_membership_row(), _make_membership_row()]
+        result = _make_scalars_result(rows)
+        session.execute = AsyncMock(return_value=result)
+        with patch(self._patch_target(), return_value=mgr):
+            await repo.delete_all_for_user(uuid4())
+        assert session.delete.await_count == 2
+        session.commit.assert_awaited_once()

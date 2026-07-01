@@ -32,10 +32,10 @@ class User:
 
     @organization_id.setter
     def organization_id(self, value: Optional[UUID]) -> None:
-        if value is None:
-            self.organization_ids = []
-        elif value not in self.organization_ids:
-            self.organization_ids.append(value)
+        # organization_ids only ever holds 0 or 1 elements in practice (the
+        # user's active organization); this must replace it, not append, or
+        # switching/reassigning the active org silently keeps the old value.
+        self.organization_ids = [] if value is None else [value]
 
 
 @dataclass
@@ -44,4 +44,4 @@ class UserMembership:
     user_id: UUID
     organization_id: UUID
     role: UserRole
-    joined_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

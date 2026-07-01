@@ -1,12 +1,14 @@
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from application.ports.input.i_organization_service import IOrganizationService
 from application.ports.output.i_organization_repository import IOrganizationRepository
 from application.ports.output.i_project_repository import IProjectRepository
 from application.ports.output.i_user_repository import IUserRepository
 from application.ports.output.i_profile_repository import IProfileRepository
+from application.ports.output.i_user_membership_repository import IUserMembershipRepository
 from domain.entities.organization import Organization
 from domain.entities.project import Project
+from domain.entities.user import UserMembership
 from domain.enums import UserRole
 from domain.exceptions import DuplicateEntityError, EntityNotFoundError, ValidationError
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
@@ -22,11 +24,13 @@ class OrganizationService(IOrganizationService):
         project_repository: IProjectRepository,
         user_repository: Optional[IUserRepository] = None,
         profile_repository: Optional[IProfileRepository] = None,
+        user_membership_repository: Optional[IUserMembershipRepository] = None,
     ) -> None:
         self._org_repo = organization_repository
         self._project_repo = project_repository
         self._user_repo = user_repository
         self._profile_repo = profile_repository
+        self._membership_repo = user_membership_repository
 
 
     async def create_organization(
@@ -50,6 +54,10 @@ class OrganizationService(IOrganizationService):
         if owner_id and self._user_repo and owner:
             owner.organization_id = created_org.id
             await self._user_repo.update(owner)
+            if self._membership_repo:
+                await self._membership_repo.create(UserMembership(
+                    id=uuid4(), user_id=owner_id, organization_id=created_org.id, role=owner.role,
+                ))
 
         return created_org
 
@@ -173,8 +181,17 @@ class OrganizationService(IOrganizationService):
             if old_owner_user and old_owner_user.role == UserRole.U4:
                 old_owner_user.role = UserRole.U2
                 await self._user_repo.update(old_owner_user)
+                if self._membership_repo and old_owner_id and await self._membership_repo.get(old_owner_id, organization_id):
+                    await self._membership_repo.update_role(old_owner_id, organization_id, UserRole.U2)
             new_owner_user.role = UserRole.U4  # type: ignore[union-attr]
             await self._user_repo.update(new_owner_user)
+            if self._membership_repo:
+                if await self._membership_repo.get(new_owner_id, organization_id):
+                    await self._membership_repo.update_role(new_owner_id, organization_id, UserRole.U4)
+                else:
+                    await self._membership_repo.create(UserMembership(
+                        id=uuid4(), user_id=new_owner_id, organization_id=organization_id, role=UserRole.U4,
+                    ))
 
         audit = get_audit_logger()
         audit.log(AuditEntry(

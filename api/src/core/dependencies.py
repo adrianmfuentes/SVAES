@@ -14,6 +14,7 @@ from uuid import UUID
 from infrastructure.secondary.database.repositories.project_repository import SqlProjectRepository
 from infrastructure.secondary.database.repositories.release_repository import SqlReleaseRepository
 from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
+from infrastructure.secondary.database.repositories.user_membership_repository import SqlUserMembershipRepository
 from infrastructure.secondary.database.repositories.organization_repository import SqlOrganizationRepository
 from infrastructure.secondary.database.repositories.connector_repository import SqlConnectorRepository
 from infrastructure.secondary.database.repositories.artifact_repository import SqlArtifactRepository
@@ -246,10 +247,15 @@ def require_org_access():
         org_id: UUID,
         current_user: CurrentUser = Depends(get_current_user),
         org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
+        membership_repo: SqlUserMembershipRepository = Depends(get_user_membership_repository),
     ) -> CurrentUser:
         if current_user.role != UserRole.U3 and current_user.organization_id != org_id:
             org = await org_repo.get_by_id(org_id)
-            if not org or org.owner_id != current_user.user_id:
+            is_owner = bool(org and org.owner_id == current_user.user_id)
+            # El usuario puede tener membership en org_id aunque su organización
+            # "activa" (la del JWT) sea otra distinta (soporte multi-organización).
+            is_member = bool(await membership_repo.get(current_user.user_id, org_id))
+            if not org or (not is_owner and not is_member):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="No tienes acceso a esta organización",
@@ -328,6 +334,10 @@ def get_user_repository() -> SqlUserRepository:
 
 def get_organization_repository() -> SqlOrganizationRepository:
     return SqlOrganizationRepository()
+
+
+def get_user_membership_repository() -> SqlUserMembershipRepository:
+    return SqlUserMembershipRepository()
 
 
 def get_connector_repository() -> SqlConnectorRepository:
@@ -579,12 +589,14 @@ def get_organization_service(
     project_repo: SqlProjectRepository = Depends(get_project_repository),
     user_repo: SqlUserRepository = Depends(get_user_repository),
     profile_repo: SqlProfileRepository = Depends(get_profile_repository),
+    membership_repo: SqlUserMembershipRepository = Depends(get_user_membership_repository),
 ) -> IOrganizationService:
     return OrganizationService(
         organization_repository=org_repo,
         project_repository=project_repo,
         user_repository=user_repo,
         profile_repository=profile_repo,
+        user_membership_repository=membership_repo,
     )
 
 
@@ -623,12 +635,14 @@ def get_task_service(
 def get_user_service(
     user_repo: SqlUserRepository = Depends(get_user_repository),
     org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
+    membership_repo: SqlUserMembershipRepository = Depends(get_user_membership_repository),
 ) -> IUserService:
     password_hasher = get_password_hasher()
     return UserService(
         user_repository=user_repo,
         organization_repository=org_repo,
         password_hasher=password_hasher,
+        user_membership_repository=membership_repo,
     )
 
 

@@ -45,6 +45,22 @@ export interface Organization {
   slug: string;
 }
 
+export interface MyOrganization {
+  organization_id: string;
+  name: string;
+  slug: string;
+  role: string;
+  is_active: boolean;
+}
+
+export interface SwitchOrganizationResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  organization_id: string;
+  role: string;
+}
+
 export interface UserInfo {
   id: string;
   email: string;
@@ -174,5 +190,29 @@ export class AuthService {
 
   getOrganization(organizationId: string): Observable<Organization | null> {
     return this.http.get<Organization>(`/api/v1/organizations/${organizationId}`);
+  }
+
+  getMyOrganizations(): Observable<MyOrganization[]> {
+    return this.http.get<MyOrganization[]>('/api/v1/users/me/organizations');
+  }
+
+  switchOrganization(organizationId: string): Observable<SwitchOrganizationResponse> {
+    return this.http
+      .post<SwitchOrganizationResponse>('/api/v1/users/me/switch-organization', {
+        organization_id: organizationId,
+      })
+      .pipe(
+        tap((response) => {
+          _accessToken = response.access_token;
+          localStorage.setItem(this.TOKEN_KEY, response.access_token);
+          localStorage.setItem(this.REFRESH_KEY, response.refresh_token);
+          const current = this.getUser();
+          if (current) {
+            current.organization_id = response.organization_id;
+            current.role = response.role;
+            localStorage.setItem(this.USER_KEY, JSON.stringify(current));
+          }
+        }),
+      );
   }
 }

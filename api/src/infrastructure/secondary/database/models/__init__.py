@@ -2,6 +2,7 @@ from infrastructure.secondary.database.models.base import Base
 from infrastructure.secondary.database.models.release_model import ReleaseModel
 from infrastructure.secondary.database.models.project_model import ProjectModel
 from infrastructure.secondary.database.models.user_model import UserModel
+from infrastructure.secondary.database.models.user_membership_model import UserMembershipModel
 from infrastructure.secondary.database.models.organization_model import OrganizationModel
 from infrastructure.secondary.database.models.connector_model import ConnectorInstanceModel
 from infrastructure.secondary.database.models.profile_model import VerificationProfileModel

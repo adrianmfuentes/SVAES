@@ -1,15 +1,15 @@
 ============================= test session starts =============================
-platform win32 -- Python 3.13.12, pytest-9.1.0, pluggy-1.6.0 -- D:\34644\Documents\GitHub\SVAES\api\.venv\Scripts\python.exe
+platform win32 -- Python 3.13.12, pytest-9.1.1, pluggy-1.6.0 -- D:\34644\Documents\GitHub\SVAES\api\.venv\Scripts\python.exe
 cachedir: .pytest_cache
 rootdir: D:\34644\Documents\GitHub\SVAES
 configfile: pytest.ini
-plugins: anyio-4.14.0, Faker-40.23.0, locust-2.44.3, asyncio-1.4.0, cov-7.1.0, mock-3.15.1
+plugins: anyio-4.14.0, Faker-40.23.0, locust-2.44.4, asyncio-1.4.0, cov-7.1.0, mock-3.15.1, respx-0.23.1
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
 collecting ... collected 4 items
 
 tests/performance/test_coverage_threshold.py::test_tc_per_vl_01_e2e_latency_structure PASSED [ 25%]
 tests/performance/test_coverage_threshold.py::test_tc_per_vl_02_rust_engine_latency_structure PASSED [ 50%]
 tests/performance/test_coverage_threshold.py::test_tc_per_vl_03_concurrent_verify_structure PASSED [ 75%]
-tests/performance/test_coverage_threshold.py::test_tc_per_ce_04_sonarcloud_coverage_threshold SKIPPED [100%]
+tests/performance/test_coverage_threshold.py::test_tc_per_ce_04_sonarcloud_coverage_threshold PASSED [100%]
 
-======================== 3 passed, 1 skipped in 0.28s =========================
+============================== 4 passed in 0.36s ==============================

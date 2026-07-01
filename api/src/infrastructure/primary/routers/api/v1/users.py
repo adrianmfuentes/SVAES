@@ -5,8 +5,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from application.ports.input.i_user_service import IUserService
+from application.ports.input.i_organization_service import IOrganizationService
 from application.ports.output.i_token_service import ITokenService
-from core.dependencies import get_user_service, get_current_user, CurrentUser, require_permission, require_role, get_jwt_handler
+from infrastructure.secondary.database.repositories.user_membership_repository import SqlUserMembershipRepository
+from core.dependencies import (
+    get_user_service,
+    get_organization_service,
+    get_current_user,
+    get_user_membership_repository,
+    CurrentUser,
+    require_permission,
+    require_role,
+    get_jwt_handler,
+)
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from core.email import email_service
 from domain.enums import UserRole, Permission
@@ -64,6 +75,10 @@ class AdminRoleUpdateRequest(BaseModel):
 class DeleteAccountRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     password: str = Field(..., min_length=1, description="Contraseña actual para confirmar la eliminación")
+
+class SwitchOrganizationRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    organization_id: UUID
 
 
 @router.get("/api/v1/users/me")
@@ -211,11 +226,90 @@ async def export_user_data(
     }
 
 
+@router.get("/api/v1/users/me/organizations")
+async def list_my_organizations(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IUserService, Depends(get_user_service)],
+    org_service: Annotated[IOrganizationService, Depends(get_organization_service)],
+):
+    """Lista todas las organizaciones a las que pertenece el usuario autenticado, con su rol en cada una.
+
+    Permite a un usuario que pertenece a varias organizaciones (ej. un técnico que
+    trabaja para varios clientes) descubrir entre qué organizaciones puede cambiar.
+
+    Retorna:
+        - Lista de organizaciones con id, name, slug, role y si es la organización activa.
+    """
+    memberships = await service.list_user_organizations(current_user.user_id)
+    result = []
+    for membership in memberships:
+        org = await org_service.get_organization(membership.organization_id)
+        if not org:
+            continue
+        result.append({
+            "organization_id": str(org.id),
+            "name": org.name,
+            "slug": org.slug,
+            "role": membership.role.value,
+            "is_active": org.id == current_user.organization_id,
+        })
+    return result
+
+
+@router.post("/api/v1/users/me/switch-organization")
+async def switch_organization(
+    payload: SwitchOrganizationRequest,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    service: Annotated[IUserService, Depends(get_user_service)],
+    jwt_handler: Annotated[ITokenService, Depends(get_jwt_handler)],
+):
+    """Cambia la organización activa del usuario autenticado y reemite los tokens JWT.
+
+    El usuario debe tener una membership existente en la organización destino
+    (creada, por ejemplo, mediante una invitación previa). El rol efectivo tras
+    el cambio es el rol que el usuario tiene específicamente en esa organización,
+    que puede ser distinto al que tenía en la organización anterior.
+
+    Retorna:
+        - Nuevos access_token/refresh_token con el organization_id y role actualizados.
+        - 400 Bad Request si el usuario no pertenece a la organización solicitada.
+    """
+    try:
+        user = await service.switch_active_organization(
+            user_id=current_user.user_id,
+            organization_id=payload.organization_id,
+        )
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    access_token = jwt_handler.create_access_token(
+        user_id=user.id,
+        role=user.role.value,
+        email=user.email,
+        organization_id=user.organization_id,
+        expires_in=3600,
+    )
+    refresh_token = jwt_handler.create_refresh_token(
+        user_id=user.id,
+        role=user.role.value,
+        email=user.email,
+        organization_id=user.organization_id,
+    )
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "organization_id": str(user.organization_id),
+        "role": user.role.value,
+    }
+
+
 @router.get("/api/v1/organizations/{org_id}/users")
 async def list_organization_users(
     org_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
     service: Annotated[IUserService, Depends(get_user_service)],
+    membership_repo: Annotated[SqlUserMembershipRepository, Depends(get_user_membership_repository)],
     skip: int = 0,
     limit: int = 50,
 ):
@@ -236,7 +330,9 @@ async def list_organization_users(
         - 500 Internal Server Error para cualquier otro error inesperado.
     """
     if current_user.role != UserRole.U3 and current_user.organization_id != org_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta organización")
+        is_member = bool(await membership_repo.get(current_user.user_id, org_id))
+        if not is_member:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta organización")
     users = await service.list_organization_users(organization_id=org_id, skip=skip, limit=limit)
     return [
         {
@@ -280,15 +376,18 @@ async def invite_user(
             role=payload.role,
             requested_by=current_user.user_id,
         )
-        assert user.activation_token is not None
-        try:
-            await email_service.send_activation_email(
-                to_email=user.email,
-                to_name=user.display_name,
-                token=user.activation_token,
-            )
-        except Exception:
-            _log.warning("Activation email failed for invited user %s", user.email)
+        # Un usuario ya activo que se une a una organización adicional conserva su
+        # cuenta activa y no recibe un nuevo activation_token; solo se envía el
+        # correo de activación cuando de verdad hay uno pendiente.
+        if user.activation_token is not None:
+            try:
+                await email_service.send_activation_email(
+                    to_email=user.email,
+                    to_name=user.display_name,
+                    token=user.activation_token,
+                )
+            except Exception:
+                _log.warning("Activation email failed for invited user %s", user.email)
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     return {

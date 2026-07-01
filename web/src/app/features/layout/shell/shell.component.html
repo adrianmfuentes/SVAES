@@ -145,7 +145,39 @@
         </svg>
       </button>
       <div class="topbar-user">
-        <span class="topbar-org" *ngIf="orgName()">{{ orgName() }}</span>
+        <div class="org-switcher" *ngIf="orgName()">
+          <button
+            *ngIf="hasMultipleOrganizations; else orgLabelOnly"
+            type="button"
+            class="topbar-org topbar-org-btn"
+            [attr.aria-label]="'shell.switch_org_label' | t"
+            [attr.aria-expanded]="orgMenuOpen()"
+            (click)="toggleOrgMenu()"
+          >
+            {{ orgName() }}
+            <svg width="0.75rem" height="0.75rem" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+              <path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <ng-template #orgLabelOnly>
+            <span class="topbar-org">{{ orgName() }}</span>
+          </ng-template>
+
+          <div class="org-menu" *ngIf="orgMenuOpen()" (keydown.escape)="closeOrgMenu()">
+            <div class="org-menu-label">{{ 'shell.switch_org_current' | t }}</div>
+            <button
+              *ngFor="let org of myOrganizations()"
+              type="button"
+              class="org-menu-item"
+              [class.org-menu-item-active]="org.is_active"
+              (click)="switchOrganization(org)"
+            >
+              <span class="org-menu-item-name">{{ org.name }}</span>
+              <span class="org-menu-item-role">{{ org.role }}</span>
+            </button>
+            <div class="org-menu-error" *ngIf="switchOrgError()">{{ switchOrgError() }}</div>
+          </div>
+        </div>
         <span class="topbar-sep">|</span>
         <span class="topbar-name">{{ displayName }}</span>
         <span class="topbar-role">{{ roleLabel }}</span>

@@ -1,27 +1,38 @@
 ============================= test session starts =============================
-platform win32 -- Python 3.13.12, pytest-9.1.0, pluggy-1.6.0 -- D:\34644\Documents\GitHub\SVAES\api\.venv\Scripts\python.exe
+platform win32 -- Python 3.13.12, pytest-9.1.1, pluggy-1.6.0 -- D:\34644\Documents\GitHub\SVAES\api\.venv\Scripts\python.exe
 cachedir: .pytest_cache
 rootdir: D:\34644\Documents\GitHub\SVAES
 configfile: pytest.ini
-plugins: anyio-4.14.0, Faker-40.23.0, locust-2.44.3, asyncio-1.4.0, cov-7.1.0, mock-3.15.1
+plugins: anyio-4.14.0, Faker-40.23.0, locust-2.44.4, asyncio-1.4.0, cov-7.1.0, mock-3.15.1, respx-0.23.1
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 16 items
+collecting ... collected 27 items
 
-tests/integration/test_flow_resilience.py::TestFullFlow::test_tc_int_flw_01_full_flow_active_connectors SKIPPED [  6%]
-tests/integration/test_flow_resilience.py::TestFullFlow::test_tc_int_flw_02_full_flow_inactive_connectors SKIPPED [ 12%]
-tests/integration/test_flow_resilience.py::TestFullFlow::test_tc_int_flw_03_reverify_after_no_valida SKIPPED [ 18%]
-tests/integration/test_flow_resilience.py::TestExactRateLimit::test_tc_int_lim_01_100_requests_return_200 SKIPPED [ 25%]
-tests/integration/test_flow_resilience.py::TestExactRateLimit::test_tc_int_lim_02_101st_request_returns_429 SKIPPED [ 31%]
-tests/integration/test_flow_resilience.py::TestResilience::test_tc_int_res_01_worker_crash_recovery SKIPPED [ 37%]
-tests/integration/test_flow_resilience.py::TestResilience::test_tc_int_res_02_redis_unavailable_recovery SKIPPED [ 43%]
-tests/integration/test_flow_resilience.py::TestMigration::test_tc_int_mig_01_release_profile_migration SKIPPED [ 50%]
-tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_01_borrador_to_en_verificacion SKIPPED [ 56%]
-tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_02_verificacion_to_valida SKIPPED [ 62%]
-tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_03_verificacion_to_con_advertencias SKIPPED [ 68%]
-tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_04_verificacion_to_no_valida SKIPPED [ 75%]
-tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_05_any_final_to_archivada SKIPPED [ 81%]
-tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_06_skip_state_borrador_to_archivada_negative SKIPPED [ 87%]
-tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_07_archivada_modification_rejected SKIPPED [ 93%]
-tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_08_archivada_restore SKIPPED [100%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_01_valid_key_on_protected_endpoint PASSED [  3%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_02_missing_header_returns_401 PASSED [  7%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_03_malformed_key_returns_401 PASSED [ 11%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_04_revoked_key_returns_401 PASSED [ 14%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_05_expired_key_returns_401 PASSED [ 18%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_06_sixth_key_returns_429 PASSED [ 22%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_07_plaintext_only_on_creation PASSED [ 25%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_08_db_stores_hash_not_plaintext PASSED [ 29%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_09_rate_limit_429 PASSED [ 33%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_10_viewer_key_cannot_write PASSED [ 37%]
+tests/integration/test_api_key_auth.py::test_tc_api_auth_11_key_cannot_access_other_org PASSED [ 40%]
+tests/integration/test_flow_resilience.py::TestFullFlow::test_tc_int_flw_01_full_flow_active_connectors PASSED [ 44%]
+tests/integration/test_flow_resilience.py::TestFullFlow::test_tc_int_flw_02_full_flow_inactive_connectors PASSED [ 48%]
+tests/integration/test_flow_resilience.py::TestFullFlow::test_tc_int_flw_03_reverify_after_no_valida PASSED [ 51%]
+tests/integration/test_flow_resilience.py::TestExactRateLimit::test_tc_int_lim_01_100_requests_return_200 PASSED [ 55%]
+tests/integration/test_flow_resilience.py::TestExactRateLimit::test_tc_int_lim_02_101st_request_returns_429 PASSED [ 59%]
+tests/integration/test_flow_resilience.py::TestResilience::test_tc_int_res_01_worker_crash_recovery PASSED [ 62%]
+tests/integration/test_flow_resilience.py::TestResilience::test_tc_int_res_02_redis_unavailable_recovery PASSED [ 66%]
+tests/integration/test_flow_resilience.py::TestMigration::test_tc_int_mig_01_release_profile_migration PASSED [ 70%]
+tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_01_borrador_to_en_verificacion PASSED [ 74%]
+tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_02_verificacion_to_valida PASSED [ 77%]
+tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_03_verificacion_to_con_advertencias PASSED [ 81%]
+tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_04_verificacion_to_no_valida PASSED [ 85%]
+tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_05_any_final_to_archivada PASSED [ 88%]
+tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_06_skip_state_borrador_to_archivada_negative PASSED [ 92%]
+tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_07_archivada_modification_rejected PASSED [ 96%]
+tests/integration/test_release_lifecycle.py::TestReleaseStateTransitions::test_tc_int_est_08_archivada_restore PASSED [100%]
 
-============================= 16 skipped in 3.36s =============================
+============================= 27 passed in 34.40s =============================

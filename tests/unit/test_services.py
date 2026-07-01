@@ -2954,3 +2954,337 @@ class TestProfileServiceWrappers:
 
         await service.delete_rule(rule.id, uuid4())
         rule_repo.delete.assert_awaited_once()
+
+
+# ── Multi-organization support ────────────────────────────────────────────────
+# A user can belong to more than one organization simultaneously, holding an
+# independent role in each (e.g. ADMIN in org A and OPERATOR in org B). These
+# tests exercise UserService/OrganizationService wired with a real
+# IUserMembershipRepository mock, which is how core.dependencies wires them in
+# production. When user_membership_repository is None (legacy fixtures above),
+# behaviour falls back to the pre-multi-org single-organization semantics.
+
+class TestUserServiceMultiOrg:
+    @pytest.fixture
+    def svc(self):
+        from application.use_cases.main.user_service import UserService
+        user_repo = AsyncMock()
+        org_repo = AsyncMock()
+        pw_hasher = MagicMock()
+        membership_repo = AsyncMock()
+        service = UserService(user_repo, org_repo, pw_hasher, user_membership_repository=membership_repo)
+        return service, user_repo, org_repo, pw_hasher, membership_repo
+
+    async def test_invite_existing_active_user_to_second_org_adds_membership(self, svc):
+        """An admin of org A can be invited into org B as OPERATOR without disturbing org A."""
+        from domain.entities.organization import Organization
+        from domain.enums import UserRole
+        service, user_repo, org_repo, _, membership_repo = svc
+
+        org_a = uuid4()
+        org_b = uuid4()
+        existing = _make_user(role=UserRole.U3, organization_id=org_a)
+        existing.is_active = True
+        existing.activation_token = None
+
+        org_repo.get_by_id = AsyncMock(return_value=Organization(name="B", slug="b", id=org_b))
+        user_repo.get_by_email = AsyncMock(return_value=existing)
+        membership_repo.get = AsyncMock(return_value=None)
+        membership_repo.create = AsyncMock()
+
+        result = await service.invite_user(org_b, existing.email, UserRole.U2, uuid4())
+
+        membership_repo.create.assert_awaited_once()
+        created_membership = membership_repo.create.call_args.args[0]
+        assert created_membership.organization_id == org_b
+        assert created_membership.role == UserRole.U2
+        # Active org (A) untouched: no user_repo.update call for the active-org fields.
+        user_repo.update.assert_not_awaited()
+        # Response reflects the role granted in the org just joined, not the active one.
+        assert result.role == UserRole.U2
+
+    async def test_invite_user_already_member_of_org_raises(self, svc):
+        from domain.entities.organization import Organization
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        service, user_repo, org_repo, _, membership_repo = svc
+
+        org_id = uuid4()
+        existing = _make_user(role=UserRole.U2, organization_id=org_id)
+        org_repo.get_by_id = AsyncMock(return_value=Organization(name="A", slug="a", id=org_id))
+        user_repo.get_by_email = AsyncMock(return_value=existing)
+        membership_repo.get = AsyncMock(return_value=UserMembership(
+            id=uuid4(), user_id=existing.id, organization_id=org_id, role=UserRole.U2,
+        ))
+
+        from domain.exceptions import DuplicateEntityError
+        with pytest.raises(DuplicateEntityError):
+            await service.invite_user(org_id, existing.email, UserRole.U4, uuid4())
+
+    async def test_invite_brand_new_user_creates_membership(self, svc):
+        from domain.entities.organization import Organization
+        from domain.enums import UserRole
+        service, user_repo, org_repo, pw_hasher, membership_repo = svc
+
+        org_id = uuid4()
+        org_repo.get_by_id = AsyncMock(return_value=Organization(name="A", slug="a", id=org_id))
+        user_repo.get_by_email = AsyncMock(return_value=None)
+        pw_hasher.hash_password = MagicMock(return_value="hashed")
+        created = _make_user(role=UserRole.U2, organization_id=org_id)
+        user_repo.create = AsyncMock(return_value=created)
+        membership_repo.create = AsyncMock()
+
+        await service.invite_user(org_id, "new@test.com", UserRole.U2, uuid4())
+
+        membership_repo.create.assert_awaited_once()
+        assert membership_repo.create.call_args.args[0].user_id == created.id
+
+    async def test_update_user_role_in_non_active_org_does_not_touch_active_role(self, svc):
+        """Changing a user's role in a second org must not overwrite their active-org role."""
+        from domain.entities.organization import Organization
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        service, user_repo, org_repo, _, membership_repo = svc
+
+        active_org = uuid4()
+        other_org = uuid4()
+        user = _make_user(role=UserRole.U3, organization_id=active_org)
+        user_repo.get_by_id = AsyncMock(return_value=user)
+        membership_repo.get = AsyncMock(return_value=UserMembership(
+            id=uuid4(), user_id=user.id, organization_id=other_org, role=UserRole.U2,
+        ))
+        org_repo.get_by_id = AsyncMock(return_value=Organization(name="Other", slug="other", id=other_org, owner_id=uuid4()))
+        membership_repo.update_role = AsyncMock()
+
+        result = await service.update_user_role(user.id, other_org, UserRole.U4, uuid4())
+
+        membership_repo.update_role.assert_awaited_once_with(user.id, other_org, UserRole.U4)
+        user_repo.update.assert_not_awaited()
+        assert result.role == UserRole.U4
+        assert user.role == UserRole.U3  # active-org role in DB is untouched
+
+    async def test_update_user_role_in_active_org_persists(self, svc):
+        from domain.entities.organization import Organization
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        service, user_repo, org_repo, _, membership_repo = svc
+
+        org_id = uuid4()
+        user = _make_user(role=UserRole.U2, organization_id=org_id)
+        user_repo.get_by_id = AsyncMock(return_value=user)
+        membership_repo.get = AsyncMock(return_value=UserMembership(
+            id=uuid4(), user_id=user.id, organization_id=org_id, role=UserRole.U2,
+        ))
+        org_repo.get_by_id = AsyncMock(return_value=Organization(name="A", slug="a", id=org_id, owner_id=uuid4()))
+        membership_repo.update_role = AsyncMock()
+        user_repo.update = AsyncMock(return_value=user)
+
+        await service.update_user_role(user.id, org_id, UserRole.U4, uuid4())
+
+        user_repo.update.assert_awaited_once()
+        assert user.role == UserRole.U4
+
+    async def test_remove_user_from_org_falls_back_to_remaining_membership(self, svc):
+        """A user removed from their active org, who still belongs to another org,
+        becomes active in that remaining org instead of losing all org context."""
+        from domain.entities.organization import Organization
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        service, user_repo, org_repo, _, membership_repo = svc
+
+        active_org = uuid4()
+        remaining_org = uuid4()
+        user = _make_user(role=UserRole.U2, organization_id=active_org)
+        user_repo.get_by_id = AsyncMock(return_value=user)
+        membership_repo.get = AsyncMock(return_value=UserMembership(
+            id=uuid4(), user_id=user.id, organization_id=active_org, role=UserRole.U2,
+        ))
+        org_repo.get_by_id = AsyncMock(return_value=Organization(name="A", slug="a", id=active_org, owner_id=uuid4()))
+        membership_repo.delete = AsyncMock()
+        membership_repo.list_by_user = AsyncMock(return_value=[
+            UserMembership(id=uuid4(), user_id=user.id, organization_id=remaining_org, role=UserRole.U4),
+        ])
+        user_repo.update = AsyncMock(return_value=user)
+
+        await service.remove_user_from_organization(user.id, active_org, uuid4())
+
+        membership_repo.delete.assert_awaited_once_with(user.id, active_org)
+        assert user.organization_id == remaining_org
+        assert user.role == UserRole.U4
+
+    async def test_remove_user_from_only_org_clears_active_org(self, svc):
+        from domain.entities.organization import Organization
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        service, user_repo, org_repo, _, membership_repo = svc
+
+        org_id = uuid4()
+        user = _make_user(role=UserRole.U2, organization_id=org_id)
+        user_repo.get_by_id = AsyncMock(return_value=user)
+        membership_repo.get = AsyncMock(return_value=UserMembership(
+            id=uuid4(), user_id=user.id, organization_id=org_id, role=UserRole.U2,
+        ))
+        org_repo.get_by_id = AsyncMock(return_value=Organization(name="A", slug="a", id=org_id, owner_id=uuid4()))
+        membership_repo.delete = AsyncMock()
+        membership_repo.list_by_user = AsyncMock(return_value=[])
+        user_repo.update = AsyncMock(return_value=user)
+
+        await service.remove_user_from_organization(user.id, org_id, uuid4())
+
+        assert user.organization_id is None
+        assert user.role == UserRole.U2
+
+    async def test_list_organization_users_reflects_per_org_role(self, svc):
+        """A user who is ADMIN in their active org but OPERATOR in this org must be
+        listed with the OPERATOR role here, not their globally-active role."""
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        service, user_repo, org_repo, _, membership_repo = svc
+
+        org_id = uuid4()
+        member = _make_user(role=UserRole.U3, organization_id=uuid4())  # active elsewhere as ADMIN
+        membership_repo.list_by_organization = AsyncMock(return_value=[
+            UserMembership(id=uuid4(), user_id=member.id, organization_id=org_id, role=UserRole.U2),
+        ])
+        user_repo.get_by_id = AsyncMock(return_value=member)
+
+        users = await service.list_organization_users(org_id)
+
+        assert len(users) == 1
+        assert users[0].role == UserRole.U2
+
+    async def test_list_user_organizations(self, svc):
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        service, _, _, _, membership_repo = svc
+        user_id = uuid4()
+        memberships = [
+            UserMembership(id=uuid4(), user_id=user_id, organization_id=uuid4(), role=UserRole.U3),
+            UserMembership(id=uuid4(), user_id=user_id, organization_id=uuid4(), role=UserRole.U2),
+        ]
+        membership_repo.list_by_user = AsyncMock(return_value=memberships)
+
+        result = await service.list_user_organizations(user_id)
+        assert result == memberships
+
+    async def test_switch_active_organization_success(self, svc):
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        service, user_repo, _, _, membership_repo = svc
+
+        target_org = uuid4()
+        user = _make_user(role=UserRole.U2, organization_id=uuid4())
+        user_repo.get_by_id = AsyncMock(return_value=user)
+        membership_repo.get = AsyncMock(return_value=UserMembership(
+            id=uuid4(), user_id=user.id, organization_id=target_org, role=UserRole.U4,
+        ))
+        user_repo.update = AsyncMock(return_value=user)
+
+        result = await service.switch_active_organization(user.id, target_org)
+
+        assert result.organization_id == target_org
+        assert result.role == UserRole.U4
+
+    async def test_switch_active_organization_not_a_member_raises(self, svc):
+        from domain.enums import UserRole
+        service, user_repo, _, _, membership_repo = svc
+        user = _make_user(role=UserRole.U2, organization_id=uuid4())
+        user_repo.get_by_id = AsyncMock(return_value=user)
+        membership_repo.get = AsyncMock(return_value=None)
+
+        from domain.exceptions import ValidationError
+        with pytest.raises(ValidationError):
+            await service.switch_active_organization(user.id, uuid4())
+
+    async def test_delete_user_account_checks_all_memberships_not_just_active(self, svc):
+        """Ownership checks on account deletion must cover every org the user belongs
+        to, not only their currently-active one."""
+        from domain.entities.organization import Organization
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        service, user_repo, org_repo, pw_hasher, membership_repo = svc
+
+        owned_org = uuid4()
+        user = _make_user(role=UserRole.U2, organization_id=uuid4())
+        user_repo.get_by_id = AsyncMock(return_value=user)
+        pw_hasher.verify_password = MagicMock(return_value=True)
+        membership_repo.list_by_user = AsyncMock(return_value=[
+            UserMembership(id=uuid4(), user_id=user.id, organization_id=owned_org, role=UserRole.U4),
+        ])
+        org_repo.get_by_id = AsyncMock(return_value=Organization(name="Owned", slug="owned", id=owned_org, owner_id=user.id))
+        user_repo.list_all = AsyncMock(return_value=[user])  # sole member
+        org_repo.delete = AsyncMock()
+        membership_repo.delete_all_for_user = AsyncMock()
+        user_repo.delete = AsyncMock()
+
+        await service.delete_user_account(user.id, user.id, "pw")
+
+        org_repo.delete.assert_awaited_once_with(owned_org)
+        membership_repo.delete_all_for_user.assert_awaited_once_with(user.id)
+
+
+class TestOrganizationServiceMultiOrg:
+    @pytest.fixture
+    def svc(self):
+        from application.use_cases.main.organization_service import OrganizationService
+        org_repo = AsyncMock()
+        project_repo = AsyncMock()
+        user_repo = AsyncMock()
+        membership_repo = AsyncMock()
+        service = OrganizationService(
+            organization_repository=org_repo,
+            project_repository=project_repo,
+            user_repository=user_repo,
+            user_membership_repository=membership_repo,
+        )
+        return service, org_repo, project_repo, user_repo, membership_repo
+
+    async def test_create_organization_creates_owner_membership(self, svc):
+        from domain.entities.organization import Organization
+        from domain.enums import UserRole
+        service, org_repo, _, user_repo, membership_repo = svc
+
+        owner = _make_user(role=UserRole.U2)
+        org_repo.get_by_slug = AsyncMock(return_value=None)
+        user_repo.get_by_id = AsyncMock(return_value=owner)
+        created_org = Organization(name="Acme", slug="acme", id=uuid4())
+        org_repo.create = AsyncMock(return_value=created_org)
+        membership_repo.create = AsyncMock()
+
+        await service.create_organization("Acme", "acme", owner_id=owner.id)
+
+        membership_repo.create.assert_awaited_once()
+        membership = membership_repo.create.call_args.args[0]
+        assert membership.organization_id == created_org.id
+        assert membership.user_id == owner.id
+
+    async def test_transfer_ownership_updates_membership_roles(self, svc):
+        """Old owner demoted to OPERATOR and new owner promoted to MANAGER in the
+        membership table, mirroring the per-org role change."""
+        from domain.entities.organization import Organization
+        from domain.entities.user import UserMembership
+        from domain.enums import UserRole
+        service, org_repo, _, user_repo, membership_repo = svc
+
+        org_id = uuid4()
+        old_owner = _make_user(role=UserRole.U4, organization_id=org_id)
+        new_owner = _make_user(role=UserRole.U2, organization_id=org_id)
+        org = Organization(name="Acme", slug="acme", id=org_id, owner_id=old_owner.id)
+
+        org_repo.get_by_id = AsyncMock(return_value=org)
+        org_repo.update = AsyncMock(return_value=org)
+
+        async def get_by_id(uid):
+            return old_owner if uid == old_owner.id else new_owner
+        user_repo.get_by_id = AsyncMock(side_effect=get_by_id)
+        user_repo.update = AsyncMock()
+
+        membership_repo.get = AsyncMock(side_effect=lambda uid, oid: UserMembership(
+            id=uuid4(), user_id=uid, organization_id=oid, role=UserRole.U4 if uid == old_owner.id else UserRole.U2,
+        ))
+        membership_repo.update_role = AsyncMock()
+
+        await service.transfer_ownership(org_id, new_owner.id, requested_by=old_owner.id)
+
+        membership_repo.update_role.assert_any_call(old_owner.id, org_id, UserRole.U2)
+        membership_repo.update_role.assert_any_call(new_owner.id, org_id, UserRole.U4)

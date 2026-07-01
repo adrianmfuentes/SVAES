@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
-from domain.entities.user import User
+from domain.entities.user import User, UserMembership
 from domain.enums import UserRole
 
 
@@ -65,4 +65,12 @@ class IUserService(ABC):
 
     @abstractmethod
     async def delete_user_account(self, user_id: UUID, requested_by: UUID, password: str) -> None:
+        pass
+
+    @abstractmethod
+    async def list_user_organizations(self, user_id: UUID) -> List[UserMembership]:
+        pass
+
+    @abstractmethod
+    async def switch_active_organization(self, user_id: UUID, organization_id: UUID) -> User:
         pass
