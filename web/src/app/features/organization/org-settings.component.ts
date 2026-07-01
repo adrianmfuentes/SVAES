@@ -823,8 +823,13 @@ export class OrgSettingsComponent implements OnInit {
     this.removing.set(true);
     this.removeError.set(null);
 
-    this.http.delete(`/api/v1/organizations/${this.orgId}/users/${member.id}`)
-      .pipe(catchError((err: HttpErrorResponse) => {
+    this.http.delete(`/api/v1/organizations/${this.orgId}/users/${member.id}`).subscribe({
+      next: () => {
+        this.removing.set(false);
+        this.members.update(members => members.filter(m => m.id !== member.id));
+        this.memberToRemove.set(null);
+      },
+      error: (err: HttpErrorResponse) => {
         this.removing.set(false);
         if (err.status === 403) {
           this.removeError.set(this.ts.translateInstant('org_settings.remove_member_forbidden'));
@@ -833,14 +838,8 @@ export class OrgSettingsComponent implements OnInit {
         } else {
           this.removeError.set(this.ts.translateInstant('org_settings.remove_member_error'));
         }
-        return of(null);
-      }))
-      .subscribe(res => {
-        if (res === null) return;
-        this.removing.set(false);
-        this.members.update(members => members.filter(m => m.id !== member.id));
-        this.memberToRemove.set(null);
-      });
+      },
+    });
   }
 
   openTransferModal(): void {

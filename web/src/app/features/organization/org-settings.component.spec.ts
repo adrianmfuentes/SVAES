@@ -238,14 +238,17 @@ describe('OrgSettingsComponent', () => {
       expect(component.removeError()).toBeNull();
     });
 
-    it('should remove OPERATOR member successfully (200)', () => {
+    it('should remove OPERATOR member successfully (204 No Content)', () => {
       const operator = mockMembers[1];
       component.confirmRemoveMember(operator);
       component.removeMember();
 
       const req = httpCtrl.expectOne(`/api/v1/organizations/org-1/users/${operator.id}`);
       expect(req.request.method).toBe('DELETE');
-      req.flush({});
+      // The real endpoint returns 204 No Content, which HttpClient surfaces as a
+      // `null` body — this must not be confused with the `null` sentinel used
+      // to signal an already-handled error in other flows in this component.
+      req.flush(null, { status: 204, statusText: 'No Content' });
       fixture.detectChanges();
 
       expect(component.removing()).toBe(false);
