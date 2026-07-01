@@ -16,17 +16,23 @@ from core.rule_names import RULE_NAMES
 
 _log = logging.getLogger(__name__)
 
+# RV-06/RV-08 need a value specific to each release (a document version, a
+# master artifact's UUID) - there's no universal default that makes sense
+# system-wide, so they're seeded without params and stay NO_EVALUADA until a
+# per-release profile configures them. RV-07's "PLAN" default is different: a
+# PLAN-type artifact's mere existence in the release IS the external-registration
+# marker (see rv07.rs), so it's meaningful out of the box for every release.
 _SYSTEM_RULES = [
-    ("RV-01", SeverityType.HIGH,   RULE_NAMES["RV-01"]),
-    ("RV-02", SeverityType.HIGH,   RULE_NAMES["RV-02"]),
-    ("RV-03", SeverityType.MEDIUM, RULE_NAMES["RV-03"]),
-    ("RV-04", SeverityType.MEDIUM, RULE_NAMES["RV-04"]),
-    ("RV-05", SeverityType.HIGH,   RULE_NAMES["RV-05"]),
-    ("RV-06", SeverityType.MEDIUM, RULE_NAMES["RV-06"]),
-    ("RV-07", SeverityType.HIGH,   RULE_NAMES["RV-07"]),
-    ("RV-08", SeverityType.HIGH,   RULE_NAMES["RV-08"]),
-    ("RV-09", SeverityType.MEDIUM, RULE_NAMES["RV-09"]),
-    ("RV-10", SeverityType.HIGH,   RULE_NAMES["RV-10"]),
+    ("RV-01", SeverityType.HIGH,   RULE_NAMES["RV-01"], {}),
+    ("RV-02", SeverityType.HIGH,   RULE_NAMES["RV-02"], {}),
+    ("RV-03", SeverityType.MEDIUM, RULE_NAMES["RV-03"], {}),
+    ("RV-04", SeverityType.MEDIUM, RULE_NAMES["RV-04"], {}),
+    ("RV-05", SeverityType.HIGH,   RULE_NAMES["RV-05"], {}),
+    ("RV-06", SeverityType.MEDIUM, RULE_NAMES["RV-06"], {}),
+    ("RV-07", SeverityType.HIGH,   RULE_NAMES["RV-07"], {"artifact_type": "PLAN"}),
+    ("RV-08", SeverityType.HIGH,   RULE_NAMES["RV-08"], {}),
+    ("RV-09", SeverityType.MEDIUM, RULE_NAMES["RV-09"], {}),
+    ("RV-10", SeverityType.HIGH,   RULE_NAMES["RV-10"], {}),
 ]
 
 
@@ -127,13 +133,13 @@ async def seed_system_profile() -> None:
         session.add(profile)
         await session.flush()
 
-        for order, (template, severity, _label) in enumerate(_SYSTEM_RULES):
+        for order, (template, severity, _label, params) in enumerate(_SYSTEM_RULES):
             rule = VerificationRuleModel(
                 id=uuid.uuid4(),
                 profile_id=profile_id,
                 rule_template=template,
                 severity=severity.value,
-                params={},
+                params=params,
                 connector_instance_id=None,
                 display_order=order,
                 is_active=True,

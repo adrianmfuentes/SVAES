@@ -7,20 +7,27 @@ use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 /// # Parámetros
 /// * `artifacts` - Slice de artefactos a verificar.
 /// * `rule_config` - Configuración de la regla con parámetros:
-///   - `artifact_type`: Tipo de artefacto marcador a buscar (obligatorio: "TAREA" o
-///     "CAMBIO"). Sin conector alguno que exponga un marcador booleano genérico,
-///     no hay una búsqueda "en cualquier tipo" con la que evaluar de forma fiable.
+///   - `artifact_type`: Tipo de artefacto marcador a buscar (obligatorio: "TAREA",
+///     "CAMBIO" o "PLAN"). Sin conector alguno que exponga un marcador booleano
+///     genérico, no hay una búsqueda "en cualquier tipo" con la que evaluar de
+///     forma fiable.
 ///   - `marker_field`: Campo en metadata que indica registro externo (default: "external_registered").
 ///
 /// # Lógica
 /// 1. Si `artifact_type` no está configurado, la regla no es aplicable: NoEvaluada.
-/// 2. Si está configurado pero no es "TAREA"/"CAMBIO", Error (tipo no permitido).
+/// 2. Si está configurado pero no es uno de los tipos permitidos, Error.
 /// 3. Si no encuentra ningún artefacto de ese tipo, devuelve Error.
-/// 4. Si encuentra uno y su campo marker es `true`, devuelve Ok; si no, Error.
+/// 4. Para "PLAN": su mera existencia ya es la prueba de registro externo (un
+///    artefacto de plan viene, por definición, de una herramienta de
+///    planificación externa) - Ok directo, sin exigir un campo marker adicional.
+/// 5. Para "TAREA"/"CAMBIO": además hace falta que su campo marker sea `true`,
+///    porque la mera existencia de una tarea no prueba por sí sola un registro
+///    externo específico.
 ///
 /// # Retorno
 /// `RuleEvaluation` con el estado correspondiente indicando si el marcador fue encontrado.
-const PERMITIDOS: &[&str] = &["TAREA", "CAMBIO"];
+const PERMITIDOS: &[&str] = &["TAREA", "CAMBIO", "PLAN"];
+const EXISTENCE_ONLY_TYPES: &[&str] = &["PLAN"];
 
 pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleEvaluation {
     let artifact_type = rule_config.params
@@ -63,6 +70,17 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
     match marker_artifact {
         Some(artifact) => {
             let found_type = t;
+            if EXISTENCE_ONLY_TYPES.contains(&t) {
+                return RuleEvaluation {
+                    rule_id: rule_config.id.clone(),
+                    status: RuleStatus::Ok,
+                    message: Some("rule_evidence.ok.RV-07.found".to_string()),
+                    message_params: Some(json!({
+                        "artifact_type": found_type,
+                        "artifact_id": artifact.id,
+                    })),
+                };
+            }
             match artifact.metadata.get(marker_field) {
                 Some(val) if val.as_bool() == Some(true) => {
                     RuleEvaluation {
@@ -160,6 +178,22 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::NoEvaluada);
         assert_eq!(result.message.unwrap(), "rule_evidence.no_evaluada.RV-07");
+    }
+
+    #[test]
+    fn plan_artifact_existence_is_sufficient_without_marker_field() {
+        // A PLAN artifact comes from an external planning tool (e.g. ClickUp) by
+        // definition - its mere presence in the release already proves external
+        // registration, no synthetic boolean field required.
+        let artifacts = vec![
+            make_artifact("P-001", "PLAN", json!({})),
+        ];
+        let rule = make_rule_with_type("RV-07", "PLAN");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Ok);
+        assert_eq!(result.message.unwrap(), "rule_evidence.ok.RV-07.found");
     }
 
     #[test]
