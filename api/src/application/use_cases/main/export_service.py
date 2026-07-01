@@ -18,6 +18,9 @@ from reportlab.platypus import (
 from reportlab.lib import colors
 from reportlab.platypus.flowables import Flowable
 
+NO_EVALUADA = "No evaluada"  # status for rules that have not been evaluated yet
+NOT_EVALUATED = "Not evaluated"  # status for rules that have not been evaluated yet
+
 _log = get_logger(__name__)
 
 _LOGO_B64_UNUSED = (  # reserved — not used at runtime
@@ -163,12 +166,12 @@ _I18N: dict[str, dict[str, str]] = {
         "status_ok":            "Correcto",
         "status_error":         "Error",
         "status_warning":       "Advertencia",
-        "status_no_evaluada":   "No evaluada",
-        "status_unknown":       "No evaluada",
+        "status_no_evaluada":   NO_EVALUADA,
+        "status_unknown":       NO_EVALUADA,
         "verdict_VALID":        "Válida",
         "verdict_INVALID":      "No válida",
         "verdict_WITH_WARNINGS":"Con advertencias",
-        "verdict_NOT_EVALUATED":"No evaluada",
+        "verdict_NOT_EVALUATED":NO_EVALUADA,
         "no_detail":            "Verificación superada",
         "duration_ms":          "ms",
         "na":                   "N/D",
@@ -253,12 +256,12 @@ _I18N: dict[str, dict[str, str]] = {
         "status_ok":            "Passed",
         "status_error":         "Error",
         "status_warning":       "Warning",
-        "status_no_evaluada":   "Not evaluated",
-        "status_unknown":       "Not evaluated",
+        "status_no_evaluada":   NOT_EVALUATED,
+        "status_unknown":       NOT_EVALUATED,
         "verdict_VALID":        "Valid",
         "verdict_INVALID":      "Invalid",
         "verdict_WITH_WARNINGS":"With warnings",
-        "verdict_NOT_EVALUATED":"Not evaluated",
+        "verdict_NOT_EVALUATED":NOT_EVALUATED,
         "no_detail":            "Rule passed successfully",
         "duration_ms":          "ms",
         "na":                   "N/A",
