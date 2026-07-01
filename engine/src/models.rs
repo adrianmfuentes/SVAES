@@ -26,6 +26,13 @@ pub struct VerificationRule {
 pub struct VerificationPayload {
     pub artifacts: Vec<Artifact>,
     pub rules: Vec<VerificationRule>,
+    /// Versión de la propia entrega en verificación (p. ej. "1.0.0"). Permite a
+    /// reglas como RV-06 comparar la versión de un documento contra la versión
+    /// real de la entrega cuando el perfil no fija un `expected_value` explícito,
+    /// sin necesitar un valor fijo por perfil que no puede generalizarse entre
+    /// entregas distintas.
+    #[serde(default)]
+    pub release_version: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

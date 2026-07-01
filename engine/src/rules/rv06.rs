@@ -9,10 +9,17 @@ use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 /// * `rule_config` - Configuración de la regla con parámetros:
 ///   - `artifact_type`: Tipo de artefacto a verificar (default: "DOCUMENTO").
 ///   - `attribute`: Nombre del campo en metadata a comparar (default: "version").
-///   - `expected_value`: Valor esperado contra el cual comparar.
+///   - `expected_value`: Valor esperado contra el cual comparar. Si no se
+///     configura, se usa `release_version` (la versión real de la entrega en
+///     verificación) como valor por defecto - así el perfil de sistema (que no
+///     puede fijar un valor válido para todas las entregas) sigue siendo útil
+///     sin necesitar un perfil propio por cada entrega.
+/// * `release_version` - Versión de la entrega actual, provista por el motor
+///   (no por el perfil), usada como fallback cuando `expected_value` no está configurado.
 ///
 /// # Lógica
-/// 1. Obtiene el tipo de artefacto, campo a verificar y valor esperado.
+/// 1. Obtiene el tipo de artefacto, campo a verificar y valor esperado
+///    (explícito o, en su defecto, la versión de la entrega).
 /// 2. Filtra artefactos por tipo.
 /// 3. Por cada artefacto, obtiene el valor del campo en su metadata.
 /// 4. Si el valor no coincide con el esperado, añade el ID a la lista de discrepancias.
@@ -20,7 +27,7 @@ use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 ///
 /// # Retorno
 /// `RuleEvaluation` con el estado correspondiente y IDs con valores discrepantes.
-pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleEvaluation {
+pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule, release_version: Option<&str>) -> RuleEvaluation {
     if artifacts.is_empty() {
         return RuleEvaluation {
             rule_id: rule_config.id.clone(),
@@ -40,22 +47,24 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         .and_then(|v| v.as_str())
         .unwrap_or("version");
 
-    let expected_value = rule_config.params
+    let configured_value = rule_config.params
         .get("expected_value")
         .and_then(|v| v.as_str())
-        .unwrap_or("");
+        .filter(|v| !v.is_empty());
 
-    if expected_value.is_empty() {
-        // Without a configured expected_value there is nothing to compare against
-        // - every document would mismatch by construction, which isn't a real
-        // data problem, just a rule that hasn't been set up yet.
-        return RuleEvaluation {
-            rule_id: rule_config.id.clone(),
-            status: RuleStatus::NoEvaluada,
-            message: Some("rule_evidence.no_evaluada.RV-06.no_expected_value".to_string()),
-            message_params: None,
-        };
-    }
+    let expected_value = match configured_value.or(release_version) {
+        Some(v) if !v.is_empty() => v,
+        _ => {
+            // Neither the profile nor the engine has any value to compare
+            // against - there's nothing meaningful to check, not a data problem.
+            return RuleEvaluation {
+                rule_id: rule_config.id.clone(),
+                status: RuleStatus::NoEvaluada,
+                message: Some("rule_evidence.no_evaluada.RV-06.no_expected_value".to_string()),
+                message_params: None,
+            };
+        }
+    };
 
     let target_artifacts: Vec<&Artifact> = artifacts
         .iter()
@@ -132,7 +141,7 @@ mod tests {
             params: json!({"expected_value": "2.0"}),
         };
 
-        let result = evaluate(&artifacts, &rule);
+        let result = evaluate(&artifacts, &rule, None);
 
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
@@ -147,10 +156,58 @@ mod tests {
             params: json!({}),
         };
 
-        let result = evaluate(&artifacts, &rule);
+        let result = evaluate(&artifacts, &rule, None);
 
         assert_eq!(result.status, RuleStatus::NoEvaluada);
         assert_eq!(result.message.unwrap(), "rule_evidence.no_evaluada.RV-06.no_expected_value");
+    }
+
+    #[test]
+    fn falls_back_to_release_version_when_expected_value_not_configured() {
+        // The system's default profile can't hardcode a version that fits every
+        // release, so when expected_value isn't set the release's own version
+        // (passed in by the engine, not the profile) is used instead.
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({"version": "1.0.0"}))];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({}),
+        };
+
+        let result = evaluate(&artifacts, &rule, Some("1.0.0"));
+
+        assert_eq!(result.status, RuleStatus::Ok);
+    }
+
+    #[test]
+    fn release_version_fallback_still_flags_real_mismatch() {
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({"version": "0.9.0"}))];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({}),
+        };
+
+        let result = evaluate(&artifacts, &rule, Some("1.0.0"));
+
+        assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    #[test]
+    fn explicit_expected_value_takes_priority_over_release_version() {
+        // A profile that deliberately configures expected_value (e.g. because a
+        // document is meant to stay at a fixed version regardless of releases)
+        // must not be silently overridden by the release version fallback.
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({"version": "2.0"}))];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({"expected_value": "2.0"}),
+        };
+
+        let result = evaluate(&artifacts, &rule, Some("1.0.0"));
+
+        assert_eq!(result.status, RuleStatus::Ok);
     }
 
     #[test]
@@ -165,7 +222,7 @@ mod tests {
             params: json!({"expected_value": "2.0"}),
         };
 
-        let result = evaluate(&artifacts, &rule);
+        let result = evaluate(&artifacts, &rule, None);
 
         assert_eq!(result.status, RuleStatus::Error);
         let msg = result.message.unwrap();
@@ -183,7 +240,7 @@ mod tests {
             params: json!({"expected_value": "2.0"}),
         };
 
-        let result = evaluate(&artifacts, &rule);
+        let result = evaluate(&artifacts, &rule, None);
 
         assert_eq!(result.status, RuleStatus::Error);
     }
@@ -197,7 +254,7 @@ mod tests {
             params: json!({"expected_value": "2.0"}),
         };
 
-        let result = evaluate(&artifacts, &rule);
+        let result = evaluate(&artifacts, &rule, None);
 
         assert_eq!(result.status, RuleStatus::NoEvaluada);
     }
@@ -210,7 +267,7 @@ mod tests {
             severity: "OBLIGATORIA".to_string(),
             params: json!({"expected_value": "2.0"}),
         };
-        let result = evaluate(&artifacts, &rule);
+        let result = evaluate(&artifacts, &rule, None);
         assert_eq!(result.status, RuleStatus::NoEvaluada);
     }
 }

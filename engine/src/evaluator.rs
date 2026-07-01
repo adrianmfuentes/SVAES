@@ -40,7 +40,7 @@ pub fn evaluate(payload: VerificationPayload) -> EngineResult {
                 "RV-03" => rules::rv03::evaluate(&payload.artifacts, rule_config),
                 "RV-04" => rules::rv04::evaluate(&payload.artifacts, rule_config),
                 "RV-05" => rules::rv05::evaluate(&payload.artifacts, rule_config),
-                "RV-06" => rules::rv06::evaluate(&payload.artifacts, rule_config),
+                "RV-06" => rules::rv06::evaluate(&payload.artifacts, rule_config, payload.release_version.as_deref()),
                 "RV-07" => rules::rv07::evaluate(&payload.artifacts, rule_config),
                 "RV-08" => rules::rv08::evaluate(&payload.artifacts, rule_config),
                 "RV-09" => rules::rv09::evaluate(&payload.artifacts, rule_config),

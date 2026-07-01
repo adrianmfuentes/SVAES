@@ -67,6 +67,7 @@ def _report_progress(celery_task: Any, current: int, total: int, stage: str) -> 
 async def _call_verification_engine(
     artifacts_data: List[Dict[str, Any]],
     rules_data: List[Dict[str, Any]],
+    release_version: str | None = None,
 ) -> Dict[str, Any]:
     headers = {}
     if settings.engine_api_key:
@@ -78,6 +79,7 @@ async def _call_verification_engine(
             json={
                 "artifacts": artifacts_data,
                 "rules": rules_data,
+                "release_version": release_version,
             },
         )
         response.raise_for_status()
@@ -438,7 +440,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
     _report_progress(celery_task, current=engine_stage, total=total_stages, stage='calling_engine')
 
     try:
-        result_data = await _call_verification_engine(artifacts_data, rules_data)
+        result_data = await _call_verification_engine(artifacts_data, rules_data, release.version)
     except Exception as exc:
         await release_repo.update_status(release_id, ReleaseStatus.PENDIENTE)
         raise exc
