@@ -7,7 +7,7 @@ import { ShellComponent } from './shell.component';
 describe('ShellComponent', () => {
   let fixture: ComponentFixture<ShellComponent>;
   let component: ShellComponent;
-  let authServiceMock: { isAdmin: ReturnType<typeof vi.fn>; logout: ReturnType<typeof vi.fn>; getUser: ReturnType<typeof vi.fn>; getUserRole: ReturnType<typeof vi.fn>; getOrganization: ReturnType<typeof vi.fn> };
+  let authServiceMock: { isAdmin: ReturnType<typeof vi.fn>; logout: ReturnType<typeof vi.fn>; getUser: ReturnType<typeof vi.fn>; getUserRole: ReturnType<typeof vi.fn>; getOrganization: ReturnType<typeof vi.fn>; getMyOrganizations: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     authServiceMock = {
@@ -16,6 +16,7 @@ describe('ShellComponent', () => {
       getUser: vi.fn().mockReturnValue({ id: 'u1', email: 'test@test.com', display_name: 'Test' }),
       getUserRole: vi.fn().mockReturnValue('ADMIN'),
       getOrganization: vi.fn().mockReturnValue(of({ id: 'org-1', name: 'Test Org', slug: 'test-org' })),
+      getMyOrganizations: vi.fn().mockReturnValue(of([{ organization_id: 'org-1', name: 'Test Org', is_active: true }])),
     };
 
     await TestBed.configureTestingModule({

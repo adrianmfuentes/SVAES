@@ -54,4 +54,12 @@ describe('authGuard', () => {
     const result = TestBed.runInInjectionContext(() => authGuard(route, state));
     expect(result).toBe(loginUrl);
   });
+
+  it('TC-UNI-FE-GRD-04: U1/OPERATOR en /releases/verify -> canActivate=true', () => {
+    console.log('TC-UNI-FE-GRD-04 PASS');
+    vi.mocked(authService.isAuthenticated).mockReturnValue(true);
+    const verifyState = { url: '/app/releases/verify' } as RouterStateSnapshot;
+    const result = TestBed.runInInjectionContext(() => authGuard(route, verifyState));
+    expect(result).toBe(true);
+  });
 });
