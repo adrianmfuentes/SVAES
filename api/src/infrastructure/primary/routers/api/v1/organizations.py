@@ -9,7 +9,9 @@ from core.dependencies import (
     get_current_user_api_key_only,
     get_current_user,
     CurrentUser,
+    ProjectAccess,
     require_permission,
+    require_project_access,
     require_role,
 )
 from core.rate_limit import rate_limit_api_key
@@ -46,6 +48,12 @@ class ProjectCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     name: str = Field(..., min_length=1, max_length=100)
     description: str = Field(default="", max_length=500)
+    profile_id: Optional[UUID] = None
+
+class ProjectUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    description: Optional[str] = Field(default=None, max_length=500)
     profile_id: Optional[UUID] = None
 
 
@@ -320,6 +328,54 @@ async def create_project(
             profile_id=payload.profile_id,
         )
         return {"id": str(project.id), "name": project.name}
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
+@router.patch("/api/v1/projects/{project_id}", status_code=status.HTTP_200_OK)
+async def update_project(
+    project_id: UUID,
+    payload: ProjectUpdateRequest,
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.UPDATE_PROJECT))],
+    project_access: Annotated[ProjectAccess, Depends(require_project_access())],
+    service: Annotated[IOrganizationService, Depends(get_organization_service)],
+):
+    """Endpoint para actualizar los datos editables de un proyecto (nombre, descripción y perfil de verificación).
+
+    Atributos:
+        - project_id: UUID - El ID del proyecto a actualizar.
+        - payload: ProjectUpdateRequest - Campos a actualizar (todos opcionales).
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - project_access: Acceso validado al proyecto.
+        - service: IOrganizationService - El servicio de organizaciones, inyectado mediante dependencias.
+
+    Retorna:
+        - Un diccionario con los datos actualizados del proyecto.
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso al proyecto.
+        - Lanza HTTPException con status 404 si el proyecto no existe.
+        - Lanza HTTPException con status 409 si hay un error de validación (e.g., perfil inexistente).
+        - Lanza HTTPException con status 500 para cualquier error inesperado.
+    """
+    try:
+        project = await service.update_project(
+            project_id=project_id,
+            name=payload.name,
+            description=payload.description,
+            profile_id=payload.profile_id,
+        )
+        return {
+            "id": str(project.id),
+            "name": project.name,
+            "description": project.description,
+            "organization_id": str(project.organization_id),
+            "profile_id": str(project.profile_id) if project.profile_id else None,
+            "is_archived": project.is_archived,
+            "created_at": project.created_at.isoformat() if project.created_at else None,
+        }
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:

@@ -62,6 +62,16 @@ class IOrganizationService(ABC):
         pass
 
     @abstractmethod
+    async def update_project(
+        self,
+        project_id: UUID,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        profile_id: Optional[UUID] = None,
+    ) -> Project:
+        pass
+
+    @abstractmethod
     async def archive_project(self, project_id: UUID) -> Project:
         pass
 

@@ -35,6 +35,8 @@ class CreateReleaseUseCase(IReleaseService):
         project = await self.project_repository.get_by_id(project_id)
         if not project:
             raise ValidationError("El proyecto indicado no existe.")
+        if project.is_archived:
+            raise ValidationError("No se puede crear una entrega en un proyecto archivado.")
 
         resolved_profile_id = profile_id if profile_id is not None else project.profile_id
 

@@ -108,6 +108,45 @@ class OrganizationService(IOrganizationService):
         return await self._project_repo.get_by_id(project_id)
 
 
+    async def update_project(
+        self,
+        project_id: UUID,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        profile_id: Optional[UUID] = None,
+    ) -> Project:
+        project = await self._project_repo.get_by_id(project_id)
+        if not project:
+            raise EntityNotFoundError(f"Proyecto no encontrado: {project_id}")
+
+        if profile_id is not None and self._profile_repo:
+            profile = await self._profile_repo.get_by_id(profile_id)
+            if not profile:
+                raise ValidationError("El perfil de verificación indicado no existe.")
+
+        if name is not None:
+            project.name = name
+        if description is not None:
+            project.description = description
+        if profile_id is not None:
+            project.profile_id = profile_id
+
+        updated = await self._project_repo.update(project)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.PROJECT_UPDATED,
+            user_id=project.organization_id,
+            organization_id=project.organization_id,
+            resource_type="project",
+            resource_id=project_id,
+            details={"name": updated.name},
+        ))
+        _log.info("Project updated: id=%s org=%s", project_id, project.organization_id)
+
+        return updated
+
+
     async def archive_project(self, project_id: UUID) -> Project:
         project = await self._project_repo.get_by_id(project_id)
         if not project:

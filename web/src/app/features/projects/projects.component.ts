@@ -1,7 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
@@ -16,10 +17,16 @@ interface Project {
   created_at: string | null;
 }
 
+interface Profile {
+  id: string;
+  name: string;
+  is_system?: boolean;
+}
+
 @Component({
   selector: 'app-projects',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslatePipe],
+  imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
   template: `
     <div class="projects-page">
       <div class="page-header">
@@ -59,6 +66,10 @@ interface Project {
                 <td class="cell-muted" [attr.data-label]="'projects.col_created' | t">{{ p.created_at | date:'dd MMM yyyy' }}</td>
                 <td *ngIf="isManager" class="cell-actions" [attr.data-label]="'common.actions' | t">
                   <button
+                    class="btn-ghost"
+                    (click)="openEdit(p)"
+                  >{{ 'projects.edit_btn' | t }}</button>
+                  <button
                     *ngIf="!p.is_archived"
                     class="btn-ghost"
                     (click)="confirmArchive(p)"
@@ -97,6 +108,63 @@ interface Project {
           <button class="btn-ghost" (click)="cancelArchive()">{{ 'common.cancel' | t }}</button>
           <button class="btn-primary" (click)="archive()" [disabled]="archiving()" [title]="archiving() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
             {{ archiving() ? ('common.loading' | t) : ('org_settings.archive_btn' | t) }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT PROJECT MODAL -->
+    <div *ngIf="editingProject()" class="modal-overlay" (click)="cancelEdit()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'projects.edit_title' | t }}</h3>
+          <button class="modal-close" (click)="cancelEdit()">×</button>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-proj-name">{{ 'project_new.name_label' | t }}</label>
+          <input
+            id="edit-proj-name"
+            type="text"
+            [ngModel]="editName()"
+            (ngModelChange)="editName.set($event)"
+            maxlength="100"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-proj-description">{{ 'project_new.description_label' | t }}</label>
+          <textarea
+            id="edit-proj-description"
+            [ngModel]="editDescription()"
+            (ngModelChange)="editDescription.set($event)"
+            rows="3"
+            maxlength="500"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-proj-profile">{{ 'project_new.profile_label' | t }}</label>
+          <select id="edit-proj-profile" [ngModel]="editProfileId()" (ngModelChange)="editProfileId.set($event)">
+            @for (p of editProfiles(); track p.id) {
+              <option [value]="p.id">
+                {{ p.name }}{{ p.is_system ? (' — ' + ('project_new.profile_system_tag' | t)) : '' }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <div *ngIf="editError()" class="alert-error">{{ editError() }}</div>
+
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="cancelEdit()">{{ 'common.cancel' | t }}</button>
+          <button
+            class="btn-primary"
+            (click)="saveEdit()"
+            [disabled]="editSubmitting() || !editName().trim()"
+            [title]="editSubmitting() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+            {{ editSubmitting() ? ('common.loading' | t) : ('projects.edit_submit' | t) }}
           </button>
         </div>
       </div>
@@ -340,6 +408,59 @@ interface Project {
       margin: 0 0 var(--spacing-md);
     }
 
+    .form-group { margin-bottom: var(--spacing-md); }
+
+    .form-group label {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      background: var(--paper);
+      color: var(--ink);
+      border: 0.0625rem solid var(--border-strong);
+      border-radius: var(--rounded-md);
+      padding: 0.5625rem 0.75rem;
+      font-family: var(--font-sans);
+      font-size: 0.9375rem;
+      outline: none;
+      transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+      box-sizing: border-box;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 4rem;
+      line-height: 1.65;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--ink);
+      background: var(--surface-raised);
+      box-shadow: 0 0 0 0.1875rem rgba(232, 213, 163, 0.4);
+    }
+
+    .alert-error {
+      background: var(--verdict-invalid-bg);
+      color: var(--verdict-invalid);
+      border: 0.0625rem solid var(--verdict-invalid-border);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: 0.8125rem;
+      margin-bottom: var(--spacing-md);
+    }
+
     @media (max-width: 48rem) {
       .page-header { flex-wrap: wrap; }
 
@@ -418,6 +539,14 @@ export class ProjectsComponent implements OnInit {
   projectToArchive = signal<Project | null>(null);
   archiving = signal(false);
 
+  editingProject = signal<Project | null>(null);
+  editProfiles = signal<Profile[]>([]);
+  editName = signal('');
+  editDescription = signal('');
+  editProfileId = signal('');
+  editSubmitting = signal(false);
+  editError = signal<string | null>(null);
+
   ngOnInit(): void {
     this.http.get<Project[]>(`/api/v1/organizations/${this.orgId}/projects`)
       .pipe(catchError(() => {
@@ -465,6 +594,51 @@ export class ProjectsComponent implements OnInit {
         this.projects.update(projects => projects.map(p =>
           p.id === project.id ? { ...p, is_archived: false } : p
         ));
+      });
+  }
+
+  openEdit(project: Project): void {
+    this.editingProject.set(project);
+    this.editName.set(project.name);
+    this.editDescription.set(project.description ?? '');
+    this.editProfileId.set(project.profile_id ?? '');
+    this.editError.set(null);
+
+    this.http.get<Profile[]>(`/api/v1/organizations/${this.orgId}/profiles`)
+      .pipe(catchError(() => of([] as Profile[])))
+      .subscribe(data => this.editProfiles.set(data));
+  }
+
+  cancelEdit(): void {
+    this.editingProject.set(null);
+  }
+
+  saveEdit(): void {
+    const project = this.editingProject();
+    if (!project || !this.editName().trim()) return;
+
+    this.editSubmitting.set(true);
+    this.editError.set(null);
+
+    const body = {
+      name: this.editName().trim(),
+      description: this.editDescription(),
+      profile_id: this.editProfileId() || null,
+    };
+
+    this.http.patch<Project>(`/api/v1/projects/${project.id}`, body)
+      .pipe(catchError((err: HttpErrorResponse) => {
+        this.editError.set(err.error?.detail ?? this.ts.translateInstant('projects.edit_error'));
+        this.editSubmitting.set(false);
+        return of(null);
+      }))
+      .subscribe(updated => {
+        this.editSubmitting.set(false);
+        if (!updated) return;
+        this.projects.update(projects => projects.map(p =>
+          p.id === project.id ? { ...p, name: updated.name, description: updated.description, profile_id: updated.profile_id } : p
+        ));
+        this.editingProject.set(null);
       });
   }
 }

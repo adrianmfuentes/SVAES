@@ -712,6 +712,7 @@ class TestReleaseServiceUnit:
         project = MagicMock()
         project.organization_id = uuid4()
         project.profile_id = uuid4()
+        project.is_archived = False
         proj_repo.get_by_id = AsyncMock(return_value=project)
         prof_repo.get_by_id = AsyncMock(return_value=None)
         from domain.exceptions import ValidationError
@@ -724,6 +725,7 @@ class TestReleaseServiceUnit:
         project = MagicMock()
         project.organization_id = uuid4()
         project.profile_id = None
+        project.is_archived = False
         proj_repo.get_by_id = AsyncMock(return_value=project)
         rel_repo.create = AsyncMock()
         result = await service.create_release("name", "1.0.0", uuid4(), uuid4())
@@ -736,11 +738,23 @@ class TestReleaseServiceUnit:
         project = MagicMock()
         project.organization_id = uuid4()
         project.profile_id = uuid4()
+        project.is_archived = False
         proj_repo.get_by_id = AsyncMock(return_value=project)
         prof_repo.get_by_id = AsyncMock(return_value=profile)
         rel_repo.create = AsyncMock()
         result = await service.create_release("name", "1.0.0", uuid4(), uuid4())
         assert result.name == "name"
+
+    async def test_create_release_archived_project_raises(self, svc):
+        """Branch: project is archived → ValidationError"""
+        service, rel_repo, proj_repo, prof_repo = svc
+        project = MagicMock()
+        project.organization_id = uuid4()
+        project.is_archived = True
+        proj_repo.get_by_id = AsyncMock(return_value=project)
+        from domain.exceptions import ValidationError
+        with pytest.raises(ValidationError, match="archivado"):
+            await service.create_release("name", "1.0.0", uuid4(), uuid4())
 
     async def test_get_release_returns_value(self, svc):
         service, rel_repo, *_ = svc
@@ -956,6 +970,55 @@ class TestOrganizationService:
         proj_repo.update = AsyncMock(return_value=project)
         await service.archive_project(uuid4())
         assert project.is_archived is True
+
+    async def test_update_project_not_found_raises(self, svc):
+        """Branch: project not found → EntityNotFoundError"""
+        service, _, proj_repo, _ = svc
+        proj_repo.get_by_id = AsyncMock(return_value=None)
+        from domain.exceptions import EntityNotFoundError
+        with pytest.raises(EntityNotFoundError):
+            await service.update_project(uuid4(), name="new-name")
+
+    async def test_update_project_success(self, svc):
+        """Branch: project found, no profile change → name/description updated"""
+        service, _, proj_repo, _ = svc
+        project = MagicMock()
+        project.organization_id = uuid4()
+        project.name = "old-name"
+        project.description = "old-desc"
+        proj_repo.get_by_id = AsyncMock(return_value=project)
+        proj_repo.update = AsyncMock(return_value=project)
+        result = await service.update_project(uuid4(), name="new-name", description="new-desc")
+        assert project.name == "new-name"
+        assert project.description == "new-desc"
+        assert result == project
+
+    async def test_update_project_profile_not_found_raises(self):
+        """Branch: profile_id provided but does not exist → ValidationError"""
+        from application.use_cases.main.organization_service import OrganizationService
+        org_repo, proj_repo, user_repo, profile_repo = AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock()
+        service = OrganizationService(org_repo, proj_repo, user_repo, profile_repo)
+        project = MagicMock()
+        project.organization_id = uuid4()
+        proj_repo.get_by_id = AsyncMock(return_value=project)
+        profile_repo.get_by_id = AsyncMock(return_value=None)
+        from domain.exceptions import ValidationError
+        with pytest.raises(ValidationError, match="perfil"):
+            await service.update_project(uuid4(), profile_id=uuid4())
+
+    async def test_update_project_with_valid_profile_success(self):
+        """Branch: profile_id provided and exists → profile_id updated"""
+        from application.use_cases.main.organization_service import OrganizationService
+        org_repo, proj_repo, user_repo, profile_repo = AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock()
+        service = OrganizationService(org_repo, proj_repo, user_repo, profile_repo)
+        project = MagicMock()
+        project.organization_id = uuid4()
+        proj_repo.get_by_id = AsyncMock(return_value=project)
+        proj_repo.update = AsyncMock(return_value=project)
+        profile_repo.get_by_id = AsyncMock(return_value=MagicMock())
+        new_profile_id = uuid4()
+        await service.update_project(uuid4(), profile_id=new_profile_id)
+        assert project.profile_id == new_profile_id
 
     async def test_transfer_ownership_org_not_found_raises(self, svc):
         """Branch: org not found → EntityNotFoundError"""
