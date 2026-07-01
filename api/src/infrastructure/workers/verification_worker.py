@@ -132,6 +132,11 @@ async def _fetch_artifacts(
             config = ast.literal_eval(fernet.decrypt(connector_instance.encrypted_credentials).decode())
             data = await connector_impl.fetch_artifact(artifact.external_ref, config)
             data = pseudonymize(data)
+            # Reglas como RV-08 necesitan comparar contra la referencia externa que
+            # el usuario introdujo al importar el artefacto (p. ej. "SVAES-1"), no
+            # contra el UUID interno de SVAES, que ninguna herramienta externa puede
+            # conocer ni declarar en un campo de "tareas planificadas".
+            data["_svaes_external_ref"] = artifact.external_ref
             artifacts_data.append({
                 "id": str(artifact.id),
                 "artifact_type": artifact.artifact_type,

@@ -8,14 +8,23 @@ use std::collections::HashSet;
 /// # Parámetros
 /// * `artifacts` - Slice de artefactos a verificar.
 /// * `rule_config` - Configuración de la regla con parámetros:
-///   - `master_artifact_id`: ID del artefacto maestro que contiene la lista de IDs declarados.
-///   - `master_field`: Campo en metadata del maestro que contiene la lista de IDs (default: "planned_tasks").
+///   - `master_artifact_id`: ID (UUID interno de SVAES) del artefacto maestro que
+///     contiene la lista de IDs declarados. Identifica cuál de los artefactos de
+///     esta entrega actúa como "maestro" - no requiere que ninguna herramienta
+///     externa lo conozca, solo distingue una fila del payload de las demás.
+///   - `master_field`: Campo en metadata del maestro que contiene la lista de
+///     IDs declarados (default: "planned_tasks"). Acepta un array JSON o una
+///     cadena separada por comas (para campos de texto simples en el conector,
+///     p. ej. un campo personalizado de ClickUp).
 ///   - `target_type`: Tipo de artefactos a comparar con la lista del maestro (default: "TAREA").
 ///
 /// # Lógica
-/// 1. Busca el artefacto maestro por su ID.
+/// 1. Busca el artefacto maestro por su ID interno.
 /// 2. Extrae la lista de IDs declarados desde el campo especificado de su metadata.
-/// 3. Recopila los IDs reales de los artefactos del tipo especificado.
+/// 3. Recopila la **referencia externa** (`_svaes_external_ref`, la que el usuario
+///    introdujo al importar el artefacto, p. ej. "SVAES-1") de los artefactos del
+///    tipo especificado - nunca su UUID interno, que ninguna herramienta externa
+///    puede conocer ni declarar.
 /// 4. Compara ambos conjuntos y calcula la diferencia.
 /// 5. Si hay IDs faltantes (en payload pero no declarados) o sobrantes (declarados pero no en payload), retorna Error.
 /// 6. Si ambos conjuntos coinciden exactamente, retorna Ok.
@@ -61,19 +70,23 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
 
     let declared_ids: HashSet<&str> = match master.metadata.get(master_field) {
         Some(val) => {
-            match val.as_array() {
-                Some(arr) => arr.iter().filter_map(|v| v.as_str()).collect(),
-                None => {
-                    return RuleEvaluation {
-                        rule_id: rule_config.id.clone(),
-                        status: RuleStatus::Error,
-                        message: Some("rule_evidence.error.RV-08.field_not_array".to_string()),
-                        message_params: Some(json!({
-                            "master_field": master_field,
-                            "master_id": master_id,
-                        })),
-                    };
-                }
+            if let Some(arr) = val.as_array() {
+                arr.iter().filter_map(|v| v.as_str()).collect()
+            } else if let Some(s) = val.as_str() {
+                // Plain text custom fields (e.g. a ClickUp text field with
+                // "SVAES-1, SVAES-2") are a realistic way to declare this list
+                // without needing a structured array type in the source tool.
+                s.split(',').map(|part| part.trim()).filter(|part| !part.is_empty()).collect()
+            } else {
+                return RuleEvaluation {
+                    rule_id: rule_config.id.clone(),
+                    status: RuleStatus::Error,
+                    message: Some("rule_evidence.error.RV-08.field_not_array".to_string()),
+                    message_params: Some(json!({
+                        "master_field": master_field,
+                        "master_id": master_id,
+                    })),
+                };
             }
         }
         None => {
@@ -89,10 +102,13 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         }
     };
 
+    // Compare against each artifact's *external* reference (the one the user
+    // typed when importing it, e.g. "SVAES-1") - not its internal SVAES UUID,
+    // which no external tool can ever know or declare in a "planned tasks" field.
     let actual_ids: HashSet<&str> = artifacts
         .iter()
         .filter(|a| a.artifact_type == target_type)
-        .map(|a| a.id.as_str())
+        .filter_map(|a| a.metadata.get("_svaes_external_ref").and_then(|v| v.as_str()))
         .collect();
 
     let missing_in_payload: Vec<&str> = declared_ids
@@ -135,6 +151,17 @@ mod tests {
         }
     }
 
+    /// A TAREA artifact as it actually arrives from the API: internal UUID
+    /// (`id`) distinct from the external reference the user typed on import
+    /// (e.g. "SVAES-1"), which is what a master artifact must declare.
+    fn make_tarea(id: &str, external_ref: &str) -> Artifact {
+        Artifact {
+            id: id.to_string(),
+            artifact_type: "TAREA".to_string(),
+            metadata: json!({"_svaes_external_ref": external_ref}),
+        }
+    }
+
     fn make_rule(id: &str, master_id: &str) -> VerificationRule {
         VerificationRule {
             id: id.to_string(),
@@ -148,16 +175,32 @@ mod tests {
     #[test]
     fn tc_uni_mot_08_rv08_exact_match_returns_ok() {
         let artifacts = vec![
-            make_artifact("PLAN-001", "PLAN", json!({"planned_tasks": ["T-001", "T-002"]})),
-            make_artifact("T-001", "TAREA", json!({})),
-            make_artifact("T-002", "TAREA", json!({})),
+            make_artifact("uuid-plan", "PLAN", json!({"planned_tasks": ["SVAES-1", "SVAES-2"]})),
+            make_tarea("uuid-t1", "SVAES-1"),
+            make_tarea("uuid-t2", "SVAES-2"),
         ];
-        let rule = make_rule("RV-08", "PLAN-001");
+        let rule = make_rule("RV-08", "uuid-plan");
 
         let result = evaluate(&artifacts, &rule);
 
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
+    }
+
+    #[test]
+    fn comma_separated_text_field_is_accepted() {
+        // A plain ClickUp text custom field (not a structured array type) with
+        // "SVAES-1, SVAES-2" must work just as well as a JSON array.
+        let artifacts = vec![
+            make_artifact("uuid-plan", "PLAN", json!({"planned_tasks": "SVAES-1, SVAES-2"})),
+            make_tarea("uuid-t1", "SVAES-1"),
+            make_tarea("uuid-t2", "SVAES-2"),
+        ];
+        let rule = make_rule("RV-08", "uuid-plan");
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::Ok);
     }
 
     #[test]
@@ -176,7 +219,7 @@ mod tests {
     #[test]
     fn master_artifact_not_found_returns_error() {
         let artifacts = vec![
-            make_artifact("T-001", "TAREA", json!({})),
+            make_tarea("uuid-t1", "SVAES-1"),
         ];
         let rule = make_rule("RV-08", "PLAN-999");
 
@@ -192,11 +235,11 @@ mod tests {
     #[test]
     fn declared_task_missing_from_payload_returns_error() {
         let artifacts = vec![
-            make_artifact("PLAN-001", "PLAN", json!({"planned_tasks": ["T-001", "T-002", "T-003"]})),
-            make_artifact("T-001", "TAREA", json!({})),
-            make_artifact("T-002", "TAREA", json!({})),
+            make_artifact("uuid-plan", "PLAN", json!({"planned_tasks": ["SVAES-1", "SVAES-2", "SVAES-3"]})),
+            make_tarea("uuid-t1", "SVAES-1"),
+            make_tarea("uuid-t2", "SVAES-2"),
         ];
-        let rule = make_rule("RV-08", "PLAN-001");
+        let rule = make_rule("RV-08", "uuid-plan");
 
         let result = evaluate(&artifacts, &rule);
 
@@ -204,17 +247,17 @@ mod tests {
         let msg = result.message.unwrap();
         assert_eq!(msg, "rule_evidence.error.RV-08.discrepancy");
         let params = result.message_params.unwrap();
-        assert!(params["missing_ids"].as_str().unwrap().contains("T-003"));
+        assert!(params["missing_ids"].as_str().unwrap().contains("SVAES-3"));
     }
 
     #[test]
     fn extra_task_not_declared_returns_error() {
         let artifacts = vec![
-            make_artifact("PLAN-001", "PLAN", json!({"planned_tasks": ["T-001"]})),
-            make_artifact("T-001", "TAREA", json!({})),
-            make_artifact("T-002", "TAREA", json!({})),
+            make_artifact("uuid-plan", "PLAN", json!({"planned_tasks": ["SVAES-1"]})),
+            make_tarea("uuid-t1", "SVAES-1"),
+            make_tarea("uuid-t2", "SVAES-2"),
         ];
-        let rule = make_rule("RV-08", "PLAN-001");
+        let rule = make_rule("RV-08", "uuid-plan");
 
         let result = evaluate(&artifacts, &rule);
 

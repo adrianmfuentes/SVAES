@@ -743,6 +743,22 @@ class TestClickUpConnector:
         assert result["id"] == "task1"
 
     @pytest.mark.asyncio
+    async def test_fetch_artifact_flattens_custom_fields_by_name(self, conn):
+        """Any ClickUp custom field (whatever name the user gives it, e.g. a
+        'planned_tasks' text field for RV-08) must be exposed as a flat
+        top-level metadata key, so rule params can reference it directly."""
+        conn._get = AsyncMock(return_value=_mock_response(200, {
+            "id": "task1",
+            "custom_fields": [
+                {"id": "cf1", "name": "planned_tasks", "value": "SVAES-1, SVAES-2"},
+                {"id": "cf2", "name": "no_value_field", "value": None},
+            ],
+        }))
+        result = await conn.fetch_artifact("task1", {"token": "t"})
+        assert result["planned_tasks"] == "SVAES-1, SVAES-2"
+        assert result["no_value_field"] is None
+
+    @pytest.mark.asyncio
     async def test_list_artifacts_with_list(self, conn):
         conn._get = AsyncMock(return_value=_mock_response(200, {"tasks": [{"id": "1"}]}))
         result = await conn.list_artifacts({}, {"token": "t", "list_id": "l1"})

@@ -25,6 +25,22 @@ class ClickUpConnector(BaseHttpConnector):
     def _get_fetch_params(self, config: Dict[str, Any]) -> Dict[str, Any] | None:
         return None
 
+    def _normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # Expose each ClickUp custom field as a flat top-level key using its own
+        # name, so any field a user creates in ClickUp (e.g. "planned_tasks") can
+        # be referenced directly by rule params without connector-side hardcoding.
+        for field in data.get("custom_fields") or []:
+            name = field.get("name")
+            if name:
+                data[name] = field.get("value")
+        return data
+
+    async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        url = self._get_fetch_url(ref, config)
+        response = await self._get(url, config, self._get_fetch_params(config))
+        response.raise_for_status()
+        return self._normalize(response.json())
+
     def _get_list_url(self, filter_params: Dict[str, Any], config: Dict[str, Any]) -> str:
         list_id = config.get("list_id")
         if list_id:
