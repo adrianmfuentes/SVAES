@@ -1400,6 +1400,27 @@ class TestConnectorService:
         )
         assert result == saved
 
+    async def test_register_overrides_connector_type_from_implementation(self, svc):
+        """Regardless of which UI category the request came from (e.g. ClickUp
+        created from 'Herramienta de Planificacion'), the stored connector_type
+        must be the implementation's own authoritative type (GESTOR_TAREAS) -
+        otherwise category-gated rules like RV-03 would stop applying to it."""
+        service, conn_repo, registry = svc
+        conn_repo.list_by_organization = AsyncMock(return_value=[])
+        conn_repo.save = AsyncMock(side_effect=lambda c: c)
+
+        connector_impl = MagicMock()
+        connector_impl.get_connector_type = MagicMock(return_value="GESTOR_TAREAS")
+        connector_impl.test_connection = AsyncMock(return_value=True)
+        registry.get_by_implementation = MagicMock(return_value=connector_impl)
+
+        result = await service.register_connector(
+            uuid4(), "HERRAMIENTA_PLANIFICACION", "CLICKUP", "My ClickUp",
+            {"token": "x", "team_id": "1"}, uuid4(),
+        )
+
+        assert result.connector_type == "GESTOR_TAREAS"
+
     async def test_update_connector_not_found_raises(self, svc):
         """Branch: connector not found → EntityNotFoundError"""
         service, conn_repo, _ = svc

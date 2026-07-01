@@ -310,6 +310,35 @@ def _get_connector_for_rule(
     return ""
 
 
+def _recompute_verdict(rule_results: list, active_rules: list) -> str:
+    """Recompute the verdict after `_enrich_rule_results` may have downgraded some
+    rules from OK/ERROR to NO_EVALUADA (e.g. a rule with no linked artifact/connector).
+    The engine's original verdict was computed from the pre-downgrade statuses, so a
+    rule that flips to NO_EVALUADA must stop counting towards NO_VALIDA/CON_ADVERTENCIAS
+    - otherwise the verdict can end up NO_VALIDA while every visible rule is green or gray.
+    Matches rule_results to active_rules positionally (same order the engine received
+    them in _build_rules_data), since a profile can repeat the same rule template with
+    different severities.
+    """
+    has_mandatory_error = False
+    has_optional_warning = False
+    for rule_result, rule in zip(rule_results, active_rules):
+        status = rule_result.get("status")
+        severity = _map_severity_to_engine(rule.severity)
+        if status == "ERROR" and severity == "OBLIGATORIA":
+            has_mandatory_error = True
+        elif status == "ERROR" and severity == "OPCIONAL":
+            has_optional_warning = True
+        elif status == "WARNING" and severity == "OPCIONAL":
+            has_optional_warning = True
+
+    if has_mandatory_error:
+        return "NO_VALIDA"
+    if has_optional_warning:
+        return "CON_ADVERTENCIAS"
+    return "VALIDA"
+
+
 def _enrich_rule_results(
     result_data: dict,
     rule_lookup: dict,
@@ -438,6 +467,10 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
         })
 
     _enrich_rule_results(result_data, rule_lookup, connector_names, artifact_type_connector, connector_type_map)
+
+    active_rules = [rule for rule in profile.rules if rule.is_active]
+    engine_rule_results = result_data.get("rule_results", [])[:len(active_rules)]
+    result_data["verdict"] = _recompute_verdict(engine_rule_results, active_rules)
 
     save_stage = engine_stage + 1
     _report_progress(celery_task, current=save_stage, total=total_stages, stage='saving_results')

@@ -784,3 +784,60 @@ class TestEnrichRuleResults:
         self.fn(result_data, {}, {}, {})
         rr = result_data["rule_results"][0]
         assert rr["status"] == "OK"
+
+
+# ── 11. _recompute_verdict ────────────────────────────────────────────────────
+
+class TestRecomputeVerdict:
+    """Regression guard: the verdict must be recomputed after _enrich_rule_results
+    may downgrade a rule from ERROR to NO_EVALUADA (no linked artifact/connector).
+    Otherwise the stored verdict stays NO_VALIDA from the engine's original
+    (pre-downgrade) computation even though every visible rule is OK or gray."""
+
+    @pytest.fixture(autouse=True)
+    def _import(self):
+        from infrastructure.workers.verification_worker import _recompute_verdict
+        self.fn = _recompute_verdict
+
+    def _make_rule(self, severity):
+        from domain.entities.verification_rule import VerificationRule
+        return VerificationRule(
+            profile_id=uuid4(), rule_template="RV-03", params={}, severity=severity,
+        )
+
+    def test_only_ok_and_no_evaluada_is_valida_not_invalid(self):
+        """The reported bug: an OBLIGATORIA rule downgraded ERROR->NO_EVALUADA must
+        not leave the verdict as NO_VALIDA - the only real signal left is OK."""
+        from domain.enums import SeverityType
+        rules = [self._make_rule(SeverityType.HIGH), self._make_rule(SeverityType.HIGH)]
+        rule_results = [
+            {"status": "OK"},
+            {"status": "NO_EVALUADA"},
+        ]
+        assert self.fn(rule_results, rules) == "VALIDA"
+
+    def test_mandatory_error_with_connector_stays_no_valida(self):
+        from domain.enums import SeverityType
+        rules = [self._make_rule(SeverityType.HIGH)]
+        rule_results = [{"status": "ERROR"}]
+        assert self.fn(rule_results, rules) == "NO_VALIDA"
+
+    def test_optional_error_gives_con_advertencias(self):
+        from domain.enums import SeverityType
+        rules = [self._make_rule(SeverityType.HIGH), self._make_rule(SeverityType.LOW)]
+        rule_results = [{"status": "OK"}, {"status": "ERROR"}]
+        assert self.fn(rule_results, rules) == "CON_ADVERTENCIAS"
+
+    def test_all_ok_is_valida(self):
+        from domain.enums import SeverityType
+        rules = [self._make_rule(SeverityType.HIGH), self._make_rule(SeverityType.LOW)]
+        rule_results = [{"status": "OK"}, {"status": "OK"}]
+        assert self.fn(rule_results, rules) == "VALIDA"
+
+    def test_duplicate_rule_template_matched_positionally(self):
+        """Same template (RV-03) twice with different severities: the error on the
+        second (OPCIONAL) instance must not be attributed to the first (OBLIGATORIA)."""
+        from domain.enums import SeverityType
+        rules = [self._make_rule(SeverityType.HIGH), self._make_rule(SeverityType.LOW)]
+        rule_results = [{"status": "OK"}, {"status": "ERROR"}]
+        assert self.fn(rule_results, rules) == "CON_ADVERTENCIAS"

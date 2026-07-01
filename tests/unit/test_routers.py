@@ -2136,6 +2136,22 @@ class TestConnectorsRouter:
         resp = client.get("/api/v1/connectors/types", headers=self._headers())
         assert resp.status_code == 200
 
+    def test_list_connector_types_clickup_shown_under_planning_and_task_manager(self):
+        """ClickUp/Plane/Taiga are genuine task managers (rule engine needs them tagged
+        GESTOR_TAREAS so RV-03/RV-04/etc. keep applying) but must also be discoverable
+        under Herramienta de Planificacion when creating a connector."""
+        from fastapi.testclient import TestClient
+        client = TestClient(self.app)
+        resp = client.get("/api/v1/connectors/types", headers=self._headers())
+        by_type = resp.json()["by_type"]
+        planning_impls = {i["implementation"] for i in by_type.get("HERRAMIENTA_PLANIFICACION", [])}
+        task_manager_impls = {i["implementation"] for i in by_type.get("GESTOR_TAREAS", [])}
+        for impl in ("CLICKUP", "PLANE", "TAIGA"):
+            assert impl in planning_impls
+            assert impl in task_manager_impls
+        assert "MIRO" in planning_impls
+
+
     def test_list_connectors_success(self):
         from fastapi.testclient import TestClient
         c = self._make_connector()

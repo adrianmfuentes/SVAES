@@ -926,6 +926,25 @@ class TestConnectorImplementations:
         assert len(result) == 1
         assert result[0]["id"] == "J-1"
 
+    def test_jira_connector_default_list_params_are_bounded_and_request_fields(self):
+        """Regression guard: /rest/api/3/search/jql rejects JQL with no restriction
+        clause ('Unbounded JQL queries are not allowed here') and omits key/fields
+        from the response unless a `fields` param is passed explicitly."""
+        from infrastructure.secondary.connectors.task_management.jira_connector import JiraConnector
+        c = JiraConnector()
+        params = c._get_list_params({}, {})
+        assert params["jql"] != "order by updated desc"
+        assert "updated" in params["jql"]
+        assert params["fields"] == "summary,status"
+
+    def test_jira_connector_custom_jql_still_requests_fields(self):
+        """A caller-supplied jql (e.g. from a browse search) must still get fields."""
+        from infrastructure.secondary.connectors.task_management.jira_connector import JiraConnector
+        c = JiraConnector()
+        params = c._get_list_params({"jql": 'key = "SVAES-1"'}, {})
+        assert params["jql"] == 'key = "SVAES-1"'
+        assert params["fields"] == "summary,status"
+
     def test_gitlab_connector_get_list_url_with_project(self):
         """Branch: project_id in config -> project-specific URL"""
         from infrastructure.secondary.connectors.source_control.gitlab_connector import GitLabConnector

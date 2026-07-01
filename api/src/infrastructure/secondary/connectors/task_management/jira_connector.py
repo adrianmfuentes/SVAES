@@ -43,9 +43,16 @@ class JiraConnector(AtlassianAuthMixin, BaseHttpConnector):
     def _get_list_params(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
     ) -> Dict[str, Any] | None:
+        # /rest/api/3/search/jql rejects JQL with no restriction clause at all
+        # ("Unbounded JQL queries are not allowed here"), so the no-filter default
+        # needs a real (if generous) bound - not just an ORDER BY.
+        default_jql = "updated >= -3650d order by updated desc"
         return {
-            "jql": filter_params.get("jql", "order by updated desc"),
+            "jql": filter_params.get("jql", default_jql),
             "maxResults": filter_params.get("max_results", 50),
+            # Without an explicit `fields` param this endpoint omits "key" and
+            # "fields" from each issue, which breaks the summary/status mapping.
+            "fields": "summary,status",
         }
 
     def _get_list_json(

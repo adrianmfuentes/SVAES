@@ -67,15 +67,26 @@ async def list_connector_types(
         })
     by_type = {}
     for r in result:
-        ct = r["type"]
-        if ct not in by_type:
-            by_type[ct] = []
-        by_type[ct].append({
-            "implementation": r["implementation"],
-            "metadata": r["metadata"],
-            "config_schema": r["config_schema"],
-        })
+        # Some implementations are genuinely both a task manager and a planning
+        # tool (ClickUp, Plane, Taiga): they must stay registered with their
+        # rule-engine `type` (GESTOR_TAREAS) so category-gated rules like RV-03
+        # keep applying to them, but they should still be discoverable under
+        # "Herramienta de Planificación" when creating a connector.
+        categories = [r["type"]] + _EXTRA_UI_CATEGORIES.get(r["implementation"], [])
+        for ct in categories:
+            by_type.setdefault(ct, []).append({
+                "implementation": r["implementation"],
+                "metadata": r["metadata"],
+                "config_schema": r["config_schema"],
+            })
     return {"implementations": result, "by_type": by_type}
+
+
+_EXTRA_UI_CATEGORIES: dict[str, list[str]] = {
+    "CLICKUP": ["HERRAMIENTA_PLANIFICACION"],
+    "PLANE": ["HERRAMIENTA_PLANIFICACION"],
+    "TAIGA": ["HERRAMIENTA_PLANIFICACION"],
+}
 
 
 def _get_config_schema(implementation: str) -> dict:
