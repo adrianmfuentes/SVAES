@@ -19,25 +19,27 @@ pub fn aggregate(evaluations: &[RuleEvaluation], rules: &[VerificationRule]) -> 
     let mut has_mandatory_error = false;
     let mut has_optional_warning = false;
 
-    for evaluation in evaluations {
-        // Buscamos la configuración de la regla para conocer su severidad.
-        if let Some(rule_config) = rules.iter().find(|r| r.id == evaluation.rule_id) {
-            
-            match evaluation.status {
-                // Si una regla OBLIGATORIA tiene un ERROR, el veredicto es NO_VÁLIDA.
-                RuleStatus::Error if rule_config.severity == "OBLIGATORIA" => {
-                    has_mandatory_error = true;
-                }
-                // Si las obligatorias están OK pero una OPCIONAL tiene ERROR o WARNING, el veredicto es CON_ADVERTENCIAS.
-                RuleStatus::Error if rule_config.severity == "OPCIONAL" => {
-                    has_optional_warning = true;
-                }
-                RuleStatus::Warning if rule_config.severity == "OPCIONAL" => {
-                    has_optional_warning = true;
-                }
-                // Las reglas NO_EVALUADA no computan para el veredicto global.
-                _ => {}
+    // `evaluations` and `rules` are built 1:1 in the same order by `evaluator::evaluate`
+    // (one RuleEvaluation per VerificationRule). We must match them positionally rather
+    // than by `rule_id`/template name: a profile can contain multiple rule instances of
+    // the same template (e.g. two RV-06 rules with different severities), and matching
+    // by id would always resolve to the *first* instance of that template, silently
+    // applying its severity to every other instance's result.
+    for (evaluation, rule_config) in evaluations.iter().zip(rules.iter()) {
+        match evaluation.status {
+            // Si una regla OBLIGATORIA tiene un ERROR, el veredicto es NO_VÁLIDA.
+            RuleStatus::Error if rule_config.severity == "OBLIGATORIA" => {
+                has_mandatory_error = true;
             }
+            // Si las obligatorias están OK pero una OPCIONAL tiene ERROR o WARNING, el veredicto es CON_ADVERTENCIAS.
+            RuleStatus::Error if rule_config.severity == "OPCIONAL" => {
+                has_optional_warning = true;
+            }
+            RuleStatus::Warning if rule_config.severity == "OPCIONAL" => {
+                has_optional_warning = true;
+            }
+            // Las reglas NO_EVALUADA no computan para el veredicto global.
+            _ => {}
         }
     }
 
@@ -298,5 +300,39 @@ mod tests {
         let verdict = aggregate(&evaluations, &rules);
 
         assert!(matches!(verdict, Verdict::NoValida));
+    }
+
+    /// **TC-UNI-AGG-09**: Misma plantilla de regla repetida con severidades distintas.
+    ///
+    /// ## Escenario
+    /// Un perfil con dos instancias de RV-06 (misma plantilla, distinta configuración):
+    /// la primera OBLIGATORIA y en `Ok`, la segunda OPCIONAL y en `Error`.
+    ///
+    /// ## Resultado esperado
+    /// `Verdict::ConAdvertencias` — el error pertenece a la instancia OPCIONAL. Un
+    /// emparejamiento incorrecto por `rule_id` (en vez de por posición) asociaría el
+    /// error de la segunda instancia con la severidad OBLIGATORIA de la primera,
+    /// devolviendo incorrectamente `NoValida`.
+    ///
+    /// ## Cobertura
+    /// Reglas duplicadas en el mismo perfil: el agregador debe emparejar evaluaciones
+    /// y reglas por posición, no por nombre de plantilla.
+    #[test]
+    fn tc_uni_agg_09_duplicate_rule_template_matched_by_position_not_id() {
+        let evaluations = vec![
+            make_evaluation("RV-06", RuleStatus::Ok),
+            make_evaluation("RV-06", RuleStatus::Error),
+        ];
+        let rules = vec![
+            make_rule("RV-06", "OBLIGATORIA"),
+            make_rule("RV-06", "OPCIONAL"),
+        ];
+
+        let verdict = aggregate(&evaluations, &rules);
+
+        assert!(
+            matches!(verdict, Verdict::ConAdvertencias),
+            "El error de la segunda instancia (OPCIONAL) no debe heredar la severidad OBLIGATORIA de la primera"
+        );
     }
 }

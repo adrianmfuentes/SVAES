@@ -209,6 +209,22 @@ function defaultArtifactType(template: string): string {
                   </select>
                 </div>
               }
+              @if (selectedRuleTemplate() === 'RV-06') {
+                <div class="form-group">
+                  <label for="rule-expected-value">{{ 'profiles.expected_value_label' | t }}</label>
+                  <input id="rule-expected-value" type="text" [formControl]="ruleFormControl('expectedValue')"
+                    [placeholder]="'profiles.expected_value_placeholder' | t" />
+                  <p class="form-hint">{{ 'profiles.expected_value_hint' | t }}</p>
+                </div>
+              }
+              @if (selectedRuleTemplate() === 'RV-10') {
+                <div class="form-group">
+                  <label for="rule-approved-states">{{ 'profiles.approved_states_label' | t }}</label>
+                  <input id="rule-approved-states" type="text" [formControl]="ruleFormControl('approvedStates')"
+                    [placeholder]="'profiles.approved_states_placeholder' | t" />
+                  <p class="form-hint">{{ 'profiles.approved_states_hint' | t }}</p>
+                </div>
+              }
               <div class="rule-form-actions">
                 <button type="button" class="btn-secondary btn-sm" (click)="cancelRuleForm()">{{ 'common.cancel' | t }}</button>
                 <button type="button" class="btn-primary btn-sm" [disabled]="savingRule()" [title]="savingRule() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''" (click)="submitRule()">
@@ -873,6 +889,8 @@ export class ProfilesComponent implements OnInit {
     rule_template: ['', [Validators.required]],
     severity: ['HIGH' as SeverityType, [Validators.required]],
     artifactType: [''],
+    expectedValue: [''],
+    approvedStates: [''],
   });
 
   ngOnInit(): void {
@@ -922,23 +940,26 @@ export class ProfilesComponent implements OnInit {
 
   openAddRule(): void {
     this.editingRule.set(null);
-    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '' });
+    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '', expectedValue: '', approvedStates: '' });
     this.showRuleForm.set(true);
   }
 
   openEditRule(rule: ProfileRule): void {
     this.editingRule.set(rule);
+    const approvedStates = (rule.params as any)?.['approved_states'];
     this.ruleForm.patchValue({
       rule_template: rule.rule_template,
       severity: rule.severity,
       artifactType: (rule.params as any)?.['artifact_type'] ?? '',
+      expectedValue: (rule.params as any)?.['expected_value'] ?? '',
+      approvedStates: Array.isArray(approvedStates) ? approvedStates.join(',') : '',
     });
     this.showRuleForm.set(true);
   }
 
   cancelRuleForm(): void {
     this.editingRule.set(null);
-    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '' });
+    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '', expectedValue: '', approvedStates: '' });
     this.showRuleForm.set(false);
   }
 
@@ -1021,9 +1042,18 @@ export class ProfilesComponent implements OnInit {
     const template = this.ruleForm.value.rule_template ?? '';
     const severity = this.ruleForm.value.severity;
     const artifactType = this.ruleForm.value.artifactType;
-    const params = (artifactType && ruleSupportsArtifactType(template))
-      ? { artifact_type: artifactType }
-      : {};
+    const expectedValue = this.ruleForm.value.expectedValue;
+    const approvedStates = this.ruleForm.value.approvedStates;
+    const params: Record<string, unknown> = {};
+    if (artifactType && ruleSupportsArtifactType(template)) {
+      params['artifact_type'] = artifactType;
+    }
+    if (template === 'RV-06' && expectedValue) {
+      params['expected_value'] = expectedValue;
+    }
+    if (template === 'RV-10' && approvedStates) {
+      params['approved_states'] = approvedStates.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    }
 
     if (editing) {
       this.http.patch<{ id: string; is_active: boolean }>(`/api/v1/rules/${editing.id}`, {

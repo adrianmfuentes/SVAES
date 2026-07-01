@@ -23,7 +23,7 @@ from infrastructure.secondary.database.repositories.user_repository import SqlUs
 from infrastructure.secondary.database.repositories.notification_repository import SqlNotificationRepository
 from infrastructure.secondary.connectors import create_registered_connector_registry
 from infrastructure.secondary.database.repositories.connector_repository import SqlConnectorRepository
-from core.rule_names import RULE_NAMES, RULE_DEFAULT_ARTIFACT_TYPES, RULE_CONNECTOR_TYPES
+from core.rule_names import RULE_NAMES, RULE_DEFAULT_ARTIFACT_TYPES, RULE_CONNECTOR_TYPES, RULE_CONNECTOR_TYPES_MODE
 
 
 RULE_OK_EVIDENCE: dict[str, str] = {
@@ -227,6 +227,37 @@ async def _build_artifact_type_connector_map(release_artifacts: list) -> dict[st
     return artifact_type_to_connector
 
 
+async def _build_connector_type_map(release_artifacts: list) -> dict[str, str]:
+    connector_repo = SqlConnectorRepository()
+    connector_type_to_name: dict[str, str] = {}
+    connector_cache: dict[uuid.UUID, Any] = {}
+    for artifact in release_artifacts:
+        cid = artifact.connector_instance_id
+        if not cid:
+            continue
+        if cid not in connector_cache:
+            connector_cache[cid] = await connector_repo.get_by_id(cid)
+        connector = connector_cache[cid]
+        if connector and connector.connector_type not in connector_type_to_name:
+            connector_type_to_name[connector.connector_type] = connector.name
+    return connector_type_to_name
+
+
+def _get_connector_types_fallback(
+    rid: str, connector_type_map: dict[str, str]
+) -> str:
+    required_types = RULE_CONNECTOR_TYPES.get(rid, [])
+    if not required_types:
+        return ""
+    mode = RULE_CONNECTOR_TYPES_MODE.get(rid, "ALL")
+    names = [connector_type_map[t] for t in required_types if t in connector_type_map]
+    satisfied = bool(names) if mode == "ANY" else len(names) == len(required_types)
+    if not satisfied:
+        return ""
+    # De-duplicate while preserving order (a single connector may cover multiple required types)
+    return " + ".join(dict.fromkeys(names))
+
+
 def _get_artifact_fetch_error_connector(
     rule_result: dict, connector_names: dict
 ) -> str:
@@ -256,6 +287,7 @@ def _get_connector_for_rule(
     rule_lookup: dict,
     connector_names: dict,
     artifact_type_connector: dict[str, str] | None = None,
+    connector_type_map: dict[str, str] | None = None,
 ) -> str:
     if rid == "artifact_fetch_error":
         return _get_artifact_fetch_error_connector(rule_result, connector_names)
@@ -265,6 +297,12 @@ def _get_connector_for_rule(
         name = connector_names.get(profile_rule.connector_instance_id, "")
         if name:
             return name
+
+    # Rules requiring more than one connector type (e.g. RV-02, RV-07, RV-08) cannot be
+    # resolved through a single default artifact type: check the connector types actually
+    # present among the release's artifacts instead.
+    if len(RULE_CONNECTOR_TYPES.get(rid, [])) > 1 and connector_type_map is not None:
+        return _get_connector_types_fallback(rid, connector_type_map)
 
     if artifact_type_connector:
         return _get_artifact_type_fallback(rid, rule_lookup, artifact_type_connector)
@@ -277,6 +315,7 @@ def _enrich_rule_results(
     rule_lookup: dict,
     connector_names: dict,
     artifact_type_connector: dict[str, str] | None = None,
+    connector_type_map: dict[str, str] | None = None,
 ) -> None:
     for rule_result in result_data.get("rule_results", []):
         rid = rule_result.get("rule_id", "")
@@ -287,7 +326,7 @@ def _enrich_rule_results(
             rule_result["connector"] = "-"
         else:
             connector = _get_connector_for_rule(
-                rid, rule_result, rule_lookup, connector_names, artifact_type_connector
+                rid, rule_result, rule_lookup, connector_names, artifact_type_connector, connector_type_map
             )
             rule_result["connector"] = connector
             # A rule with no linked artifact cannot be OK or ERROR: mark not evaluated
@@ -373,6 +412,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
     rule_lookup = {rule.rule_template: rule for rule in profile.rules}
     connector_names = await _build_connector_names(profile, release.artifacts or [])
     artifact_type_connector = await _build_artifact_type_connector_map(release.artifacts or [])
+    connector_type_map = await _build_connector_type_map(release.artifacts or [])
 
     for fe in fetch_errors:
         ref = fe.get("external_ref") or fe["artifact_id"]
@@ -397,7 +437,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
             },
         })
 
-    _enrich_rule_results(result_data, rule_lookup, connector_names, artifact_type_connector)
+    _enrich_rule_results(result_data, rule_lookup, connector_names, artifact_type_connector, connector_type_map)
 
     save_stage = engine_stage + 1
     _report_progress(celery_task, current=save_stage, total=total_stages, stage='saving_results')
