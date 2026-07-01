@@ -1,6 +1,6 @@
 """backfill_user_membership: populate multi-org membership table from user.organization_id
 
-Revision ID: u9v0x1y2z3a4b
+Revision ID: v1a2b3c4d5e6f
 Revises: t8u9v0w1x2y3
 Create Date: 2026-07-01
 
@@ -21,7 +21,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = "u9v0x1y2z3a4b"
+revision: str = "v1a2b3c4d5e6f"
 down_revision: Union[str, Sequence[str], None] = "t8u9v0w1x2y3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

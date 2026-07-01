@@ -73,7 +73,7 @@ user (activo)              user_membership (fuente de verdad multi-org)
   modelo SQLAlchemy sobre la tabla existente.
 - `infrastructure/secondary/database/repositories/user_membership_repository.py`:
   implementación SQL del puerto.
-- `alembic/versions/u9v0x1y2z3a4b_backfill_user_membership.py`: migración de
+- `alembic/versions/v1a2b3c4d5e6f_backfill_user_membership.py`: migración de
   **solo datos** (la tabla y sus columnas ya existían) que crea, para cada
   usuario con `organization_id` no nulo, una fila de membership con su rol
   actual — la relación single-org existente se convierte en su primera
