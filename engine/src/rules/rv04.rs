@@ -42,6 +42,11 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         .iter()
         .filter(|a| a.artifact_type == artifact_type)
         .filter(|a| {
+            // A field that is simply absent from the connector's data isn't an
+            // invalid value - it means this artifact doesn't track that field at
+            // all (e.g. a Jira issue with no story-point estimate configured).
+            // Only a field that is *present* but null, non-numeric, or negative
+            // indicates an actual data-quality problem worth flagging.
             numeric_fields.iter().any(|field| {
                 match a.metadata.get(*field) {
                     Some(val) => {
@@ -53,7 +58,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
                             None => true,
                         }
                     }
-                    None => true,
+                    None => false,
                 }
             })
         })
@@ -135,10 +140,13 @@ mod tests {
     }
 
     #[test]
-    fn missing_field_returns_error() {
+    fn missing_field_is_not_flagged_only_present_invalid_values_are() {
+        // A connector that simply doesn't track "estimation" for this artifact
+        // shouldn't fail the rule - there's nothing invalid to report, just data
+        // that was never collected. Only a *present* invalid value is an error.
         let artifacts = vec![make_artifact("T-001", "TAREA", json!({"effort": 3}))];
         let result = evaluate(&artifacts, &make_rule("RV-04"));
-        assert_eq!(result.status, RuleStatus::Error);
+        assert_eq!(result.status, RuleStatus::Ok);
     }
 
     #[test]

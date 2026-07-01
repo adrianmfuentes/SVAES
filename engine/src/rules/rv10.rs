@@ -34,7 +34,10 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         .get("approved_states")
         .and_then(|v| v.as_array())
         .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect())
-        .unwrap_or_else(|| vec!["APROBADO", "VALIDADO"]);
+        // "current" is Confluence's own native status for a live/published page
+        // (as opposed to "draft"/"trashed"), so a document connector that has no
+        // custom approval field still counts as approved by default when live.
+        .unwrap_or_else(|| vec!["APROBADO", "VALIDADO", "current"]);
 
     let approved_artifact = artifacts
         .iter()
@@ -143,6 +146,16 @@ mod tests {
         let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({}))];
         let result = evaluate(&artifacts, &make_rule("RV-10"));
         assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    #[test]
+    fn confluence_current_status_accepted_by_default() {
+        // A published (non-draft) Confluence page has status "current" natively -
+        // it should count as approved out of the box, without requiring a custom
+        // approval field that Confluence doesn't have.
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({"status": "current"}))];
+        let result = evaluate(&artifacts, &make_rule("RV-10"));
+        assert_eq!(result.status, RuleStatus::Ok);
     }
 
     #[test]

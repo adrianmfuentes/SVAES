@@ -1190,6 +1190,7 @@
   "rule_evidence.ok.RV-10.found": "Artefacto '{{artifact_id}}' de tipo '{{artifact_type}}' encontrado con estado aprobatorio: '{{approved_status}}'",
   "rule_evidence.no_evaluada.empty_artifacts": "No hay artefactos disponibles para evaluar esta regla.",
   "rule_evidence.no_evaluada.RV-06": "No se encontraron artefactos de tipo '{{artifact_type}}' para evaluar",
+  "rule_evidence.no_evaluada.RV-06.no_expected_value": "Parámetro 'expected_value' no configurado — regla no aplicable",
   "rule_evidence.no_evaluada.RV-07": "Parámetro 'artifact_type' no configurado — regla no aplicable",
   "rule_evidence.no_evaluada.RV-08": "Parámetro 'master_artifact_id' no proporcionado",
   "rule_evidence.no_evaluada.no_artifacts_of_type": "No hay artefactos de tipo '{{artifact_type}}' en la entrega — regla no aplicable",

@@ -1190,6 +1190,7 @@
   "rule_evidence.ok.RV-10.found": "Artifact '{{artifact_id}}' of type '{{artifact_type}}' found with approved status: '{{approved_status}}'",
   "rule_evidence.no_evaluada.empty_artifacts": "No artifacts available to evaluate this rule.",
   "rule_evidence.no_evaluada.RV-06": "No artifacts of type '{{artifact_type}}' found to evaluate",
+  "rule_evidence.no_evaluada.RV-06.no_expected_value": "Parameter 'expected_value' not configured — rule not applicable",
   "rule_evidence.no_evaluada.RV-07": "Parameter 'artifact_type' not configured — rule not applicable",
   "rule_evidence.no_evaluada.RV-08": "Parameter 'master_artifact_id' not provided",
   "rule_evidence.no_evaluada.no_artifacts_of_type": "No artifacts of type '{{artifact_type}}' in the delivery — rule not applicable",

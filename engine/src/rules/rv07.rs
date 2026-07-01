@@ -7,15 +7,16 @@ use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 /// # Parámetros
 /// * `artifacts` - Slice de artefactos a verificar.
 /// * `rule_config` - Configuración de la regla con parámetros:
-///   - `artifact_type`: Tipo de artefacto marcador a buscar. Opcional — si no se
-///     proporciona, busca en todos los tipos de artefacto.
+///   - `artifact_type`: Tipo de artefacto marcador a buscar (obligatorio: "TAREA" o
+///     "CAMBIO"). Sin conector alguno que exponga un marcador booleano genérico,
+///     no hay una búsqueda "en cualquier tipo" con la que evaluar de forma fiable.
 ///   - `marker_field`: Campo en metadata que indica registro externo (default: "external_registered").
 ///
 /// # Lógica
-/// 1. Si `artifact_type` está configurado, busca solo ese tipo.
-/// 2. Si no, busca en todos los tipos de artefacto.
-/// 3. Si no encuentra ningún artefacto con el marcador, devuelve Error.
-/// 4. Si encuentra y el campo marker es `true`, devuelve Ok.
+/// 1. Si `artifact_type` no está configurado, la regla no es aplicable: NoEvaluada.
+/// 2. Si está configurado pero no es "TAREA"/"CAMBIO", Error (tipo no permitido).
+/// 3. Si no encuentra ningún artefacto de ese tipo, devuelve Error.
+/// 4. Si encuentra uno y su campo marker es `true`, devuelve Ok; si no, Error.
 ///
 /// # Retorno
 /// `RuleEvaluation` con el estado correspondiente indicando si el marcador fue encontrado.
@@ -26,18 +27,30 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         .get("artifact_type")
         .and_then(|v| v.as_str());
 
-    if let Some(t) = artifact_type {
-        if !PERMITIDOS.contains(&t) {
-            return RuleEvaluation {
-                rule_id: rule_config.id.clone(),
-                status: RuleStatus::Error,
-                message: Some("rule_evidence.error.RV-07.tipo_no_permitido".to_string()),
-                message_params: Some(json!({
-                    "artifact_type": t,
-                    "tipos_permitidos": PERMITIDOS,
-                })),
-            };
-        }
+    if artifact_type.is_none() {
+        // Without a configured artifact_type there's no reliable signal to search
+        // for: connectors don't natively expose a generic "external_registered"
+        // marker, so searching across every artifact type would always fail
+        // regardless of real data. That's a missing configuration, not a defect.
+        return RuleEvaluation {
+            rule_id: rule_config.id.clone(),
+            status: RuleStatus::NoEvaluada,
+            message: Some("rule_evidence.no_evaluada.RV-07".to_string()),
+            message_params: None,
+        };
+    }
+
+    let t = artifact_type.expect("checked above: artifact_type is Some at this point");
+    if !PERMITIDOS.contains(&t) {
+        return RuleEvaluation {
+            rule_id: rule_config.id.clone(),
+            status: RuleStatus::Error,
+            message: Some("rule_evidence.error.RV-07.tipo_no_permitido".to_string()),
+            message_params: Some(json!({
+                "artifact_type": t,
+                "tipos_permitidos": PERMITIDOS,
+            })),
+        };
     }
 
     let marker_field = rule_config.params
@@ -45,16 +58,11 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         .and_then(|v| v.as_str())
         .unwrap_or("external_registered");
 
-    let marker_artifact = match artifact_type {
-        Some(t) => artifacts.iter().find(|a| a.artifact_type == t),
-        None => artifacts.iter().find(|a| {
-            a.metadata.get(marker_field).and_then(|v| v.as_bool()).unwrap_or(false)
-        }),
-    };
+    let marker_artifact = artifacts.iter().find(|a| a.artifact_type == t);
 
     match marker_artifact {
         Some(artifact) => {
-            let found_type = artifact_type.unwrap_or(&artifact.artifact_type);
+            let found_type = t;
             match artifact.metadata.get(marker_field) {
                 Some(val) if val.as_bool() == Some(true) => {
                     RuleEvaluation {
@@ -87,7 +95,7 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
                 status: RuleStatus::Error,
                 message: Some("rule_evidence.error.RV-07.not_found".to_string()),
                 message_params: Some(json!({
-                    "artifact_type": artifact_type.unwrap_or("any"),
+                    "artifact_type": t,
                 })),
             }
         }
@@ -139,7 +147,10 @@ mod tests {
     }
 
     #[test]
-    fn no_artifact_type_searches_all_types() {
+    fn no_artifact_type_configured_returns_no_evaluada() {
+        // No connector exposes a generic "external_registered" marker natively,
+        // so searching across all types without a configured artifact_type can
+        // never meaningfully pass or fail - it's a missing configuration.
         let artifacts = vec![
             make_artifact("T-001", "TAREA", json!({"external_registered": true})),
         ];
@@ -147,19 +158,8 @@ mod tests {
 
         let result = evaluate(&artifacts, &rule);
 
-        assert_eq!(result.status, RuleStatus::Ok);
-    }
-
-    #[test]
-    fn no_artifact_type_no_marker_found_returns_error() {
-        let artifacts = vec![
-            make_artifact("C-001", "CODIGO", json!({})),
-        ];
-        let rule = make_rule_no_params("RV-07");
-
-        let result = evaluate(&artifacts, &rule);
-
-        assert_eq!(result.status, RuleStatus::Error);
+        assert_eq!(result.status, RuleStatus::NoEvaluada);
+        assert_eq!(result.message.unwrap(), "rule_evidence.no_evaluada.RV-07");
     }
 
     #[test]

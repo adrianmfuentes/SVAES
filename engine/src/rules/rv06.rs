@@ -45,6 +45,18 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         .and_then(|v| v.as_str())
         .unwrap_or("");
 
+    if expected_value.is_empty() {
+        // Without a configured expected_value there is nothing to compare against
+        // - every document would mismatch by construction, which isn't a real
+        // data problem, just a rule that hasn't been set up yet.
+        return RuleEvaluation {
+            rule_id: rule_config.id.clone(),
+            status: RuleStatus::NoEvaluada,
+            message: Some("rule_evidence.no_evaluada.RV-06.no_expected_value".to_string()),
+            message_params: None,
+        };
+    }
+
     let target_artifacts: Vec<&Artifact> = artifacts
         .iter()
         .filter(|a| a.artifact_type == artifact_type)
@@ -124,6 +136,21 @@ mod tests {
 
         assert_eq!(result.status, RuleStatus::Ok);
         assert!(result.message.is_none());
+    }
+
+    #[test]
+    fn no_expected_value_configured_returns_no_evaluada() {
+        let artifacts = vec![make_artifact("D-001", "DOCUMENTO", json!({"version": "2.0"}))];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({}),
+        };
+
+        let result = evaluate(&artifacts, &rule);
+
+        assert_eq!(result.status, RuleStatus::NoEvaluada);
+        assert_eq!(result.message.unwrap(), "rule_evidence.no_evaluada.RV-06.no_expected_value");
     }
 
     #[test]
