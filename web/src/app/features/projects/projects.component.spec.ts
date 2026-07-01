@@ -276,6 +276,68 @@ describe('ProjectsComponent', () => {
     });
   });
 
+  describe('edit modal', () => {
+    beforeEach(() => {
+      fixture.detectChanges();
+      httpCtrl.expectOne('/api/v1/organizations/org-1/projects').flush(mockProjects);
+    });
+
+    it('should open edit modal and load profiles', () => {
+      component.openEdit(mockProjects[0]);
+
+      const req = httpCtrl.expectOne('/api/v1/organizations/org-1/profiles');
+      expect(req.request.method).toBe('GET');
+      req.flush([{ id: 'prof-1', name: 'Profile 1' }]);
+
+      expect(component.editingProject()).toEqual(mockProjects[0]);
+      expect(component.editName()).toBe('Alpha');
+      expect(component.editProfiles()).toEqual([{ id: 'prof-1', name: 'Profile 1' }]);
+    });
+
+    it('should close edit modal', () => {
+      component.openEdit(mockProjects[0]);
+      httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush([]);
+      component.cancelEdit();
+      expect(component.editingProject()).toBeNull();
+    });
+
+    it('should save edited project successfully', () => {
+      component.openEdit(mockProjects[0]);
+      httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush([]);
+      component.editName.set('Alpha Updated');
+      component.editDescription.set('New description');
+      component.saveEdit();
+
+      const req = httpCtrl.expectOne('/api/v1/projects/proj-1');
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual({ name: 'Alpha Updated', description: 'New description', profile_id: 'prof-1' });
+      req.flush({ id: 'proj-1', name: 'Alpha Updated', description: 'New description', profile_id: 'prof-1', is_archived: false, created_at: mockProjects[0].created_at });
+
+      expect(component.editSubmitting()).toBe(false);
+      expect(component.projects()[0].name).toBe('Alpha Updated');
+      expect(component.editingProject()).toBeNull();
+    });
+
+    it('should handle edit error', () => {
+      component.openEdit(mockProjects[0]);
+      httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush([]);
+      component.saveEdit();
+
+      httpCtrl.expectOne('/api/v1/projects/proj-1').flush({ detail: 'Perfil inválido' }, { status: 409, statusText: 'Conflict' });
+
+      expect(component.editSubmitting()).toBe(false);
+      expect(component.editError()).toBe('Perfil inválido');
+    });
+
+    it('should not save if no name is set', () => {
+      component.openEdit(mockProjects[0]);
+      httpCtrl.expectOne('/api/v1/organizations/org-1/profiles').flush([]);
+      component.editName.set('   ');
+      component.saveEdit();
+      httpCtrl.expectNone('/api/v1/projects/proj-1');
+    });
+  });
+
   describe('action buttons visibility', () => {
     it('should show archive button for non-archived projects when manager', () => {
       fixture.detectChanges();

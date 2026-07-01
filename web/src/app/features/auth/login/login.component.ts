@@ -677,7 +677,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   private startCooldown(err: HttpErrorResponse): void {
     const retryAfterHeader = err.headers?.get('Retry-After');
-    const parsed = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
+    const parsed = retryAfterHeader ? Number.parseInt(retryAfterHeader, 10) : Number.NaN;
     const seconds = Number.isFinite(parsed) && parsed > 0 ? parsed : 60;
 
     if (this.cooldownTimer) {

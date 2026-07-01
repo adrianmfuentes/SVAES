@@ -1,30 +1,30 @@
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.00s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.62s
      Running unittests src\lib.rs (target\debug\deps\svaes_engine-b17e4f5eba150019.exe)
 
 running 103 tests
-test aggregator::tests::tc_uni_agg_03_optional_warning_without_mandatory_error_returns_con_advertencias ... ok
-test aggregator::tests::tc_uni_agg_01_all_rules_ok_returns_valida ... ok
-test rules::has_blocking_issues::tests::no_blocking_issues_returns_ok ... ok
-test rules::has_blocking_issues::tests::blocking_issues_above_threshold_returns_error ... ok
-test rules::has_code_smells::tests::smells_above_threshold_returns_error ... ok
-test rules::has_critical_vulnerabilities::tests::no_artifacts_returns_no_evaluada ... ok
-test aggregator::tests::tc_uni_agg_08_opcional_error_returns_con_advertencias ... ok
 test aggregator::tests::tc_uni_agg_02_one_mandatory_error_returns_no_valida ... ok
-test rules::has_blocking_issues::tests::no_artifacts_returns_no_evaluada ... ok
+test aggregator::tests::tc_uni_agg_01_all_rules_ok_returns_valida ... ok
+test aggregator::tests::tc_uni_agg_03_optional_warning_without_mandatory_error_returns_con_advertencias ... ok
 test aggregator::tests::tc_uni_agg_04_transition_zero_to_one_mandatory_errors ... ok
-test rules::has_code_smells::tests::no_artifacts_returns_no_evaluada ... ok
-test rules::has_code_smells::tests::no_smells_returns_ok ... ok
-test aggregator::tests::tc_uni_agg_05_excluida_rules_no_evaluada_do_not_affect_verdict ... ok
 test aggregator::tests::tc_uni_agg_06_mandatory_error_overrides_optional_warning ... ok
+test rules::has_blocking_issues::tests::no_artifacts_returns_no_evaluada ... ok
 test aggregator::tests::tc_uni_agg_07_multiple_mandatory_errors_returns_no_valida ... ok
+test aggregator::tests::tc_uni_agg_08_opcional_error_returns_con_advertencias ... ok
+test aggregator::tests::tc_uni_agg_05_excluida_rules_no_evaluada_do_not_affect_verdict ... ok
+test rules::has_blocking_issues::tests::no_blocking_issues_returns_ok ... ok
+test rules::has_code_smells::tests::no_artifacts_returns_no_evaluada ... ok
 test rules::has_critical_vulnerabilities::tests::zero_critical_returns_ok ... ok
+test rules::has_code_smells::tests::smells_above_threshold_returns_error ... ok
 test rules::has_critical_vulnerabilities::tests::critical_above_threshold_returns_error ... ok
-test rules::has_duplicated_code::tests::custom_threshold_respected ... ok
-test rules::has_duplicated_code::tests::exceeds_threshold_returns_error ... ok
+test rules::has_critical_vulnerabilities::tests::no_artifacts_returns_no_evaluada ... ok
+test rules::has_blocking_issues::tests::blocking_issues_above_threshold_returns_error ... ok
+test rules::has_code_smells::tests::no_smells_returns_ok ... ok
 test rules::has_duplicated_code::tests::missing_field_in_metadata_treated_as_ok ... ok
+test rules::has_duplicated_code::tests::exceeds_threshold_returns_error ... ok
+test rules::has_duplicated_code::tests::custom_threshold_respected ... ok
 test rules::has_duplicated_code::tests::no_duplication_returns_ok ... ok
-test rules::has_duplicated_code::tests::no_matching_artifacts_returns_no_evaluada ... ok
 test rules::has_high_severity_vulnerabilities::tests::custom_threshold_respected ... ok
+test rules::has_duplicated_code::tests::no_matching_artifacts_returns_no_evaluada ... ok
 test rules::has_high_severity_vulnerabilities::tests::no_artifacts_returns_no_evaluada ... ok
 test rules::has_high_severity_vulnerabilities::tests::vulnerabilities_above_threshold_returns_error ... ok
 test rules::has_high_severity_vulnerabilities::tests::zero_vulnerabilities_returns_ok ... ok
@@ -97,8 +97,8 @@ test rules::rv09::tests::missing_accessible_field_treated_as_ok ... ok
 test rules::rv09::tests::missing_reference_field_treated_as_ok ... ok
 test rules::rv09::tests::multiple_artifacts_collects_all_errors ... ok
 test rules::rv09::tests::not_accessible_returns_error ... ok
-test rules::rv09::tests::tc_uni_mot_09_rv09_valid_references_returns_ok ... ok
 test rules::rv09::tests::reference_starts_with_http_validates_as_url ... ok
+test rules::rv09::tests::tc_uni_mot_09_rv09_valid_references_returns_ok ... ok
 test rules::rv10::tests::custom_approved_states_respected ... ok
 test rules::rv10::tests::document_with_missing_status_returns_error ... ok
 test rules::rv10::tests::document_with_non_approved_status_returns_error ... ok

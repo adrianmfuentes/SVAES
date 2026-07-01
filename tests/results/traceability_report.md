@@ -1,6 +1,6 @@
 # Informe de trazabilidad - SVAES Plan de Pruebas
 
-**Total en plan:** 77  |  **Cubiertas OK:** 75  |  **Fallan:** 0  |  **Sin implementar:** 2
+**Total en plan:** 77  |  **Cubiertas OK:** 76  |  **Fallan:** 0  |  **Sin implementar:** 1
 
 | TC-ID | Nivel | Seccion | Estado | Herramienta | Descripcion |
 |---|---|---|---|---|---|
@@ -40,7 +40,7 @@
 | `TC-UNI-FE-GRD-01` | Unitaria | 7.2.5.1 | ✅ PASS | Jest | Token valido, U2/OPERATOR, ruta permitida -> canActivate=true |
 | `TC-UNI-FE-GRD-02` | Unitaria | 7.2.5.1 | ✅ PASS | Jest | Token caducado -> canActivate=false, redirige /login |
 | `TC-UNI-FE-GRD-03` | Unitaria | 7.2.5.1 | ✅ PASS | Jest | Token ausente -> canActivate=false, redirige /login |
-| `TC-UNI-FE-GRD-04` | Unitaria | 7.2.5.1 | ⬜ MISSING | Jest | U1/OPERATOR en /releases/verify -> canActivate=true |
+| `TC-UNI-FE-GRD-04` | Unitaria | 7.2.5.1 | ✅ PASS | Jest | U1/OPERATOR en /releases/verify -> canActivate=true |
 | `TC-UNI-FE-SVC-01` | Unitaria | 7.2.5.2 | ✅ PASS | Jest | POST /releases 201 -> Observable emite Release, Bearer presente |
 | `TC-UNI-FE-SVC-02` | Unitaria | 7.2.5.2 | ✅ PASS | Jest | POST /releases 401 -> Observable emite AuthError |
 | `TC-UNI-FE-SVC-03` | Unitaria | 7.2.5.2 | ✅ PASS | Jest | POST /releases 422 -> Observable emite ValidationError |

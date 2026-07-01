@@ -83,50 +83,13 @@ class UserService(IUserService):
 
         existing = await self._user_repo.get_by_email(email)
         if existing:
-            if self._membership_repo:
-                already_member = await self._membership_repo.get(existing.id, organization_id)
-                if already_member:
-                    raise DuplicateEntityError(f"El usuario {email} ya pertenece a esta organización")
-                await self._membership_repo.create(UserMembership(
-                    id=uuid4(), user_id=existing.id, organization_id=organization_id, role=role,
-                ))
-                if existing.organization_id is None:
-                    existing.organization_id = organization_id
-                    existing.role = role
-                    existing.activation_token = activation_token
-                    existing.activation_token_expiry = activation_token_expiry
-                    existing.is_active = False
-                    created = await self._user_repo.update(existing)
-                else:
-                    created = existing
-                    created.role = role
-            else:
-                if existing.organization_id is not None:
-                    raise DuplicateEntityError(f"El usuario {email} ya pertenece a una organización")
-                existing.organization_id = organization_id
-                existing.role = role
-                existing.activation_token = activation_token
-                existing.activation_token_expiry = activation_token_expiry
-                existing.is_active = False
-                created = await self._user_repo.update(existing)
-        else:
-            temp_password = await asyncio.to_thread(self._password_hasher.hash_password, str(uuid4())[:8])
-            user = User(
-                id=uuid4(),
-                email=email,
-                hashed_password=temp_password,
-                display_name=email.split("@")[0],
-                role=role,
-                organization_ids=[organization_id],
-                is_active=False,
-                activation_token=activation_token,
-                activation_token_expiry=activation_token_expiry,
+            created = await self._invite_existing_user(
+                existing, organization_id, role, activation_token, activation_token_expiry
             )
-            created = await self._user_repo.create(user)
-            if self._membership_repo:
-                await self._membership_repo.create(UserMembership(
-                    id=uuid4(), user_id=created.id, organization_id=organization_id, role=role,
-                ))
+        else:
+            created = await self._invite_new_user(
+                email, organization_id, role, activation_token, activation_token_expiry
+            )
 
         audit = get_audit_logger()
         audit.log(AuditEntry(
@@ -139,6 +102,68 @@ class UserService(IUserService):
         ))
         _log.info("User invited: by=%s org=%s role=%s", requested_by, organization_id, role.value)
 
+        return created
+
+    async def _invite_existing_user(
+        self,
+        existing: User,
+        organization_id: UUID,
+        role: UserRole,
+        activation_token: str,
+        activation_token_expiry: datetime,
+    ) -> User:
+        if not self._membership_repo:
+            if existing.organization_id is not None:
+                raise DuplicateEntityError(f"El usuario {existing.email} ya pertenece a una organización")
+            existing.organization_id = organization_id
+            existing.role = role
+            existing.activation_token = activation_token
+            existing.activation_token_expiry = activation_token_expiry
+            existing.is_active = False
+            return await self._user_repo.update(existing)
+
+        already_member = await self._membership_repo.get(existing.id, organization_id)
+        if already_member:
+            raise DuplicateEntityError(f"El usuario {existing.email} ya pertenece a esta organización")
+        await self._membership_repo.create(UserMembership(
+            id=uuid4(), user_id=existing.id, organization_id=organization_id, role=role,
+        ))
+        if existing.organization_id is not None:
+            existing.role = role
+            return existing
+
+        existing.organization_id = organization_id
+        existing.role = role
+        existing.activation_token = activation_token
+        existing.activation_token_expiry = activation_token_expiry
+        existing.is_active = False
+        return await self._user_repo.update(existing)
+
+    async def _invite_new_user(
+        self,
+        email: str,
+        organization_id: UUID,
+        role: UserRole,
+        activation_token: str,
+        activation_token_expiry: datetime,
+    ) -> User:
+        temp_password = await asyncio.to_thread(self._password_hasher.hash_password, str(uuid4())[:8])
+        user = User(
+            id=uuid4(),
+            email=email,
+            hashed_password=temp_password,
+            display_name=email.split("@")[0],
+            role=role,
+            organization_ids=[organization_id],
+            is_active=False,
+            activation_token=activation_token,
+            activation_token_expiry=activation_token_expiry,
+        )
+        created = await self._user_repo.create(user)
+        if self._membership_repo:
+            await self._membership_repo.create(UserMembership(
+                id=uuid4(), user_id=created.id, organization_id=organization_id, role=role,
+            ))
         return created
 
 
@@ -346,24 +371,9 @@ class UserService(IUserService):
         if not await asyncio.to_thread(self._password_hasher.verify_password, password, user.hashed_password):
             raise AuthenticationError("Contraseña incorrecta")
 
-        org_ids = user.organization_ids
-        if self._membership_repo:
-            memberships = await self._membership_repo.list_by_user(user_id)
-            org_ids = [m.organization_id for m in memberships]
-
+        org_ids = await self._resolve_user_organization_ids(user)
         if org_ids:
-            for org_id in org_ids:
-                org = await self._org_repo.get_by_id(org_id)
-                if org and org.owner_id == user_id:
-                    members = await self._user_repo.list_all(organization_id=org_id, active_only=False, skip=0, limit=100)
-                    other_members = [m for m in members if m.id != user_id]
-
-                    if other_members:
-                        raise ValidationError("Debes transferir la propiedad de la organización antes de eliminar tu cuenta")
-                    else:
-                        await self._org_repo.delete(org_id)
-                        _log.info("Organization deleted before account deletion: org=%s", org_id)
-
+            await self._release_owned_organizations(org_ids, user_id)
             if self._membership_repo:
                 await self._membership_repo.delete_all_for_user(user_id)
 
@@ -379,6 +389,26 @@ class UserService(IUserService):
         _log.info("User account deleted: by=%s user=%s", requested_by, user_id)
 
         await self._user_repo.delete(user_id)
+
+    async def _resolve_user_organization_ids(self, user: User) -> List[UUID]:
+        if not self._membership_repo:
+            return user.organization_ids
+        memberships = await self._membership_repo.list_by_user(user.id)
+        return [m.organization_id for m in memberships]
+
+    async def _release_owned_organizations(self, org_ids: List[UUID], user_id: UUID) -> None:
+        for org_id in org_ids:
+            org = await self._org_repo.get_by_id(org_id)
+            if not org or org.owner_id != user_id:
+                continue
+
+            members = await self._user_repo.list_all(organization_id=org_id, active_only=False, skip=0, limit=100)
+            other_members = [m for m in members if m.id != user_id]
+            if other_members:
+                raise ValidationError("Debes transferir la propiedad de la organización antes de eliminar tu cuenta")
+
+            await self._org_repo.delete(org_id)
+            _log.info("Organization deleted before account deletion: org=%s", org_id)
 
     async def list_user_organizations(self, user_id: UUID) -> List[UserMembership]:
         if not self._membership_repo:

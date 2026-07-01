@@ -72,7 +72,7 @@ export class ShellComponent implements OnInit {
     this.switchingOrg.set(true);
     this.switchOrgError.set(null);
     this.authService.switchOrganization(org.organization_id).subscribe({
-      next: () => window.location.reload(),
+      next: () => globalThis.location.reload(),
       error: () => {
         this.switchingOrg.set(false);
         this.switchOrgError.set(this.ts.translateInstant('shell.switch_org_error'));

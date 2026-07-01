@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import UUID, uuid4
 from application.ports.input.i_organization_service import IOrganizationService
 from application.ports.output.i_organization_repository import IOrganizationRepository
@@ -8,7 +8,7 @@ from application.ports.output.i_profile_repository import IProfileRepository
 from application.ports.output.i_user_membership_repository import IUserMembershipRepository
 from domain.entities.organization import Organization
 from domain.entities.project import Project
-from domain.entities.user import UserMembership
+from domain.entities.user import User, UserMembership
 from domain.enums import UserRole
 from domain.exceptions import DuplicateEntityError, EntityNotFoundError, ValidationError
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
@@ -202,35 +202,14 @@ class OrganizationService(IOrganizationService):
             raise EntityNotFoundError(f"Organización no encontrada: {organization_id}")
 
         old_owner_id = org.owner_id
-        old_owner_user = None
-        new_owner_user = None
-        if self._user_repo:
-            new_owner_user = await self._user_repo.get_by_id(new_owner_id)
-            if not new_owner_user:
-                raise EntityNotFoundError(f"Usuario no encontrado: {new_owner_id}")
-            if new_owner_user.role == UserRole.U3:
-                raise ValidationError("El administrador global no puede ser propietario de una organización.")
-            if old_owner_id:
-                old_owner_user = await self._user_repo.get_by_id(old_owner_id)
+        old_owner_user, new_owner_user = await self._resolve_ownership_users(new_owner_id, old_owner_id)
 
         org.owner_id = new_owner_id
         updated = await self._org_repo.update(org)
 
         if self._user_repo:
-            if old_owner_user and old_owner_user.role == UserRole.U4:
-                old_owner_user.role = UserRole.U2
-                await self._user_repo.update(old_owner_user)
-                if self._membership_repo and old_owner_id and await self._membership_repo.get(old_owner_id, organization_id):
-                    await self._membership_repo.update_role(old_owner_id, organization_id, UserRole.U2)
-            new_owner_user.role = UserRole.U4  # type: ignore[union-attr]
-            await self._user_repo.update(new_owner_user)
-            if self._membership_repo:
-                if await self._membership_repo.get(new_owner_id, organization_id):
-                    await self._membership_repo.update_role(new_owner_id, organization_id, UserRole.U4)
-                else:
-                    await self._membership_repo.create(UserMembership(
-                        id=uuid4(), user_id=new_owner_id, organization_id=organization_id, role=UserRole.U4,
-                    ))
+            await self._demote_previous_owner(old_owner_user, old_owner_id, organization_id)
+            await self._promote_new_owner(new_owner_user, new_owner_id, organization_id)  # type: ignore[arg-type]
 
         audit = get_audit_logger()
         audit.log(AuditEntry(
@@ -244,6 +223,58 @@ class OrganizationService(IOrganizationService):
         _log.info("Org ownership transferred: by=%s org=%s %s->%s", requested_by, organization_id, old_owner_id, new_owner_id)
 
         return updated
+
+    async def _resolve_ownership_users(
+        self,
+        new_owner_id: UUID,
+        old_owner_id: Optional[UUID],
+    ) -> Tuple[Optional[User], Optional[User]]:
+        if not self._user_repo:
+            return None, None
+
+        new_owner_user = await self._user_repo.get_by_id(new_owner_id)
+        if not new_owner_user:
+            raise EntityNotFoundError(f"Usuario no encontrado: {new_owner_id}")
+        if new_owner_user.role == UserRole.U3:
+            raise ValidationError("El administrador global no puede ser propietario de una organización.")
+
+        old_owner_user = await self._user_repo.get_by_id(old_owner_id) if old_owner_id else None
+        return old_owner_user, new_owner_user
+
+    async def _demote_previous_owner(
+        self,
+        old_owner_user: Optional[User],
+        old_owner_id: Optional[UUID],
+        organization_id: UUID,
+    ) -> None:
+        if not old_owner_user or old_owner_user.role != UserRole.U4:
+            return
+
+        old_owner_user.role = UserRole.U2
+        await self._user_repo.update(old_owner_user)
+
+        if not self._membership_repo or not old_owner_id:
+            return
+        if await self._membership_repo.get(old_owner_id, organization_id):
+            await self._membership_repo.update_role(old_owner_id, organization_id, UserRole.U2)
+
+    async def _promote_new_owner(
+        self,
+        new_owner_user: User,
+        new_owner_id: UUID,
+        organization_id: UUID,
+    ) -> None:
+        new_owner_user.role = UserRole.U4
+        await self._user_repo.update(new_owner_user)
+
+        if not self._membership_repo:
+            return
+        if await self._membership_repo.get(new_owner_id, organization_id):
+            await self._membership_repo.update_role(new_owner_id, organization_id, UserRole.U4)
+        else:
+            await self._membership_repo.create(UserMembership(
+                id=uuid4(), user_id=new_owner_id, organization_id=organization_id, role=UserRole.U4,
+            ))
 
     async def list_accessible_projects(
         self,
