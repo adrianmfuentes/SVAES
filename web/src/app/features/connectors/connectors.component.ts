@@ -79,7 +79,7 @@ interface ConnectorTypesResponse {
                 <th scope="col">{{ 'connectors.table_type' | t }}</th>
                 <th scope="col">{{ 'connectors.table_status' | t }}</th>
                 <th scope="col">{{ 'connectors.last_tested' | t }}</th>
-                <th scope="col" *ngIf="canManage">{{ 'common.actions' | t }}</th>
+                <th scope="col" class="th-actions" *ngIf="canManage">{{ 'common.actions' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -266,7 +266,7 @@ interface ConnectorTypesResponse {
       align-items: center;
     }
 
-    .data-table th:last-child { text-align: center; }
+    .data-table th.th-actions { text-align: center; }
 
     .type-chip {
       font-family: var(--font-mono);

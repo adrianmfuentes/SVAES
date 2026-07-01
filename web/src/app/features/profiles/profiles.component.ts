@@ -119,7 +119,7 @@ function defaultArtifactType(template: string): string {
                 <th scope="col">{{ 'profiles.table_name' | t }}</th>
                 <th scope="col">{{ 'common.description' | t }}</th>
                 <th scope="col">{{ 'profiles.table_rules' | t }}</th>
-                <th scope="col" *ngIf="canManage">{{ 'common.actions' | t }}</th>
+                <th scope="col" class="th-actions" *ngIf="canManage">{{ 'common.actions' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -386,7 +386,7 @@ function defaultArtifactType(template: string): string {
       align-items: center;
     }
 
-    .data-table th:last-child { text-align: center; }
+    .data-table th.th-actions { text-align: center; }
 
     .btn-ghost {
       font-family: var(--font-sans);
