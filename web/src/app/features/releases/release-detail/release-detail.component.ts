@@ -147,7 +147,7 @@ interface VerificationResult {
             </div>
             <div class="info-field">
               <span class="info-label">{{ 'release_detail.project' | t }}</span>
-              <span class="info-value">{{ release()!.project_name || release()!.project_id | slice:0:8 }}</span>
+              <span class="info-value project-name">{{ release()!.project_name || release()!.project_id }}</span>
             </div>
             <div class="info-field">
               <span class="info-label">{{ 'release_detail.field_org' | t }}</span>
@@ -812,6 +812,11 @@ interface VerificationResult {
     .info-value {
       font-size: 0.9375rem;
       color: var(--ink);
+    }
+
+    .project-name {
+      word-break: break-word;
+      min-width: 0;
     }
 
     .info-description {
