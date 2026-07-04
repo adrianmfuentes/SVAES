@@ -1,0 +1,70 @@
+# Ejemplo de integración de SVAES en un pipeline de GitLab CI.
+#
+# Este job se dispara al crear un tag y bloquea el pipeline si SVAES no
+# devuelve veredicto VALIDA para la entrega correspondiente.
+#
+# Variables que debes definir en Settings → CI/CD → Variables:
+#   SVAES_URL      → URL base de tu instancia (ej. https://svaes.example.com)
+#   SVAES_API_KEY  → API key del proyecto en SVAES (masked + protected)
+#   SVAES_PROJECT_ID → UUID del proyecto en SVAES
+
+stages:
+  - verify
+
+svaes:verify-delivery:
+  stage: verify
+  image: curlimages/curl:8.10.1
+  rules:
+    - if: '$CI_COMMIT_TAG'
+  variables:
+    POLL_INTERVAL: "10"    # segundos entre poll y poll
+    MAX_ATTEMPTS: "60"     # 60 * 10s = 10 min de timeout
+  script:
+    - |
+      set -euo pipefail
+
+      echo "→ Creando entrega en SVAES para tag $CI_COMMIT_TAG"
+      DELIVERY_ID=$(curl -sSf -X POST \
+        "$SVAES_URL/api/v1/projects/$SVAES_PROJECT_ID/deliveries" \
+        -H "Authorization: Bearer $SVAES_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "{\"identifier\":\"$CI_COMMIT_TAG\",\"ref\":\"$CI_COMMIT_TAG\"}" \
+        | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+
+      echo "→ Entrega creada: $DELIVERY_ID"
+      echo "→ Esperando veredicto…"
+
+      for i in $(seq 1 "$MAX_ATTEMPTS"); do
+        RESPONSE=$(curl -sSf \
+          "$SVAES_URL/api/v1/projects/$SVAES_PROJECT_ID/deliveries/$DELIVERY_ID" \
+          -H "Authorization: Bearer $SVAES_API_KEY")
+
+        STATUS=$(echo "$RESPONSE" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p')
+        VERDICT=$(echo "$RESPONSE" | sed -n 's/.*"verdict":"\([^"]*\)".*/\1/p')
+
+        echo "  [$i/$MAX_ATTEMPTS] status=$STATUS verdict=$VERDICT"
+
+        if [ "$STATUS" = "COMPLETADA" ]; then
+          case "$VERDICT" in
+            VALIDA)
+              echo "✓ SVAES aprueba la entrega."
+              exit 0
+              ;;
+            CON_INCIDENCIAS)
+              echo "⚠ SVAES devuelve CON_INCIDENCIAS. Revisa el detalle:"
+              echo "  $SVAES_URL/projects/$SVAES_PROJECT_ID/deliveries/$DELIVERY_ID"
+              exit 1
+              ;;
+            NO_VALIDA|NO_EVALUADA)
+              echo "✗ SVAES rechaza la entrega ($VERDICT). Detalle:"
+              echo "  $SVAES_URL/projects/$SVAES_PROJECT_ID/deliveries/$DELIVERY_ID"
+              exit 1
+              ;;
+          esac
+        fi
+
+        sleep "$POLL_INTERVAL"
+      done
+
+      echo "✗ Timeout esperando el veredicto de SVAES."
+      exit 1

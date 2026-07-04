@@ -1,0 +1,82 @@
+# Ejemplo de integración de SVAES en GitHub Actions.
+#
+# Se dispara al publicar un tag y bloquea el workflow si SVAES no
+# devuelve veredicto VALIDA para la entrega correspondiente.
+#
+# Secrets que debes definir en Settings → Secrets and variables → Actions:
+#   SVAES_URL         → URL base de tu instancia (ej. https://svaes.example.com)
+#   SVAES_API_KEY     → API key del proyecto en SVAES
+#   SVAES_PROJECT_ID  → UUID del proyecto en SVAES
+
+name: SVAES delivery verification
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  svaes-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SVAES_URL: ${{ secrets.SVAES_URL }}
+      SVAES_API_KEY: ${{ secrets.SVAES_API_KEY }}
+      SVAES_PROJECT_ID: ${{ secrets.SVAES_PROJECT_ID }}
+      TAG: ${{ github.ref_name }}
+      POLL_INTERVAL: 10
+      MAX_ATTEMPTS: 60
+    steps:
+      - name: Create delivery in SVAES
+        id: create
+        run: |
+          set -euo pipefail
+          RESPONSE=$(curl -sSf -X POST \
+            "$SVAES_URL/api/v1/projects/$SVAES_PROJECT_ID/deliveries" \
+            -H "Authorization: Bearer $SVAES_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"identifier\":\"$TAG\",\"ref\":\"$TAG\"}")
+          DELIVERY_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "delivery_id=$DELIVERY_ID" >> "$GITHUB_OUTPUT"
+          echo "→ Entrega creada: $DELIVERY_ID"
+
+      - name: Wait for verdict
+        env:
+          DELIVERY_ID: ${{ steps.create.outputs.delivery_id }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 "$MAX_ATTEMPTS"); do
+            RESPONSE=$(curl -sSf \
+              "$SVAES_URL/api/v1/projects/$SVAES_PROJECT_ID/deliveries/$DELIVERY_ID" \
+              -H "Authorization: Bearer $SVAES_API_KEY")
+            STATUS=$(echo "$RESPONSE" | jq -r '.status')
+            VERDICT=$(echo "$RESPONSE" | jq -r '.verdict')
+            echo "  [$i/$MAX_ATTEMPTS] status=$STATUS verdict=$VERDICT"
+
+            if [ "$STATUS" = "COMPLETADA" ]; then
+              DETAIL_URL="$SVAES_URL/projects/$SVAES_PROJECT_ID/deliveries/$DELIVERY_ID"
+              case "$VERDICT" in
+                VALIDA)
+                  echo "✓ SVAES aprueba la entrega."
+                  echo "### ✅ SVAES: VALIDA" >> "$GITHUB_STEP_SUMMARY"
+                  echo "[Ver detalle]($DETAIL_URL)" >> "$GITHUB_STEP_SUMMARY"
+                  exit 0
+                  ;;
+                CON_INCIDENCIAS)
+                  echo "⚠ CON_INCIDENCIAS. Detalle: $DETAIL_URL"
+                  echo "### ⚠️ SVAES: CON_INCIDENCIAS" >> "$GITHUB_STEP_SUMMARY"
+                  echo "[Ver detalle]($DETAIL_URL)" >> "$GITHUB_STEP_SUMMARY"
+                  exit 1
+                  ;;
+                NO_VALIDA|NO_EVALUADA)
+                  echo "✗ $VERDICT. Detalle: $DETAIL_URL"
+                  echo "### ❌ SVAES: $VERDICT" >> "$GITHUB_STEP_SUMMARY"
+                  echo "[Ver detalle]($DETAIL_URL)" >> "$GITHUB_STEP_SUMMARY"
+                  exit 1
+                  ;;
+              esac
+            fi
+            sleep "$POLL_INTERVAL"
+          done
+          echo "✗ Timeout esperando el veredicto de SVAES."
+          exit 1
