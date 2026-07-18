@@ -409,6 +409,8 @@ interface ConnectorTypesResponse {
       padding: var(--spacing-lg);
       width: 30rem;
       max-width: calc(100vw - 3rem);
+      max-height: calc(100vh - 3rem);
+      overflow-y: auto;
     }
 
     .modal-header {

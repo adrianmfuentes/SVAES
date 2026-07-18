@@ -504,6 +504,8 @@ function defaultArtifactType(template: string): string {
       padding: var(--spacing-lg);
       width: 30rem;
       max-width: calc(100vw - 3rem);
+      max-height: calc(100vh - 3rem);
+      overflow-y: auto;
     }
 
     .modal-panel-wide {
@@ -573,12 +575,14 @@ function defaultArtifactType(template: string): string {
     .rule-info {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: var(--spacing-sm);
     }
 
     .rule-template {
       font-family: var(--font-mono);
       font-size: 0.8125rem;
+      overflow-wrap: break-word;
     }
 
     .severity-badge {
@@ -697,7 +701,8 @@ function defaultArtifactType(template: string): string {
       font-size: 0.75rem;
     }
 
-    .form-group input {
+    .form-group input,
+    .form-group select {
       width: 100%;
       background: var(--paper);
       color: var(--ink);
@@ -710,7 +715,8 @@ function defaultArtifactType(template: string): string {
       transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
     }
 
-    .form-group input:focus {
+    .form-group input:focus,
+    .form-group select:focus {
       border-color: var(--ink);
       background: var(--surface-raised);
       box-shadow: 0 0 0 0.1875rem rgba(232, 213, 163, 0.4);
