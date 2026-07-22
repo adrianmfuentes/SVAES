@@ -114,6 +114,7 @@ export class SuccessRateChartComponent implements OnChanges {
       labelKey: string,
       color: string,
       gradStops: GradientStop[],
+      borderDash: number[],
     ) => ({
       label: this.ts.translateInstant(labelKey),
       data: this.data.map((d) => pct(d[verdictKey], d.valid + d.with_warnings + d.invalid)),
@@ -122,6 +123,7 @@ export class SuccessRateChartComponent implements OnChanges {
       fill: true,
       tension: 0.45,
       borderWidth: 2.5,
+      borderDash,
       pointRadius: single ? 5 : 0,
       pointHoverRadius: 6,
       pointHitRadius: 24,
@@ -133,21 +135,24 @@ export class SuccessRateChartComponent implements OnChanges {
     this.chartData = {
       labels: this.data.map((d) => d.date),
       datasets: [
+        // Solid line: valid
         buildDataset('valid', 'verdict.VALID', '#27AE60', [
           [0, 'rgba(39,174,96,0.22)'],
           [0.6, 'rgba(39,174,96,0.06)'],
           [1, 'rgba(39,174,96,0.0)'],
-        ]),
+        ], []),
+        // Dash-dot line: with warnings
         buildDataset('with_warnings', 'verdict.VALID_WITH_WARNINGS', '#E0991A', [
           [0, 'rgba(224,153,26,0.16)'],
           [0.6, 'rgba(224,153,26,0.04)'],
           [1, 'rgba(224,153,26,0.0)'],
-        ]),
+        ], [8, 4, 2, 4]),
+        // Dashed line: invalid
         buildDataset('invalid', 'verdict.INVALID', '#D94F3D', [
           [0, 'rgba(217,79,61,0.16)'],
           [0.6, 'rgba(217,79,61,0.04)'],
           [1, 'rgba(217,79,61,0.0)'],
-        ]),
+        ], [6, 4]),
       ],
     };
   }

@@ -88,5 +88,18 @@ describe('SuccessRateChartComponent', () => {
       expect(component.chartData.datasets[1].label).toBe('WITH_WARNINGS');
       expect(component.chartData.datasets[2].label).toBe('INVALID');
     });
+
+    it('should encode verdict via distinct line styles, not color alone', () => {
+      component.data = [{ date: '2025-01', valid: 1, with_warnings: 0, invalid: 0 }];
+      component.ngOnChanges();
+
+      const [validDs, warnDs, invalidDs] = component.chartData.datasets;
+      expect(validDs.borderDash).toEqual([]);
+      expect(warnDs.borderDash).toEqual([8, 4, 2, 4]);
+      expect(invalidDs.borderDash).toEqual([6, 4]);
+
+      const dashes = component.chartData.datasets.map(ds => JSON.stringify(ds.borderDash));
+      expect(new Set(dashes).size).toBe(3);
+    });
   });
 });
