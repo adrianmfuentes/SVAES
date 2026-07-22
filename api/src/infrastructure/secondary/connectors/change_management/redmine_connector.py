@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 import httpx
 from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import assert_safe_outbound_url
 
 
 class RedmineConnector(IConnector):
@@ -35,8 +36,9 @@ class RedmineConnector(IConnector):
         }
 
     async def test_connection(self, config: Dict[str, Any]) -> bool:
+        base_url = config.get("base_url", self.BASE_URL)
+        assert_safe_outbound_url(f"{base_url}/projects.xml")
         async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = config.get("base_url", self.BASE_URL)
             response = await client.get(
                 f"{base_url}/projects.xml",
                 headers=self._build_auth(config),
@@ -44,8 +46,9 @@ class RedmineConnector(IConnector):
             return response.status_code == 200
 
     async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        base_url = config.get("base_url", self.BASE_URL)
+        assert_safe_outbound_url(f"{base_url}/issues/{ref}.json")
         async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = config.get("base_url", self.BASE_URL)
             response = await client.get(
                 f"{base_url}/issues/{ref}.json",
                 headers=self._build_auth(config),
@@ -58,8 +61,9 @@ class RedmineConnector(IConnector):
     async def list_artifacts(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
+        base_url = config.get("base_url", self.BASE_URL)
+        assert_safe_outbound_url(f"{base_url}/issues.json")
         async with httpx.AsyncClient(timeout=30.0) as client:
-            base_url = config.get("base_url", self.BASE_URL)
             project_id = config.get("project_id")
             params = {
                 "limit": filter_params.get("limit", 50),

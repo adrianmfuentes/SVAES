@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Annotated
 from application.ports.input.i_notification_service import INotificationService
-from core.dependencies import get_current_user, CurrentUser, require_permission, require_role, get_notification_service, get_user_repository
+from core.dependencies import get_current_user, CurrentUser, require_permission, require_role, require_notification_channel_access, get_notification_service, get_user_repository
 from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
 from domain.enums import UserRole, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError
@@ -110,6 +110,7 @@ async def update_notification_channel(
     channel_id: UUID,
     payload: NotificationChannelConfig,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES))],
+    _: Annotated[CurrentUser, Depends(require_notification_channel_access())],
     service: Annotated[INotificationService, Depends(get_notification_service)],
 ):
     """Actualiza la configuración de un canal de notificación.
@@ -142,6 +143,7 @@ async def update_notification_channel(
 async def delete_notification_channel(
     channel_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES))],
+    _: Annotated[CurrentUser, Depends(require_notification_channel_access())],
     service: Annotated[INotificationService, Depends(get_notification_service)],
 ):
     """Elimina un canal de notificación.

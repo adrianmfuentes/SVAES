@@ -58,6 +58,7 @@ def _mock_sql_user_active(request):
         return
     mock_user = MagicMock()
     mock_user.is_active = True
+    mock_user.token_version = 0
     with patch(
         "infrastructure.secondary.database.repositories.user_repository.SqlUserRepository.get_by_id",
         new=AsyncMock(return_value=mock_user),

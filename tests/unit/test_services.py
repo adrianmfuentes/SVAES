@@ -336,7 +336,7 @@ class TestAuthService:
         """Branch: decode raises ValueError → None"""
         service, _, token_svc, _ = svc
         token_svc.is_refresh_token = MagicMock(return_value=True)
-        token_svc.decode_token = MagicMock(side_effect=ValueError("bad token"))
+        token_svc.decode_refresh_token = MagicMock(side_effect=ValueError("bad token"))
         result = await service.refresh_access_token("bad")
         assert result is None
 
@@ -348,8 +348,25 @@ class TestAuthService:
         payload.user_id = uuid4()
         payload.role = "U2"
         payload.email = "x@x.com"
-        token_svc.decode_token = MagicMock(return_value=payload)
+        payload.token_version = 0
+        token_svc.decode_refresh_token = MagicMock(return_value=payload)
         user_repo.get_by_id = AsyncMock(return_value=None)
+        result = await service.refresh_access_token("tok")
+        assert result is None
+
+    async def test_refresh_access_token_revoked_token_version_returns_none(self, svc):
+        """Branch: refresh token's token_version is stale (logout/password change) → None"""
+        service, user_repo, token_svc, _ = svc
+        token_svc.is_refresh_token = MagicMock(return_value=True)
+        user = _make_user()
+        user.token_version = 1
+        payload = MagicMock()
+        payload.user_id = user.id
+        payload.role = "U2"
+        payload.email = user.email
+        payload.token_version = 0
+        token_svc.decode_refresh_token = MagicMock(return_value=payload)
+        user_repo.get_by_id = AsyncMock(return_value=user)
         result = await service.refresh_access_token("tok")
         assert result is None
 
@@ -362,7 +379,8 @@ class TestAuthService:
         payload.user_id = user.id
         payload.role = "U2"
         payload.email = user.email
-        token_svc.decode_token = MagicMock(return_value=payload)
+        payload.token_version = 0
+        token_svc.decode_refresh_token = MagicMock(return_value=payload)
         user_repo.get_by_id = AsyncMock(return_value=user)
         token_svc.create_access_token = MagicMock(return_value="new-access")
         token_svc.create_refresh_token = MagicMock(return_value="new-refresh")
@@ -2259,15 +2277,33 @@ class TestArtifactService:
         """Branch: release found → artifact saved"""
         service, art_repo, rel_repo, conn_repo = svc
         from domain.enums import ArtifactType
+        org_id = uuid4()
         release = MagicMock()
+        release.organization_id = org_id
         rel_repo.get_by_id = AsyncMock(return_value=release)
         connector = MagicMock()
         connector.connector_type = "GESTOR_TAREAS"
+        connector.organization_id = org_id
         conn_repo.get_by_id = AsyncMock(return_value=connector)
         artifact = MagicMock()
         art_repo.save = AsyncMock(return_value=artifact)
         result = await service.add_artifact(uuid4(), uuid4(), "JIRA", ArtifactType.TAREA, "J-1")
         assert result == artifact
+
+    async def test_add_connector_from_other_organization_raises(self, svc):
+        """Branch: connector belongs to a different org than the release → ValidationError (confused-deputy guard)"""
+        service, _, rel_repo, conn_repo = svc
+        from domain.enums import ArtifactType
+        from domain.exceptions import ValidationError
+        release = MagicMock()
+        release.organization_id = uuid4()
+        rel_repo.get_by_id = AsyncMock(return_value=release)
+        connector = MagicMock()
+        connector.connector_type = "GESTOR_TAREAS"
+        connector.organization_id = uuid4()
+        conn_repo.get_by_id = AsyncMock(return_value=connector)
+        with pytest.raises(ValidationError, match="no pertenece a la organización"):
+            await service.add_artifact(uuid4(), uuid4(), "JIRA", ArtifactType.TAREA, "J-1")
 
     async def test_remove_release_not_found_raises(self, svc):
         """Branch: release not found → ValidationError"""

@@ -25,7 +25,8 @@ class JwtHandler(ITokenService):
             role: str,
             email: Optional[str] = None,
             organization_id: Optional[UUID] = None,
-            expires_in: Optional[int] = None
+            expires_in: Optional[int] = None,
+            token_version: int = 0,
         ) -> str:
         """
         El token se genera a partir de la información del usuario, incluyendo su ID, rol, correo electrónico y organización (si aplica).
@@ -41,6 +42,7 @@ class JwtHandler(ITokenService):
             "organization_id": str(organization_id) if organization_id else None,
             "iat": now,
             "exp": now + timedelta(minutes=expire_minutes),
+            "tv": token_version,
         }
 
         return jwt.encode(payload, self._secret, algorithm=self._algorithm)
@@ -52,6 +54,7 @@ class JwtHandler(ITokenService):
             role: str,
             email: Optional[str] = None,
             organization_id: Optional[UUID] = None,
+            token_version: int = 0,
         ) -> str:
         """
         Genera un refresh token con expiración de 30 días.
@@ -66,6 +69,7 @@ class JwtHandler(ITokenService):
             "iat": now,
             "exp": now + timedelta(days=self._refresh_token_expire_days),
             "type": "refresh",
+            "tv": token_version,
         }
 
         return jwt.encode(payload, self._secret, algorithm=self._algorithm)
@@ -85,6 +89,27 @@ class JwtHandler(ITokenService):
                 role=decoded["role"],
                 email=str(decoded.get("email")),
                 organization_id=UUID(decoded["organization_id"]) if decoded.get("organization_id") else None,
+                token_version=decoded.get("tv", 0),
+            )
+
+        except InvalidTokenError as e:
+            raise ValueError("Token inválido") from e
+
+    def decode_refresh_token(self, token: str) -> TokenPayload:
+        if self.is_token_blacklisted(token):
+            raise ValueError("Token ha sido revocado")
+        try:
+            decoded = jwt.decode(token, self._secret, algorithms=[self._algorithm])
+
+            if decoded.get("type") != "refresh":
+                raise ValueError("Token no es un refresh token válido")
+
+            return TokenPayload(
+                user_id=UUID(decoded["sub"]),
+                role=decoded["role"],
+                email=str(decoded.get("email")),
+                organization_id=UUID(decoded["organization_id"]) if decoded.get("organization_id") else None,
+                token_version=decoded.get("tv", 0),
             )
 
         except InvalidTokenError as e:

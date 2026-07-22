@@ -124,12 +124,14 @@ class TestAuthenticateUserUseCase:
             email=user.email,
             organization_id=user.organization_id,
             expires_in=3600,
+            token_version=user.token_version,
         )
         token_svc.create_refresh_token.assert_called_once_with(
             user_id=user.id,
             role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
+            token_version=user.token_version,
         )
 
 

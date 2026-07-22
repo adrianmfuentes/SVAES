@@ -14,6 +14,7 @@ class TokenPayload:
     organization_id: Optional[UUID] = None
     exp: Optional[int] = None
     iat: Optional[int] = None
+    token_version: Optional[int] = None
 
 
 class ITokenService(ABC):
@@ -25,6 +26,7 @@ class ITokenService(ABC):
         email: Optional[str] = None,
         organization_id: Optional[UUID] = None,
         expires_in: Optional[int] = None,
+        token_version: int = 0,
     ) -> str:
         pass
 
@@ -35,11 +37,16 @@ class ITokenService(ABC):
         role: str,
         email: Optional[str] = None,
         organization_id: Optional[UUID] = None,
+        token_version: int = 0,
     ) -> str:
         pass
 
     @abstractmethod
     def decode_token(self, token: str) -> TokenPayload:
+        pass
+
+    @abstractmethod
+    def decode_refresh_token(self, token: str) -> TokenPayload:
         pass
 
     @abstractmethod

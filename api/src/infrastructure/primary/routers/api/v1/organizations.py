@@ -12,6 +12,7 @@ from core.dependencies import (
     ProjectAccess,
     require_permission,
     require_project_access,
+    require_org_access,
     require_role,
 )
 from core.rate_limit import rate_limit_api_key
@@ -303,6 +304,7 @@ async def create_project(
     org_id: UUID,
     payload: ProjectCreateRequest,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.CREATE_PROJECT))],
+    _: Annotated[CurrentUser, Depends(require_org_access())],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """Endpoint para crear un nuevo proyecto dentro de una organización.
@@ -394,6 +396,7 @@ async def archive_project(
     org_id: UUID,
     project_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.ARCHIVE_PROJECT))],
+    project_access: Annotated[ProjectAccess, Depends(require_project_access())],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """Endpoint para archivar un proyecto.
@@ -411,8 +414,12 @@ async def archive_project(
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
     try:
+        if project_access.project and project_access.project.organization_id != org_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El proyecto no pertenece a esta organización")
         project = await service.archive_project(project_id=project_id)
         return {"id": str(project.id), "name": project.name, "is_archived": project.is_archived}
+    except HTTPException:
+        raise
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception:
@@ -424,6 +431,7 @@ async def unarchive_project(
     org_id: UUID,
     project_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.ARCHIVE_PROJECT))],
+    project_access: Annotated[ProjectAccess, Depends(require_project_access())],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """Endpoint para desarchivar un proyecto.
@@ -441,8 +449,12 @@ async def unarchive_project(
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
     try:
+        if project_access.project and project_access.project.organization_id != org_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El proyecto no pertenece a esta organización")
         project = await service.unarchive_project(project_id=project_id)
         return {"id": str(project.id), "name": project.name, "is_archived": project.is_archived}
+    except HTTPException:
+        raise
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception:
@@ -484,6 +496,7 @@ async def transfer_ownership(
     org_id: UUID,
     payload: TransferOwnershipRequest,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.TRANSFER_OWNERSHIP))],
+    _: Annotated[CurrentUser, Depends(require_org_access())],
     service: Annotated[IOrganizationService, Depends(get_organization_service)],
 ):
     """Endpoint para transferir la propiedad de una organización a otro usuario.
@@ -501,12 +514,19 @@ async def transfer_ownership(
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
     try:
+        existing_org = await service.get_organization(org_id)
+        if not existing_org:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Organización no encontrada: {org_id}")
+        if current_user.role != UserRole.U3 and existing_org.owner_id != current_user.user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo el propietario actual puede transferir la organización")
         org = await service.transfer_ownership(
             organization_id=org_id,
             new_owner_id=payload.new_owner_id,
             requested_by=current_user.user_id,
         )
         return {"id": str(org.id), "name": org.name, "owner_id": str(org.owner_id) if org.owner_id else None}
+    except HTTPException:
+        raise
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:

@@ -190,12 +190,20 @@ async def archive_template(
 
     Retorna:
         - 200 OK con mensaje de éxito.
+        - 403 Forbidden si el usuario no pertenece a la organización de la plantilla.
         - 404 Not Found si la plantilla no existe.
         - 500 Internal Server Error para cualquier error inesperado.
     """
     try:
+        existing = await service.get_template(template_id=template_id)
+        if not existing:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada")
+        if current_user.role != UserRole.U3 and current_user.organization_id != existing.organization_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta plantilla")
         await service.archive_template(template_id=template_id)
         return {"message": "Plantilla archivada con éxito"}
+    except HTTPException:
+        raise
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception:
@@ -219,10 +227,18 @@ async def clone_template(
 
     Retorna:
         - 201 Created con el ID de la nueva plantilla clonada.
+        - 403 Forbidden si el usuario no tiene acceso a la plantilla origen o a la organización destino.
         - 404 Not Found si la plantilla no existe.
         - 500 Internal Server Error para cualquier error inesperado.
     """
     try:
+        existing = await service.get_template(template_id=template_id)
+        if not existing:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada")
+        if current_user.role != UserRole.U3 and current_user.organization_id != existing.organization_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta plantilla")
+        if current_user.role != UserRole.U3 and current_user.organization_id != payload.target_organization_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a la organización destino")
         new_template = await service.clone_template(
             template_id=template_id,
             new_name=payload.name,
@@ -230,6 +246,8 @@ async def clone_template(
             requested_by=current_user.user_id,
         )
         return {"id": str(new_template.id), "name": new_template.name}
+    except HTTPException:
+        raise
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:

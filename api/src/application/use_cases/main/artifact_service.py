@@ -67,6 +67,9 @@ class ArtifactService(IArtifactService):
         if not connector:
             raise ValidationError(f"Conector {connector_instance_id} no encontrado")
 
+        if release.organization_id and connector.organization_id != release.organization_id:
+            raise ValidationError(f"Conector {connector_instance_id} no pertenece a la organización de esta release")
+
         expected_connector_type = _ARTIFACT_TYPE_TO_CONNECTOR_TYPE.get(artifact_type)
         if expected_connector_type and connector.connector_type != expected_connector_type.value:
             if not _connector_implementation_matches_type(

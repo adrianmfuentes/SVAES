@@ -28,11 +28,14 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         };
     }
 
+    // Un campo ausente o con un tipo no numérico no es "cero code smells": es
+    // un dato que el conector no reportó o reportó mal - se trata como
+    // violación (falla cerrado) en lugar de excluir el artefacto en silencio.
     let violations: Vec<String> = matching.iter()
-        .filter_map(|a| {
-            a.metadata.get(field).and_then(|v| v.as_f64())
-                .filter(|&val| val > threshold)
-                .map(|val| format!("'{}': {} code smells", a.id, val as u64))
+        .filter_map(|a| match a.metadata.get(field).and_then(|v| v.as_f64()) {
+            Some(val) if val > threshold => Some(format!("'{}': {} code smells", a.id, val as u64)),
+            Some(_) => None,
+            None => Some(format!("'{}': campo '{}' ausente o con formato inválido", a.id, field)),
         })
         .collect();
 

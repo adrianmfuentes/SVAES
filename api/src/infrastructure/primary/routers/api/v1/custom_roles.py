@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from application.ports.input.i_custom_role_service import ICustomRoleService
-from core.dependencies import get_custom_role_service, get_current_user, CurrentUser, require_permission, require_custom_role_access
+from core.dependencies import get_custom_role_service, get_current_user, CurrentUser, require_permission, require_custom_role_access, require_org_access
 from domain.enums import Permission
 from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError
 from . import ERROR_INTERNO
@@ -29,6 +29,7 @@ class CustomRoleUpdateRequest(BaseModel):
 async def list_custom_roles(
     org_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
+    _: Annotated[CurrentUser, Depends(require_org_access())],
     service: Annotated[ICustomRoleService, Depends(get_custom_role_service)],
 ):
     """Lista los roles personalizados de una organización.
@@ -63,6 +64,7 @@ async def create_custom_role(
     org_id: UUID,
     payload: CustomRoleCreateRequest,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
+    _: Annotated[CurrentUser, Depends(require_org_access())],
     service: Annotated[ICustomRoleService, Depends(get_custom_role_service)],
 ):
     """Crea un rol personalizado dentro de una organización.

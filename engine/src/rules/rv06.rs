@@ -27,6 +27,22 @@ use crate::models::{Artifact, RuleEvaluation, RuleStatus, VerificationRule};
 ///
 /// # Retorno
 /// `RuleEvaluation` con el estado correspondiente y IDs con valores discrepantes.
+/// Comprueba si `expected_value` aparece en `title` como token de versión
+/// completo (no como subcadena de un número mayor, p. ej. "2.0" no debe
+/// coincidir dentro de "12.0" ni de "2.0.1").
+fn title_contains_exact_version(title: &str, expected_value: &str) -> bool {
+    if expected_value.is_empty() {
+        return false;
+    }
+    let is_version_char = |c: char| c.is_ascii_digit() || c == '.';
+    title.match_indices(expected_value).any(|(start, matched)| {
+        let end = start + matched.len();
+        let before_ok = title[..start].chars().next_back().map_or(true, |c| !is_version_char(c));
+        let after_ok = title[end..].chars().next().map_or(true, |c| !is_version_char(c));
+        before_ok && after_ok
+    })
+}
+
 pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule, release_version: Option<&str>) -> RuleEvaluation {
     if artifacts.is_empty() {
         return RuleEvaluation {
@@ -98,9 +114,14 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule, release_
             // "version" field, for instance, is just an edit-revision count
             // (e.g. 1, 2, 9...), unrelated to the product's semantic release
             // version, so it will essentially never match by coincidence.
+            //
+            // This must be an exact token match, not a raw substring search:
+            // `str::contains` would let expected_value "1.0.0" match inside an
+            // unrelated "21.0.0" or "1.0.0.1", silently marking a genuinely
+            // mismatched artifact as OK.
             let title_contains_expected = a.metadata.get("title")
                 .and_then(|v| v.as_str())
-                .map(|title| title.contains(expected_value))
+                .map(|title| title_contains_exact_version(title, expected_value))
                 .unwrap_or(false);
             !title_contains_expected
         })
@@ -219,6 +240,27 @@ mod tests {
         let artifacts = vec![make_artifact(
             "D-001", "DOCUMENTO",
             json!({"version": "1", "title": "Informe de pruebas v0.9.0"}),
+        )];
+        let rule = VerificationRule {
+            id: "RV-06".to_string(),
+            severity: "OBLIGATORIA".to_string(),
+            params: json!({}),
+        };
+
+        let result = evaluate(&artifacts, &rule, Some("1.0.0"));
+
+        assert_eq!(result.status, RuleStatus::Error);
+    }
+
+    /// Bug regression: a plain `str::contains` fallback lets a mismatched
+    /// version slip through validation whenever `expected_value` happens to
+    /// occur as a substring of a larger, unrelated number in the title
+    /// (e.g. "1.0.0" inside "21.0.0"). The rule must not report OK here.
+    #[test]
+    fn title_with_expected_version_as_substring_of_larger_number_still_flagged() {
+        let artifacts = vec![make_artifact(
+            "D-001", "DOCUMENTO",
+            json!({"version": "1", "title": "Informe de pruebas v21.0.0"}),
         )];
         let rule = VerificationRule {
             id: "RV-06".to_string(),

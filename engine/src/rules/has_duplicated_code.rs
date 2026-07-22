@@ -28,11 +28,14 @@ pub fn evaluate(artifacts: &[Artifact], rule_config: &VerificationRule) -> RuleE
         };
     }
 
+    // Un campo ausente o con un tipo no numérico no es "sin duplicación": es
+    // un dato que el conector no reportó o reportó mal - se trata como
+    // violación (falla cerrado) en lugar de excluir el artefacto en silencio.
     let violations: Vec<String> = matching.iter()
-        .filter_map(|a| {
-            a.metadata.get(field).and_then(|v| v.as_f64())
-                .filter(|&val| val > threshold)
-                .map(|val| format!("'{}': {:.1}% > {:.1}%", a.id, val, threshold))
+        .filter_map(|a| match a.metadata.get(field).and_then(|v| v.as_f64()) {
+            Some(val) if val > threshold => Some(format!("'{}': {:.1}% > {:.1}%", a.id, val, threshold)),
+            Some(_) => None,
+            None => Some(format!("'{}': campo '{}' ausente o con formato inválido", a.id, field)),
         })
         .collect();
 
@@ -100,10 +103,13 @@ mod tests {
         assert_eq!(result.message_params.unwrap()["artifact_type"].as_str().unwrap(), "CODIGO");
     }
 
+    /// Bug regression: a missing/invalid duplication field must not be
+    /// silently treated as "no duplication" - the connector failed to report
+    /// data, which is a data-integrity problem, not a passing artifact.
     #[test]
-    fn missing_field_in_metadata_treated_as_ok() {
+    fn missing_field_in_metadata_returns_error() {
         let artifacts = vec![make_artifact("C-001", json!({"other_field": 99.0}))];
         let result = evaluate(&artifacts, &make_rule(json!({})));
-        assert_eq!(result.status, RuleStatus::Ok);
+        assert_eq!(result.status, RuleStatus::Error);
     }
 }

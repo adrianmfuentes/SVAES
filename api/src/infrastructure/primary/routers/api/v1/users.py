@@ -16,6 +16,7 @@ from core.dependencies import (
     CurrentUser,
     require_permission,
     require_role,
+    require_org_access,
     get_jwt_handler,
 )
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
@@ -288,12 +289,14 @@ async def switch_organization(
         email=user.email,
         organization_id=user.organization_id,
         expires_in=3600,
+        token_version=user.token_version,
     )
     refresh_token = jwt_handler.create_refresh_token(
         user_id=user.id,
         role=user.role.value,
         email=user.email,
         organization_id=user.organization_id,
+        token_version=user.token_version,
     )
     return {
         "access_token": access_token,
@@ -351,6 +354,7 @@ async def invite_user(
     org_id: UUID,
     payload: UserInviteRequest,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.INVITE_USERS))],
+    _: Annotated[CurrentUser, Depends(require_org_access())],
     service: Annotated[IUserService, Depends(get_user_service)],
 ):
     """Invita a un usuario a unirse a una organización.
@@ -405,6 +409,7 @@ async def update_user_role(
     user_id: UUID,
     payload: UserRoleUpdateRequest,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
+    _: Annotated[CurrentUser, Depends(require_org_access())],
     service: Annotated[IUserService, Depends(get_user_service)],
 ):
     """Actualiza el rol de un usuario dentro de una organización.
@@ -445,6 +450,7 @@ async def remove_user_from_org(
     org_id: UUID,
     user_id: UUID,
     current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_ROLES))],
+    _: Annotated[CurrentUser, Depends(require_org_access())],
     service: Annotated[IUserService, Depends(get_user_service)],
 ):
     """Elimina a un usuario de una organización.

@@ -62,7 +62,8 @@ class IConnectorService(ABC):
 
     @abstractmethod
     async def verify_artifact_ref(
-        self, connector_id: UUID, external_ref: str
+        self, connector_id: UUID, external_ref: str, organization_id: Optional[UUID] = None
     ) -> None:
-        """Raises ValidationError if external_ref does not exist in the connector."""
+        """Raises ValidationError if external_ref does not exist in the connector,
+        or if organization_id is given and does not match the connector's organization."""
         pass

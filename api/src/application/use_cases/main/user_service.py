@@ -54,6 +54,10 @@ class UserService(IUserService):
             return False
 
         user.hashed_password = await asyncio.to_thread(self._password_hasher.hash_password, new_password)
+        # Invalida todos los access/refresh tokens emitidos antes del cambio de
+        # contraseña (otros dispositivos, un token filtrado, etc.), no solo la
+        # sesión actual - ver comprobación de `token_version` en get_current_user.
+        user.token_version += 1
         await self._user_repo.update(user)
         return True
 

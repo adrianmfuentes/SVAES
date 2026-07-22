@@ -556,12 +556,18 @@ class TestOrganizationsCoverage:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_organization_service
+        from core.dependencies import get_organization_service, get_project_repository
         self.app = app
         self.svc = AsyncMock()
-        app.dependency_overrides[get_organization_service] = lambda: self.svc
         self.user_id = uuid4()
         self.org_id = uuid4()
+        # archive/unarchive_project now go through require_project_access(),
+        # which loads the project via get_project_repository() - default it to
+        # a project in this test's org so existing "MANAGER" tests keep working.
+        self.project_repo = AsyncMock()
+        self.project_repo.get_by_id = AsyncMock(return_value=_make_project(org_id=self.org_id))
+        app.dependency_overrides[get_organization_service] = lambda: self.svc
+        app.dependency_overrides[get_project_repository] = lambda: self.project_repo
         yield
         app.dependency_overrides.clear()
 
@@ -672,6 +678,7 @@ class TestOrganizationsCoverage:
         from fastapi.testclient import TestClient
         p = _make_project(org_id=self.org_id)
         p.is_archived = True
+        self.project_repo.get_by_id = AsyncMock(return_value=p)
         self.svc.archive_project = AsyncMock(return_value=p)
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/projects/{p.id}/archive", headers=self._headers("MANAGER"))
@@ -680,6 +687,10 @@ class TestOrganizationsCoverage:
     def test_archive_project_not_found_404(self):
         from fastapi.testclient import TestClient
         from domain.exceptions import EntityNotFoundError
+        # require_project_access finds the project (so the request reaches the
+        # service); archive_project itself then reports it gone (e.g. deleted
+        # concurrently) - that's the 404 this test exercises.
+        self.project_repo.get_by_id = AsyncMock(return_value=_make_project(org_id=self.org_id))
         self.svc.archive_project = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/projects/{uuid4()}/archive", headers=self._headers("MANAGER"))
@@ -1474,14 +1485,22 @@ class TestNotificationsCoverage:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_notification_service, get_user_repository
+        from core.dependencies import get_notification_service, get_user_repository, get_notification_repository
         self.app = app
         self.svc = AsyncMock()
         self.user_repo = AsyncMock()
-        app.dependency_overrides[get_notification_service] = lambda: self.svc
-        app.dependency_overrides[get_user_repository] = lambda: self.user_repo
         self.user_id = uuid4()
         self.org_id = uuid4()
+        # update/delete_channel now go through require_notification_channel_access(),
+        # which loads the channel via get_notification_repository() - default
+        # it to a channel in this test's org so existing "MANAGER" tests pass.
+        channel = MagicMock()
+        channel.organization_id = self.org_id
+        self.notification_repo = AsyncMock()
+        self.notification_repo.get_channel_by_id = AsyncMock(return_value=channel)
+        app.dependency_overrides[get_notification_service] = lambda: self.svc
+        app.dependency_overrides[get_user_repository] = lambda: self.user_repo
+        app.dependency_overrides[get_notification_repository] = lambda: self.notification_repo
         yield
         app.dependency_overrides.clear()
 

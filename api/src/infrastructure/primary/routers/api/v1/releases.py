@@ -334,6 +334,7 @@ async def add_artifact(
     _: Annotated[None, Depends(require_release_access())],
     service: Annotated[IArtifactService, Depends(get_artifact_service)],
     connector_service: Annotated[IConnectorService, Depends(get_connector_service)],
+    release_service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
     """Agrega un nuevo artefacto a una release específica por su ID.
 
@@ -352,9 +353,13 @@ async def add_artifact(
         - 500 Internal Server Error para cualquier otro error inesperado
     """
     try:
+        release = await release_service.get_release(id)
+        if not release:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
         await connector_service.verify_artifact_ref(
             connector_id=payload.connector_instance_id,
             external_ref=payload.external_ref,
+            organization_id=release.organization_id,
         )
         artifact = await service.add_artifact(
             release_id=id,
@@ -660,6 +665,7 @@ async def import_artifacts(
     _: Annotated[None, Depends(require_release_access())],
     service: Annotated[IArtifactService, Depends(get_artifact_service)],
     connector_service: Annotated[IConnectorService, Depends(get_connector_service)],
+    release_service: Annotated[IReleaseService, Depends(get_release_service)],
 ):
     """Importa múltiples artefactos a una release desde un fichero CSV.
 
@@ -679,11 +685,15 @@ async def import_artifacts(
         - 500 Internal Server Error para cualquier otro error inesperado.
     """
     try:
+        release = await release_service.get_release(id)
+        if not release:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=RELEASE_NOT_FOUND)
         imported = []
         for artifact_data in payload.artifacts:
             await connector_service.verify_artifact_ref(
                 connector_id=artifact_data.connector_instance_id,
                 external_ref=artifact_data.external_ref,
+                organization_id=release.organization_id,
             )
             artifact = await service.add_artifact(
                 release_id=id,
@@ -696,6 +706,8 @@ async def import_artifacts(
             )
             imported.append({"id": str(artifact.id), "external_ref": artifact.external_ref})
         return {"imported": imported, "count": len(imported)}
+    except HTTPException:
+        raise
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
     except Exception:

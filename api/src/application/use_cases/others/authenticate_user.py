@@ -51,12 +51,14 @@ class AuthenticateUserUseCase:
             email=user.email,
             organization_id=user.organization_id,
             expires_in=3600,
+            token_version=user.token_version,
         )
         refresh_token = self._token_service.create_refresh_token(
             user_id=user.id,
             role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
+            token_version=user.token_version,
         )
 
         return AuthResult(

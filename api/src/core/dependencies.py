@@ -100,12 +100,20 @@ async def get_current_user_or_api_key(
         )
         try:
             payload = handler.decode_token(credentials.credentials)
+            user_repo = SqlUserRepository()
+            db_user = await user_repo.get_by_id(payload.user_id)
+            if not db_user or not db_user.is_active:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
+            if (payload.token_version or 0) != db_user.token_version:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
             return CurrentUser(
                 user_id=payload.user_id,
                 role=UserRole(payload.role),
                 email=payload.email,
                 organization_id=payload.organization_id,
             )
+        except HTTPException:
+            raise
         except ValueError:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
 
@@ -135,7 +143,9 @@ async def _validate_api_key(raw_key: str) -> Optional[CurrentUser]:
         if not api_key:
             return None
         db_user = await user_repo.get_by_id(api_key.user_id)
-        role = db_user.role if db_user else UserRole.U2
+        if not db_user or not db_user.is_active:
+            return None
+        role = db_user.role
         return CurrentUser(
             user_id=api_key.user_id,
             role=role,
@@ -216,6 +226,8 @@ async def get_current_user(
         user_repo = SqlUserRepository()
         user = await user_repo.get_by_id(payload.user_id)
         if not user or not user.is_active:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
+        if (payload.token_version or 0) != user.token_version:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_TOKEN)
         return CurrentUser(
             user_id=payload.user_id,
@@ -667,6 +679,29 @@ def get_template_service() -> ITemplateService:
 
 def get_notification_repository() -> SqlNotificationRepository:
     return SqlNotificationRepository()
+
+
+def require_notification_channel_access():
+    async def dependency(
+        channel_id: UUID,
+        current_user: CurrentUser = Depends(get_current_user),
+        notification_repo: SqlNotificationRepository = Depends(get_notification_repository),
+        org_repo: SqlOrganizationRepository = Depends(get_organization_repository),
+    ) -> CurrentUser:
+        if current_user.role != UserRole.U3:
+            channel = await notification_repo.get_channel_by_id(channel_id)
+            if not channel:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Canal de notificación no encontrado")
+
+            if channel.organization_id != current_user.organization_id:
+                org = await org_repo.get_by_id(channel.organization_id)
+                if not (org and org.owner_id == current_user.user_id):
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="No tienes acceso a este canal de notificación",
+                    )
+        return current_user
+    return dependency  # NOSONAR
 
 
 def get_notification_service() -> INotificationService:

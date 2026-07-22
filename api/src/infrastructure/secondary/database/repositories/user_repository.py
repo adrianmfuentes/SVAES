@@ -7,6 +7,33 @@ from domain.entities.user import User
 from domain.enums import UserRole
 from infrastructure.secondary.database.models.user_model import UserModel
 from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
+from core.config import settings
+from core.logger import get_logger
+
+_log = get_logger(__name__)
+
+
+def _totp_fernet():
+    from cryptography.fernet import Fernet
+    return Fernet(settings.encryption_key.encode())  # type: ignore[union-attr]
+
+
+def _encrypt_totp_secret(secret: Optional[str]) -> Optional[str]:
+    if not secret:
+        return secret
+    return _totp_fernet().encrypt(secret.encode("utf-8")).decode("utf-8")
+
+
+def _decrypt_totp_secret(stored: Optional[str]) -> Optional[str]:
+    if not stored:
+        return stored
+    try:
+        return _totp_fernet().decrypt(stored.encode("utf-8")).decode("utf-8")
+    except Exception:
+        # Valores creados antes de cifrar este campo son base32 en claro;
+        # se devuelven tal cual y se re-cifran en el próximo `update()`.
+        _log.warning("totp_secret no estaba cifrado (dato legado); se devuelve en claro")
+        return stored
 
 
 class SqlUserRepository(IUserRepository):
@@ -28,10 +55,11 @@ class SqlUserRepository(IUserRepository):
             privacy_accepted_at=cast(datetime | None, row.privacy_accepted_at),
             activation_token=cast(str | None, row.activation_token),
             activation_token_expiry=cast(datetime | None, row.activation_token_expiry),
-            totp_secret=cast(str | None, row.totp_secret),
+            totp_secret=_decrypt_totp_secret(cast(str | None, row.totp_secret)),
             totp_enabled=cast(bool, row.totp_enabled) if row.totp_enabled is not None else False,
             password_reset_token=cast(str | None, row.password_reset_token),
             password_reset_token_expiry=cast(datetime | None, row.password_reset_token_expiry),
+            token_version=cast(int, row.token_version) if row.token_version is not None else 0,
         )
 
     async def create(self, user: User) -> User:
@@ -50,6 +78,7 @@ class SqlUserRepository(IUserRepository):
                 updated_at=user.updated_at,
                 terms_accepted_at=user.terms_accepted_at,
                 privacy_accepted_at=user.privacy_accepted_at,
+                token_version=user.token_version,
             )
             user_model.activation_token = user.activation_token  # pyright: ignore[reportAttributeAccessIssue]
             user_model.activation_token_expiry = user.activation_token_expiry  # pyright: ignore[reportAttributeAccessIssue]
@@ -101,10 +130,11 @@ class SqlUserRepository(IUserRepository):
             user_model.locked_until = user.locked_until  # pyright: ignore[reportAttributeAccessIssue]
             user_model.activation_token = user.activation_token  # pyright: ignore[reportAttributeAccessIssue]
             user_model.activation_token_expiry = user.activation_token_expiry  # pyright: ignore[reportAttributeAccessIssue]
-            user_model.totp_secret = user.totp_secret  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.totp_secret = _encrypt_totp_secret(user.totp_secret)  # pyright: ignore[reportAttributeAccessIssue]
             user_model.totp_enabled = user.totp_enabled  # pyright: ignore[reportAttributeAccessIssue]
             user_model.password_reset_token = user.password_reset_token  # pyright: ignore[reportAttributeAccessIssue]
             user_model.password_reset_token_expiry = user.password_reset_token_expiry  # pyright: ignore[reportAttributeAccessIssue]
+            user_model.token_version = user.token_version  # pyright: ignore[reportAttributeAccessIssue]
             user_model.updated_at = datetime.now(timezone.utc)  # pyright: ignore[reportAttributeAccessIssue]
             await session.commit()
             await session.refresh(user_model)

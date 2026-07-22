@@ -25,6 +25,7 @@ class User:
     totp_enabled: bool = False
     password_reset_token: Optional[str] = None
     password_reset_token_expiry: Optional[datetime] = None
+    token_version: int = 0
 
     @property
     def organization_id(self) -> Optional[UUID]:

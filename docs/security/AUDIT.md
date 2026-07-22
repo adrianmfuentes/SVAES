@@ -1,7 +1,7 @@
 # Security & Compliance Audit Report — SVAES
 
 **Scope:** Full application (`api/`, `engine/`, `web/`, `tests/`, `docs/`, CI/CD, configuration)  
-**Date:** 2026-05-18 (updated 2026-06-18)  
+**Date:** 2026-05-18 (updated 2026-06-18, 2026-07-22)  
 **Status:** Active  
 
 ---
@@ -12,12 +12,12 @@
 
 | Severity | Count | Status |
 |----------|-------|--------|
-| Critical | 1     | ✅ Fixed |
-| High     | 7     | ✅ Fixed |
-| Medium   | 8     | ✅ Fixed |
+| Critical | 3     | ✅ Fixed |
+| High     | 9     | ✅ Fixed |
+| Medium   | 16    | ✅ Fixed |
 | Low      | 4     | ✅ Fixed |
 
-**Total:** 20 findings — all resolved.
+**Total:** 32 findings — all resolved.
 
 ### Current Open Concerns
 
@@ -308,6 +308,14 @@ Cobertura total del proyecto: **70%** (configurada en `.coveragerc`, `api/pyproj
 - `api/src/infrastructure/primary/routers/api/v1/auth.py:29-34`  
 - ✅ **Fixed:** `role` field removed from `RegisterRequest`. Registration always creates `UserRole.U2`. Role elevation only via `PATCH /api/v1/admin/users/{user_id}/role` (U3 only).
 
+**21. Cross-Tenant Organization Takeover via `transfer_ownership` (2026-07-22)**  
+- `api/src/infrastructure/primary/routers/api/v1/organizations.py:482-514`, `application/use_cases/main/organization_service.py:194-225`  
+- ✅ **Fixed:** endpoint only checked a global role permission (`TRANSFER_OWNERSHIP`), not that the caller belonged to the target `org_id` or was its current owner. Any `U4` manager could transfer ownership of *any* organization to themselves. Added `require_org_access()` plus an explicit check that the caller is the organization's current `owner_id` (or U3 admin) before transferring.
+
+**22. Cross-Tenant Privilege Escalation via `invite_user` (2026-07-22)**  
+- `api/src/infrastructure/primary/routers/api/v1/users.py:349-399`  
+- ✅ **Fixed:** `invite_user` never verified the caller belonged to the target `org_id`, and the invited `role` was client-controlled. Any `U4` manager could invite themselves into an arbitrary organization as `MANAGER`. Added `require_org_access()`.
+
 ### High
 
 **2. Hardcoded and Weak Database Credentials**  
@@ -335,6 +343,14 @@ Cobertura total del proyecto: **70%** (configurada en `.coveragerc`, `api/pyproj
 
 **8. No Explicit Consent or Privacy Policy Acceptance**  
 - ✅ **Fixed:** `accept_terms` and `accept_privacy_policy` required in `RegisterRequest`. Timestamps persisted to `user` table. Legal document links in response.
+
+**23. IDOR on User Role Management / Org Removal (2026-07-22)**  
+- `api/src/infrastructure/primary/routers/api/v1/users.py:402-475`  
+- ✅ **Fixed:** `update_user_role`/`remove_user_from_org` only checked a global role permission, never that the caller belonged to the target `org_id`. Any `U4` could change roles or remove members of an organization they didn't belong to. Added `require_org_access()`.
+
+**24. SSRF via User-Controlled Connector `base_url` (2026-07-22)**  
+- `api/src/infrastructure/secondary/connectors/base_http_connector.py:97-98` and connector-specific overrides (Trello, Redmine)  
+- ✅ **Fixed:** any org member registering/testing a connector could set `base_url` to an arbitrary host/scheme (e.g. `http://169.254.169.254/...`), and the backend made the outbound request server-side with no restriction — a general-purpose internal-network SSRF primitive. Added `assert_safe_outbound_url()`, called before every outbound connector request: rejects non-HTTP(S) schemes, `localhost`/`*.localhost`, known cloud-metadata hostnames, and IP-literal private/loopback/link-local/reserved addresses.
 
 ### Medium
 
@@ -366,6 +382,38 @@ Cobertura total del proyecto: **70%** (configurada en `.coveragerc`, `api/pyproj
 
 **16. Storage of Cryptographic Secrets in .env File Without Protection**  
 - ✅ **Fixed:** `docker-compose.prod.yml` consumes all secrets from host env vars. Docker secrets pattern documented.
+
+**25. IDOR on Projects / Custom Roles / Notification Channels / Templates / Release Artifacts (2026-07-22)**  
+- `organizations.py` (`create_project`, `archive_project`, `unarchive_project`), `custom_roles.py` (`list_custom_roles`, `create_custom_role`), `notifications.py` (`update_notification_channel`, `delete_notification_channel`), `templates.py` (`archive_template`, `clone_template`), `releases.py` (`add_artifact`, `import_artifacts`)  
+- ✅ **Fixed:** these endpoints checked only a global role permission, never that the target resource belonged to the caller's organization. Added `require_org_access()`/`require_project_access()`, a new `require_notification_channel_access()` dependency, explicit organization ownership checks in `templates.py`, and a same-organization check between a release and the `connector_instance_id` used to add an artifact to it (`artifact_service.py`, `connector_service.verify_artifact_ref`).
+
+**26. Trello Credentials Leaked in Plaintext Logs (2026-07-22)**  
+- `api/src/application/use_cases/main/connector_service.py`  
+- ✅ **Fixed:** Trello authenticates via query-string parameters; a failed request's `httpx.HTTPStatusError` (logged verbatim on error) included the full URL with `key=`/`token=` in clear text. Added `_redact_exc()` to strip credential-shaped query parameters before logging.
+
+**27. Silent TOTP Secret Rotation Without Re-Verification (2026-07-22)**  
+- `api/src/application/use_cases/main/auth_service.py:setup_totp`  
+- ✅ **Fixed:** `GET /api/v1/auth/2fa/setup` regenerated and persisted a new TOTP secret even when 2FA was already enabled, with no code confirmation — a briefly-compromised access token let an attacker plant a persistent 2FA backdoor. Now raises if `totp_enabled` is already `True`; reconfiguration requires disabling 2FA first (which does require a valid code).
+
+**28. No Account Lockout on 2FA Code Verification (2026-07-22)**  
+- `api/src/application/use_cases/main/auth_service.py:verify_totp`  
+- ✅ **Fixed:** the existing `MAX_LOGIN_ATTEMPTS`/`locked_until` lockout only applied to the password step; `verify_totp` incremented the failure counter but never checked/enforced it, allowing unlimited TOTP brute-forcing once the password was known. Lockout now also applies to failed TOTP attempts.
+
+**29. Deactivated Users Retained API Access (2026-07-22)**  
+- `api/src/core/dependencies.py:get_current_user_or_api_key`  
+- ✅ **Fixed:** unlike `get_current_user`, this dependency (used by the organizations list/create endpoints) decoded the JWT without checking `is_active` in the DB, so a deactivated user's still-valid access token kept working. Added the same `is_active` check, plus the same check to the API-key auth path.
+
+**30. Logout / Password Change Did Not Revoke Other Sessions (2026-07-22)**  
+- `api/src/application/use_cases/main/auth_service.py` (`logout`, `refresh_access_token`), `user_service.py:change_password`, `auth.py:reset_password`  
+- ✅ **Fixed:** logout only blacklisted the single access token passed in; the refresh token (30-day lifetime) and any other active session were unaffected, and password change/reset revoked nothing at all. Added a `token_version` counter on `User`, embedded in every issued JWT (`tv` claim) and checked against the current DB value in `get_current_user`/`get_current_user_or_api_key`/`refresh_access_token`. Logout, password change, and password reset all increment it, immediately invalidating every previously-issued token for that user.
+
+**31. TOTP Secret Stored in Plaintext (2026-07-22)**  
+- `api/src/infrastructure/secondary/database/models/user_model.py:totp_secret`  
+- ✅ **Fixed:** unlike connector credentials (already Fernet-encrypted), the TOTP seed was stored in clear text — a DB-level compromise would yield permanent, undetectable 2FA bypass for every account. `SqlUserRepository` now encrypts/decrypts `totp_secret` with the same Fernet key at the repository boundary (migration widens the column and adds `token_version`).
+
+**32. Verification Engine Quality-Gate Rules Failed Open on Missing/Malformed Data (2026-07-22)**  
+- `engine/src/rules/has_*.rs`, `meets_minimum_test_coverage.rs`, `meets_maximum_complexity.rs`  
+- ✅ **Fixed:** ~10 rules (`has_critical_vulnerabilities`, `has_security_hotspots`, `meets_minimum_test_coverage`, etc.) silently reported `Ok` whenever the connector-reported metric field was absent or not a number, treating "no data" as "zero violations" — the same non-exact-match-passes-as-valid pattern already fixed in `RV-06`. A malicious or misconfigured connector could bypass a mandatory quality gate simply by omitting the field. All affected rules now fail closed (`Error`) on a missing/invalid field.
 
 ### Low
 

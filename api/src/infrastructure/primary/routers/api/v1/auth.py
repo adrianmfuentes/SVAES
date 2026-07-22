@@ -395,6 +395,7 @@ async def reset_password(payload: ResetPasswordRequest):
     user.hashed_password = await asyncio.to_thread(hasher.hash_password, payload.password)
     user.password_reset_token = None
     user.password_reset_token_expiry = None
+    user.token_version += 1
     await user_repo.update(user)
 
     return {"message": "Contraseña actualizada correctamente."}

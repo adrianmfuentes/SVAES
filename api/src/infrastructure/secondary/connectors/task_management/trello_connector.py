@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 import httpx
 from application.ports.output.i_connector import IConnector
+from infrastructure.secondary.connectors.base_http_connector import assert_safe_outbound_url
 
 
 class TrelloConnector(IConnector):
@@ -40,6 +41,7 @@ class TrelloConnector(IConnector):
         }
 
     async def test_connection(self, config: Dict[str, Any]) -> bool:
+        assert_safe_outbound_url(f"{self._get_base_url(config)}/members/me")
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {**self._build_auth_params(config)}
             response = await client.get(
@@ -61,6 +63,7 @@ class TrelloConnector(IConnector):
         return data
 
     async def fetch_artifact(self, ref: str, config: Dict[str, Any]) -> Dict[str, Any]:
+        assert_safe_outbound_url(f"{self._get_base_url(config)}/cards/{ref}")
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {**self._build_auth_params(config)}
             response = await client.get(
@@ -73,6 +76,7 @@ class TrelloConnector(IConnector):
     async def list_artifacts(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
+        assert_safe_outbound_url(f"{self._get_base_url(config)}/boards/x/cards")
         async with httpx.AsyncClient(timeout=30.0) as client:
             params = {
                 **self._build_auth_params(config),

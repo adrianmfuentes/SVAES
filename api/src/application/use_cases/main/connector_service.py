@@ -15,6 +15,34 @@ from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEnt
 
 _log = get_logger(__name__)
 
+_CREDENTIAL_QUERY_PARAMS = {"key", "token", "api_key", "apikey", "access_token", "secret"}
+
+
+def _redact_exc(exc: Exception) -> str:
+    """Representación de una excepción segura para loguear.
+
+    `httpx.HTTPStatusError`/`ConnectError` incluyen la URL completa de la
+    petición fallida en su `str()`. Algunos conectores (p. ej. Trello)
+    autentican vía query string, por lo que esa URL puede llevar la API
+    key/token en claro - se redacta antes de loguear.
+    """
+    request = getattr(exc, "request", None)
+    url = getattr(request, "url", None) if request is not None else None
+    if url is None:
+        response = getattr(exc, "response", None)
+        url = getattr(getattr(response, "request", None), "url", None) if response is not None else None
+    if url is not None:
+        try:
+            redacted_query = "&".join(
+                f"{k}=***" if k.lower() in _CREDENTIAL_QUERY_PARAMS else f"{k}={v}"
+                for k, v in url.params.multi_items()
+            )
+            safe_url = str(url.copy_with(query=redacted_query.encode() if redacted_query else None))
+            return f"{type(exc).__name__}: {safe_url}"
+        except Exception:
+            return f"{type(exc).__name__} (url redacted)"
+    return str(exc)
+
 
 class ConnectorService(IConnectorService):
     def __init__(
@@ -132,7 +160,7 @@ class ConnectorService(IConnectorService):
             decrypted_config = ast.literal_eval(fernet.decrypt(connector.encrypted_credentials).decode())
             connection_ok = await connector_impl.test_connection(decrypted_config)
         except Exception as exc:
-            _log.exception("Connector test failed: id=%s org=%s error=%s", connector_id, connector.organization_id, exc)
+            _log.error("Connector test failed: id=%s org=%s error=%s", connector_id, connector.organization_id, _redact_exc(exc))
 
         connector.last_tested_at = datetime.now(timezone.utc)
         connector.status = ConnectorStatus.ACTIVO if connection_ok else ConnectorStatus.ERROR
@@ -256,7 +284,7 @@ class ConnectorService(IConnectorService):
         except Exception as exc:
             _log.warning(
                 "browse: list_artifacts failed connector_id=%s: %s",
-                connector_id, exc,
+                connector_id, _redact_exc(exc),
             )
             raise ConnectorConnectionFailedError(
                 f"Error al listar elementos del conector: {connector_id}"
@@ -275,13 +303,16 @@ class ConnectorService(IConnectorService):
 
 
     async def verify_artifact_ref(
-        self, connector_id: UUID, external_ref: str
+        self, connector_id: UUID, external_ref: str, organization_id: Optional[UUID] = None
     ) -> None:
         import httpx
         from cryptography.fernet import Fernet
         connector = await self._connector_repo.get_by_id(connector_id)
         if not connector:
             raise EntityNotFoundError(f"Conector no encontrado: {connector_id}")
+
+        if organization_id is not None and connector.organization_id != organization_id:
+            raise ValidationError(f"Conector {connector_id} no pertenece a la organización de esta release")
 
         try:
             connector_impl = self._connector_registry.get_by_implementation(
@@ -309,12 +340,12 @@ class ConnectorService(IConnectorService):
                 )
             _log.warning(
                 "verify_ref: non-404 HTTP error for connector_id=%s: %s",
-                connector_id, exc,
+                connector_id, _redact_exc(exc),
             )
         except Exception as exc:
             _log.warning(
                 "verify_ref: could not verify for connector_id=%s (connectivity issue): %s",
-                connector_id, exc,
+                connector_id, _redact_exc(exc),
             )
 
 

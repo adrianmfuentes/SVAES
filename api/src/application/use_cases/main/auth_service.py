@@ -125,9 +125,17 @@ class AuthService(IAuthService):
         if not user or not user.totp_enabled or not user.totp_secret:
             raise ValidationError("Autenticación 2FA fallida")
 
+        now = datetime.now(timezone.utc)
+        if user.locked_until and user.locked_until > now:
+            remaining = (user.locked_until - now).seconds // 60
+            raise ValidationError(f"Cuenta bloqueada. Intenta en {remaining} minutos.")
+
         totp = pyotp.TOTP(user.totp_secret)
         if not totp.verify(code, valid_window=1):
             user.failed_login_attempts = user.failed_login_attempts + 1
+            if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
+                user.locked_until = now + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+                user.failed_login_attempts = 0
             await self._user_repo.update(user)
             audit = get_audit_logger()
             audit.log(AuditEntry(
@@ -140,8 +148,9 @@ class AuthService(IAuthService):
             ))
             raise ValidationError("Código 2FA inválido")
 
-        if user.failed_login_attempts > 0:
+        if user.failed_login_attempts > 0 or user.locked_until is not None:
             user.failed_login_attempts = 0
+            user.locked_until = None
             await self._user_repo.update(user)
 
         return self._issue_tokens(user)
@@ -154,7 +163,14 @@ class AuthService(IAuthService):
         if not user:
             raise ValidationError("Usuario no encontrado")
 
-        secret = user.totp_secret if (user.totp_secret and not user.totp_enabled) else pyotp.random_base32()
+        if user.totp_enabled:
+            # El 2FA ya está activo: regenerar el secreto aquí lo invalidaría
+            # silenciosamente sin exigir ningún código de confirmación, dejando
+            # a un atacante con acceso breve al token plantar un secreto propio
+            # (ver disable_totp, que sí exige un código válido para desactivar).
+            raise ValidationError("El 2FA ya está activado. Desactívalo primero para reconfigurarlo.")
+
+        secret = user.totp_secret or pyotp.random_base32()
         totp = pyotp.TOTP(secret)
         uri = totp.provisioning_uri(name=user.email, issuer_name="SVAES")
 
@@ -221,12 +237,18 @@ class AuthService(IAuthService):
         if not self._token_service.is_refresh_token(refresh_token):
             return None
         try:
-            payload = self._token_service.decode_token(refresh_token)
+            payload = self._token_service.decode_refresh_token(refresh_token)
         except ValueError:
             return None
 
         user = await self._user_repo.get_by_id(payload.user_id)
-        if not user:
+        if not user or not user.is_active:
+            return None
+
+        # `token_version` se incrementa en logout/cambio de contraseña: un
+        # refresh token emitido antes de eso lleva un `tv` desfasado y no debe
+        # poder seguir generando accesos nuevos aunque no haya expirado.
+        if (payload.token_version or 0) != user.token_version:
             return None
 
         access_token = self._token_service.create_access_token(
@@ -235,18 +257,24 @@ class AuthService(IAuthService):
             email=user.email,
             organization_id=user.organization_id,
             expires_in=3600,
+            token_version=user.token_version,
         )
         new_refresh_token = self._token_service.create_refresh_token(
             user_id=user.id,
             role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
+            token_version=user.token_version,
         )
 
         return AuthTokens(access_token=access_token, refresh_token=new_refresh_token)
 
     async def logout(self, user_id: UUID, token: str) -> None:
         self._token_service.blacklist_token(token, 0)
+        user = await self._user_repo.get_by_id(user_id)
+        if user:
+            user.token_version += 1
+            await self._user_repo.update(user)
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.USER_LOGGED_OUT,
@@ -264,12 +292,14 @@ class AuthService(IAuthService):
             email=user.email,
             organization_id=user.organization_id,
             expires_in=3600,
+            token_version=user.token_version,
         )
         refresh_token = self._token_service.create_refresh_token(
             user_id=user.id,
             role=user.role.value,
             email=user.email,
             organization_id=user.organization_id,
+            token_version=user.token_version,
         )
         tokens = AuthTokens(access_token=access_token, refresh_token=refresh_token)
         audit = get_audit_logger()
