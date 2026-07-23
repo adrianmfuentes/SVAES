@@ -2549,6 +2549,259 @@ class TestUserServiceGaps:
         assert result.email == "t@t.com"
 
 
+# ── ConnectorService.configure_webhook ─────────────────────────────────────
+
+class TestConnectorServiceConfigureWebhook:
+    @pytest.fixture(autouse=True)
+    def patch_settings_key(self, monkeypatch):
+        from core import config as cfg
+        monkeypatch.setattr(cfg.settings, "encryption_key", _VALID_FERNET_KEY)
+
+    @pytest.fixture
+    def svc(self):
+        from application.use_cases.main.connector_service import ConnectorService
+        conn_repo = AsyncMock()
+        registry = MagicMock()
+        return ConnectorService(conn_repo, registry), conn_repo, registry
+
+    def _connector(self, **overrides):
+        from domain.entities.connector_instance import ConnectorInstance
+        from domain.enums import ConnectorStatus
+        defaults = dict(
+            id=uuid4(), organization_id=uuid4(), connector_type="REPO_CODIGO",
+            connector_implementation="GITHUB", name="gh", encrypted_credentials=b"x",
+            status=ConnectorStatus.ACTIVO, webhook_secret_encrypted=None, webhook_enabled=False,
+        )
+        defaults.update(overrides)
+        return ConnectorInstance(**defaults)
+
+    async def test_configure_webhook_not_found_raises(self, svc):
+        service, conn_repo, _ = svc
+        conn_repo.get_by_id = AsyncMock(return_value=None)
+        from domain.exceptions import EntityNotFoundError
+        with pytest.raises(EntityNotFoundError):
+            await service.configure_webhook(uuid4(), True, uuid4())
+
+    async def test_configure_webhook_wrong_connector_type_raises(self, svc):
+        service, conn_repo, _ = svc
+        connector = self._connector(connector_type="GESTOR_TAREAS")
+        conn_repo.get_by_id = AsyncMock(return_value=connector)
+        from domain.exceptions import ValidationError
+        with pytest.raises(ValidationError):
+            await service.configure_webhook(connector.id, True, uuid4())
+
+    async def test_configure_webhook_first_enable_generates_secret(self, svc):
+        service, conn_repo, _ = svc
+        connector = self._connector()
+        conn_repo.get_by_id = AsyncMock(return_value=connector)
+        conn_repo.update = AsyncMock(side_effect=lambda c: c)
+
+        updated, secret = await service.configure_webhook(connector.id, True, uuid4())
+
+        assert updated.webhook_enabled is True
+        assert secret is not None
+        assert updated.webhook_secret_encrypted is not None
+
+    async def test_configure_webhook_reenable_does_not_regenerate_secret(self, svc):
+        service, conn_repo, _ = svc
+        from cryptography.fernet import Fernet
+        existing_encrypted = Fernet(_VALID_FERNET_KEY.encode()).encrypt(b"already-set")
+        connector = self._connector(webhook_secret_encrypted=existing_encrypted, webhook_enabled=False)
+        conn_repo.get_by_id = AsyncMock(return_value=connector)
+        conn_repo.update = AsyncMock(side_effect=lambda c: c)
+
+        updated, secret = await service.configure_webhook(connector.id, True, uuid4())
+
+        assert updated.webhook_enabled is True
+        assert secret is None
+        assert updated.webhook_secret_encrypted == existing_encrypted
+
+    async def test_configure_webhook_regenerate_secret_forces_new_value(self, svc):
+        service, conn_repo, _ = svc
+        from cryptography.fernet import Fernet
+        existing_encrypted = Fernet(_VALID_FERNET_KEY.encode()).encrypt(b"already-set")
+        connector = self._connector(webhook_secret_encrypted=existing_encrypted, webhook_enabled=True)
+        conn_repo.get_by_id = AsyncMock(return_value=connector)
+        conn_repo.update = AsyncMock(side_effect=lambda c: c)
+
+        updated, secret = await service.configure_webhook(connector.id, True, uuid4(), regenerate_secret=True)
+
+        assert secret is not None
+        assert updated.webhook_secret_encrypted != existing_encrypted
+
+    async def test_configure_webhook_disable_keeps_secret(self, svc):
+        service, conn_repo, _ = svc
+        from cryptography.fernet import Fernet
+        existing_encrypted = Fernet(_VALID_FERNET_KEY.encode()).encrypt(b"already-set")
+        connector = self._connector(webhook_secret_encrypted=existing_encrypted, webhook_enabled=True)
+        conn_repo.get_by_id = AsyncMock(return_value=connector)
+        conn_repo.update = AsyncMock(side_effect=lambda c: c)
+
+        updated, secret = await service.configure_webhook(connector.id, False, uuid4())
+
+        assert updated.webhook_enabled is False
+        assert secret is None
+        assert updated.webhook_secret_encrypted == existing_encrypted
+
+
+# ── HandleIncomingWebhookUseCase ────────────────────────────────────────────
+
+class TestHandleIncomingWebhookUseCase:
+    @pytest.fixture(autouse=True)
+    def patch_settings_key(self, monkeypatch):
+        from core import config as cfg
+        monkeypatch.setattr(cfg.settings, "encryption_key", _VALID_FERNET_KEY)
+
+    @pytest.fixture
+    def uc(self):
+        from application.use_cases.main.handle_incoming_webhook import HandleIncomingWebhookUseCase
+        connector_repo = AsyncMock()
+        project_repo = AsyncMock()
+        organization_repo = AsyncMock()
+        release_service = AsyncMock()
+        verification_service = AsyncMock()
+        use_case = HandleIncomingWebhookUseCase(
+            connector_repository=connector_repo,
+            project_repository=project_repo,
+            organization_repository=organization_repo,
+            release_service=release_service,
+            verification_service=verification_service,
+        )
+        return use_case, connector_repo, project_repo, organization_repo, release_service, verification_service
+
+    def _connector(self, secret_plaintext: bytes = b"s3cr3t", **overrides):
+        from domain.entities.connector_instance import ConnectorInstance
+        from domain.enums import ConnectorStatus
+        from cryptography.fernet import Fernet
+        encrypted = Fernet(_VALID_FERNET_KEY.encode()).encrypt(secret_plaintext) if secret_plaintext else None
+        defaults = dict(
+            id=uuid4(), organization_id=uuid4(), connector_type="REPO_CODIGO",
+            connector_implementation="GITHUB", name="gh", encrypted_credentials=b"x",
+            status=ConnectorStatus.ACTIVO, webhook_secret_encrypted=encrypted, webhook_enabled=True,
+        )
+        defaults.update(overrides)
+        return ConnectorInstance(**defaults)
+
+    def _project(self, organization_id):
+        from domain.entities.project import Project
+        return Project(organization_id=organization_id, name="Proj", description="", profile_id=uuid4())
+
+    def _github_signature(self, secret: str, body: bytes) -> str:
+        import hashlib, hmac
+        return "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+
+    async def test_connector_not_found_raises(self, uc):
+        use_case, connector_repo, *_ = uc
+        connector_repo.get_by_id = AsyncMock(return_value=None)
+        from domain.exceptions import EntityNotFoundError
+        with pytest.raises(EntityNotFoundError):
+            await use_case.handle_source_control_event(uuid4(), uuid4(), b"{}", {})
+
+    async def test_webhook_disabled_raises_validation_error(self, uc):
+        use_case, connector_repo, *_ = uc
+        connector = self._connector(webhook_enabled=False)
+        connector_repo.get_by_id = AsyncMock(return_value=connector)
+        from domain.exceptions import ValidationError
+        with pytest.raises(ValidationError):
+            await use_case.handle_source_control_event(uuid4(), connector.id, b"{}", {})
+
+    async def test_project_not_found_raises(self, uc):
+        use_case, connector_repo, project_repo, *_ = uc
+        connector = self._connector()
+        connector_repo.get_by_id = AsyncMock(return_value=connector)
+        project_repo.get_by_id = AsyncMock(return_value=None)
+        from domain.exceptions import EntityNotFoundError
+        with pytest.raises(EntityNotFoundError):
+            await use_case.handle_source_control_event(uuid4(), connector.id, b"{}", {})
+
+    async def test_project_from_different_org_raises_not_found(self, uc):
+        use_case, connector_repo, project_repo, *_ = uc
+        connector = self._connector()
+        connector_repo.get_by_id = AsyncMock(return_value=connector)
+        project_repo.get_by_id = AsyncMock(return_value=self._project(organization_id=uuid4()))
+        from domain.exceptions import EntityNotFoundError
+        with pytest.raises(EntityNotFoundError):
+            await use_case.handle_source_control_event(uuid4(), connector.id, b"{}", {})
+
+    async def test_invalid_signature_raises(self, uc):
+        use_case, connector_repo, project_repo, *_ = uc
+        connector = self._connector()
+        connector_repo.get_by_id = AsyncMock(return_value=connector)
+        project_repo.get_by_id = AsyncMock(return_value=self._project(connector.organization_id))
+        from domain.exceptions import InvalidWebhookSignatureError
+        with pytest.raises(InvalidWebhookSignatureError):
+            await use_case.handle_source_control_event(
+                uuid4(), connector.id, b'{"ref_type":"tag","ref":"v1.0.0"}',
+                {"X-Hub-Signature-256": "sha256=deadbeef"},
+            )
+
+    async def test_non_tag_event_returns_none_without_creating_release(self, uc):
+        use_case, connector_repo, project_repo, _, release_service, verification_service = uc
+        connector = self._connector()
+        connector_repo.get_by_id = AsyncMock(return_value=connector)
+        project_repo.get_by_id = AsyncMock(return_value=self._project(connector.organization_id))
+        body = b'{"ref_type":"branch","ref":"main"}'
+        headers = {"X-Hub-Signature-256": self._github_signature("s3cr3t", body), "X-GitHub-Event": "create"}
+
+        result = await use_case.handle_source_control_event(uuid4(), connector.id, body, headers)
+
+        assert result is None
+        release_service.create_release.assert_not_called()
+        verification_service.launch_verification.assert_not_called()
+
+    async def test_valid_tag_event_creates_release_and_launches_verification(self, uc):
+        use_case, connector_repo, project_repo, organization_repo, release_service, verification_service = uc
+        from domain.entities.organization import Organization
+        from domain.entities.release import Release
+
+        connector = self._connector()
+        project = self._project(connector.organization_id)
+        connector_repo.get_by_id = AsyncMock(return_value=connector)
+        project_repo.get_by_id = AsyncMock(return_value=project)
+        owner_id = uuid4()
+        organization_repo.get_by_id = AsyncMock(
+            return_value=Organization(name="Org", slug="org", owner_id=owner_id, id=connector.organization_id)
+        )
+        release = Release(
+            name="Proj v1.0.0", project_id=project.id, profile_id=project.profile_id,
+            version="1.0.0", created_by=owner_id,
+        )
+        release_service.create_release = AsyncMock(return_value=release)
+        release_service.add_artifact = AsyncMock()
+        verification_service.launch_verification = AsyncMock(return_value="task-id")
+
+        body = b'{"ref_type":"tag","ref":"v1.0.0"}'
+        headers = {"X-Hub-Signature-256": self._github_signature("s3cr3t", body), "X-GitHub-Event": "create"}
+
+        result = await use_case.handle_source_control_event(uuid4(), connector.id, body, headers)
+
+        assert result == release.id
+        release_service.create_release.assert_awaited_once()
+        _, kwargs = release_service.create_release.call_args
+        assert kwargs["version"] == "1.0.0"
+        assert kwargs["user_id"] == owner_id
+        release_service.add_artifact.assert_awaited_once()
+        verification_service.launch_verification.assert_awaited_once_with(release_id=release.id, requested_by=owner_id)
+
+    async def test_organization_without_owner_raises_validation_error(self, uc):
+        use_case, connector_repo, project_repo, organization_repo, *_ = uc
+        from domain.entities.organization import Organization
+
+        connector = self._connector()
+        project = self._project(connector.organization_id)
+        connector_repo.get_by_id = AsyncMock(return_value=connector)
+        project_repo.get_by_id = AsyncMock(return_value=project)
+        organization_repo.get_by_id = AsyncMock(
+            return_value=Organization(name="Org", slug="org", owner_id=None, id=connector.organization_id)
+        )
+        body = b'{"ref_type":"tag","ref":"v1.0.0"}'
+        headers = {"X-Hub-Signature-256": self._github_signature("s3cr3t", body), "X-GitHub-Event": "create"}
+
+        from domain.exceptions import ValidationError
+        with pytest.raises(ValidationError):
+            await use_case.handle_source_control_event(uuid4(), connector.id, body, headers)
+
+
 # ── ConnectorServiceRemaining ─────────────────────────────────────────────────
 
 class TestConnectorServiceRemaining:
@@ -3169,6 +3422,80 @@ class TestProfileServiceWrappers:
 
         result = await service.add_rule(p.id, "RV01")
         assert result.rule_template == "RV01"
+
+    async def test_add_rule_custom_field_check_valid_params_success(self, svc):
+        """Branch: add_rule with rule_template=custom_field_check and valid params → creates"""
+        service, profile_repo, rule_repo = svc
+        from domain.entities.verification_profile import VerificationProfile
+        from domain.entities.verification_rule import VerificationRule
+        from domain.enums import SeverityType
+
+        p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
+        params = {"artifact_type": "TAREA", "field": "epic_id", "operator": "non_empty"}
+        rule = VerificationRule(profile_id=p.id, rule_template="custom_field_check", severity=SeverityType.HIGH, params=params)
+        profile_repo.get_by_id = AsyncMock(return_value=p)
+        rule_repo.create = AsyncMock(return_value=rule)
+
+        result = await service.add_rule(p.id, "custom_field_check", params=params)
+        assert result.rule_template == "custom_field_check"
+
+    async def test_add_rule_custom_field_check_missing_field_raises(self, svc):
+        """Branch: add_rule with rule_template=custom_field_check missing 'field' → ValidationError"""
+        service, profile_repo, rule_repo = svc
+        from domain.entities.verification_profile import VerificationProfile
+        from domain.exceptions import ValidationError
+
+        p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
+        profile_repo.get_by_id = AsyncMock(return_value=p)
+
+        with pytest.raises(ValidationError):
+            await service.add_rule(p.id, "custom_field_check", params={"artifact_type": "TAREA"})
+
+    async def test_add_rule_custom_field_check_unknown_operator_raises(self, svc):
+        """Branch: add_rule with rule_template=custom_field_check unsupported operator → ValidationError"""
+        service, profile_repo, rule_repo = svc
+        from domain.entities.verification_profile import VerificationProfile
+        from domain.exceptions import ValidationError
+
+        p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
+        profile_repo.get_by_id = AsyncMock(return_value=p)
+
+        with pytest.raises(ValidationError):
+            await service.add_rule(
+                p.id, "custom_field_check",
+                params={"artifact_type": "TAREA", "field": "epic_id", "operator": "bogus"},
+            )
+
+    async def test_add_rule_custom_field_check_missing_value_for_operator_raises(self, svc):
+        """Branch: add_rule with rule_template=custom_field_check operator != non_empty without 'value' → ValidationError"""
+        service, profile_repo, rule_repo = svc
+        from domain.entities.verification_profile import VerificationProfile
+        from domain.exceptions import ValidationError
+
+        p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
+        profile_repo.get_by_id = AsyncMock(return_value=p)
+
+        with pytest.raises(ValidationError):
+            await service.add_rule(
+                p.id, "custom_field_check",
+                params={"artifact_type": "TAREA", "field": "epic_id", "operator": "equals"},
+            )
+
+    async def test_update_rule_custom_field_check_invalid_params_raises(self, svc):
+        """Branch: update_rule with rule_template=custom_field_check invalid new params → ValidationError"""
+        service, profile_repo, rule_repo = svc
+        from domain.entities.verification_rule import VerificationRule
+        from domain.entities.verification_profile import VerificationProfile
+        from domain.enums import SeverityType
+        from domain.exceptions import ValidationError
+
+        rule = VerificationRule(profile_id=uuid4(), rule_template="custom_field_check", severity=SeverityType.HIGH)
+        profile = VerificationProfile(id=rule.profile_id, organization_id=uuid4(), name="test", is_default=False)
+        rule_repo.get_by_id = AsyncMock(return_value=rule)
+        profile_repo.get_by_id = AsyncMock(return_value=profile)
+
+        with pytest.raises(ValidationError):
+            await service.update_rule(rule.id, params={"artifact_type": "TAREA"})
 
     async def test_update_rule_success(self, svc):
         """Branch: ProfileService.update_rule → delegates + audits"""

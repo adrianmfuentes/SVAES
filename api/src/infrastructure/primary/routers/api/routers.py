@@ -18,6 +18,7 @@ from infrastructure.primary.routers.api.v1.admin import router as admin_router
 from infrastructure.primary.routers.api.v1.audit import router as audit_router
 from infrastructure.primary.routers.api.v1.access_requests import router as access_requests_router
 from infrastructure.primary.routers.api.v1.feedback import router as feedback_router
+from infrastructure.primary.routers.api.v1.webhooks import router as webhooks_router
 
 __all__ = [
     "auth_router",
@@ -36,4 +37,5 @@ __all__ = [
     "audit_router",
     "access_requests_router",
     "feedback_router",
+    "webhooks_router",
 ]

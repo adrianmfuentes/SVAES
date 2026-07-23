@@ -18,6 +18,7 @@ interface Connector {
   organization_id?: string;
   organization_name?: string;
   last_tested_at?: string;
+  webhook_enabled?: boolean;
 }
 
 interface ConnectorApiItem {
@@ -28,6 +29,7 @@ interface ConnectorApiItem {
   status: string;
   created_at: string;
   last_tested_at?: string;
+  webhook_enabled?: boolean;
 }
 
 interface ConfigSchemaField {
@@ -99,6 +101,9 @@ interface ConnectorTypesResponse {
                   <button class="btn-ghost" (click)="toggleConnector(c)">
                     {{ c.status === 'inactive' ? ('connectors.activate' | t) : ('connectors.deactivate' | t) }}
                   </button>
+                  <button *ngIf="c.type === 'REPO_CODIGO'" class="btn-ghost" (click)="openWebhookConfig(c)">
+                    {{ 'connectors.webhook_label' | t }}
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -159,6 +164,42 @@ interface ConnectorTypesResponse {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Webhook configuration -->
+    <div class="modal-overlay" *ngIf="showWebhookModal()" (click)="closeWebhookModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'connectors.webhook_title' | t }} — {{ webhookConnector()?.name }}</h3>
+          <button class="modal-close" (click)="closeWebhookModal()">&times;</button>
+        </div>
+        <p class="form-hint">{{ 'connectors.webhook_hint' | t }}</p>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [checked]="webhookConnector()?.webhook_enabled" (change)="toggleWebhookEnabled($event)" [disabled]="webhookSaving()" />
+            {{ 'connectors.webhook_enable_label' | t }}
+          </label>
+        </div>
+        <ng-container *ngIf="webhookConnector()?.webhook_enabled">
+          <div class="form-group">
+            <label>{{ 'connectors.webhook_url_label' | t }}</label>
+            <input type="text" readonly [value]="webhookUrlTemplate()" />
+            <p class="form-hint">{{ 'connectors.webhook_url_hint' | t }}</p>
+          </div>
+          <div class="form-group" *ngIf="webhookSecret()">
+            <label>{{ 'connectors.webhook_secret_label' | t }}</label>
+            <input type="text" readonly [value]="webhookSecret()" />
+            <p class="form-hint">{{ 'connectors.webhook_secret_hint' | t }}</p>
+          </div>
+          <button type="button" class="btn-secondary btn-sm" (click)="regenerateWebhookSecret()" [disabled]="webhookSaving()">
+            {{ 'connectors.webhook_regenerate' | t }}
+          </button>
+        </ng-container>
+        <div *ngIf="webhookError()" class="error-banner error-banner-sm">{{ webhookError() }}</div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeWebhookModal()">{{ 'common.close' | t }}</button>
+        </div>
       </div>
     </div>
   `,
@@ -631,6 +672,12 @@ export class ConnectorsComponent implements OnInit {
   modalError = signal<string | null>(null);
   testingId = signal<string | null>(null);
 
+  showWebhookModal = signal(false);
+  webhookConnector = signal<Connector | null>(null);
+  webhookSecret = signal<string | null>(null);
+  webhookSaving = signal(false);
+  webhookError = signal<string | null>(null);
+
   connectorTypes = signal<ConnectorTypesResponse | null>(null);
   selectedType = signal<string | null>(null);
   selectedImplementation = signal<string | null>(null);
@@ -680,6 +727,7 @@ export class ConnectorsComponent implements OnInit {
       global: false,
       organization_id: this.orgId ?? undefined,
       last_tested_at: c.last_tested_at ?? existing?.last_tested_at ?? undefined,
+      webhook_enabled: c.webhook_enabled ?? existing?.webhook_enabled ?? false,
     };
   }
 
@@ -813,6 +861,61 @@ export class ConnectorsComponent implements OnInit {
           this.toast.success(this.ts.translateInstant('connectors.test_success'));
         }
       });
+  }
+
+  openWebhookConfig(c: Connector): void {
+    this.webhookConnector.set(c);
+    this.webhookSecret.set(null);
+    this.webhookError.set(null);
+    this.showWebhookModal.set(true);
+  }
+
+  closeWebhookModal(): void {
+    this.showWebhookModal.set(false);
+    this.webhookConnector.set(null);
+    this.webhookSecret.set(null);
+  }
+
+  webhookUrlTemplate(): string {
+    const c = this.webhookConnector();
+    if (!c) return '';
+    return `${window.location.origin}/api/v1/webhooks/source-control/{project_id}/${c.id}`;
+  }
+
+  private submitWebhookConfig(enabled: boolean, regenerateSecret: boolean): void {
+    const c = this.webhookConnector();
+    if (!c || !this.orgId) return;
+    this.webhookSaving.set(true);
+    this.webhookError.set(null);
+    this.http.post<{ id: string; webhook_enabled: boolean; webhook_secret: string | null }>(
+      `/api/v1/organizations/${this.orgId}/connectors/${c.id}/webhook`,
+      { enabled, regenerate_secret: regenerateSecret },
+    ).pipe(
+      catchError((err: HttpErrorResponse) => {
+        this.webhookError.set(err.error?.detail ?? this.ts.translateInstant('common.error_occurred'));
+        this.webhookSaving.set(false);
+        return of(null);
+      })
+    ).subscribe(data => {
+      if (data) {
+        const updated: Connector = { ...c, webhook_enabled: data.webhook_enabled };
+        this.webhookConnector.set(updated);
+        this.globalConnectors.update(list => list.map(x => x.id === updated.id ? updated : x));
+        if (data.webhook_secret) {
+          this.webhookSecret.set(data.webhook_secret);
+        }
+      }
+      this.webhookSaving.set(false);
+    });
+  }
+
+  toggleWebhookEnabled(event: Event): void {
+    const enabled = (event.target as HTMLInputElement).checked;
+    this.submitWebhookConfig(enabled, false);
+  }
+
+  regenerateWebhookSecret(): void {
+    this.submitWebhookConfig(true, true);
   }
 
   statusLabel(status: string): string {

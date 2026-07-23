@@ -852,3 +852,160 @@ class TestGetAsyncSession:
         gen = get_async_session()
         session = await gen.__anext__()
         assert session is not None
+
+
+# ── webhook_signature ─────────────────────────────────────────────────────
+
+
+class TestWebhookSignature:
+    """Cover core/webhook_signature.py: per-provider HMAC/token verification."""
+
+    def test_signature_header_name_known_providers(self):
+        from core.webhook_signature import signature_header_name
+        assert signature_header_name("github") == "X-Hub-Signature-256"
+        assert signature_header_name("GITEA") == "X-Gitea-Signature"
+        assert signature_header_name("Bitbucket") == "X-Hub-Signature-256"
+        assert signature_header_name("gitlab") == "X-Gitlab-Token"
+
+    def test_signature_header_name_unknown_provider_returns_none(self):
+        from core.webhook_signature import signature_header_name
+        assert signature_header_name("JIRA") is None
+
+    def test_github_style_valid_signature(self):
+        import hashlib, hmac
+        from core.webhook_signature import verify_github_style_signature
+        secret, body = "s3cr3t", b'{"ref":"refs/tags/v1.0.0"}'
+        digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        assert verify_github_style_signature(secret, body, f"sha256={digest}") is True
+
+    def test_github_style_invalid_signature(self):
+        from core.webhook_signature import verify_github_style_signature
+        assert verify_github_style_signature("s3cr3t", b"body", "sha256=deadbeef") is False
+
+    def test_github_style_missing_or_malformed_header(self):
+        from core.webhook_signature import verify_github_style_signature
+        assert verify_github_style_signature("s3cr3t", b"body", None) is False
+        assert verify_github_style_signature("s3cr3t", b"body", "not-prefixed") is False
+
+    def test_gitea_valid_signature(self):
+        import hashlib, hmac
+        from core.webhook_signature import verify_gitea_signature
+        secret, body = "s3cr3t", b"payload"
+        digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        assert verify_gitea_signature(secret, body, digest) is True
+
+    def test_gitea_missing_header(self):
+        from core.webhook_signature import verify_gitea_signature
+        assert verify_gitea_signature("s3cr3t", b"body", None) is False
+
+    def test_gitlab_token_match(self):
+        from core.webhook_signature import verify_gitlab_token
+        assert verify_gitlab_token("s3cr3t", "s3cr3t") is True
+        assert verify_gitlab_token("s3cr3t", "wrong") is False
+        assert verify_gitlab_token("s3cr3t", None) is False
+
+    def test_verify_webhook_signature_dispatch_per_provider(self):
+        import hashlib, hmac
+        from core.webhook_signature import verify_webhook_signature
+        secret, body = "s3cr3t", b"payload"
+        digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        assert verify_webhook_signature("GITHUB", secret, body, f"sha256={digest}") is True
+        assert verify_webhook_signature("BITBUCKET", secret, body, f"sha256={digest}") is True
+        assert verify_webhook_signature("GITEA", secret, body, digest) is True
+        assert verify_webhook_signature("GITLAB", secret, body, secret) is True
+
+    def test_verify_webhook_signature_unsupported_provider_returns_false(self):
+        from core.webhook_signature import verify_webhook_signature
+        assert verify_webhook_signature("JIRA", "s3cr3t", b"body", "anything") is False
+
+
+# ── webhook_payload_parser ────────────────────────────────────────────────
+
+
+class TestWebhookPayloadParser:
+    """Cover application/use_cases/main/webhook_payload_parser.py."""
+
+    def test_event_header_name_known_and_unknown_providers(self):
+        from application.use_cases.main.webhook_payload_parser import event_header_name
+        assert event_header_name("github") == "X-GitHub-Event"
+        assert event_header_name("GITLAB") == "X-Gitlab-Event"
+        assert event_header_name("Gitea") == "X-Gitea-Event"
+        assert event_header_name("bitbucket") == "X-Event-Key"
+        assert event_header_name("JIRA") is None
+
+    def test_github_create_tag_event_parsed(self):
+        from application.use_cases.main.webhook_payload_parser import parse_github_event
+        event = parse_github_event("create", {"ref_type": "tag", "ref": "v1.2.3"})
+        assert event.tag_name == "v1.2.3"
+        assert event.external_ref == "v1.2.3"
+
+    def test_github_create_branch_event_ignored(self):
+        from application.use_cases.main.webhook_payload_parser import parse_github_event
+        assert parse_github_event("create", {"ref_type": "branch", "ref": "main"}) is None
+
+    def test_github_release_published_event_parsed(self):
+        from application.use_cases.main.webhook_payload_parser import parse_github_event
+        event = parse_github_event("release", {"action": "published", "release": {"tag_name": "v2.0.0"}})
+        assert event.tag_name == "v2.0.0"
+
+    def test_github_release_draft_event_ignored(self):
+        from application.use_cases.main.webhook_payload_parser import parse_github_event
+        assert parse_github_event("release", {"action": "created", "release": {"tag_name": "v2.0.0"}}) is None
+
+    def test_github_unrelated_event_ignored(self):
+        from application.use_cases.main.webhook_payload_parser import parse_github_event
+        assert parse_github_event("push", {"ref": "refs/heads/main"}) is None
+
+    def test_gitlab_tag_push_event_parsed(self):
+        from application.use_cases.main.webhook_payload_parser import parse_gitlab_event
+        event = parse_gitlab_event("Tag Push Hook", {"ref": "refs/tags/v1.0.0", "checkout_sha": "abc123"})
+        assert event.tag_name == "v1.0.0"
+
+    def test_gitlab_tag_deletion_ignored(self):
+        """checkout_sha is null when the event is a tag deletion, not a creation."""
+        from application.use_cases.main.webhook_payload_parser import parse_gitlab_event
+        assert parse_gitlab_event("Tag Push Hook", {"ref": "refs/tags/v1.0.0", "checkout_sha": None}) is None
+
+    def test_gitlab_other_event_ignored(self):
+        from application.use_cases.main.webhook_payload_parser import parse_gitlab_event
+        assert parse_gitlab_event("Push Hook", {"ref": "refs/heads/main"}) is None
+
+    def test_gitea_create_tag_event_parsed(self):
+        from application.use_cases.main.webhook_payload_parser import parse_gitea_event
+        event = parse_gitea_event("create", {"ref_type": "tag", "ref": "v3.0.0"})
+        assert event.tag_name == "v3.0.0"
+
+    def test_gitea_create_branch_event_ignored(self):
+        from application.use_cases.main.webhook_payload_parser import parse_gitea_event
+        assert parse_gitea_event("create", {"ref_type": "branch", "ref": "dev"}) is None
+
+    def test_bitbucket_tag_push_parsed(self):
+        from application.use_cases.main.webhook_payload_parser import parse_bitbucket_event
+        payload = {"push": {"changes": [{"new": {"type": "tag", "name": "v1.5.0"}}]}}
+        event = parse_bitbucket_event("repo:push", payload)
+        assert event.tag_name == "v1.5.0"
+
+    def test_bitbucket_branch_push_ignored(self):
+        from application.use_cases.main.webhook_payload_parser import parse_bitbucket_event
+        payload = {"push": {"changes": [{"new": {"type": "branch", "name": "main"}}]}}
+        assert parse_bitbucket_event("repo:push", payload) is None
+
+    def test_parse_tag_push_event_dispatches_per_provider(self):
+        from application.use_cases.main.webhook_payload_parser import parse_tag_push_event
+        event = parse_tag_push_event("GITHUB", "create", {"ref_type": "tag", "ref": "v1.0.0"})
+        assert event.tag_name == "v1.0.0"
+
+    def test_parse_tag_push_event_unknown_provider_returns_none(self):
+        from application.use_cases.main.webhook_payload_parser import parse_tag_push_event
+        assert parse_tag_push_event("JIRA", "create", {"ref_type": "tag", "ref": "v1.0.0"}) is None
+
+    def test_version_from_tag_name_strips_v_prefix(self):
+        from application.use_cases.main.webhook_payload_parser import version_from_tag_name
+        assert version_from_tag_name("v1.2.3") == "1.2.3"
+        assert version_from_tag_name("V2.0.0") == "2.0.0"
+
+    def test_version_from_tag_name_keeps_non_semver_tags_unchanged(self):
+        from application.use_cases.main.webhook_payload_parser import version_from_tag_name
+        assert version_from_tag_name("1.2.3") == "1.2.3"
+        assert version_from_tag_name("release-candidate") == "release-candidate"
+        assert version_from_tag_name("vNext") == "vNext"

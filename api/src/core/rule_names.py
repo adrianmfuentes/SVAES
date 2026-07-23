@@ -5,16 +5,18 @@ RULE_DEFAULT_ARTIFACT_TYPES: dict[str, str] = {
     "RV-06": "DOCUMENTO",
     "RV-09": "CODIGO",
     "RV-10": "DOCUMENTO",
-    "has_duplicated_code": "CODIGO",
-    "has_high_severity_vulnerabilities": "CODIGO",
-    "has_critical_vulnerabilities": "CODIGO",
-    "has_open_high_priority_issues": "TAREA",
-    "has_code_smells": "CODIGO",
-    "has_security_hotspots": "CODIGO",
-    "has_uncovered_code": "CODIGO",
-    "has_blocking_issues": "TAREA",
-    "meets_minimum_test_coverage": "CODIGO",
-    "meets_maximum_complexity": "CODIGO",
+    "custom_field_check": "TAREA",
+}
+
+CUSTOM_FIELD_CHECK_OPERATORS: set[str] = {
+    "non_empty",
+    "equals",
+    "not_equals",
+    "contains",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
 }
 
 RULE_CONNECTOR_TYPES_MODE: dict[str, str] = {
@@ -32,16 +34,6 @@ RULE_CONNECTOR_TYPES: dict[str, list[str]] = {
     "RV-08": ["GESTOR_TAREAS", "HERRAMIENTA_PLANIFICACION"],
     "RV-09": ["REPO_CODIGO"],
     "RV-10": ["SISTEMA_DOCUMENTAL"],
-    "has_duplicated_code": ["REPO_CODIGO"],
-    "has_high_severity_vulnerabilities": ["REPO_CODIGO"],
-    "has_critical_vulnerabilities": ["REPO_CODIGO"],
-    "has_open_high_priority_issues": ["GESTOR_TAREAS"],
-    "has_code_smells": ["REPO_CODIGO"],
-    "has_security_hotspots": ["REPO_CODIGO"],
-    "has_uncovered_code": ["REPO_CODIGO"],
-    "has_blocking_issues": ["GESTOR_TAREAS"],
-    "meets_minimum_test_coverage": ["REPO_CODIGO"],
-    "meets_maximum_complexity": ["REPO_CODIGO"],
 }
 
 RULE_NAMES: dict[str, str] = {
@@ -55,14 +47,5 @@ RULE_NAMES: dict[str, str] = {
     "RV-08": "Coherencia planificación",
     "RV-09": "Referencias código",
     "RV-10": "Informe pruebas",
-    "has_duplicated_code": "Código duplicado",
-    "has_high_severity_vulnerabilities": "Vulnerabilidades de alta severidad",
-    "has_critical_vulnerabilities": "Vulnerabilidades críticas",
-    "has_open_high_priority_issues": "Issues de alta prioridad abiertos",
-    "has_code_smells": "Code smells",
-    "has_security_hotspots": "Security hotspots",
-    "has_uncovered_code": "Código sin cobertura",
-    "has_blocking_issues": "Issues bloqueantes",
-    "meets_minimum_test_coverage": "Cobertura mínima de tests",
-    "meets_maximum_complexity": "Complejidad máxima",
+    "custom_field_check": "Regla personalizada",
 }

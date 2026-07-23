@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from domain.entities.connector_instance import ConnectorInstance
@@ -66,4 +66,18 @@ class IConnectorService(ABC):
     ) -> None:
         """Raises ValidationError if external_ref does not exist in the connector,
         or if organization_id is given and does not match the connector's organization."""
+        pass
+
+    @abstractmethod
+    async def configure_webhook(
+        self,
+        connector_id: UUID,
+        enabled: bool,
+        requested_by: UUID,
+        regenerate_secret: bool = False,
+    ) -> Tuple[ConnectorInstance, Optional[str]]:
+        """Enables/disables inbound webhook auto-verification for a source-control
+        connector. Returns (connector, plaintext_secret) - the plaintext secret is
+        only returned the call that generates it (first enable, or explicit
+        regenerate_secret=True), since only its encrypted form is persisted."""
         pass

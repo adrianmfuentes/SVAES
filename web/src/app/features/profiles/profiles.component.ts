@@ -48,16 +48,6 @@ const RULE_CONNECTOR_TYPES_FRONTEND: Record<string, string[]> = {
   'RV-08': ['GESTOR_TAREAS', 'HERRAMIENTA_PLANIFICACION'],
   'RV-09': ['REPO_CODIGO'],
   'RV-10': ['SISTEMA_DOCUMENTAL'],
-  'has_duplicated_code': ['REPO_CODIGO'],
-  'has_high_severity_vulnerabilities': ['REPO_CODIGO'],
-  'has_critical_vulnerabilities': ['REPO_CODIGO'],
-  'has_open_high_priority_issues': ['GESTOR_TAREAS'],
-  'has_code_smells': ['REPO_CODIGO'],
-  'has_security_hotspots': ['REPO_CODIGO'],
-  'has_uncovered_code': ['REPO_CODIGO'],
-  'has_blocking_issues': ['GESTOR_TAREAS'],
-  'meets_minimum_test_coverage': ['REPO_CODIGO'],
-  'meets_maximum_complexity': ['REPO_CODIGO'],
 };
 
 const RULE_DEFAULT_ARTIFACT_TYPES_FRONTEND: Record<string, string> = {
@@ -67,18 +57,11 @@ const RULE_DEFAULT_ARTIFACT_TYPES_FRONTEND: Record<string, string> = {
   'RV-06': 'DOCUMENTO',
   'RV-09': 'CODIGO',
   'RV-10': 'DOCUMENTO',
-  'has_duplicated_code': 'CODIGO',
-  'has_high_severity_vulnerabilities': 'CODIGO',
-  'has_critical_vulnerabilities': 'CODIGO',
-  'has_open_high_priority_issues': 'TAREA',
-  'has_code_smells': 'CODIGO',
-  'has_security_hotspots': 'CODIGO',
-  'has_uncovered_code': 'CODIGO',
-  'has_blocking_issues': 'TAREA',
-  'meets_minimum_test_coverage': 'CODIGO',
-  'meets_maximum_complexity': 'CODIGO',
   'RV-08': 'TAREA',
+  'custom_field_check': 'TAREA',
 };
+
+const CUSTOM_FIELD_CHECK_OPERATORS = ['non_empty', 'equals', 'not_equals', 'contains', 'gt', 'gte', 'lt', 'lte'] as const;
 
 const ARTIFACT_TYPES = ['TAREA', 'CODIGO', 'DOCUMENTO', 'PLAN', 'CAMBIO'];
 
@@ -238,6 +221,32 @@ function defaultArtifactType(template: string): string {
                     [placeholder]="'profiles.master_field_placeholder' | t" />
                   <p class="form-hint">{{ 'profiles.master_field_hint' | t }}</p>
                 </div>
+              }
+              @if (selectedRuleTemplate() === 'custom_field_check') {
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="rule-custom-field">{{ 'profiles.custom_field_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                    <input id="rule-custom-field" type="text" [formControl]="ruleFormControl('customField')"
+                      [placeholder]="'profiles.custom_field_placeholder' | t" aria-required="true" />
+                    <p class="form-hint">{{ 'profiles.custom_field_hint' | t }}</p>
+                  </div>
+                  <div class="form-group">
+                    <label for="rule-custom-operator">{{ 'profiles.custom_operator_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                    <select id="rule-custom-operator" [formControl]="ruleFormControl('customOperator')" aria-required="true">
+                      @for (op of customOperators; track op) {
+                        <option [value]="op">{{ 'profiles.operator.' + op | t }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+                @if (selectedCustomOperator() !== 'non_empty') {
+                  <div class="form-group">
+                    <label for="rule-custom-value">{{ 'profiles.custom_value_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                    <input id="rule-custom-value" type="text" [formControl]="ruleFormControl('customValue')"
+                      [placeholder]="'profiles.custom_value_placeholder' | t" aria-required="true" />
+                    <p class="form-hint">{{ 'profiles.custom_value_hint' | t }}</p>
+                  </div>
+                }
               }
               <div class="rule-form-actions">
                 <button type="button" class="btn-secondary btn-sm" (click)="cancelRuleForm()">{{ 'common.cancel' | t }}</button>
@@ -888,17 +897,9 @@ export class ProfilesComponent implements OnInit {
   showRuleForm = signal(false);
   savingRule = signal(false);
   ruleTemplates = signal<string[]>([
-    'has_high_severity_vulnerabilities',
-    'has_critical_vulnerabilities',
-    'has_open_high_priority_issues',
-    'has_code_smells',
-    'has_security_hotspots',
-    'has_uncovered_code',
-    'has_duplicated_code',
-    'has_blocking_issues',
-    'meets_minimum_test_coverage',
-    'meets_maximum_complexity',
+    'custom_field_check',
   ]);
+  customOperators = CUSTOM_FIELD_CHECK_OPERATORS;
 
   profileForm = this.fb.group({
     name: ['', [Validators.required]],
@@ -913,6 +914,9 @@ export class ProfilesComponent implements OnInit {
     approvedStates: [''],
     masterArtifactId: [''],
     masterField: [''],
+    customField: [''],
+    customOperator: ['non_empty'],
+    customValue: [''],
   });
 
   ngOnInit(): void {
@@ -960,9 +964,14 @@ export class ProfilesComponent implements OnInit {
       });
   }
 
+  private readonly emptyRuleForm = {
+    rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '', expectedValue: '',
+    approvedStates: '', masterArtifactId: '', masterField: '', customField: '', customOperator: 'non_empty', customValue: '',
+  };
+
   openAddRule(): void {
     this.editingRule.set(null);
-    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '', expectedValue: '', approvedStates: '', masterArtifactId: '', masterField: '' });
+    this.ruleForm.reset(this.emptyRuleForm);
     this.showRuleForm.set(true);
   }
 
@@ -977,13 +986,16 @@ export class ProfilesComponent implements OnInit {
       approvedStates: Array.isArray(approvedStates) ? approvedStates.join(',') : '',
       masterArtifactId: (rule.params as any)?.['master_artifact_id'] ?? '',
       masterField: (rule.params as any)?.['master_field'] ?? '',
+      customField: (rule.params as any)?.['field'] ?? '',
+      customOperator: (rule.params as any)?.['operator'] ?? 'non_empty',
+      customValue: (rule.params as any)?.['value'] !== undefined ? String((rule.params as any)['value']) : '',
     });
     this.showRuleForm.set(true);
   }
 
   cancelRuleForm(): void {
     this.editingRule.set(null);
-    this.ruleForm.reset({ rule_template: '', severity: 'HIGH' as SeverityType, artifactType: '', expectedValue: '', approvedStates: '', masterArtifactId: '', masterField: '' });
+    this.ruleForm.reset(this.emptyRuleForm);
     this.showRuleForm.set(false);
   }
 
@@ -995,6 +1007,7 @@ export class ProfilesComponent implements OnInit {
   artifactTypeOptions = () => ARTIFACT_TYPES;
   defaultArtifactType = defaultArtifactType;
   selectedRuleTemplate = () => this.ruleForm.get('rule_template')?.value ?? '';
+  selectedCustomOperator = () => this.ruleForm.get('customOperator')?.value ?? 'non_empty';
 
   artifactTypeLabel(at: string): string {
     return this.ts.translateInstant('artifact_type.' + at) || at;
@@ -1070,6 +1083,9 @@ export class ProfilesComponent implements OnInit {
     const approvedStates = this.ruleForm.value.approvedStates;
     const masterArtifactId = this.ruleForm.value.masterArtifactId;
     const masterField = this.ruleForm.value.masterField;
+    const customField = this.ruleForm.value.customField;
+    const customOperator = this.ruleForm.value.customOperator;
+    const customValue = this.ruleForm.value.customValue;
     const params: Record<string, unknown> = {};
     if (artifactType && ruleSupportsArtifactType(template)) {
       params['artifact_type'] = artifactType;
@@ -1086,6 +1102,15 @@ export class ProfilesComponent implements OnInit {
       }
       if (masterField) {
         params['master_field'] = masterField.trim();
+      }
+    }
+    if (template === 'custom_field_check') {
+      if (customField) {
+        params['field'] = customField.trim();
+      }
+      params['operator'] = customOperator || 'non_empty';
+      if (customOperator !== 'non_empty' && customValue) {
+        params['value'] = customValue;
       }
     }
 

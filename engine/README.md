@@ -23,7 +23,7 @@ El motor sigue un diseno **stateless** y **paralelo**:
 | `models.rs` | Estructuras de datos: `Artifact`, `VerificationRule`, `VerificationPayload`, `RuleStatus`, `RuleEvaluation`, `Verdict`, `EngineResult`. |
 | `evaluator.rs` | Logica central de evaluacion: itera reglas en paralelo, despacha a la funcion correspondiente segun `rule_id` y agrega resultados. |
 | `aggregator.rs` | Determina el veredicto global a partir de los resultados individuales. |
-| `rules/` | Implementacion de las 10 reglas de verificacion (RV-01 a RV-10) + 9 reglas de calidad SonarQube. |
+| `rules/` | Implementacion de las 10 reglas de verificacion de negocio (RV-01 a RV-10, consolidadas en `business_rules.rs`) + la regla generica `custom_field_check`. |
 
 ## Reglas de Verificacion
 
@@ -42,20 +42,11 @@ Cada regla recibe parametros configurables via `params` (JSON) en el payload y o
 | RV-09 | Validacion de referencias | OPCIONAL | Valida el formato de URLs y nombres de rama, y verifica accesibilidad. |
 | RV-10 | Aprobacion final | OBLIGATORIA | Al menos un artefacto de un tipo debe tener un estado de aprobacion (ej: `APROBADO`, `VALIDADO`). |
 
-## Reglas de Calidad SonarQube (9 reglas adicionales)
+## Regla personalizada
 
-| ID | Nombre | Descripcion |
-|----|--------|-------------|
-| SQ-01 | has_duplicated_code | Verifica umbral de codigo duplicado |
-| SQ-02 | has_high_severity_vulnerabilities | Verifica vulnerabilidades de alta severidad |
-| SQ-03 | has_critical_vulnerabilities | Verifica vulnerabilidades criticas |
-| SQ-04 | has_open_high_priority_issues | Verifica issues de alta prioridad abiertos |
-| SQ-05 | has_code_smells | Verifica umbral de code smells |
-| SQ-06 | has_security_hotspots | Verifica hotspots de seguridad |
-| SQ-07 | has_uncovered_code | Verifica lineas de codigo sin coverage |
-| SQ-08 | has_blocking_issues | Verifica issues bloqueantes |
-| SQ-09 | meets_minimum_test_coverage | Verifica porcentaje minimo de cobertura |
-| SQ-10 | meets_maximum_complexity | Verifica complejidad ciclomatica maxima |
+| ID | Nombre | Severidad por defecto | Descripcion |
+|----|--------|-----------------------|-------------|
+| `custom_field_check` | Regla personalizada | configurable | Condicion declarativa generica (`field`/`operator`/`value`) sobre un campo de metadata, definida por el usuario desde un perfil sin necesidad de escribir Rust. |
 
 ## Estructuras de Datos
 
@@ -155,12 +146,10 @@ Si no se configura, la autenticacion se deshabilita.
 Los tests unitarios estan embebidos en cada archivo fuente (`#[cfg(test)]`) dentro de:
 
 - `src/aggregator.rs` — 8 tests de agregacion de veredictos
-- `src/rules/rv01.rs` a `rv10.rs` — tests especificos por regla (2–10 tests cada uno)
-- `src/rules/has_*.rs` y `meets_*.rs` — tests de reglas SonarQube (3–6 tests cada uno)
+- `src/rules/business_rules.rs` — reglas RV-01 a RV-10, cada una en su propio submodulo (`pub mod rv01 { ... }`, etc.) con sus tests especificos (2–10 tests cada una)
+- `src/rules/custom_field_check.rs` — tests de la regla generica personalizada
 
-Total: ~95 tests inline en 21 archivos fuente.
-
-Los tests de integracion HTTP (8 casos: `tc_int_http_01`–`tc_int_http_08`) y los benchmarks de rendimiento (3 casos: `tc_per_pf_01`–`tc_per_pf_03`) residen en `engine/tests/`.
+No existe un binario separado de integracion HTTP o benchmarks para el motor — la latencia se valida de forma indirecta con `RustEngineUser` en `tests/performance/locustfile.py`, contra el motor en ejecucion.
 
 Todos los tests del motor siguen el **Plan de Pruebas** conforme a **ISO 29119-4**.
 
@@ -168,8 +157,6 @@ Todos los tests del motor siguen el **Plan de Pruebas** conforme a **ISO 29119-4
 
 ```bash
 cargo test                          # Unit tests del motor
-cargo test --test http_pipeline     # 8 tests de integracion HTTP
-cargo test --test performance       # 3 benchmarks de rendimiento
 cargo test -- --nocapture           # Con salida de logs
 ```
 

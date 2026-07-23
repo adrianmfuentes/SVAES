@@ -268,6 +268,8 @@ async def add_rule(
         return {"id": str(rule.id), "rule_template": rule.rule_template}
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         import logging
         logging.exception("Error adding rule to profile %s: %s", profile_id, e)
@@ -309,6 +311,8 @@ async def update_rule(
         return {"id": str(rule.id), "is_active": rule.is_active}
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 

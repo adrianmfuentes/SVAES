@@ -9,13 +9,16 @@ End-to-end tests with Cypress against the Angular frontend. Follow ISO 29119-4 s
 ```
 acceptance/
 ├── cypress.config.js                 # Cypress config
+├── test_acceptance_structure.py      # 12 pytest cases — structural/traceability checks, no browser needed
 └── cypress/
     ├── e2e/
-    │   └── acceptance_suite.cy.js    # TC-ACP-CU, TC-ACP-UI, TC-ACP-FRM, TC-USA (10 tests)
+    │   └── acceptance_suite.cy.js    # 43 Cypress `it()` cases — TC-ACP-CU, TC-ACP-UI, TC-ACP-FRM, TC-USA and more
     └── support/
         ├── e2e.js                    # Global config (imports commands, suppresses uncaught exceptions)
         └── commands.js               # cy.login(email, password), cy.logout()
 ```
+
+The table below shows representative IDs, not the full list of 43 Cypress cases.
 
 ## Test Case Catalog
 

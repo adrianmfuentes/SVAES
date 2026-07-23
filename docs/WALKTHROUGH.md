@@ -1,317 +1,92 @@
-# SVAES — Walkthrough
+# Walkthrough
 
-> Guía de primer contacto pensada para quien acaba de clonar el repo y quiere llegar,
-> en menos de una hora, a lanzar su primera verificación automática de una entrega
-> y entender el veredicto que devuelve el sistema.
->
-> Este documento **no sustituye** al `README.md` (instalación fría, variables de
-> entorno completas, referencia de API) ni a la memoria del TFG (justificación de
-> diseño, decisiones arquitectónicas). Es el *puente* entre ambos: el recorrido
-> guiado que te lleva de `git clone` a un `VALIDA` en pantalla.
+Guía práctica para ir de `git clone` a tu primera verificación en menos de una hora. No sustituye a [docs/README.md](README.md) (referencia técnica completa) ni a la memoria del TFG (`Adrian-Memoria-TFG.pdf`, justificación de diseño) — es el puente entre ambos.
 
----
+## 0. Modelo mental
 
-## 0. Antes de empezar
+SVAES es un *quality gate*: se conecta a tus herramientas (GitLab, Jira, Confluence...), evalúa una **release** contra un conjunto configurable de **reglas** y emite un **veredicto**.
 
-### 0.1 Qué es SVAES en una frase
+| Objeto | Qué es |
+|---|---|
+| **Organización** | Contenedor multi-tenant. Todo cuelga de aquí. |
+| **Proyecto** | Unidad de trabajo dentro de una organización; tiene un perfil de verificación. |
+| **Perfil de verificación** | Conjunto de reglas (con severidad) que se aplican a las releases de un proyecto. |
+| **Conector** | Credenciales + configuración para leer un sistema externo. |
+| **Release** | Lo que se verifica: versión (SemVer), artefactos vinculados, estado. |
 
-Una plataforma *quality gate* que se conecta a tus herramientas (GitLab, Jira,
-Confluence, ClickUp…), evalúa una entrega de software contra un conjunto
-configurable de reglas (RV-01 a RV-10) y emite un veredicto:
-`VALIDA`, `NO_VALIDA`, `CON_INCIDENCIAS` o `NO_EVALUADA`.
+Una release se verifica ejecutando las reglas del perfil contra los artefactos que devuelven los conectores. Con eso tienes el 80% del modelo.
 
-### 0.2 Modelo mental de los cuatro objetos que vas a manejar
-
-| Objeto        | Qué es                                                                 |
-|---------------|------------------------------------------------------------------------|
-| **Organización** | Contenedor multi-tenant. Todo cuelga de aquí.                       |
-| **Proyecto**  | Unidad de trabajo dentro de una organización. Agrupa entregas y reglas.|
-| **Conector**  | Credencial + configuración para hablar con un sistema externo.         |
-| **Entrega**   | El artefacto (una release, un tag, un sprint cerrado) que se verifica. |
-
-Si entiendes que **una entrega se verifica ejecutando las reglas del proyecto
-contra los datos que devuelven los conectores**, ya tienes el 80% del modelo.
-
-### 0.3 Los cuatro roles (RBAC)
-
-- **U1 — ADMIN global**: administra la instancia. No lo necesitas para probar.
-- **U2 — Técnico**: usuario estándar. Es el rol con el que operarás.
-- **U3 — Manager / Owner**: dueño de un proyecto. Gestiona miembros y reglas.
-- **U4 — Viewer**: solo lectura.
-
-> ⚠️ Ojo con el orden: **Técnico es U2, no U3**. Es la confusión más habitual.
-
----
+**Roles:** `OPERATOR` (estándar: crea releases, lanza verificaciones), `MANAGER` (gestiona conectores/perfiles/reglas de su organización) y `ADMIN` (global). No hay jerarquía de "viewer" separada — todo rol puede leer lo que le pertenece.
 
 ## 1. Levantar el entorno
-
-### 1.1 Requisitos
-
-- Docker + Docker Compose v2
-- 4 GB de RAM libres (Postgres + Redis + Celery + API + Engine + Front)
-- Puertos libres: `4200` (frontend), `8000` (API), `8080` (engine), `5432`, `6379`
-
-### 1.2 Arranque
 
 ```bash
 git clone https://github.com/adrianmfuentes/SVAES.git
 cd SVAES
-cp .env.example .env      # revisa las claves marcadas como REQUIRED
-docker compose up -d
+cp .env.example .env      # rellena JWT_SECRET_KEY, ENCRYPTION_KEY, ADMIN_EMAIL, ADMIN_PASSWORD, ...
+docker compose up --build
 ```
 
-Los seis servicios que verás en `docker compose ps`:
+Servicios (`docker compose ps`): `postgres`, `redis`, `api`, `worker` (Celery), `engine` (Rust), `web` (Angular).
 
-```
-svaes-postgres    ← PostgreSQL 17
-svaes-redis       ← broker de Celery
-svaes-api         ← FastAPI (backend principal)
-svaes-worker      ← Celery worker (verificaciones asíncronas)
-svaes-engine      ← motor Rust (RV-01…RV-10)
-svaes-frontend    ← Angular SPA
-```
+Con el compose base: API en `http://localhost:8000` (Swagger en `/docs`), frontend en `http://localhost:8880`. Para desarrollo local con hot-reload del frontend en `http://localhost:4200`, usa `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`.
 
-### 1.3 Comprobación rápida (smoke test)
+Al arrancar, la API crea automáticamente el usuario administrador con las credenciales de `ADMIN_EMAIL`/`ADMIN_PASSWORD` — no hay organización de ejemplo, la crea el admin en el paso 2.
 
-```bash
-curl http://localhost:8000/health          # → {"status":"ok"}
-curl http://localhost:8080/health          # → {"status":"ok","rules":10}
-open http://localhost:4200                 # → pantalla de login
-```
+## 2. Primer login y primera organización
 
-Si alguno de los tres falla, ve al apartado **§8 Troubleshooting**.
+1. Entra en el frontend con `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+2. Activa 2FA desde *Perfil → Seguridad* (recomendado).
+3. Como `ADMIN`, crea una organización (*Administración → Organizaciones → Nueva*).
+4. Invita o crea un usuario `MANAGER` o `OPERATOR` para esa organización y trabaja como él el resto de la guía — el admin global es para gestionar la instancia, no para operar día a día.
 
-### 1.4 Migraciones y bootstrap
+## 3. Crear un proyecto y un perfil de verificación
 
-En arranque limpio, la API aplica las migraciones de Alembic y crea:
+*Proyectos → Nuevo proyecto* — necesitas un perfil de verificación asociado. Crea uno vacío en *Perfiles* y añádele un par de reglas para empezar (paso 4).
 
-- La organización `Default`.
-- El usuario administrador con las credenciales de `.env` (`ADMIN_EMAIL` /
-  `ADMIN_PASSWORD`).
+## 4. Elegir reglas de verificación
 
-Si necesitas relanzar el bootstrap manualmente:
+10 reglas de negocio (RV-01 a RV-10) más `custom_field_check` para condiciones declarativas propias. Tabla completa: [Engine Reference](engine/reference.md#verification-rules).
 
-```bash
-docker compose exec api alembic upgrade head
-docker compose exec api python -m app.bootstrap
-```
+Para la primera prueba, activa solo **RV-01** (los artefactos existen) y **RV-04** (los campos numéricos son válidos) — no dependen de que tengas todos los conectores configurados. Ve añadiendo el resto a medida que conectes más sistemas.
 
----
+## 5. Configurar un conector
 
-## 2. Primer login
+Un conector = credenciales + tipo + implementación, cifradas con Fernet antes de tocar la base de datos.
 
-1. Abre `http://localhost:4200`.
-2. Entra con `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
-3. **Activa 2FA** desde *Perfil → Seguridad* (recomendado). Escanea el QR con
-   tu app TOTP y guarda los códigos de recuperación en un sitio seguro.
+**GitLab** (el más rápido para probar): *Organización → Conectores → Añadir → GitLab*, con `base_url` (por defecto `https://gitlab.com/api/v4`), `token` (Personal Access Token, scope `read_api`) y `project_id`. Pulsa **Probar conexión** antes de guardar.
 
-> El *refresh token* viaja como cookie `HttpOnly`; el *access token* vive en
-> memoria del SPA. Si al hacer F5 sigues logueado, es que la cookie funciona.
+Cada regla declara qué tipo de conector necesita; si falta, esa regla se marca `NOT_EVALUATED` en lugar de romper la verificación entera. Los 20 conectores disponibles están en [docs/README.md](README.md#connector-system-two-level-design).
 
-### 2.1 Crea un usuario de trabajo
+## 6. Crear una release y verificar
 
-Para no operar como ADMIN, crea un usuario U2 (Técnico) desde
-*Administración → Usuarios*, ciérrale sesión al admin y vuelve a entrar como él.
-El resto del walkthrough asume que estás como U2.
+*Proyecto → Releases → Nueva release*: nombre, versión (SemVer, p. ej. `0.1.0-demo`), descripción. Añade artefactos (manual o `POST /releases/{id}/artifacts/import`) y pulsa **Verificar**.
 
----
+Bajo el capó:
+1. `POST /api/v1/releases/{id}/verify` encola un job en Celery.
+2. El worker aplica pseudonimización a los metadatos y llama al motor Rust (`POST /api/v1/verify`, autenticado con `ENGINE_API_KEY`).
+3. El motor evalúa las reglas activas en paralelo y devuelve resultados por regla.
+4. Se agrega el veredicto global (`VALID`, `INVALID` o `VALID_WITH_WARNINGS`) y se persiste — consúltalo en `GET /releases/{id}/results`.
 
-## 3. Crear tu primer proyecto
+Lógica de agregación: cualquier regla `BLOCKING` en `FAIL` → `INVALID`; si todas las `BLOCKING` pasan pero hay `WARNING` en alguna `NON_BLOCKING` → `VALID_WITH_WARNINGS`; si todo pasa → `VALID`.
 
-*Proyectos → Nuevo proyecto*.
+## 7. El resto del sistema
 
-| Campo       | Valor sugerido para la primera prueba |
-|-------------|---------------------------------------|
-| Nombre      | `demo-walkthrough`                    |
-| Descripción | `Proyecto de prueba del walkthrough`  |
-| Owner       | tu usuario (se autoasigna)            |
+- **API keys** (`/users/{user_id}/api-keys`, máx. 5 activas): para integrar en CI/CD. La clave completa (`svk_...`) solo se muestra al crearla.
+- **Auditoría**: cada acción sensible queda en `audit_log` — *Administración → Auditoría*.
+- **Exportación**: resultados de verificación a PDF, historial de proyecto a CSV.
+- **i18n**: frontend en ES/EN/FR.
 
-Al crearlo pasas automáticamente a rol **Manager (U3)** *dentro de ese
-proyecto*. Fuera de él sigues siendo U2. Esto es intencional: los roles a
-nivel proyecto se guardan en la tabla `user_membership`.
+## 8. Integrar en CI
 
----
+Ejemplos completos y probados para GitHub Actions y GitLab CI: [`docs/ci-examples/`](ci-examples/). El patrón es crear la release vía API al taggear, lanzar la verificación, hacer polling del resultado y fallar el job si el veredicto no es `VALID`.
 
-## 4. Configurar conectores
+## 9. Dónde seguir leyendo
 
-Un conector = credenciales + URL base + tipo. Las credenciales se cifran con
-Fernet antes de tocar la base de datos, así que puedes usar tokens reales sin
-sudores fríos.
-
-### 4.1 Conector de GitLab (el más rápido para probar)
-
-*Proyecto → Conectores → Añadir → GitLab*.
-
-| Campo        | Valor                                              |
-|--------------|----------------------------------------------------|
-| Nombre       | `gitlab-demo`                                      |
-| Base URL     | `https://gitlab.com` (o tu instancia self-hosted)  |
-| Token        | Personal Access Token con scopes `read_api,read_repository` |
-| Project ID   | ID numérico del proyecto de GitLab a auditar       |
-
-Pulsa **Probar conexión**. Si devuelve verde, guarda.
-
-### 4.2 Conectores opcionales
-
-Puedes añadir los que quieras. Cada regla RV-* declara qué tipo(s) de conector
-necesita — si falta el conector que una regla pide, esa regla emitirá
-`NO_EVALUADA` en lugar de romper la verificación.
-
-- **Jira**: URL de la instancia + email + API token.
-- **Confluence**: mismo formato que Jira.
-- **ClickUp**: API token + Team ID.
-
-### 4.3 Nota sobre el port `IConnector`
-
-Todos los conectores implementan la misma interfaz (`IConnector`) en el back.
-Si mañana quieres añadir uno nuevo (Azure DevOps, GitHub, Bitbucket…), es lo
-único que hay que implementar. La memoria detalla esto en el capítulo 5.
-
----
-
-## 5. Elegir y configurar reglas de verificación
-
-*Proyecto → Reglas*.
-
-Las diez reglas del motor Rust:
-
-| Regla  | Qué comprueba (resumen)                                            |
-|--------|--------------------------------------------------------------------|
-| RV-01  | Trazabilidad: cada commit referencia un issue existente            |
-| RV-02  | Cobertura de tests reportada por CI supera el umbral configurado   |
-| RV-03  | No hay issues bloqueantes abiertos asignados a la entrega          |
-| RV-04  | Todos los merge requests están aprobados y mergeados               |
-| RV-05  | Documentación mínima presente en Confluence para la versión        |
-| RV-06  | El pipeline de CI de la rama de release está en verde              |
-| RV-07  | No hay vulnerabilidades críticas abiertas                          |
-| RV-08  | Cambios en dependencias justificados en changelog                  |
-| RV-09  | Coincidencia de versiones entre tag Git y campos de gestión        |
-| RV-10  | Criterios de aceptación de todas las historias del sprint marcados |
-
-> Los detalles exactos de umbrales, campos y comportamiento están en el
-> capítulo 6 de la memoria y en `engine/src/rules/README.md` del propio motor.
-
-### 5.1 Empieza con dos reglas, no con las diez
-
-Para la primera vuelta, activa solo **RV-01** y **RV-06**. Ajusta sus
-parámetros (por ejemplo, patrón regex del ID de issue para RV-01). Guarda.
-
-Ya podrás lanzar una verificación con sentido sin depender de que estén
-correctamente configurados los cuatro conectores.
-
----
-
-## 6. Lanzar una verificación
-
-*Proyecto → Entregas → Nueva entrega*.
-
-| Campo        | Valor                                                      |
-|--------------|-----------------------------------------------------------|
-| Identificador| `v0.1.0-demo`                                              |
-| Rama / Tag   | El tag o rama de GitLab que quieres auditar                |
-| Fecha corte  | Momento respecto al cual se leerán issues, MRs, pipelines  |
-
-Al pulsar **Verificar**, la API:
-
-1. Crea la entrega en estado `PENDIENTE`.
-2. Encola un job en Celery.
-3. El worker llama al motor Rust vía `POST /verify` con `X-Engine-Api-Key`.
-4. El motor ejecuta las reglas activas en paralelo (Rayon).
-5. Cada regla devuelve su sub-veredicto y evidencias.
-6. Se agrega el veredicto global y se persiste.
-
-**Deberías ver el estado moverse en tiempo real** (la SPA usa polling ligero).
-El detalle final aparece en la ficha de la entrega: veredicto global, veredicto
-por regla, y evidencias clicables.
-
-### 6.1 Cómo se decide el veredicto global
-
-- Si **todas** las reglas activas devuelven `VALIDA` → `VALIDA`.
-- Si alguna devuelve `NO_VALIDA` → `NO_VALIDA`.
-- Si no hay ninguna `NO_VALIDA` pero sí incidencias no bloqueantes → `CON_INCIDENCIAS`.
-- Si el motor no pudo evaluar (conector caído, credenciales inválidas) →
-  `NO_EVALUADA` en esa regla; el global toma el estado más severo del resto.
-
----
-
-## 7. Recorrido rápido del resto del sistema
-
-Cosas que **no necesitas** para tu primera verificación, pero que descubrirás
-en cuanto empieces a usarlo en serio:
-
-- **API keys de proyecto**: para integrar la verificación en un pipeline de CI.
-  *Proyecto → Integraciones → API keys*. La clave se muestra **una única vez**
-  al crearla; en BD solo queda el hash.
-- **Programaciones**: puedes programar verificaciones periódicas (nightly, por
-  ejemplo) con expresiones cron.
-- **Notificaciones**: hooks salientes a Slack/Teams/email cuando un veredicto
-  cambia.
-- **Auditoría**: cada acción sensible queda registrada. *Administración → Auditoría*.
-- **Idiomas**: la SPA soporta i18n vía ngx-translate. Español e inglés.
-
----
-
-## 8. Troubleshooting
-
-### El frontend arranca pero da 502 al hacer login
-El SPA está listo antes que la API. Espera ~10 s tras `docker compose up`.
-`docker compose logs -f api` te dice cuándo Alembic ha terminado.
-
-### El motor devuelve 401
-La clave `X-Engine-Api-Key` que usa el worker no coincide con la que espera
-el engine. Revisa `ENGINE_API_KEY` en `.env` — tiene que ser el mismo valor
-para los servicios `api`, `worker` y `engine`.
-
-### La verificación se queda en `PENDIENTE` para siempre
-El worker de Celery no está consumiendo. Comprueba `docker compose logs worker`.
-Causa habitual: Redis no arrancó bien; reinicia con `docker compose restart redis worker`.
-
-### El conector de GitLab falla con 403
-El token no tiene los scopes correctos. Regenéralo con `read_api` y
-`read_repository`. SVAES no necesita permisos de escritura para nada.
-
-### RV-05 sale `NO_EVALUADA` aunque el conector de Confluence está OK
-La regla necesita también el conector de Jira (para resolver la versión).
-Configura los dos o desactiva RV-05 para la prueba.
-
-### Se me olvidó el TOTP
-Como ADMIN puedes resetear el 2FA de otro usuario desde
-*Administración → Usuarios*. Si el que se ha quedado fuera es el propio ADMIN:
-
-```bash
-docker compose exec api python -m app.cli reset-2fa --email admin@example.com
-```
-
----
-
-## 9. Siguiente paso: integrar en CI
-
-Cuando ya lances verificaciones desde la UI con soltura, el siguiente paso
-natural es que tu pipeline lo haga solo al taggear una release. El patrón:
-
-```bash
-curl -X POST https://tu-svaes/api/v1/projects/$PROJECT_ID/deliveries \
-  -H "Authorization: Bearer $SVAES_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"identifier":"'"$CI_COMMIT_TAG"'","ref":"'"$CI_COMMIT_TAG"'"}'
-```
-
-Y luego un *poll* al endpoint de estado, fallando el job de CI si el veredicto
-no es `VALIDA`. En `docs/ci-examples/` hay un ejemplo completo para GitLab CI
-y otro para GitHub Actions.
-
----
-
-## 10. Dónde seguir leyendo
-
-| Necesitas…                                | Ve a…                                    |
-|-------------------------------------------|------------------------------------------|
-| Instalar en producción (Oracle Cloud A1)  | `docs/deployment.md`                     |
-| Referencia completa de la API             | `http://localhost:8000/docs` (Swagger)   |
-| Añadir un conector nuevo                  | `docs/connectors.md` + memoria cap. 5    |
-| Cambiar el comportamiento de una regla    | `engine/src/rules/rv_XX.rs`              |
-| Justificación de las decisiones de diseño | Memoria del TFG (`memoria.pdf`)          |
-
----
-
-*Última revisión: julio 2026.*
+| Necesitas... | Ve a... |
+|---|---|
+| Referencia técnica completa (arquitectura, seguridad, endpoints) | [docs/README.md](README.md) |
+| Referencia completa de la API | `http://localhost:8000/docs` (Swagger) o [docs/api/reference.md](api/reference.md) |
+| Detalle del motor de reglas | [docs/engine/reference.md](engine/reference.md) |
+| Desplegar en producción | [docs/DEPLOY.md](DEPLOY.md) |
+| Justificación de las decisiones de diseño | `Adrian-Memoria-TFG.pdf` |

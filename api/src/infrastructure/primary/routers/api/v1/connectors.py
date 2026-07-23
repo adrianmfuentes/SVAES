@@ -34,6 +34,11 @@ class ConnectorUpdateRequest(BaseModel):
 class ConnectorTestRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
+class ConnectorWebhookConfigRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    enabled: bool
+    regenerate_secret: bool = False
+
 
 @router.get("/api/v1/connectors/types")
 async def list_connector_types(
@@ -225,6 +230,7 @@ async def list_connectors(
                 "status": c.status.value,
                 "created_at": c.created_at.isoformat(),
                 "last_tested_at": c.last_tested_at.isoformat() if c.last_tested_at else None,
+                "webhook_enabled": c.webhook_enabled,
             }
             for c in connectors
         ]
@@ -365,6 +371,55 @@ async def toggle_connector_status(
             "connector_type": connector.connector_type,
             "status": connector.status.value,
             "last_tested_at": connector.last_tested_at.isoformat() if connector.last_tested_at else None,
+        }
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
+
+
+@router.post("/api/v1/organizations/{org_id}/connectors/{connector_id}/webhook", status_code=status.HTTP_200_OK)
+async def configure_connector_webhook(
+    org_id: UUID,
+    connector_id: UUID,
+    payload: ConnectorWebhookConfigRequest,
+    current_user: Annotated[CurrentUser, Depends(require_org_access())],
+    service: Annotated[IConnectorService, Depends(get_connector_service)],
+    _: Annotated[None, Depends(require_connector_access())],
+):
+    """Habilita/deshabilita la verificación automática vía webhook entrante
+    para un conector de tipo REPO_CODIGO (GitHub/GitLab/Bitbucket/Gitea).
+
+    Atributos:
+        - connector_id: UUID - El ID del conector a configurar.
+        - payload: ConnectorWebhookConfigRequest - enabled + regenerate_secret opcional.
+        - current_user: Usuario autenticado con permisos del token JWT.
+        - service: IConnectorService, inyectado mediante dependencias.
+
+    Retorna:
+        - webhook_path: ruta relativa a la que el proveedor externo debe apuntar
+          (el origen ya lo sirve el mismo nginx que la SPA).
+        - webhook_secret: solo se devuelve la vez que se genera (primera activación
+          o regenerate_secret=True); no se puede recuperar después, solo regenerar.
+        - Lanza HTTPException con status 403 si el usuario no tiene acceso.
+        - Lanza HTTPException con status 404 si el conector no es encontrado.
+        - Lanza HTTPException con status 422 si el conector no es de tipo REPO_CODIGO.
+        - Lanza HTTPException con status 500 para cualquier otro error inesperado.
+    """
+    try:
+        connector, secret = await service.configure_webhook(
+            connector_id=connector_id,
+            enabled=payload.enabled,
+            requested_by=current_user.user_id,
+            regenerate_secret=payload.regenerate_secret,
+        )
+        return {
+            "id": str(connector.id),
+            "webhook_enabled": connector.webhook_enabled,
+            "webhook_path": f"/api/v1/webhooks/source-control/{connector.id}",
+            "webhook_secret": secret,
         }
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

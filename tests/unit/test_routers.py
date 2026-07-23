@@ -2352,6 +2352,54 @@ class TestConnectorsRouter:
         resp = client.get("/api/v1/connectors/types", headers=self._headers("OPERATOR"))
         assert resp.status_code == 200
 
+    def test_configure_webhook_enable_success(self):
+        from fastapi.testclient import TestClient
+        c = self._make_connector()
+        self.svc.configure_webhook = AsyncMock(return_value=(c, "generated-secret"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/organizations/{self.org_id}/connectors/{c.id}/webhook",
+            json={"enabled": True}, headers=self._headers(),
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["webhook_secret"] == "generated-secret"
+        assert body["webhook_path"] == f"/api/v1/webhooks/source-control/{c.id}"
+
+    def test_configure_webhook_reenable_no_secret_returned(self):
+        from fastapi.testclient import TestClient
+        c = self._make_connector()
+        self.svc.configure_webhook = AsyncMock(return_value=(c, None))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/organizations/{self.org_id}/connectors/{c.id}/webhook",
+            json={"enabled": True}, headers=self._headers(),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["webhook_secret"] is None
+
+    def test_configure_webhook_not_found_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.svc.configure_webhook = AsyncMock(side_effect=EntityNotFoundError("gone"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/organizations/{self.org_id}/connectors/{uuid4()}/webhook",
+            json={"enabled": True}, headers=self._headers(),
+        )
+        assert resp.status_code == 404
+
+    def test_configure_webhook_wrong_type_422(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import ValidationError
+        self.svc.configure_webhook = AsyncMock(side_effect=ValidationError("not REPO_CODIGO"))
+        client = TestClient(self.app)
+        resp = client.post(
+            f"/api/v1/organizations/{self.org_id}/connectors/{uuid4()}/webhook",
+            json={"enabled": True}, headers=self._headers(),
+        )
+        assert resp.status_code == 422
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TestTemplatesRouter  (from test_routers_extended.py)
@@ -3296,3 +3344,76 @@ class TestReleasesRouter:
         client = TestClient(self.app)
         resp = client.get(f"/api/v1/projects/{self.project_id}/releases")
         assert resp.status_code == 401
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TestWebhooksRouter
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestWebhooksRouter:
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        from main import app
+        from core.dependencies import get_webhook_use_case
+        self.app = app
+        self.project_id = uuid4()
+        self.connector_id = uuid4()
+        self.use_case = AsyncMock()
+        app.dependency_overrides[get_webhook_use_case] = lambda: self.use_case
+        yield
+        app.dependency_overrides.clear()
+
+    def _url(self):
+        return f"/api/v1/webhooks/source-control/{self.project_id}/{self.connector_id}"
+
+    def test_webhook_creates_release_returns_202(self):
+        from fastapi.testclient import TestClient
+        release_id = uuid4()
+        self.use_case.handle_source_control_event = AsyncMock(return_value=release_id)
+        client = TestClient(self.app)
+        resp = client.post(
+            self._url(),
+            content=b'{"ref_type":"tag","ref":"v1.0.0"}',
+            headers={"X-Hub-Signature-256": "sha256=abc", "X-GitHub-Event": "create"},
+        )
+        assert resp.status_code == 202
+        assert resp.json() == {"release_id": str(release_id)}
+
+    def test_webhook_non_tag_event_returns_202_null_release_id(self):
+        from fastapi.testclient import TestClient
+        self.use_case.handle_source_control_event = AsyncMock(return_value=None)
+        client = TestClient(self.app)
+        resp = client.post(self._url(), content=b"{}")
+        assert resp.status_code == 202
+        assert resp.json() == {"release_id": None}
+
+    def test_webhook_invalid_signature_returns_401(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import InvalidWebhookSignatureError
+        self.use_case.handle_source_control_event = AsyncMock(side_effect=InvalidWebhookSignatureError("bad sig"))
+        client = TestClient(self.app)
+        resp = client.post(self._url(), content=b"{}")
+        assert resp.status_code == 401
+
+    def test_webhook_connector_or_project_not_found_returns_404(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import EntityNotFoundError
+        self.use_case.handle_source_control_event = AsyncMock(side_effect=EntityNotFoundError("not found"))
+        client = TestClient(self.app)
+        resp = client.post(self._url(), content=b"{}")
+        assert resp.status_code == 404
+
+    def test_webhook_disabled_returns_422(self):
+        from fastapi.testclient import TestClient
+        from domain.exceptions import ValidationError
+        self.use_case.handle_source_control_event = AsyncMock(side_effect=ValidationError("not enabled"))
+        client = TestClient(self.app)
+        resp = client.post(self._url(), content=b"{}")
+        assert resp.status_code == 422
+
+    def test_webhook_unexpected_error_returns_500(self):
+        from fastapi.testclient import TestClient
+        self.use_case.handle_source_control_event = AsyncMock(side_effect=RuntimeError("boom"))
+        client = TestClient(self.app)
+        resp = client.post(self._url(), content=b"{}")
+        assert resp.status_code == 500

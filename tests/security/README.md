@@ -43,8 +43,8 @@ security/
 |---|---|
 | `_test_db` | Creates/drops tables; returns `True` if DB is available |
 | `client` | `httpx.AsyncClient` with ASGI transport (with or without real DB) |
-| `auth_token` | Real signed JWT with U3 (admin) role |
-| `basic_user_token` | Real signed JWT with U1 (basic) role |
+| `auth_token` | Real signed JWT with ADMIN role |
+| `basic_user_token` | Real signed JWT with OPERATOR role |
 | `auth_headers` | `Authorization: Bearer {auth_token}` |
 | `unauth_headers` | `Authorization: Bearer invalid-token` |
 | `malicious_payloads` | List of 8 attack strings |

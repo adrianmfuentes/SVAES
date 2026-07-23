@@ -23,7 +23,7 @@ docs(domain): clarify VerificationResult immutability
 
 ```bash
 # Clone the repository
-git clone https://github.com/UO295454/SVAES.git
+git clone https://github.com/adrianmfuentes/SVAES.git
 cd SVAES
 
 # Backend
@@ -55,7 +55,7 @@ pnpm start          # dev server at http://localhost:4200
 
 ### Tests
 
-- Unit tests are located in `tests/unit/` (12 files, 1,106 cases)
+- Unit tests are located in `tests/unit/` (12 files, 1,238 cases)
 - Follow the pattern: `test_<module>_<scenario>_<expected>`
 - Do not mock domain entities or application commands — only mock infrastructure adapters (DB, connectors, queue)
 - Coverage target: >= 70% total, >= 80% in `domain/` and `application/`

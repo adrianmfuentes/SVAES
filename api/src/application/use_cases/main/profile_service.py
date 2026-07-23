@@ -10,8 +10,36 @@ from domain.enums import SeverityType
 from domain.exceptions import EntityNotFoundError, ValidationError
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from core.logger import get_logger
+from core.rule_names import CUSTOM_FIELD_CHECK_OPERATORS
 
 _log = get_logger(__name__)
+
+
+def _validate_rule_params(rule_template: str, params: dict) -> None:
+    """Valida la forma de `params` para plantillas de regla que lo requieren.
+
+    `rule_template`/`params` son texto libre a propósito (ver core/rule_names.py)
+    para no acoplar el catálogo de reglas del motor Rust al backend, pero
+    `custom_field_check` sí tiene una forma de params conocida y merece
+    validarse aquí para no descubrir un error de tipeo solo tras lanzar
+    la verificación y ver "NO_EVALUADA" en el motor.
+    """
+    if rule_template != "custom_field_check":
+        return
+    field = params.get("field")
+    if not isinstance(field, str) or not field.strip():
+        raise ValidationError("La regla personalizada requiere un 'field' no vacío.")
+    artifact_type = params.get("artifact_type")
+    if not isinstance(artifact_type, str) or not artifact_type.strip():
+        raise ValidationError("La regla personalizada requiere un 'artifact_type' no vacío.")
+    operator = params.get("operator", "non_empty")
+    if operator not in CUSTOM_FIELD_CHECK_OPERATORS:
+        raise ValidationError(
+            f"Operador de regla personalizada no soportado: '{operator}'. "
+            f"Valores permitidos: {', '.join(sorted(CUSTOM_FIELD_CHECK_OPERATORS))}."
+        )
+    if operator != "non_empty" and "value" not in params:
+        raise ValidationError(f"El operador '{operator}' requiere un 'value' de comparación.")
 
 
 class ProfileService(ManageProfileUseCase, IProfileService):
@@ -103,6 +131,7 @@ class ProfileService(ManageProfileUseCase, IProfileService):
             raise EntityNotFoundError(f"Perfil no encontrado: {profile_id}")
         if profile.is_default:
             raise ValidationError("No se pueden agregar reglas al perfil por defecto.")
+        _validate_rule_params(rule_template, params or {})
 
         rule = VerificationRule(
             profile_id=profile_id,
@@ -141,6 +170,8 @@ class ProfileService(ManageProfileUseCase, IProfileService):
         profile = await self._profile_repo.get_by_id(rule.profile_id)
         if profile and profile.is_default:
             raise ValidationError("No se pueden modificar reglas del perfil por defecto.")
+        if params is not None:
+            _validate_rule_params(rule.rule_template, params)
         updated = await super().update_rule(rule_id, severity, connector_instance_id, params, display_order, is_active)
         audit = get_audit_logger()
         audit.log(AuditEntry(

@@ -1,7 +1,8 @@
 import ast
 import re
+import secrets
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import UUID, uuid4
 from application.ports.input.i_connector_service import IConnectorService
 from application.ports.output.i_connector_repository import IConnectorRepository
@@ -347,6 +348,45 @@ class ConnectorService(IConnectorService):
                 "verify_ref: could not verify for connector_id=%s (connectivity issue): %s",
                 connector_id, _redact_exc(exc),
             )
+
+    async def configure_webhook(
+        self,
+        connector_id: UUID,
+        enabled: bool,
+        requested_by: UUID,
+        regenerate_secret: bool = False,
+    ) -> Tuple[ConnectorInstance, Optional[str]]:
+        connector = await self._connector_repo.get_by_id(connector_id)
+        if not connector:
+            raise EntityNotFoundError(f"Conector no encontrado: {connector_id}")
+        if connector.connector_type != "REPO_CODIGO":
+            raise ValidationError(
+                "Los webhooks entrantes solo están disponibles para conectores de tipo REPO_CODIGO."
+            )
+
+        plaintext_secret: Optional[str] = None
+        if enabled and (regenerate_secret or not connector.webhook_secret_encrypted):
+            from cryptography.fernet import Fernet
+
+            plaintext_secret = secrets.token_urlsafe(32)
+            fernet = Fernet(settings.encryption_key.encode())  # pyright: ignore[reportOptionalMemberAccess]
+            connector.webhook_secret_encrypted = fernet.encrypt(plaintext_secret.encode())
+
+        connector.webhook_enabled = enabled
+        updated = await self._connector_repo.update(connector)
+
+        audit = get_audit_logger()
+        audit.log(AuditEntry(
+            event=AuditEvent.CONNECTOR_UPDATED,
+            user_id=requested_by,
+            organization_id=connector.organization_id,
+            resource_type="connector",
+            resource_id=connector_id,
+            details={"webhook_enabled": enabled},
+        ))
+        _log.info("Connector webhook configured: id=%s enabled=%s", connector_id, enabled)
+
+        return updated, plaintext_secret
 
 
 def _normalize_browse_items(items: list, implementation: str, config: dict) -> list:

@@ -7,13 +7,7 @@
 
 ## Docker access
 
-When all services are started with `docker compose up`, the frontend is available at:
-
-```
-http://localhost:4200
-```
-
-(The `web` service runs `nginx:alpine` serving the built app on container port 80, mapped to host port 4200.)
+With the base stack (`docker compose up`), the frontend is served by `nginx:alpine` at `http://localhost:8880`. With the dev overrides (`docker compose -f docker-compose.yml -f docker-compose.dev.yml up`), it's remapped to `http://localhost:4200` to match the Angular dev server default used by `pnpm start`.
 
 ---
 
@@ -88,7 +82,7 @@ web/
 | **AuthGuard**              | Done    | `CanActivateFn` — blocks unauthenticated access, redirects to login. |
 | **RoleGuard**              | Done    | `CanActivateFn` — checks route `data.role` against the user's role. |
 | **AppShell layout**        | Done    | Sidebar nav (Dashboard, Entregas, Conectores, Perfiles) + top bar with logout. |
-| **REST client**            | Done    | Typed API client generated from the backend OpenAPI 3.1 spec (101 endpoints). |
+| **REST client**            | Done    | Typed API client generated from the backend OpenAPI 3.1 spec (100+ endpoints). |
 | **Dashboard**              | Done    | Full dashboard with KPI cards, success rate chart, top failed rules, recent releases table. |
 | **Releases / Entregas**    | Done    | Full release management: list with filters, create, detail view, artifact management. |
 | **Connectors / Conectores**| Done    | Full connector management: list, create, test connection, edit, delete with form validation. |
@@ -171,7 +165,7 @@ User → /auth/login → POST /api/v1/auth/login → JWT (access + refresh token
 
 - **Public routes**: `/auth/login`, `/auth/register`, `/access-request`.
 - **Protected routes**: Everything else — guarded by `AuthGuard`.
-- **RBAC**: Role-based guards check route data for `role` (USER, MANAGER, ADMIN).
+- **RBAC**: Role-based guards check route data for `role` (OPERATOR, MANAGER, ADMIN).
 
 ---
 

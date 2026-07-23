@@ -17,3 +17,5 @@ class ConnectorInstance:
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     last_tested_at: Optional[datetime] = None
+    webhook_secret_encrypted: Optional[bytes] = None
+    webhook_enabled: bool = False

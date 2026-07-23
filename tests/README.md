@@ -5,21 +5,21 @@
 All tests follow a structured **Plan de Pruebas** with unique test case identifiers.
 
 ```
-unit/           Unit tests — 1,106 cases (TC-UNI-*): services, connectors, endpoints, domain, factories, gaps
-integration/    Integration tests — 27 cases (TC-INT-*): full flow, rate limit, resilience, state transitions
+unit/           Unit tests — 1,238 cases (TC-UNI-*): services, connectors, endpoints, domain, factories, gaps
+integration/    Integration tests — 27 cases (TC-INT-*): full flow, rate limit, resilience, state transitions, API keys
 security/       Security tests — 5 cases (TC-SEC-*): brute force, JWT, SQLi, XSS, credential encryption
-performance/    Performance tests — 47 cases + 3 Rust benchmarks (tc_per_pf_*)
+performance/    Performance tests — 47 pytest cases + 4 Locust user classes
 acceptance/     E2E acceptance tests — 12 pytest + 43 Cypress cases (TC-ACP-*): visual, multi-res, forms, usability
 ```
 
 | Level | Cases | Technique |
 |---|---|---|
-| TC-UNI | 1,106 | Branch Coverage, CE+VL, Base Choice |
+| TC-UNI | 1,238 | Branch Coverage, CE+VL, Base Choice |
 | TC-INT | 27 | Flow, Limit, Resilience, State Transition, Migration, API Key Auth |
 | TC-SEC | 5 | Auth, Injection, Encryption |
-| TC-PER | 47 + 3 | Locust load + Rust benchmarks |
+| TC-PER | 47 + 4 | pytest (RNF/coverage/security) + Locust load |
 | TC-ACP | 12 + 43 | Cypress E2E + Usability |
-| Engine | 103 + inline | Rust `#[cfg(test)]` in 21 source files |
+| Engine | 86 | Rust `#[cfg(test)]` inline in `business_rules.rs`, `custom_field_check.rs`, `aggregator.rs` |
 
 ## Run
 
@@ -60,8 +60,6 @@ npx cypress run --config-file tests/acceptance/cypress.config.js
 
 ```bash
 cargo test                          # All inline unit tests (rules + aggregator)
-cargo test --test http_pipeline     # 8 HTTP integration tests
-cargo test --test performance --release  # 3 performance benchmarks
 
 # Cobertura Rust
 .\scripts\run_rust_coverage.ps1     # cargo llvm-cov con exclusiones configuradas

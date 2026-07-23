@@ -27,11 +27,12 @@ The engine has **no database access** and **no network I/O** beyond serving HTTP
 | `models.rs` | Data structures: `Artifact`, `VerificationRule`, `VerificationPayload`, `RuleStatus`, `RuleEvaluation`, `Verdict`, `EngineResult`. |
 | `evaluator.rs` | Core evaluation logic: dispatches each rule to its implementation function based on `rule_id`, runs them in parallel via Rayon. |
 | `aggregator.rs` | Computes the global verdict from individual rule results (mandatory/optional/excluded policy). |
-| `rules/rv01.rs`–`rules/rv10.rs` | Individual rule implementations (see below). |
+| `rules/business_rules.rs` | RV-01–RV-10 implementations, each in its own `pub mod rvXX { ... }` submodule within a single consolidated file. |
+| `rules/custom_field_check.rs` | Generic declarative rule (`field`/`operator`/`value`) letting a manager define custom conditions without writing Rust. |
 
 ---
 
-## Verification Rules (RV-01 → RV-10)
+## Verification Rules
 
 Each rule receives configurable parameters via the `params` JSON object in the request payload and operates with documented defaults in its implementation.
 
@@ -47,6 +48,7 @@ Each rule receives configurable parameters via the `params` JSON object in the r
 | RV-08 | List Alignment | BLOCKING | Compares IDs declared in a master artifact against actual artifact IDs in the payload. |
 | RV-09 | Reference Validation | NON_BLOCKING | Validates URL and branch name formats. |
 | RV-10 | Final Approval | BLOCKING | At least one artifact of a given type must have an approval status (e.g. `APPROVED`, `VALIDATED`). |
+| `custom_field_check` | Custom Field Condition | configurable | Declarative condition (`non_empty`, `equals`, `not_equals`, `contains`, `gt`, `gte`, `lt`, `lte`) on a metadata field of artifacts of a given type, defined per-organization from a verification profile. |
 
 Each rule returns a `RuleEvaluation` with status `PASS`, `FAIL`, or `WARNING`.
 
@@ -201,14 +203,15 @@ Unit tests are embedded in each source file under `#[cfg(test)]`, following the 
 
 | File | Test Count | Coverage |
 |---|---|---|
-| `src/aggregator.rs` | 7 tests | Verdict aggregation edge cases |
-| `src/rules/rv01.rs`–`rv10.rs` | 3–7 each | Per-rule logic validation |
+| `src/aggregator.rs` | 9 tests | Verdict aggregation edge cases |
+| `src/rules/business_rules.rs` | 68 tests | RV-01–RV-10 logic validation, one submodule per rule |
+| `src/rules/custom_field_check.rs` | 9 tests | Generic custom rule logic, per operator |
 
-HTTP integration tests (8 cases: `tc_int_http_01`–`tc_int_http_08`) and performance benchmarks (3 cases: `tc_per_pf_01`–`tc_per_pf_03`) live in `engine/tests/`.
+There's no separate Rust HTTP-integration or benchmark binary — engine latency is exercised end-to-end by `RustEngineUser` in `tests/performance/locustfile.py` against the running engine.
 
 ### Python Integration Tests
 
-Python-level integration tests in `tests/integration/` cover the full verification flow, release lifecycle, rate limiting, resilience, and release migration (16 cases: TC-INT-*). These run against the FastAPI app via ASGI transport with ephemeral PostgreSQL + Redis containers.
+Python-level integration tests in `tests/integration/` cover the full verification flow, release lifecycle, rate limiting, resilience, release migration, and API key auth (27 cases: TC-INT-*, TC-API-AUTH-*). These run against the FastAPI app via ASGI transport with ephemeral PostgreSQL + Redis containers.
 
 ```powershell
 # Windows (PowerShell 7+) — full automation
@@ -219,8 +222,6 @@ Python-level integration tests in `tests/integration/` cover the full verificati
 
 ```bash
 cargo test                              # All unit tests
-cargo test --test http_pipeline          # 8 HTTP integration tests
-cargo test --test performance            # 3 performance benchmarks
 cargo test -- --nocapture                # With stdout/stderr output
 ```
 

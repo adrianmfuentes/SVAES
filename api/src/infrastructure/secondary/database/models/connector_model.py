@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey, LargeBinary, Enum as SAEnum
+from sqlalchemy import Column, String, DateTime, ForeignKey, LargeBinary, Boolean, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from infrastructure.secondary.database.models.base import Base
 from domain.enums import ConnectorStatus
@@ -18,3 +18,5 @@ class ConnectorInstanceModel(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), nullable=True)
     last_tested_at = Column(DateTime(timezone=True), nullable=True)
+    webhook_secret_encrypted = Column(LargeBinary, nullable=True)
+    webhook_enabled = Column(Boolean, nullable=False, default=False)

@@ -1,56 +1,75 @@
 # Performance Tests — Plan de Pruebas
 
-> **TFG terminado** (30/06/2026) — All performance tests passing.
-
-Validates **RNF-07**: the verification engine must process 10 rules in under 500 ms.
+Validates RNF-07 (verification engine processes 10 rules in under 500ms) plus a broader set of non-functional requirements (reliability, usability, maintainability, portability, extensibility, traceability, GDPR) and security-focused NFRs.
 
 ## Structure
 
 ```
 performance/
-├── conftest.py           # PERF_API_BASE_URL, PERF_API_TOKEN, default headers
-└── locustfile.py         # TC-PER-VL-01/02, TC-PER-CE-01/02 (Locust load tests)
+├── conftest.py                  # PERF_API_BASE_URL, PERF_API_TOKEN, default headers
+├── locustfile.py                # 4 Locust user classes — load tests (TC-PER-VL-*)
+├── test_coverage_threshold.py   # 4 cases: traceability checks (Locust classes exist, coverage.xml >= 70%)
+├── test_rnf_coverage.py         # 19 cases: functional NFRs (performance, reliability, usability, maintainability, portability, extensibility, traceability, GDPR)
+└── test_rnf_security_rf.py      # 24 cases: security NFRs (password hashing, HTTPS, API key storage, audit logging, notification security)
 ```
 
-## Test Case Catalog
+## Locust load tests (`locustfile.py`)
 
-### locustfile.py — 4 cases
-
-| ID | User Class | Description | Criteria |
+| Class | Test ID | Description | Criteria |
 |---|---|---|---|
-| TC-PER-VL-01 | `E2EVerificationUser` | End-to-end flow (health → releases → results) | p95 ≤ 5s |
-| TC-PER-VL-02 | `RustEngineUser` | Rust engine latency via health endpoint | p95 < 500ms |
-| TC-PER-CE-01 | `ConcurrentLoadUser` | 50 concurrent health checks | No timeout |
-| TC-PER-CE-02 | `ConcurrentLoadUser` | Sustained load on releases list | No errors (200/401/403 accepted) |
-
-### Rust Benchmarks (engine/tests/performance.rs) — 3 cases
-
-| ID | Description | Criteria |
-|---|---|---|
-| `tc_per_pf_01` | Single request with 10 rules | Total < 500ms |
-| `tc_per_pf_02` | 100 iterations | Avg < 500ms, max < 1000ms |
-| `tc_per_pf_03` | Large payload (102 artifacts) | No errors |
-
-## Configuration
-
-| Env var | Default | Description |
-|---|---|---|
-| `PERF_API_BASE_URL` | `http://localhost:8000` | API base URL |
-| `PERF_API_TOKEN` | _(empty)_ | JWT for authentication |
-
-## Run
+| `E2EVerificationUser` | TC-PER-VL-01 | End-to-end flow: `GET /health` → `GET /releases` | p95 ≤ 5s |
+| `RustEngineUser` | TC-PER-VL-02 | Engine latency via `GET /health` | p95 < 500ms |
+| `ConcurrentVerifyUser` | TC-PER-VL-03 | 50 concurrent `POST /verify` | All return 202 (or 409 if already running) |
+| `WebLoadUser` | TC-PER-RNF02-01 | 20 concurrent users hitting `/dashboard/metrics` and `/health` | Latency ≤ 3s |
 
 ```bash
-# Locust (API server must be running)
+# Web UI (http://localhost:8089)
 locust -f tests/performance/locustfile.py --host=http://localhost:8000
 
-# Rust benchmarks (from engine/)
-cargo test --test performance --release
+# Headless
+locust -f tests/performance/locustfile.py --host=http://localhost:8000 --users 50 --spawn-rate 10 --headless --run-time 60s
+
+# A specific user class
+locust -f tests/performance/locustfile.py WebLoadUser --users 20 --spawn-rate 20 --headless --run-time 30s
 ```
+
+## pytest suites
+
+```bash
+pytest tests/performance/ -v -m performance             # everything
+pytest tests/performance/test_coverage_threshold.py -v  # 4 cases, no server needed
+pytest tests/performance/test_rnf_coverage.py -v        # 19 cases, needs api/src importable
+pytest tests/performance/test_rnf_security_rf.py -v     # 24 cases
+```
+
+`test_rnf_security_rf.py` covers `TestPasswordHashing` (bcrypt), `TestHttpsEnforcement`, `TestApiKeyStorage`, `TestAuditLogging`, `TestNotificationSecurity`.
+
+## Environment
+
+| Variable | Default | Description |
+|---|---|---|
+| `PERF_API_BASE_URL` | `http://localhost:8000` | API base URL |
+| `PERF_API_TOKEN` | _(empty)_ | JWT for authenticated requests |
+| `ENGINE_URL` | `http://localhost:8081` | Rust engine URL (tests that call it directly) |
+
+`test_rnf_coverage.py` and `test_rnf_security_rf.py` import `api/src` directly, so they also need the same env vars the API itself needs (`DATABASE_URL`, `JWT_SECRET_KEY`, `ENCRYPTION_KEY`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, ...) — see [.env.example](../../.env.example).
+
+## Note on the Rust engine
+
+There's no separate Rust performance-benchmark binary (`engine/tests/`) — engine-side timing is exercised indirectly through `RustEngineUser` (TC-PER-VL-02) hitting the running engine over HTTP. Engine unit tests live inline in `engine/src/` under `#[cfg(test)]` — see [engine/README.md](../../engine/README.md#tests-del-motor).
 
 ## Prerequisites
 
-- API server running at `http://localhost:8000`
-- Engine compiled in release mode: `cargo build --release` (for Rust benchmarks)
+- API server running at `http://localhost:8000` (`cd api && uvicorn main:app --reload`)
+- Engine running at `http://localhost:8081` for engine-latency cases
+- `pip install -e ".[dev]"` from `api/` (installs `locust`, `pytest`, `respx`, ...)
 
-## Total: 4 Locust test cases + 3 Rust benchmarks
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `locust: command not found` | `pip install -e ".[dev]"` from `api/` |
+| `ModuleNotFoundError: No module named 'core'` | Ensure `pytest.ini` has `pythonpath = api/src` |
+| `respx not installed` | `pip install respx` |
+| `Connection refused` in Locust | API isn't running at `PERF_API_BASE_URL` |
+| RNF tests fail on import | Missing env vars — see [Environment](#environment) above |

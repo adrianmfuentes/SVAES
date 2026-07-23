@@ -63,13 +63,13 @@ svaes/
 │   ├── development/           # Developer specifications & guidelines
 │   └── security/              # Security audit documentation
 ├── scripts/                   # Auxiliary scripts
-├── docker-compose.yml         # Services: api, postgres, redis
+├── docker-compose.yml         # Services: postgres, redis, engine, api, worker, web
 └── tests/                     # Full test suite (Plan de Pruebas — ISO 29119-4)
-    ├── unit/                  # 200+ cases (TC-UNI-*): services branch coverage, connectors CE+VL, endpoints Base Choice, factories, gaps
-    ├── integration/           # 16 cases (TC-INT-*): full flow, rate limit, resilience, state transitions
-    ├── performance/           # 4 Locust cases (TC-PER-*) + 3 Rust benchmarks
+    ├── unit/                  # 1,238 cases (TC-UNI-*): services branch coverage, connectors CE+VL, endpoints Base Choice, repositories, use cases
+    ├── integration/           # 27 cases (TC-INT-*, TC-API-AUTH-*): full flow, rate limit, resilience, state transitions, API key auth
+    ├── performance/           # 47 pytest cases + 4 Locust user classes
     ├── security/              # 5 cases (TC-SEC-*): brute force, JWT, SQLi, XSS, credential encryption
-    └── acceptance/            # 10 Cypress cases (TC-ACP-*): visual, multi-res, forms, usability
+    └── acceptance/            # 12 pytest + 43 Cypress cases (TC-ACP-*): visual, multi-res, forms, usability
 ```
 
 **Current status:**
@@ -102,8 +102,7 @@ svaes/
    by `organization_id`. An agent must not generate code that accesses data from another
    organization.
 
-5. **RBAC:** roles are `U1 < U2 < U3 < U4`. The agent must respect the corresponding guards
-   on every new endpoint.
+5. **RBAC:** roles are `U2` (OPERATOR, standard) `< U4` (MANAGER, org-level) `< U3` (ADMIN, global). There is no `U1`. The agent must respect the corresponding guards on every new endpoint.
 
 6. **No references to Indra, Multideployment, or Flask:** these contexts are obsolete.
    If they appear in any existing file, they must be removed or generalized.
@@ -203,12 +202,10 @@ tests/unit/
 
 ### Rust tests
 
-Unit tests are inline under `#[cfg(test)]` in all 11 source files. HTTP integration and performance tests live in `engine/tests/`.
+Unit tests are inline under `#[cfg(test)]` in `business_rules.rs`, `custom_field_check.rs`, and `aggregator.rs` (86 cases). There is no separate HTTP-integration or benchmark suite — engine latency is exercised indirectly by `RustEngineUser` in `tests/performance/locustfile.py`.
 
 ```bash
 cargo test                              # All unit tests
-cargo test --test http_pipeline          # 8 HTTP integration tests
-cargo test --test performance            # 3 performance benchmarks
 ```
 
 ---
@@ -234,6 +231,8 @@ The following routers are connected in `api/src/main.py`:
 | admin_router | v1/admin | Administration operations |
 | audit_router | v1/audit | Audit log queries (MANAGER+) |
 | access_requests_router | v1/access_requests | Access request submissions and approval |
+| webhooks_router | v1/webhooks | Inbound webhook events from connectors |
+| feedback_router | v1/feedback | Landing page feedback submission |
 
 ---
 

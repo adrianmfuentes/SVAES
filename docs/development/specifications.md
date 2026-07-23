@@ -130,7 +130,7 @@ Severity levels: `BLOCKING` (mandatory — failure → `INVALID`), `NON_BLOCKING
 
 | ID | Name | Primary Actor |
 |---|---|---|
-| UC-01 | System authentication | U1–U5 |
+| UC-01 | System authentication | U2–U4 |
 | UC-02 | Full release lifecycle | U2–U3 |
 
 The expanded detail (preconditions, main flow, alternatives, postconditions)
@@ -157,18 +157,18 @@ can be found in section 4.8 of the SRS.
 | Celery Worker | Implemented | `api/src/infrastructure/workers/verification_worker.py` — real worker |
 | Rust Engine | Implemented | `engine/src/` — evaluator, aggregator, 10 rules (RV-01…RV-10), parallel evaluation with Rayon |
 | Angular Frontend | Implemented | `web/` — auth (2FA), dashboard, releases, connectors, profiles, admin, i18n ES/EN |
-| Unit Tests | Implemented | `tests/unit/` — 200+ cases (12 files): services branch coverage, connectors CE+VL, endpoints Base Choice, DI factories, structural gaps. Cobertura total: 70% |
-| Integration Tests | Implemented | `tests/integration/` — 16 Python cases (TC-INT-*) + 8 Rust HTTP tests (tc_int_http_*) |
-| Acceptance Tests | Implemented | `tests/acceptance/` — 10 Cypress E2E cases (TC-ACP-CU/UI/FRM/USA) |
-| Performance Tests | Implemented | `tests/performance/` — 4 Locust cases (TC-PER-*) + 3 Rust benchmarks (tc_per_pf_*) |
+| Unit Tests | Implemented | `tests/unit/` — 1,238 cases (12 files): services, connectors CE+VL, routers, repositories, use cases, DI factories. Cobertura total: 70% |
+| Integration Tests | Implemented | `tests/integration/` — 27 Python cases (TC-INT-*, TC-API-AUTH-*) |
+| Acceptance Tests | Implemented | `tests/acceptance/` — 12 pytest + 43 Cypress E2E cases (TC-ACP-CU/UI/FRM/USA) |
+| Performance Tests | Implemented | `tests/performance/` — 47 pytest cases + 4 Locust user classes |
 | Security Tests | Implemented | `tests/security/` — 5 cases (TC-SEC-AUT/INY/CIF): brute force, JWT, SQLi, XSS, encryption |
 
 All tests follow the **Plan de Pruebas** structured according to **ISO 29119-4** with unique test case identifiers. See `docs/development/testing.md` for the complete test case catalog.
 
-**Connected Routers (15 total):**
-- auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin, audit, access_requests
+**Connected Routers (18 total):**
+- auth, organizations, releases, connectors, profiles, tasks, users, custom_roles, dashboard, api_keys, templates, notifications, admin, audit, access_requests, webhooks, feedback, and the health/root endpoints in `main.py`
 
-**Endpoints per router:** 65+ endpoints implemented
+**Endpoints:** 108+ across all routers — see [docs/api/reference.md](../api/reference.md)
 
 ---
 

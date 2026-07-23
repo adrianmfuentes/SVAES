@@ -68,22 +68,11 @@ All connectors implement the `IConnector` interface (`fetch_artifact`, `list_art
 
 ---
 
-## Verification Rules (RV-01 → RV-10)
+## Verification Rules
 
-| Rule  | Name                    | Description                                                             |
-| ----- | ----------------------- | ----------------------------------------------------------------------- |
-| RV-01 | Artifact Existence      | Validates that referenced artifacts actually exist in external systems  |
-| RV-02 | Artifact Traceability   | Checks bidirectional links between tasks, commits, and documents        |
-| RV-03 | Artifact State          | Verifies artifacts are in a valid/completed state                       |
-| RV-04 | Numeric Field Integrity | Ensures numeric fields (story points, estimates) are positive and valid |
-| RV-05 | Document Accessibility  | Confirms linked documents are publicly accessible or reachable          |
-| RV-06 | Attribute Coherence     | Ensures title fields, descriptions, and labels are populated            |
-| RV-07 | External Registration   | Validates records exist in external registration/CHG systems            |
-| RV-08 | List Alignment          | Checks that artifact lists match expected counts or content             |
-| RV-09 | Reference Validation    | Validates cross-references between artifacts are consistent             |
-| RV-10 | Final Approval          | Verifies final sign-off or approval artifacts are present               |
+10 built-in business rules (RV-01 → RV-10), plus `custom_field_check` for organization-defined conditions with no Rust required. Full rule table: [Engine Reference](engine/reference.md#verification-rules).
 
-Each rule returns a `PASS`, `FAIL`, or `WARNING` status with a severity level (`BLOCKING`, `NON_BLOCKING`, `INFORMATIONAL`).
+Each rule returns `PASS`, `FAIL`, or `WARNING` with a severity (`BLOCKING`, `NON_BLOCKING`, `INFORMATIONAL`).
 
 ---
 
@@ -154,42 +143,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ---
 
-## Key Endpoints (API v1)
+## API
 
-Base: `http://localhost:8000/api/v1`
-
-### Auth
-
-| Method | Path            | Description               |
-| ------ | --------------- | ------------------------- |
-| `POST` | `/auth/login`   | Authenticate, returns JWT |
-| `POST` | `/auth/refresh` | Refresh access token      |
-
-### Releases & Verification
-
-| Method | Path                      | Description              |
-| ------ | ------------------------- | ------------------------ |
-| `POST` | `/projects/{id}/releases` | Create a release         |
-| `POST` | `/releases/{id}/verify`   | Trigger verification     |
-| `GET`  | `/releases/{id}/results`  | Get verification results |
-
-### Connectors
-
-| Method | Path                                 | Description                                        |
-| ------ | ------------------------------------ | -------------------------------------------------- |
-| `GET`  | `/connectors/types`                  | List available connector types and implementations |
-| `POST` | `/connectors/{id}/test`              | Test connector connection                          |
-| `GET`  | `/organizations/{org_id}/connectors` | List configured connectors                         |
-| `POST` | `/organizations/{org_id}/connectors` | Register a new connector                           |
-
-### Organisations & Users
-
-| Method | Path             | Description            |
-| ------ | ---------------- | ---------------------- |
-| `GET`  | `/organizations` | List all organisations |
-| `POST`  | `/organizations` | Create organisation    |
-| `GET`  | `/users`         | List users             |
-| `POST` | `/users`         | Create user            |
+Base URL `http://localhost:8000/api/v1`; interactive Swagger UI at `http://localhost:8000/docs`. Full endpoint-by-endpoint reference: [docs/api/reference.md](api/reference.md).
 
 ---
 
@@ -228,7 +184,9 @@ SVAES/
 │   │   └── testing.md           # Test suite guide
 │   ├── security/
 │   │   └── audit.md             # Security & compliance audit
-│   └── deployment.md            # Production deployment guide
+│   ├── DEPLOY.md                # Production deploy workflow (GitHub Actions + Oracle Cloud)
+│   ├── MULTI_ORG.md             # Multi-organisation membership model
+│   └── WALKTHROUGH.md           # End-to-end usage walkthrough
 ├── scripts/                     # Utility scripts
 ├── docker-compose.yml           # Base compose (6 services)
 ├── docker-compose.dev.yml       # Dev overrides
@@ -283,6 +241,9 @@ Custom roles with granular permissions are also supported.
 | `POSTGRES_PASSWORD`  | Yes      | Database password                                           |
 | `REDIS_PASSWORD`     | No       | Redis authentication password                               |
 | `ENGINE_API_KEY`     | Yes      | Internal API key for engine communication                   |
+| `FEEDBACK_SYNC_KEY`  | No       | Shared secret the feedback-sync GitHub Action uses to read `/api/v1/feedback/public` |
+
+Deploy-time secrets (SSH keys, SMTP, initial admin) are separate — see [DEPLOY.md](DEPLOY.md).
 
 ---
 
@@ -295,6 +256,8 @@ Custom roles with granular permissions are also supported.
 - [Developer Guidelines](development/guidelines.md)
 - [Testing Guide](development/testing.md)
 - [Deploy Workflow Guide](DEPLOY.md)
+- [Multi-Organisation Model](MULTI_ORG.md)
+- [End-to-End Walkthrough](WALKTHROUGH.md)
 - [Security & Compliance Audit](security/audit.md)
 
 ---

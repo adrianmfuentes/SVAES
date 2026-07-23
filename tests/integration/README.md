@@ -8,9 +8,10 @@ Validates interactions between real components using ephemeral PostgreSQL + Redi
 
 ```
 integration/
-├── conftest.py                   # Test DB, httpx async client, role-based auth tokens (U1-U4)
+├── conftest.py                   # Test DB, httpx async client, role-based auth tokens (OPERATOR/MANAGER/ADMIN)
 ├── test_flow_resilience.py       # TC-INT-FLW, TC-INT-LIM, TC-INT-RES, TC-INT-MIG (8 tests)
-└── test_release_lifecycle.py     # TC-INT-EST-01…08 (State Transitions)
+├── test_release_lifecycle.py     # TC-INT-EST-01…08 (State Transitions)
+└── test_api_key_auth.py          # TC-API-AUTH-01…11 (API key authentication)
 ```
 
 ## Test Case Catalog
@@ -41,18 +42,23 @@ integration/
 | TC-INT-EST-07 | `TestReleaseStateTransitions` | ARCHIVADA → modification rejected (409/422) |
 | TC-INT-EST-08 | `TestReleaseStateTransitions` | ARCHIVADA → restore by admin (200) |
 
-### Engine HTTP Integration (Rust) — 8 cases
+### test_api_key_auth.py — 11 cases
 
 | ID | Description |
 |---|---|
-| `tc_int_http_01` | Health endpoint returns `healthy` with service/version |
-| `tc_int_http_02` | Valid payload (7 artifacts + 10 rules) → `Valida` |
-| `tc_int_http_03` | Error payload → `NoValida` with at least one `Error` |
-| `tc_int_http_04` | `EXCLUIDA` severity rules → skipped, `NoEvaluada` |
-| `tc_int_http_05` | Unknown rule ID (`RV-99`) → `NoEvaluada` |
-| `tc_int_http_06` | Response structure validation (verdict, rule_results, summary) |
-| `tc_int_http_07` | Empty artifacts + mandatory rules → `NoValida` |
-| `tc_int_http_08` | Optional rules without matching artifacts → `Valida` |
+| TC-API-AUTH-01 | Valid key on protected endpoint → success |
+| TC-API-AUTH-02 | Missing key header → 401 |
+| TC-API-AUTH-03 | Malformed key → 401 |
+| TC-API-AUTH-04 | Revoked key → 401 |
+| TC-API-AUTH-05 | Expired key → 401 |
+| TC-API-AUTH-06 | 6th active key for a user → 429 (max 5) |
+| TC-API-AUTH-07 | Full key value only ever returned at creation |
+| TC-API-AUTH-08 | DB stores the key hash, never plaintext |
+| TC-API-AUTH-09 | Rate limit on key-authenticated requests → 429 |
+| TC-API-AUTH-10 | Low-privilege key rejected on a write endpoint |
+| TC-API-AUTH-11 | Key scoped to one organization can't access another's data |
+
+Engine-side rule logic is covered by the inline Rust unit tests in `engine/src/` (see [engine/README.md](../../engine/README.md#tests-del-motor)) — there's no separate HTTP-level integration suite for the engine.
 
 ## Fixtures (conftest.py)
 
@@ -64,10 +70,9 @@ integration/
 | `db` | function | Marker to ensure test DB is available |
 | `test_user_id` | function | UUID4 user ID |
 | `test_org_id` | function | UUID4 org ID |
-| `admin_token` / `admin_headers` | function | JWT with U3 (Admin) role |
-| `manager_token` / `manager_headers` | function | JWT with U4 (Manager) role |
-| `operator_token` / `operator_headers` | function | JWT with U2 (Operator) role |
-| `viewer_token` / `viewer_headers` | function | JWT with U1 (Viewer) role |
+| `admin_token` / `admin_headers` | function | JWT with ADMIN role |
+| `manager_token` / `manager_headers` | function | JWT with MANAGER role |
+| `operator_token` / `operator_headers` | function | JWT with OPERATOR role |
 | `auth_headers` | function | Alias for `admin_headers` |
 
 ## Run
@@ -93,9 +98,6 @@ docker compose -f docker-compose.test.yml up -d --wait
 # Python integration tests
 pytest tests/integration/ -v -m integration
 
-# Rust HTTP pipeline tests (from engine/)
-cargo test --test http_pipeline
-
 # Tear down
 docker compose -f docker-compose.test.yml down --volumes
 ```
@@ -104,7 +106,6 @@ docker compose -f docker-compose.test.yml down --volumes
 
 - **Docker Desktop** (or Docker Engine + Docker Compose)
 - **Python 3.11+** with project dependencies installed
-- **Rust toolchain** (only for Rust tests: `cargo test --test http_pipeline`)
 - The `run_integration_tests.ps1` script handles all infrastructure automatically — no manual DB setup needed
 
-## Total: 27 Python integration test cases + 8 Rust HTTP integration tests
+## Total: 27 Python integration test cases

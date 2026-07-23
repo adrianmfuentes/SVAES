@@ -37,3 +37,6 @@ class ValidationError(DomainException):
 
 class AuthenticationError(DomainException):
     pass
+
+class InvalidWebhookSignatureError(DomainException):
+    pass

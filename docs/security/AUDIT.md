@@ -89,23 +89,9 @@
 | `infrastructure/workers/` | Verification worker (Celery task) |
 | `core/` | Config, dependencies, audit, credential encryption, rate limit |
 
-### API Endpoints (65+ across 13 routers)
+### API Endpoints (108+ across 18 routers)
 
-| Router | Prefix | Key Endpoints |
-|--------|--------|---------------|
-| `auth.py` | `/api/v1/auth` | POST login, register, refresh, logout |
-| `users.py` | `/api/v1/users` | Profile CRUD, password change, data export, org management |
-| `organizations.py` | `/api/v1/organizations` | CRUD, project management, transfer, restore |
-| `releases.py` | `/api/v1/releases` | CRUD, artifacts, verify, results, PDF/CSV export |
-| `connectors.py` | `/api/v1/connectors` | Types listing, register, test, update, delete |
-| `profiles.py` | `/api/v1/profiles` | Profile & rule CRUD |
-| `tasks.py` | `/api/v1/tasks` | Task status query |
-| `custom_roles.py` | `/api/v1/roles` | Custom role CRUD |
-| `dashboard.py` | `/api/v1/dashboard` | Metrics |
-| `api_keys.py` | `/api/v1/api-keys` | API key create/list/revoke |
-| `templates.py` | `/api/v1/templates` | Release templates |
-| `notifications.py` | `/api/v1/notifications` | Channel config, preferences, subscriptions |
-| `admin.py` | `/api/v1/admin` | User management, rules reload (U3 only) |
+Full endpoint-by-endpoint list: [docs/api/reference.md](../api/reference.md#4-endpoints-by-router). Routers: `auth`, `users`, `organizations`, `releases`, `connectors`, `profiles`, `tasks`, `custom_roles`, `dashboard`, `api_keys`, `templates`, `notifications`, `admin`, plus `access_requests`, `audit`, `feedback`, `webhooks`.
 
 ### Authentication & Authorization
 - **JWT:** HS256 via PyJWT (`jwt_handler.py`)
@@ -143,16 +129,8 @@
 | `evaluator.rs` | Parallel rule evaluation via Rayon `par_iter()` |
 | `aggregator.rs` | Global verdict computation (mandatory/optional rules) |
 | `rules/mod.rs` | Module declarations |
-| `rules/rv01.rs` | Artifact existence check (with tests) |
-| `rules/rv02.rs` | ID coherence / traceability |
-| `rules/rv03.rs` | Task state validation |
-| `rules/rv04.rs` | Effort estimation validation |
-| `rules/rv05.rs` | Document availability |
-| `rules/rv06.rs` | Document version coherence |
-| `rules/rv07.rs` | Planned release registration |
-| `rules/rv08.rs` | Planning coherence |
-| `rules/rv09.rs` | Code references (URL/branch format) |
-| `rules/rv10.rs` | Test report approval |
+| `rules/business_rules.rs` | RV-01–RV-10, each in its own submodule (with tests) |
+| `rules/custom_field_check.rs` | Generic declarative rule for org-defined conditions |
 
 ### Security
 - API key authentication via `X-Engine-Api-Key` header
@@ -219,12 +197,12 @@ All tests follow a formal **Plan de Pruebas** with unique test case identifiers.
 
 | Area | Cases | Details |
 |---|---|---|
-| Unit tests | 150+ cases (TC-UNI-*) | 12 files: services branch coverage, connectors CE+VL (6), endpoints Base Choice (8), DI factories (22), structural gaps (32) |
-| Integration tests | 16 + 8 cases | Python TC-INT-* (16) + Rust HTTP tc_int_http_* (8) |
+| Unit tests | 1,238 cases (TC-UNI-*) | 12 files: services, connectors CE+VL, routers, repositories, use cases, DI factories |
+| Integration tests | 27 cases (TC-INT-*, TC-API-AUTH-*) | Full flow, rate limit, resilience, state transitions, API key auth |
 | Security tests | 5 cases (TC-SEC-*) | Brute force (2), SQLi/XSS injection (2), JWT encryption (1) |
-| Performance tests | 4 + 3 cases | Locust TC-PER-* (4) + Rust benchmarks tc_per_pf_* (3) |
-| Acceptance tests | 10 cases (TC-ACP-*) | Cypress E2E: visual (2), multi-res (3), forms (2), usability (3) |
-| Engine tests | Inline in 11 files | Rust `#[cfg(test)]` in all rules (rv01–rv10) + aggregator |
+| Performance tests | 47 pytest + 4 Locust classes | RNF coverage, security RNF, structural traceability + Locust load |
+| Acceptance tests | 12 pytest + 43 Cypress (TC-ACP-*) | Visual, multi-res, forms, usability |
+| Engine tests | 86 cases, inline in 3 files | Rust `#[cfg(test)]` in `business_rules.rs`, `custom_field_check.rs`, `aggregator.rs` |
 
 Cobertura total del proyecto: **70%** (configurada en `.coveragerc`, `api/pyproject.toml`, `sonar-project.properties`). Exclusiones: puntos de entrada, configuracion, `__init__.py` de re-export, migraciones, ficheros auto-generados.
 
@@ -251,9 +229,10 @@ Cobertura total del proyecto: **70%** (configurada en `.coveragerc`, `api/pyproj
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.yml` (125 lines) | Base: postgres, redis, engine, api, celery-worker, web |
-| `docker-compose.override.yml` (34 lines) | Dev: hot reload, exposed port 5432, volumes |
-| `docker-compose.prod.yml` (58 lines) | Prod: secrets via host env, ports hidden, restart=always |
+| `docker-compose.yml` | Base: postgres, redis, engine, api, celery-worker, web |
+| `docker-compose.dev.yml` | Dev overrides: hot reload, exposed frontend port 4200 |
+| `docker-compose.prod.yml` | Prod overrides: secrets via host env, ports hidden, restart=always |
+| `docker-compose.test.yml` | Ephemeral stack for integration tests |
 
 ### Scripts
 - `scripts/generate_secrets.py`: Generates `JWT_SECRET_KEY` and `ENCRYPTION_KEY` using `secrets.token_urlsafe(32)` and `Fernet.generate_key()`
@@ -269,11 +248,10 @@ Cobertura total del proyecto: **70%** (configurada en `.coveragerc`, `api/pyproj
 | `sonar.yml` | push/PR on main | SonarCloud quality gate |
 | `codeql.yml` | push/PR on main, cron weekly | CodeQL security analysis (Python) |
 | `dependabot-automerge.yml` | PR from dependabot | Auto-merge patch/minor deps |
+| `deploy.yml` | manual dispatch | Deploy to production server — see [DEPLOY.md](../DEPLOY.md) |
+| `feedback-sync.yml` | scheduled | Syncs published user feedback into the root READMEs |
 
-### Issues
-- SonarCloud `pytest --cov` step is **commented out** in `sonar.yml` (lines 25-26)
-- Dependabot references `/apps/api` (incorrect) instead of `/api` in `dependabot.yml` (line 5)
-- Git hook `prepare-commit-msg` sends staged diff content to **external Groq API** (`https://api.groq.com/`) for commit message generation — **potential source code data leakage**
+Previously-flagged CI/CD issues (disabled coverage step, wrong Dependabot path, unguarded Groq commit-message hook) are resolved — see [§10](#10-resolved-operational-concerns).
 
 ### Supply Chain
 - `uv` pinned to 0.11.15 with SHA-256 hashes in `.github/requirements/uv.txt`

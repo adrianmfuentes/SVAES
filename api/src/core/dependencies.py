@@ -38,6 +38,7 @@ from application.use_cases.main.template_service import TemplateService
 from application.use_cases.main.notification_service import NotificationService
 from application.use_cases.main.rules_service import RulesService
 from application.use_cases.main.export_service import ExportService
+from application.use_cases.main.handle_incoming_webhook import HandleIncomingWebhookUseCase
 from application.ports.input.i_release_service import IReleaseService
 from application.ports.input.i_artifact_service import IArtifactService
 from application.ports.input.i_verification_service import IVerificationService
@@ -580,6 +581,22 @@ def get_verification_service(
         task_queue=task_queue,
         connector_registry=connector_registry,
         connector_repository=connector_repo,
+    )
+
+
+def get_webhook_use_case(
+    connector_repo: SqlConnectorRepository = Depends(get_connector_repository),
+    project_repo: SqlProjectRepository = Depends(get_project_repository),
+    organization_repo: SqlOrganizationRepository = Depends(get_organization_repository),
+    release_service: IReleaseService = Depends(get_release_service),
+    verification_service: IVerificationService = Depends(get_verification_service),
+) -> HandleIncomingWebhookUseCase:
+    return HandleIncomingWebhookUseCase(
+        connector_repository=connector_repo,
+        project_repository=project_repo,
+        organization_repository=organization_repo,
+        release_service=release_service,
+        verification_service=verification_service,
     )
 
 

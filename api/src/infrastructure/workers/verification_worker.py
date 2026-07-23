@@ -37,16 +37,7 @@ RULE_OK_EVIDENCE: dict[str, str] = {
     "RV-08": "rule_evidence.ok.RV-08",
     "RV-09": "rule_evidence.ok.RV-09",
     "RV-10": "rule_evidence.ok.RV-10",
-    "has_duplicated_code": "rule_evidence.ok.has_duplicated_code",
-    "has_high_severity_vulnerabilities": "rule_evidence.ok.has_high_severity_vulnerabilities",
-    "has_critical_vulnerabilities": "rule_evidence.ok.has_critical_vulnerabilities",
-    "has_open_high_priority_issues": "rule_evidence.ok.has_open_high_priority_issues",
-    "has_code_smells": "rule_evidence.ok.has_code_smells",
-    "has_security_hotspots": "rule_evidence.ok.has_security_hotspots",
-    "has_uncovered_code": "rule_evidence.ok.has_uncovered_code",
-    "has_blocking_issues": "rule_evidence.ok.has_blocking_issues",
-    "meets_minimum_test_coverage": "rule_evidence.ok.meets_minimum_test_coverage",
-    "meets_maximum_complexity": "rule_evidence.ok.meets_maximum_complexity",
+    "custom_field_check": "rule_evidence.ok.custom_field_check",
 }
 
 

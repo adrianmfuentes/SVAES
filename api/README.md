@@ -2,8 +2,6 @@
 
 > **TFG terminado** (30/06/2026) — FastAPI backend for the SVAES system (Sistema de Verificación Automática de Entregas de Software).
 
-FastAPI backend for the SVAES system (Static Verification and Approval Engine System).
-
 ## Description
 
 RESTful API for managing organisations, projects, releases, and artifact verification. Implements hexagonal architecture (Ports & Adapters) with JWT authentication and role-based access control (RBAC).
@@ -52,6 +50,6 @@ uvicorn src.main:app --reload
 | API Keys | `/api/v1/api-keys` | Programmatic CI/CD access |
 | Templates | `/api/v1/templates` | Release templates |
 | Notifications | `/api/v1/notifications` | Channel config and preferences |
-| Admin | `/api/v1/admin` | User management, rules reload (U4 only) |
+| Admin | `/api/v1/admin` | User management, rules reload (ADMIN only) |
 | Audit | `/api/v1/audit` | Audit log viewer (MANAGER+) |
 | Access Requests | `/api/v1/access-requests` | Access request submissions and approval |

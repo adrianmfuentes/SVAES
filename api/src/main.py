@@ -29,6 +29,7 @@ from infrastructure.primary.routers.api.routers import (
     audit_router,
     access_requests_router,
     feedback_router,
+    webhooks_router,
 )
 from core.config import settings
 from core.logger import _configure_root_logger, get_logger
@@ -200,6 +201,7 @@ app.include_router(admin_router)
 app.include_router(audit_router)
 app.include_router(access_requests_router)
 app.include_router(feedback_router)
+app.include_router(webhooks_router)
 
 
 # ---------------------------------------------------------------------------

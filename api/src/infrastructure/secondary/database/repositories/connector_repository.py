@@ -21,6 +21,8 @@ def _model_to_entity(row: ConnectorInstanceModel) -> ConnectorInstance:
         created_at=cast(datetime, row.created_at),
         updated_at=cast(datetime, row.updated_at),
         last_tested_at=cast(datetime | None, row.last_tested_at),
+        webhook_secret_encrypted=cast(bytes | None, row.webhook_secret_encrypted),
+        webhook_enabled=cast(bool, row.webhook_enabled),
     )
 
 
@@ -38,6 +40,8 @@ class SqlConnectorRepository(IConnectorRepository):
                 created_at=connector.created_at,
                 updated_at=connector.updated_at,
                 last_tested_at=connector.last_tested_at,
+                webhook_secret_encrypted=connector.webhook_secret_encrypted,
+                webhook_enabled=connector.webhook_enabled,
             )
             session.add(connector_model)
             await session.commit()
@@ -84,6 +88,8 @@ class SqlConnectorRepository(IConnectorRepository):
             connector_model.status = connector.status.value if hasattr(connector.status, 'value') else connector.status  # pyright: ignore[reportAttributeAccessIssue]
             connector_model.updated_at = datetime.now(timezone.utc)  # pyright: ignore[reportAttributeAccessIssue]
             connector_model.last_tested_at = connector.last_tested_at  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.webhook_secret_encrypted = connector.webhook_secret_encrypted  # pyright: ignore[reportAttributeAccessIssue]
+            connector_model.webhook_enabled = connector.webhook_enabled  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(connector_model)
