@@ -11,6 +11,8 @@
 Trabajo Fin de Grado — Grado en Ingeniería Informática del Software
 Universidad de Oviedo
 
+Calificación: 10/10
+
 Autor: Adrián Martínez Fuentes
 Curso: 2025/2026
 
