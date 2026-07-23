@@ -24,3 +24,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+  # Angular app — package.json/pnpm-lock.yaml está en web/
+  - package-ecosystem: "npm"
+    directory: "/web"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
