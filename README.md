@@ -57,7 +57,19 @@ cd svaes
 docker compose up --build
 ```
 
-API en `http://localhost:8000`, Swagger en `http://localhost:8000/docs`. Variables de entorno, despliegue en producción y ejecución sin Docker: **[docs/DEPLOY.md](docs/DEPLOY.md)**.
+API en `http://localhost:8000`, Swagger en `http://localhost:8000/docs`. Variables de entorno y despliegue en producción: **[docs/DEPLOY.md](docs/DEPLOY.md)**.
+
+### Ejecución sin Docker (desarrollo)
+
+```bash
+# Backend (api/)
+cd api && uvicorn src.main:app --reload
+
+# Frontend (web/)
+cd web && npm install && npm start
+```
+
+Más detalle en [api/README.md](api/README.md) y [web/README.md](web/README.md).
 
 ## Feedback de usuarios
 
