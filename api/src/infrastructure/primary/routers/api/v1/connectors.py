@@ -91,6 +91,10 @@ _EXTRA_UI_CATEGORIES: dict[str, list[str]] = {
     "CLICKUP": ["HERRAMIENTA_PLANIFICACION"],
     "PLANE": ["HERRAMIENTA_PLANIFICACION"],
     "TAIGA": ["HERRAMIENTA_PLANIFICACION"],
+    # El conector genérico no tiene una categoría de negocio propia (la
+    # elige quien lo crea), así que se ofrece en las 4 categorías restantes
+    # además de la "de origen" (GESTOR_TAREAS, ver GenericHttpConnector).
+    "CUSTOM": ["REPO_CODIGO", "SISTEMA_DOCUMENTAL", "HERRAMIENTA_PLANIFICACION", "GESTION_CAMBIOS"],
 }
 
 
@@ -194,6 +198,31 @@ def _get_config_schema(implementation: str) -> dict:
             "api_key": {"type": "string", "label": _LABEL_API_KEY, "required": True, "sensitive": True},
             "base_url": {"type": "string", "label": _LABEL_BASE_URL, "required": True},
             "project_id": {"type": "string", "label": _LABEL_PROJECT_ID, "required": False},
+        },
+        "CUSTOM": {
+            "base_url": {"type": "string", "label": _LABEL_BASE_URL, "required": True},
+            "auth_type": {
+                "type": "select",
+                "label": "connector_field.auth_type",
+                "required": True,
+                "default": "bearer",
+                "options": [
+                    {"value": "none", "label": "connector_field.auth_type_none"},
+                    {"value": "bearer", "label": "connector_field.auth_type_bearer"},
+                    {"value": "basic", "label": "connector_field.auth_type_basic"},
+                    {"value": "header", "label": "connector_field.auth_type_header"},
+                ],
+            },
+            "token": {"type": "string", "label": _LABEL_PERSONAL_ACCESS_TOKEN, "required": False, "sensitive": True},
+            "username": {"type": "string", "label": "connector_field.username", "required": False},
+            "password": {"type": "string", "label": "connector_field.password", "required": False, "sensitive": True},
+            "auth_header_name": {"type": "string", "label": "connector_field.auth_header_name", "required": False},
+            "auth_header_value": {"type": "string", "label": "connector_field.auth_header_value", "required": False, "sensitive": True},
+            "health_path": {"type": "string", "label": "connector_field.health_path", "required": False},
+            "fetch_path_template": {"type": "string", "label": "connector_field.fetch_path_template", "required": True},
+            "fetch_result_key": {"type": "string", "label": "connector_field.fetch_result_key", "required": False},
+            "list_path": {"type": "string", "label": "connector_field.list_path", "required": True},
+            "list_result_key": {"type": "string", "label": "connector_field.list_result_key", "required": False},
         },
     }
     return schemas.get(implementation, {})

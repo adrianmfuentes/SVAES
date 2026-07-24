@@ -250,6 +250,61 @@ describe('ConnectorsComponent', () => {
     });
   });
 
+  describe('custom connector (select field)', () => {
+    beforeEach(() => {
+      component.ngOnInit();
+      flushInitRequests();
+    });
+
+    const customImpl = {
+      implementation: 'CUSTOM',
+      metadata: { name: 'Custom' },
+      config_schema: {
+        base_url: { type: 'string', label: 'connector_field.base_url', required: true },
+        auth_type: {
+          type: 'select',
+          label: 'connector_field.auth_type',
+          required: true,
+          default: 'bearer',
+          options: [
+            { value: 'none', label: 'connector_field.auth_type_none' },
+            { value: 'bearer', label: 'connector_field.auth_type_bearer' },
+          ],
+        },
+      },
+    };
+
+    it('onImplementationChange populates a select-type config field with its options', () => {
+      component.availableImplementations.set([customImpl as any]);
+      component.onImplementationChange({ target: { value: 'CUSTOM' } } as unknown as Event);
+
+      const fields = component.getConfigFields();
+      const authField = fields.find(f => f.key === 'auth_type');
+      expect(authField?.type).toBe('select');
+      expect(authField?.options).toEqual(customImpl.config_schema.auth_type.options);
+    });
+
+    it('submits the selected auth_type value as part of credentials', () => {
+      component.openCreate();
+      component.availableImplementations.set([customImpl as any]);
+      component.onImplementationChange({ target: { value: 'CUSTOM' } } as unknown as Event);
+      component.selectedImplementation.set('CUSTOM');
+      component.connectorForm.patchValue({
+        name: 'Mi sistema',
+        connectorType: 'SISTEMA_DOCUMENTAL',
+        connectorImplementation: 'CUSTOM',
+      });
+      (component.connectorForm as any).patchValue({
+        base_url: 'https://internal.example.com',
+        auth_type: 'none',
+      });
+      component.submitConnector();
+      const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/connectors');
+      expect(req.request.body.credentials.auth_type).toBe('none');
+      req.flush({ id: 'custom-1', name: 'Mi sistema', connector_type: 'SISTEMA_DOCUMENTAL', status: 'ACTIVO', created_at: '2025-01-01T00:00:00Z' });
+    });
+  });
+
   describe('template rendering', () => {
     const mockConn = { id: 'c1', name: 'GitLab', type: 'gitlab', implementation: 'gitlab', status: 'active' as const, global: false };
 

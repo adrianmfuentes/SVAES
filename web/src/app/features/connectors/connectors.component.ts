@@ -32,12 +32,18 @@ interface ConnectorApiItem {
   webhook_enabled?: boolean;
 }
 
+interface ConfigSchemaOption {
+  value: string;
+  label: string;
+}
+
 interface ConfigSchemaField {
   type: string;
   label: string;
   required: boolean;
   sensitive?: boolean;
   default?: string;
+  options?: ConfigSchemaOption[];
 }
 
 interface ConnectorImplementation {
@@ -101,7 +107,7 @@ interface ConnectorTypesResponse {
                   <button class="btn-ghost" (click)="toggleConnector(c)">
                     {{ c.status === 'inactive' ? ('connectors.activate' | t) : ('connectors.deactivate' | t) }}
                   </button>
-                  <button *ngIf="c.type === 'REPO_CODIGO'" class="btn-ghost" (click)="openWebhookConfig(c)">
+                  <button *ngIf="c.type === 'REPO_CODIGO' && c.implementation !== 'CUSTOM'" class="btn-ghost" (click)="openWebhookConfig(c)">
                     {{ 'connectors.webhook_label' | t }}
                   </button>
                 </td>
@@ -138,18 +144,23 @@ interface ConnectorTypesResponse {
             <label for="conn-implementation">{{ 'connectors.system_label' | t }}</label>
             <select id="conn-implementation" formControlName="connectorImplementation" (change)="onImplementationChange($event)">
               <option value="">-- {{ 'connectors.select_system' | t }} --</option>
-              <option *ngFor="let impl of availableImplementations()" [value]="impl.implementation">{{ impl.metadata.name }}</option>
+              <option *ngFor="let impl of availableImplementations()" [value]="impl.implementation">{{ impl.implementation === 'CUSTOM' ? ('connector_type.CUSTOM' | t) : impl.metadata.name }}</option>
             </select>
           </div>
           <ng-container *ngIf="selectedImplementation() && currentConfigSchema()">
             <div class="form-group" *ngFor="let field of getConfigFields()" [ngClass]="{'has-error': shouldShowError(field.key)}">
               <label for="field-{{ field.key }}">{{ field.label | t }}</label>
-              <input *ngIf="!field.sensitive"
+              <select *ngIf="field.type === 'select'"
+                id="field-{{ field.key }}"
+                [formControlName]="field.key">
+                <option *ngFor="let opt of field.options" [value]="opt.value">{{ opt.label | t }}</option>
+              </select>
+              <input *ngIf="field.type !== 'select' && !field.sensitive"
                 id="field-{{ field.key }}"
                 type="text"
                 [formControlName]="field.key"
                 [placeholder]="field.label | t" />
-              <input *ngIf="field.sensitive"
+              <input *ngIf="field.type !== 'select' && field.sensitive"
                 id="field-{{ field.key }}"
                 type="password"
                 [formControlName]="field.key"
@@ -300,11 +311,13 @@ interface ConnectorTypesResponse {
     .cell-muted { color: var(--muted); }
 
     .cell-actions {
-      white-space: nowrap;
       display: flex;
-      gap: var(--spacing-sm);
+      flex-wrap: wrap;
+      gap: var(--spacing-xs) var(--spacing-sm);
       justify-content: center;
       align-items: center;
+      padding-top: var(--spacing-xs);
+      padding-bottom: var(--spacing-xs);
     }
 
     .data-table th.th-actions { text-align: center; }
@@ -683,7 +696,7 @@ export class ConnectorsComponent implements OnInit {
   selectedImplementation = signal<string | null>(null);
   availableImplementations = signal<ConnectorImplementation[]>([]);
   currentConfigSchema = signal<Record<string, ConfigSchemaField>>({});
-  configFields = signal<{key: string, label: string, required: boolean, sensitive?: boolean}[]>([]);
+  configFields = signal<{key: string, label: string, required: boolean, sensitive?: boolean, type?: string, options?: ConfigSchemaOption[]}[]>([]);
 
   connectorForm = this.fb.group({
     name: ['', [Validators.required]],
@@ -974,6 +987,8 @@ export class ConnectorsComponent implements OnInit {
       label: field.label,
       required: field.required,
       sensitive: field.sensitive,
+      type: field.type,
+      options: field.options,
     })));
   }
 

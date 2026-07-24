@@ -1439,6 +1439,70 @@ class TestConnectorService:
 
         assert result.connector_type == "GESTOR_TAREAS"
 
+    async def test_register_custom_preserves_requested_connector_type(self, svc):
+        """A generic ('CUSTOM') connector has no fixed category: the type the
+        user picked in the create form must survive, unlike built-in
+        implementations whose type is always overridden by the class."""
+        service, conn_repo, registry = svc
+        conn_repo.list_by_organization = AsyncMock(return_value=[])
+        conn_repo.save = AsyncMock(side_effect=lambda c: c)
+
+        connector_impl = MagicMock()
+        connector_impl.get_connector_type = MagicMock(return_value="GESTOR_TAREAS")
+        connector_impl.test_connection = AsyncMock(return_value=True)
+        registry.get_by_implementation = MagicMock(return_value=connector_impl)
+
+        result = await service.register_connector(
+            uuid4(), "SISTEMA_DOCUMENTAL", "CUSTOM", "Mi sistema interno",
+            {"base_url": "https://internal.example.com"}, uuid4(),
+        )
+
+        assert result.connector_type == "SISTEMA_DOCUMENTAL"
+
+    async def test_register_custom_invalid_connector_type_raises_validation_error(self, svc):
+        """CUSTOM still must map onto one of the real ConnectorType categories
+        (rule gating by category depends on it) - an arbitrary string is rejected."""
+        service, conn_repo, _ = svc
+        conn_repo.list_by_organization = AsyncMock(return_value=[])
+        from domain.exceptions import ValidationError
+        with pytest.raises(ValidationError):
+            await service.register_connector(
+                uuid4(), "NOT_A_REAL_CATEGORY", "CUSTOM", "Bad", {}, uuid4(),
+            )
+
+    async def test_register_custom_allows_multiple_per_organization(self, svc):
+        """Built-in implementations are capped at one per org (duplicate
+        implementation guard); CUSTOM must not be, or an org could only ever
+        have a single self-defined connector regardless of category."""
+        service, conn_repo, registry = svc
+        existing = MagicMock()
+        existing.connector_implementation = "CUSTOM"
+        conn_repo.list_by_organization = AsyncMock(return_value=[existing])
+        conn_repo.save = AsyncMock(side_effect=lambda c: c)
+
+        connector_impl = MagicMock()
+        connector_impl.test_connection = AsyncMock(return_value=True)
+        registry.get_by_implementation = MagicMock(return_value=connector_impl)
+
+        result = await service.register_connector(
+            uuid4(), "GESTION_CAMBIOS", "CUSTOM", "Segundo conector personalizado",
+            {"base_url": "https://other.example.com"}, uuid4(),
+        )
+
+        assert result.connector_type == "GESTION_CAMBIOS"
+
+    async def test_register_unknown_implementation_raises_validation_error(self, svc):
+        """An unregistered implementation name must surface as a 422
+        ValidationError (via the router), not an unhandled KeyError -> 500."""
+        service, conn_repo, registry = svc
+        conn_repo.list_by_organization = AsyncMock(return_value=[])
+        registry.get_by_implementation = MagicMock(side_effect=KeyError("NOPE"))
+        from domain.exceptions import ValidationError
+        with pytest.raises(ValidationError):
+            await service.register_connector(
+                uuid4(), "GESTOR_TAREAS", "NOPE", "Bad", {}, uuid4(),
+            )
+
     async def test_update_connector_not_found_raises(self, svc):
         """Branch: connector not found → EntityNotFoundError"""
         service, conn_repo, _ = svc

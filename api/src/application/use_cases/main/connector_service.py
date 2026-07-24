@@ -11,12 +11,14 @@ from core.config import settings
 from core.audit import AuditEntry, AuditEvent, get_audit_logger
 from core.logger import get_logger
 from domain.entities.connector_instance import ConnectorInstance
-from domain.enums import ConnectorStatus
+from domain.enums import ConnectorStatus, ConnectorType
 from domain.exceptions import EntityNotFoundError, ValidationError, DuplicateEntityError
 
 _log = get_logger(__name__)
 
 _CREDENTIAL_QUERY_PARAMS = {"key", "token", "api_key", "apikey", "access_token", "secret"}
+
+GENERIC_CONNECTOR_IMPLEMENTATION = "CUSTOM"
 
 
 def _redact_exc(exc: Exception) -> str:
@@ -64,10 +66,14 @@ class ConnectorService(IConnectorService):
         config: dict,
         requested_by: UUID,
     ) -> ConnectorInstance:
+        is_generic = connector_implementation.upper() == GENERIC_CONNECTOR_IMPLEMENTATION
         existing = await self._connector_repo.list_by_organization(organization_id, active_only=False, skip=0, limit=1000)
         for c in existing:
-            if c.connector_implementation == connector_implementation:
+            if c.connector_implementation == connector_implementation and not is_generic:
                 raise DuplicateEntityError(f"Ya existe un conector {connector_implementation} en esta organización")
+
+        if is_generic and connector_type not in {t.value for t in ConnectorType}:
+            raise ValidationError(f"Tipo de conector '{connector_type}' no soportado")
 
         from cryptography.fernet import Fernet
 
@@ -77,7 +83,8 @@ class ConnectorService(IConnectorService):
         initial_status = ConnectorStatus.ERROR
         connector_impl = self._get_connector_impl(connector_implementation)
         if connector_impl:
-            connector_type = connector_impl.get_connector_type()
+            if not is_generic:
+                connector_type = connector_impl.get_connector_type()
             try:
                 initial_status = ConnectorStatus.ACTIVO if await connector_impl.test_connection(config) else ConnectorStatus.ERROR
             except Exception:
@@ -185,8 +192,10 @@ class ConnectorService(IConnectorService):
 
 
     def _get_connector_impl(self, connector_implementation: str):
-        connector_impl = self._connector_registry.get_by_implementation(connector_implementation)
-        return connector_impl
+        try:
+            return self._connector_registry.get_by_implementation(connector_implementation)
+        except KeyError:
+            raise ValidationError(f"Implementación '{connector_implementation}' no soportada")
 
 
     async def list_connectors(
