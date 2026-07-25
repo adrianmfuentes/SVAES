@@ -189,6 +189,7 @@ describe('NotificationChannelsComponent', () => {
       component.forms['SLACK'].controls['webhook_url'].markAsTouched();
       component.save('SLACK');
       httpCtrl.expectNone('/api/v1/notifications/channels/ch-1');
+      expect(component.forms['SLACK'].invalid).toBeTruthy();
     });
   });
 
@@ -225,6 +226,7 @@ describe('NotificationChannelsComponent', () => {
       component.channels.set([]);
       component.sendTest('GENERIC');
       httpCtrl.expectNone('/api/v1/notifications/channels/null/test');
+      expect(component.testing()).toBeNull();
     });
   });
 
@@ -236,7 +238,9 @@ describe('NotificationChannelsComponent', () => {
 
     it('should DELETE channel', () => {
       component.disable('SLACK');
-      httpCtrl.expectOne('/api/v1/notifications/channels/ch-1').flush({});
+      const req = httpCtrl.expectOne('/api/v1/notifications/channels/ch-1');
+      expect(req.request.method).toBe('DELETE');
+      req.flush({});
       loadAllRequests(httpCtrl);
     });
 
@@ -251,6 +255,7 @@ describe('NotificationChannelsComponent', () => {
       component.channels.set([]);
       component.disable('SLACK');
       httpCtrl.expectNone('/api/v1/notifications/channels/null');
+      expect(component.deleting()).toBeNull();
     });
   });
 
