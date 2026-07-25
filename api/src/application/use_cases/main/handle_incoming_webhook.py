@@ -77,7 +77,7 @@ class HandleIncomingWebhookUseCase:
 
         try:
             payload = json.loads(raw_body.decode("utf-8"))
-        except (ValueError, UnicodeDecodeError):
+        except ValueError:
             raise ValidationError("El cuerpo del webhook no es JSON válido.")
 
         event_header = headers.get(event_header_name(connector.connector_implementation) or "")

@@ -154,13 +154,18 @@ describe('ProfilesComponent', () => {
 
     it('should render loading skeleton', () => {
       component.loading.set(true);
-      renderTemplate();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.skeleton-list')).toBeTruthy();
+      httpCtrl.expectOne('/api/v1/organizations/org-abc/profiles').flush([]);
     });
 
     it('should render error state', () => {
       component.loading.set(false);
       component.error.set('profiles.loading_error');
       renderTemplate();
+      const banner = fixture.nativeElement.querySelector('.error-banner');
+      expect(banner).toBeTruthy();
+      expect(banner.textContent).toContain('profiles.loading_error');
     });
 
     it('should render profiles list', () => {
@@ -168,6 +173,9 @@ describe('ProfilesComponent', () => {
       component.orgProfiles.set([mockProfile]);
       component.templates.set([{ ...mockProfile, id: 'tmpl-1', is_template: true }]);
       renderTemplate();
+      const table = fixture.nativeElement.querySelector('.data-table');
+      expect(table).toBeTruthy();
+      expect(table.textContent).toContain('Profile A');
     });
 
     it('should render empty state', () => {
@@ -175,6 +183,9 @@ describe('ProfilesComponent', () => {
       component.orgProfiles.set([]);
       component.templates.set([]);
       renderTemplate();
+      const empty = fixture.nativeElement.querySelector('.empty-state');
+      expect(empty).toBeTruthy();
+      expect(empty.textContent).toContain('profiles.no_profiles');
     });
 
     it('should render create modal', () => {
@@ -182,6 +193,8 @@ describe('ProfilesComponent', () => {
       component.showModal.set(true);
       component.editingProfile.set(null);
       renderTemplate();
+      expect(fixture.nativeElement.querySelector('.modal-overlay')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('.modal-title').textContent).toContain('profiles.create_title');
     });
 
     it('should render edit modal with error', () => {
@@ -190,6 +203,11 @@ describe('ProfilesComponent', () => {
       component.editingProfile.set(mockProfile);
       component.modalError.set('Already exists');
       renderTemplate();
+      const modal = fixture.nativeElement.querySelector('.modal-overlay');
+      expect(modal).toBeTruthy();
+      const errorBanner = modal.querySelector('.error-banner');
+      expect(errorBanner).toBeTruthy();
+      expect(errorBanner.textContent).toContain('Already exists');
     });
   });
 });

@@ -103,7 +103,11 @@ class GenericHttpConnector(IConnector):
             response.raise_for_status()
             data = response.json()
         result = _dig(data, config.get("fetch_result_key"))
-        return result if isinstance(result, dict) else (data if isinstance(data, dict) else {})
+        if isinstance(result, dict):
+            return result
+        if isinstance(data, dict):
+            return data
+        return {}
 
     async def list_artifacts(
         self, filter_params: Dict[str, Any], config: Dict[str, Any]

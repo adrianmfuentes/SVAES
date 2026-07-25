@@ -6,7 +6,7 @@ from application.ports.input.i_template_service import ITemplateService
 from core.dependencies import get_current_user, CurrentUser, require_permission, require_role, get_template_service
 from domain.enums import UserRole, Permission
 from domain.exceptions import EntityNotFoundError, ValidationError
-from . import ERROR_INTERNO
+from . import ERROR_INTERNO, ERROR_PLANTILLA_NO_ENCONTRADA, ERROR_SIN_ACCESO_PLANTILLA
 
 router = APIRouter(tags=["Templates"])
 
@@ -125,9 +125,9 @@ async def get_template(
     try:
         template = await service.get_template(template_id=template_id)
         if not template:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_PLANTILLA_NO_ENCONTRADA)
         if current_user.role != UserRole.U3 and current_user.organization_id != template.organization_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta plantilla")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_SIN_ACCESO_PLANTILLA)
         return template
     except HTTPException:
         raise
@@ -159,9 +159,9 @@ async def update_template(
     try:
         existing = await service.get_template(template_id=template_id)
         if not existing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_PLANTILLA_NO_ENCONTRADA)
         if current_user.role != UserRole.U3 and current_user.organization_id != existing.organization_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta plantilla")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_SIN_ACCESO_PLANTILLA)
         template = await service.update_template(
             template_id=template_id,
             name=payload.name,
@@ -197,9 +197,9 @@ async def archive_template(
     try:
         existing = await service.get_template(template_id=template_id)
         if not existing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_PLANTILLA_NO_ENCONTRADA)
         if current_user.role != UserRole.U3 and current_user.organization_id != existing.organization_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta plantilla")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_SIN_ACCESO_PLANTILLA)
         await service.archive_template(template_id=template_id)
         return {"message": "Plantilla archivada con éxito"}
     except HTTPException:
@@ -234,9 +234,9 @@ async def clone_template(
     try:
         existing = await service.get_template(template_id=template_id)
         if not existing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_PLANTILLA_NO_ENCONTRADA)
         if current_user.role != UserRole.U3 and current_user.organization_id != existing.organization_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a esta plantilla")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_SIN_ACCESO_PLANTILLA)
         if current_user.role != UserRole.U3 and current_user.organization_id != payload.target_organization_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes acceso a la organización destino")
         new_template = await service.clone_template(

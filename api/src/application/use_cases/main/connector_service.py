@@ -275,7 +275,7 @@ class ConnectorService(IConnectorService):
             escaped = query.replace('"', '\\"')
             if impl_upper in ("JIRA", "JIRA_SM"):
                 key_clause = ""
-                if re.match(r"^[A-Za-z][A-Za-z0-9_]+-\d+$", query.strip()):
+                if re.match(r"^[A-Za-z]\w+-\d+$", query.strip()):
                     key_clause = f'key = "{query.strip().upper()}" OR '
                 filter_params["jql"] = (
                     f'{key_clause}text ~ "{escaped}" OR fixVersion = "{escaped}" ORDER BY updated DESC'
