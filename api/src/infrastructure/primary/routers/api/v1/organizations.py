@@ -49,7 +49,7 @@ class ProjectCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     name: str = Field(..., min_length=1, max_length=100)
     description: str = Field(default="", max_length=500)
-    profile_id: Optional[UUID] = None
+    profile_id: UUID
 
 class ProjectUpdateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')

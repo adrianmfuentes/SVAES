@@ -1,3 +1,4 @@
+from types import EllipsisType
 from typing import List, Optional
 from uuid import UUID, uuid4
 from application.ports.output.i_profile_repository import IProfileRepository
@@ -51,7 +52,7 @@ class ManageProfileUseCase:
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_default: Optional[bool] = None,
-        schedule: Optional[str] = ...,
+        schedule: Optional[str] | EllipsisType = ...,
     ) -> VerificationProfile:
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:

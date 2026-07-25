@@ -1071,6 +1071,7 @@ class TestConnectorImplementations:
         from infrastructure.secondary.connectors.task_management.jira_connector import JiraConnector
         c = JiraConnector()
         params = c._get_list_params({}, {})
+        assert params is not None
         assert params["jql"] != "order by updated desc"
         assert "updated" in params["jql"]
         assert params["fields"] == "summary,status"
@@ -1080,6 +1081,7 @@ class TestConnectorImplementations:
         from infrastructure.secondary.connectors.task_management.jira_connector import JiraConnector
         c = JiraConnector()
         params = c._get_list_params({"jql": 'key = "SVAES-1"'}, {})
+        assert params is not None
         assert params["jql"] == 'key = "SVAES-1"'
         assert params["fields"] == "summary,status"
 

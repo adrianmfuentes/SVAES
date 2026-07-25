@@ -1,3 +1,4 @@
+from types import EllipsisType
 from typing import List, Optional
 from uuid import UUID, uuid4
 from croniter import croniter
@@ -89,8 +90,8 @@ class ProfileService(ManageProfileUseCase, IProfileService):
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_default: Optional[bool] = None,
+        schedule: Optional[str] | EllipsisType = ...,
         requested_by: Optional[UUID] = None,
-        schedule: Optional[str] = ...,
     ) -> VerificationProfile:
         if schedule is not ...:
             _validate_schedule(schedule)

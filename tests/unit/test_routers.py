@@ -2450,7 +2450,7 @@ class TestTemplatesRouter:
         )
         assert resp.status_code in (201, 403, 422)
 
-    def test_get_template_not_found_returns_404(self):
+    def test_get_template_returns_none_returns_404(self):
         from fastapi.testclient import TestClient
         self.svc.get_template = AsyncMock(return_value=None)
         client = TestClient(self.app)

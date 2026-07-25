@@ -26,8 +26,8 @@ class IProfileService(ABC):
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_default: Optional[bool] = None,
-        requested_by: Optional[UUID] = None,
         schedule: Optional[str] = ...,
+        requested_by: Optional[UUID] = None,
     ) -> VerificationProfile:
         pass
 

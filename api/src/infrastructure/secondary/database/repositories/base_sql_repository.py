@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Protocol
 import uuid
 from sqlalchemy.future import select
 
@@ -12,7 +12,17 @@ async def _session_scope():
         yield session
 
 
-class BaseSqlRepository[T, M]:
+class _HasId(Protocol):
+    id: uuid.UUID
+
+
+class _ModelProtocol(Protocol):
+    id: uuid.UUID
+
+    def __init__(self, *, id: uuid.UUID, **kwargs: Any) -> None: ...
+
+
+class BaseSqlRepository[T: _HasId, M: _ModelProtocol]:
     model_class: type[M]
     entity_class: type[T]
 
@@ -26,7 +36,7 @@ class BaseSqlRepository[T, M]:
 
     async def _get_by_id(self, id: uuid.UUID) -> Optional[T]:
         async with _session_scope() as session:
-            result = await session.execute(select(self.model_class).where(self.model_class.id == id))
+            result = await session.execute(select(self.model_class).filter_by(id=id))
             row = result.scalar_one_or_none()
             if row is None:
                 return None

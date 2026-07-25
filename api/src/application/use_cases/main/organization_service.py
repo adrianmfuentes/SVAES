@@ -43,6 +43,7 @@ class OrganizationService(IOrganizationService):
         if existing:
             raise DuplicateEntityError(f"Ya existe una organización con slug: {slug}")
 
+        owner = None
         if owner_id and self._user_repo:
             owner = await self._user_repo.get_by_id(owner_id)
             if owner and owner.role == UserRole.U3:
@@ -247,7 +248,7 @@ class OrganizationService(IOrganizationService):
         old_owner_id: Optional[UUID],
         organization_id: UUID,
     ) -> None:
-        if not old_owner_user or old_owner_user.role != UserRole.U4:
+        if not old_owner_user or old_owner_user.role != UserRole.U4 or not self._user_repo:
             return
 
         old_owner_user.role = UserRole.U2
@@ -264,6 +265,8 @@ class OrganizationService(IOrganizationService):
         new_owner_id: UUID,
         organization_id: UUID,
     ) -> None:
+        if not self._user_repo:
+            return
         new_owner_user.role = UserRole.U4
         await self._user_repo.update(new_owner_user)
 

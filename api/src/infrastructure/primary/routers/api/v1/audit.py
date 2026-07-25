@@ -180,18 +180,18 @@ async def get_audit_logs(
     logs: list[AuditLogEntry] = []
     for row in rows:
         masked_ip = None
-        if row.ip_address:
-            masked_ip = _mask_uuid(row.ip_address)
+        if row.ip_address is not None:
+            masked_ip = _mask_uuid(str(row.ip_address))
         logs.append(AuditLogEntry(
             id=str(row.id),
             timestamp=row.timestamp.isoformat(),
-            action=row.event,
-            category=EVENT_TO_CATEGORY.get(row.event, "config"),
-            actor_id=_mask_uuid(str(row.user_id)),
+            action=str(row.event),
+            category=EVENT_TO_CATEGORY.get(str(row.event), "config"),
+            actor_id=_mask_uuid(str(row.user_id)) or "",
             actor_role="masked",
-            target_type=row.resource_type,
-            target_id=_mask_uuid(str(row.resource_id)) if row.resource_id else None,
-            result=_derive_result(row.event),
+            target_type=str(row.resource_type) if row.resource_type is not None else None,
+            target_id=_mask_uuid(str(row.resource_id)) if row.resource_id is not None else None,
+            result=_derive_result(str(row.event)),
             ip_address=masked_ip,
         ))
 

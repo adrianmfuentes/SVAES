@@ -87,11 +87,11 @@ class SqlAccessRequestRepository(IAccessRequestRepository):
             model = await session.get(AccessRequestModel, access_request.id)
             if not model:
                 raise ValueError("Access request not found")
-            model.status = access_request.status.value
-            model.rejection_reason = access_request.rejection_reason
-            model.reviewed_by = access_request.reviewed_by
-            model.reviewed_at = access_request.reviewed_at
-            model.updated_at = datetime.now(timezone.utc)
+            model.status = access_request.status.value  # pyright: ignore[reportAttributeAccessIssue]
+            model.rejection_reason = access_request.rejection_reason  # pyright: ignore[reportAttributeAccessIssue]
+            model.reviewed_by = access_request.reviewed_by  # pyright: ignore[reportAttributeAccessIssue]
+            model.reviewed_at = access_request.reviewed_at  # pyright: ignore[reportAttributeAccessIssue]
+            model.updated_at = datetime.now(timezone.utc)  # pyright: ignore[reportAttributeAccessIssue]
             await session.commit()
             await session.refresh(model)
             return self._model_to_entity(model)

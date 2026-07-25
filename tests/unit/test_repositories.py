@@ -2101,6 +2101,7 @@ class TestBaseSqlRepository:
     @pytest.fixture
     def mock_session_scope(self):
         session = AsyncMock()
+        session.add = MagicMock()
         session_mgr = MagicMock()
         session_mgr.__aenter__ = AsyncMock(return_value=session)
         session_mgr.__aexit__ = AsyncMock(return_value=None)

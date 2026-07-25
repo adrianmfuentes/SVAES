@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, List
 import uuid
 from domain.entities.release import Release
+from domain.entities.artifact import Artifact
 from domain.enums import ReleaseStatus
 
 class IReleaseRepository(ABC):
@@ -55,9 +56,7 @@ class IReleaseRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_artifact_by_id(self, artifact_id: uuid.UUID) -> Optional[
-        dict
-    ]:
+    async def get_artifact_by_id(self, artifact_id: uuid.UUID) -> Optional[Artifact]:
         pass
 
     @abstractmethod

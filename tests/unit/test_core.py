@@ -936,6 +936,7 @@ class TestWebhookPayloadParser:
     def test_github_create_tag_event_parsed(self):
         from application.use_cases.main.webhook_payload_parser import parse_github_event
         event = parse_github_event("create", {"ref_type": "tag", "ref": "v1.2.3"})
+        assert event is not None
         assert event.tag_name == "v1.2.3"
         assert event.external_ref == "v1.2.3"
 
@@ -946,6 +947,7 @@ class TestWebhookPayloadParser:
     def test_github_release_published_event_parsed(self):
         from application.use_cases.main.webhook_payload_parser import parse_github_event
         event = parse_github_event("release", {"action": "published", "release": {"tag_name": "v2.0.0"}})
+        assert event is not None
         assert event.tag_name == "v2.0.0"
 
     def test_github_release_draft_event_ignored(self):
@@ -959,6 +961,7 @@ class TestWebhookPayloadParser:
     def test_gitlab_tag_push_event_parsed(self):
         from application.use_cases.main.webhook_payload_parser import parse_gitlab_event
         event = parse_gitlab_event("Tag Push Hook", {"ref": "refs/tags/v1.0.0", "checkout_sha": "abc123"})
+        assert event is not None
         assert event.tag_name == "v1.0.0"
 
     def test_gitlab_tag_deletion_ignored(self):
@@ -973,6 +976,7 @@ class TestWebhookPayloadParser:
     def test_gitea_create_tag_event_parsed(self):
         from application.use_cases.main.webhook_payload_parser import parse_gitea_event
         event = parse_gitea_event("create", {"ref_type": "tag", "ref": "v3.0.0"})
+        assert event is not None
         assert event.tag_name == "v3.0.0"
 
     def test_gitea_create_branch_event_ignored(self):
@@ -983,6 +987,7 @@ class TestWebhookPayloadParser:
         from application.use_cases.main.webhook_payload_parser import parse_bitbucket_event
         payload = {"push": {"changes": [{"new": {"type": "tag", "name": "v1.5.0"}}]}}
         event = parse_bitbucket_event("repo:push", payload)
+        assert event is not None
         assert event.tag_name == "v1.5.0"
 
     def test_bitbucket_branch_push_ignored(self):
@@ -993,6 +998,7 @@ class TestWebhookPayloadParser:
     def test_parse_tag_push_event_dispatches_per_provider(self):
         from application.use_cases.main.webhook_payload_parser import parse_tag_push_event
         event = parse_tag_push_event("GITHUB", "create", {"ref_type": "tag", "ref": "v1.0.0"})
+        assert event is not None
         assert event.tag_name == "v1.0.0"
 
     def test_parse_tag_push_event_unknown_provider_returns_none(self):

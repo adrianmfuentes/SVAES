@@ -112,13 +112,16 @@ function customFieldMatches(actual: unknown, operator: string, expected: string 
     case 'gte':
     case 'lt':
     case 'lte': {
-      const a = typeof actual === 'number' ? actual : NaN;
-      const e = typeof expected === 'number' ? expected : NaN;
+      const a = typeof actual === 'number' ? actual : Number.NaN;
+      const e = typeof expected === 'number' ? expected : Number.NaN;
       if (Number.isNaN(a) || Number.isNaN(e)) return false;
-      if (operator === 'gt') return a > e;
-      if (operator === 'gte') return a >= e;
-      if (operator === 'lt') return a < e;
-      return a <= e;
+      const comparisons: Record<string, boolean> = {
+        gt: a > e,
+        gte: a >= e,
+        lt: a < e,
+        lte: a <= e,
+      };
+      return comparisons[operator];
     }
     default:
       return false;
@@ -1287,6 +1290,55 @@ export class ProfilesComponent implements OnInit {
     return !!(this.editingProfile()!.is_default || this.editingProfile()!.is_system);
   }
 
+  private buildRuleParams(template: string): Record<string, unknown> {
+    const params: Record<string, unknown> = {};
+
+    const artifactType = this.ruleForm.value.artifactType;
+    if (artifactType && ruleSupportsArtifactType(template)) {
+      params['artifact_type'] = artifactType;
+    }
+    const expectedValue = this.ruleForm.value.expectedValue;
+    if (template === 'RV-06' && expectedValue) {
+      params['expected_value'] = expectedValue;
+    }
+    const approvedStates = this.ruleForm.value.approvedStates;
+    if (template === 'RV-10' && approvedStates) {
+      params['approved_states'] = approvedStates.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    }
+    if (template === 'RV-08') {
+      this.addRv08Params(params);
+    }
+    if (template === 'custom_field_check') {
+      this.addCustomFieldParams(params);
+    }
+
+    return params;
+  }
+
+  private addRv08Params(params: Record<string, unknown>): void {
+    const masterArtifactId = this.ruleForm.value.masterArtifactId;
+    const masterField = this.ruleForm.value.masterField;
+    if (masterArtifactId) {
+      params['master_artifact_id'] = masterArtifactId.trim();
+    }
+    if (masterField) {
+      params['master_field'] = masterField.trim();
+    }
+  }
+
+  private addCustomFieldParams(params: Record<string, unknown>): void {
+    const customField = this.ruleForm.value.customField;
+    const customOperator = this.ruleForm.value.customOperator;
+    const customValue = this.ruleForm.value.customValue;
+    if (customField) {
+      params['field'] = customField.trim();
+    }
+    params['operator'] = customOperator || 'non_empty';
+    if (customOperator !== 'non_empty' && customValue) {
+      params['value'] = coerceCustomFieldValue(customValue);
+    }
+  }
+
   submitRule(): void {
     if (this.ruleForm.invalid || !this.editingProfile()) return;
     this.savingRule.set(true);
@@ -1294,41 +1346,7 @@ export class ProfilesComponent implements OnInit {
     const editing = this.editingRule();
     const template = this.ruleForm.value.rule_template ?? '';
     const severity = this.ruleForm.value.severity;
-    const artifactType = this.ruleForm.value.artifactType;
-    const expectedValue = this.ruleForm.value.expectedValue;
-    const approvedStates = this.ruleForm.value.approvedStates;
-    const masterArtifactId = this.ruleForm.value.masterArtifactId;
-    const masterField = this.ruleForm.value.masterField;
-    const customField = this.ruleForm.value.customField;
-    const customOperator = this.ruleForm.value.customOperator;
-    const customValue = this.ruleForm.value.customValue;
-    const params: Record<string, unknown> = {};
-    if (artifactType && ruleSupportsArtifactType(template)) {
-      params['artifact_type'] = artifactType;
-    }
-    if (template === 'RV-06' && expectedValue) {
-      params['expected_value'] = expectedValue;
-    }
-    if (template === 'RV-10' && approvedStates) {
-      params['approved_states'] = approvedStates.split(',').map(s => s.trim()).filter(s => s.length > 0);
-    }
-    if (template === 'RV-08') {
-      if (masterArtifactId) {
-        params['master_artifact_id'] = masterArtifactId.trim();
-      }
-      if (masterField) {
-        params['master_field'] = masterField.trim();
-      }
-    }
-    if (template === 'custom_field_check') {
-      if (customField) {
-        params['field'] = customField.trim();
-      }
-      params['operator'] = customOperator || 'non_empty';
-      if (customOperator !== 'non_empty' && customValue) {
-        params['value'] = coerceCustomFieldValue(customValue);
-      }
-    }
+    const params = this.buildRuleParams(template);
 
     if (editing) {
       this.http.patch<{ id: string; is_active: boolean }>(`/api/v1/rules/${editing.id}`, {

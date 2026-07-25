@@ -423,9 +423,12 @@ async def _dispatch_org_channels(release: Any, event_type: str, verdict_value: s
 async def _notify_user(release_id: uuid.UUID, release: Any, saved_result: Any, triggered_by: str = "manual") -> None:
     verdict_value = saved_result.verdict.value
     drift = _is_drift(release, saved_result, triggered_by)
-    event_type = "DRIFT_DETECTED" if drift else (
-        "RELEASE_VALIDATED" if verdict_value in ("VALID", "VALID_WITH_WARNINGS") else "RELEASE_INVALIDATED"
-    )
+    if drift:
+        event_type = "DRIFT_DETECTED"
+    elif verdict_value in ("VALID", "VALID_WITH_WARNINGS"):
+        event_type = "RELEASE_VALIDATED"
+    else:
+        event_type = "RELEASE_INVALIDATED"
 
     await _dispatch_org_channels(release, event_type, verdict_value, release_id)
 

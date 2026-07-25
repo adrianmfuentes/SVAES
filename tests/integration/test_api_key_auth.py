@@ -394,12 +394,14 @@ async def test_tc_api_auth_09_rate_limit_429(
 
     remaining_values: list[int] = []
     got_429 = False
+    last_status = None
 
     for _ in range(101):
         resp = await client.get(
             "/api/v1/me",
             headers={_API_KEY_HDR: plaintext, **jwt_headers},
         )
+        last_status = resp.status_code
         if resp.status_code == 429:
             got_429 = True
             assert "Retry-After" in resp.headers, (
@@ -410,7 +412,7 @@ async def test_tc_api_auth_09_rate_limit_429(
         if remaining >= 0:
             remaining_values.append(remaining)
 
-    assert got_429, f"Expected at least one 429 after 101 requests, got {resp.status_code}"
+    assert got_429, f"Expected at least one 429 after 101 requests, got {last_status}"
 
     for i in range(1, len(remaining_values)):
         assert remaining_values[i] <= remaining_values[i - 1], (

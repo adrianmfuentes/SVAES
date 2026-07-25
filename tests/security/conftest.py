@@ -7,7 +7,10 @@ from uuid import UUID, uuid4
 import pytest
 import pytest_asyncio
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "api", "src"))
+
+from application.ports.output.i_user_repository import IUserRepository
+from domain.entities.user import User
 _log = logging.getLogger(__name__)
 
 # Shared test Redis URL
@@ -86,25 +89,25 @@ async def _test_db(_test_env):
             _log.exception("Test engine dispose failed")
 
 
-class InMemoryUserRepository:
+class InMemoryUserRepository(IUserRepository):
     """In-memory user repository used when PostgreSQL is unavailable."""
 
     def __init__(self) -> None:
-        self._by_email: Dict[str, object] = {}
-        self._by_id: Dict[UUID, object] = {}
-        self._by_activation: Dict[str, object] = {}
+        self._by_email: Dict[str, User] = {}
+        self._by_id: Dict[UUID, User] = {}
+        self._by_activation: Dict[str, User] = {}
 
-    async def create(self, user: object) -> object:
+    async def create(self, user: User) -> User:
         self._by_email[user.email] = user
         self._by_id[user.id] = user
         if user.activation_token:
             self._by_activation[user.activation_token] = user
         return user
 
-    async def get_by_id(self, user_id: UUID) -> Optional[object]:
+    async def get_by_id(self, user_id: UUID) -> Optional[User]:
         return self._by_id.get(user_id)
 
-    async def get_by_email(self, email: str) -> Optional[object]:
+    async def get_by_email(self, email: str) -> Optional[User]:
         return self._by_email.get(email)
 
     async def list_all(
@@ -113,18 +116,18 @@ class InMemoryUserRepository:
         active_only: bool = True,
         skip: int = 0,
         limit: int = 100,
-    ) -> List[object]:
+    ) -> List[User]:
         users = list(self._by_email.values())
         if active_only:
             users = [u for u in users if u.is_active]
         return users[skip : skip + limit]
 
-    async def update(self, user: object) -> object:
+    async def update(self, user: User) -> User:
         self._by_email[user.email] = user
         self._by_id[user.id] = user
         return user
 
-    async def get_by_activation_token(self, token: str) -> Optional[object]:
+    async def get_by_activation_token(self, token: str) -> Optional[User]:
         return self._by_activation.get(token)
 
     async def delete(self, user_id: UUID) -> None:

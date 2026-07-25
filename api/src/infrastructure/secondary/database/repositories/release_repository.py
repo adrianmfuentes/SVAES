@@ -1,4 +1,5 @@
 from application.ports.output.i_release_repository import IReleaseRepository
+from domain.entities.artifact import Artifact
 from domain.entities.release import Release
 from domain.enums import ReleaseStatus
 from domain.exceptions import EntityNotFoundError, DuplicateEntityError
@@ -188,7 +189,7 @@ class SqlReleaseRepository(IReleaseRepository):
             await session.commit()
 
 
-    async def get_artifact_by_id(self, artifact_id: uuid.UUID):
+    async def get_artifact_by_id(self, artifact_id: uuid.UUID) -> Optional[Artifact]:
         async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(ArtifactModel).where(ArtifactModel.id == artifact_id)
