@@ -99,7 +99,7 @@ describe('ProfilesComponent', () => {
 
     it('should POST new profile and close modal', () => {
       component.openCreate();
-      component.profileForm.setValue({ name: 'New', description: 'Desc' });
+      component.profileForm.setValue({ name: 'New', description: 'Desc', schedule: '' });
       component.submitProfile();
       const req = httpCtrl.expectOne('/api/v1/organizations/org-abc/profiles');
       expect(req.request.method).toBe('POST');
@@ -112,7 +112,7 @@ describe('ProfilesComponent', () => {
       component.templates.set([mockProfile]);
       component.openEdit(mockProfile);
       httpCtrl.expectOne('/api/v1/profiles/p1').flush({ ...mockProfile, rules: [] });
-      component.profileForm.setValue({ name: 'Updated', description: 'Desc' });
+      component.profileForm.setValue({ name: 'Updated', description: 'Desc', schedule: '' });
       component.submitProfile();
       const req = httpCtrl.expectOne(`/api/v1/profiles/${mockProfile.id}`);
       expect(req.request.method).toBe('PATCH');
@@ -122,7 +122,7 @@ describe('ProfilesComponent', () => {
 
     it('should set modalError on failure', () => {
       component.openCreate();
-      component.profileForm.setValue({ name: 'X', description: '' });
+      component.profileForm.setValue({ name: 'X', description: '', schedule: '' });
       component.submitProfile();
       httpCtrl.expectOne('/api/v1/organizations/org-abc/profiles').flush(
         { detail: 'Already exists' },
