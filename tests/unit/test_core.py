@@ -370,8 +370,9 @@ class TestAccessGuards:
         membership_repo.get = AsyncMock(return_value=None)
 
         dep = require_org_access()
+        org_id = uuid4()
         with pytest.raises(HTTPException) as exc:
-            await dep(org_id=uuid4(), current_user=cu_operator, org_repo=org_repo, membership_repo=membership_repo)
+            await dep(org_id=org_id, current_user=cu_operator, org_repo=org_repo, membership_repo=membership_repo)
         assert exc.value.status_code == 403
 
     async def test_require_project_access_admin_bypasses(self, cu_admin):
@@ -388,8 +389,9 @@ class TestAccessGuards:
         proj_repo.get_by_id = AsyncMock(return_value=None)
 
         dep = require_project_access()
+        project_id = uuid4()
         with pytest.raises(HTTPException) as exc:
-            await dep(project_id=uuid4(), current_user=cu_operator, project_repo=proj_repo)
+            await dep(project_id=project_id, current_user=cu_operator, project_repo=proj_repo)
         assert exc.value.status_code == 404
 
     def test_require_role_u4_required_u2_fails(self, cu_operator):
@@ -424,8 +426,9 @@ class TestAccessGuards:
         conn_repo.get_by_id = AsyncMock(return_value=None)
 
         dep = require_connector_access()
+        connector_id = uuid4()
         with pytest.raises(HTTPException) as exc:
-            await dep(connector_id=uuid4(), current_user=cu_operator, connector_repo=conn_repo)
+            await dep(connector_id=connector_id, current_user=cu_operator, connector_repo=conn_repo)
         assert exc.value.status_code == 404
 
     async def test_require_connector_access_admin_bypasses(self, cu_admin):
@@ -442,8 +445,9 @@ class TestAccessGuards:
         profile_repo.get_by_id = AsyncMock(return_value=None)
 
         dep = require_profile_access()
+        profile_id = uuid4()
         with pytest.raises(HTTPException) as exc:
-            await dep(profile_id=uuid4(), current_user=cu_operator, profile_repo=profile_repo)
+            await dep(profile_id=profile_id, current_user=cu_operator, profile_repo=profile_repo)
         assert exc.value.status_code == 404
 
     async def test_require_rule_access_not_found_404(self, cu_operator):
@@ -453,8 +457,9 @@ class TestAccessGuards:
         rule_repo.get_by_id = AsyncMock(return_value=None)
 
         dep = require_rule_access()
+        rule_id = uuid4()
         with pytest.raises(HTTPException) as exc:
-            await dep(rule_id=uuid4(), current_user=cu_operator, rule_repo=rule_repo)
+            await dep(rule_id=rule_id, current_user=cu_operator, rule_repo=rule_repo)
         assert exc.value.status_code == 404
 
     async def test_require_custom_role_access_not_found_404(self, cu_operator):
@@ -464,8 +469,9 @@ class TestAccessGuards:
         role_repo.get_by_id = AsyncMock(return_value=None)
 
         dep = require_custom_role_access()
+        role_id = uuid4()
         with pytest.raises(HTTPException) as exc:
-            await dep(role_id=uuid4(), current_user=cu_operator, role_repo=role_repo)
+            await dep(role_id=role_id, current_user=cu_operator, role_repo=role_repo)
         assert exc.value.status_code == 404
 
     async def test_require_custom_role_access_admin_bypasses(self, cu_admin):
@@ -482,8 +488,9 @@ class TestAccessGuards:
         api_key_repo.get_by_id = AsyncMock(return_value=None)
 
         dep = require_api_key_access()
+        key_id = uuid4()
         with pytest.raises(HTTPException) as exc:
-            await dep(key_id=uuid4(), current_user=cu_operator, api_key_repo=api_key_repo)
+            await dep(key_id=key_id, current_user=cu_operator, api_key_repo=api_key_repo)
         assert exc.value.status_code == 404
 
     def test_require_permission_denied_403(self, cu_operator):

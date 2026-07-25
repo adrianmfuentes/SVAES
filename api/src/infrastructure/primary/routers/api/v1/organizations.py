@@ -18,7 +18,7 @@ from core.dependencies import (
 from core.rate_limit import rate_limit_api_key
 from domain.enums import UserRole, Permission
 from domain.exceptions import ValidationError, EntityNotFoundError, DuplicateEntityError
-from . import ERROR_INTERNO
+from . import ERROR_INTERNO, ERROR_PROYECTO_NO_ORGANIZACION
 
 router = APIRouter(tags=["Organizations"])
 
@@ -283,7 +283,7 @@ async def get_project(
         if not project:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyecto no encontrado")
         if project.organization_id != org_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El proyecto no pertenece a esta organización")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_PROYECTO_NO_ORGANIZACION)
         return {
             "id": str(project.id),
             "name": project.name,
@@ -415,7 +415,7 @@ async def archive_project(
     """
     try:
         if project_access.project and project_access.project.organization_id != org_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El proyecto no pertenece a esta organización")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_PROYECTO_NO_ORGANIZACION)
         project = await service.archive_project(project_id=project_id)
         return {"id": str(project.id), "name": project.name, "is_archived": project.is_archived}
     except HTTPException:
@@ -450,7 +450,7 @@ async def unarchive_project(
     """
     try:
         if project_access.project and project_access.project.organization_id != org_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El proyecto no pertenece a esta organización")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ERROR_PROYECTO_NO_ORGANIZACION)
         project = await service.unarchive_project(project_id=project_id)
         return {"id": str(project.id), "name": project.name, "is_archived": project.is_archived}
     except HTTPException:
