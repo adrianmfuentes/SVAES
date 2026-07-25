@@ -113,6 +113,17 @@ class SqlReleaseRepository(IReleaseRepository):
             return [self._release_from_row(row) for row in result.scalars().all()]
 
 
+    async def list_by_profile(
+        self, profile_id: uuid.UUID, statuses: Optional[list[ReleaseStatus]] = None
+    ) -> list[Release]:
+        async with AsyncSessionLocal() as session:
+            stmt = select(ReleaseModel).where(ReleaseModel.profile_id == profile_id)
+            if statuses:
+                stmt = stmt.where(ReleaseModel.status.in_([s.value for s in statuses]))
+            result = await session.execute(stmt)
+            return [self._release_from_row(row) for row in result.scalars().all()]
+
+
     async def update(self, release: Release) -> Release:
         async with AsyncSessionLocal() as session:
             result = await session.execute(select(ReleaseModel).where(ReleaseModel.id == release.id))

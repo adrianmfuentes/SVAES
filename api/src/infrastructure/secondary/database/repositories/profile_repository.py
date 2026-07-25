@@ -21,6 +21,8 @@ def _row_to_entity(row: VerificationProfileModel, rules: list[VerificationRule])
         is_default=cast(bool, row.is_default),
         is_system=cast(bool, row.is_system),
         rules=rules,
+        schedule=cast(str | None, row.schedule),
+        schedule_last_run_at=cast(datetime | None, row.schedule_last_run_at),
         created_at=cast(datetime, row.created_at),
         updated_at=cast(datetime, row.updated_at),
     )
@@ -109,11 +111,39 @@ class SqlProfileRepository(IProfileRepository):
             profile_model.name = profile.name  # pyright: ignore[reportAttributeAccessIssue]
             profile_model.description = profile.description  # pyright: ignore[reportAttributeAccessIssue]
             profile_model.is_default = profile.is_default  # pyright: ignore[reportAttributeAccessIssue]
+            profile_model.schedule = profile.schedule  # pyright: ignore[reportAttributeAccessIssue]
+            profile_model.schedule_last_run_at = profile.schedule_last_run_at  # pyright: ignore[reportAttributeAccessIssue]
             profile_model.updated_at = datetime.now(timezone.utc)  # pyright: ignore[reportAttributeAccessIssue]
 
             await session.commit()
             await session.refresh(profile_model)
             return _row_to_entity(profile_model, profile.rules)
+
+    async def list_scheduled(self) -> List[VerificationProfile]:
+        """Perfiles con una expresión cron activa en `schedule`, para el worker periódico."""
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(VerificationProfileModel).where(VerificationProfileModel.schedule.isnot(None))
+            )
+            profile_rows = result.scalars().all()
+            profiles = []
+            for row in profile_rows:
+                rules_result = await session.execute(
+                    select(VerificationRuleModel)
+                    .where(VerificationRuleModel.profile_id == row.id)
+                    .order_by(VerificationRuleModel.display_order)
+                )
+                rules = [_rule_row_to_entity(r) for r in rules_result.scalars().all()]
+                profiles.append(_row_to_entity(row, rules))
+            return profiles
+
+    async def update_schedule_last_run(self, profile_id: uuid.UUID, when: datetime) -> None:
+        async with AsyncSessionLocal() as session:
+            profile_model = await session.get(VerificationProfileModel, profile_id)
+            if not profile_model:
+                return
+            profile_model.schedule_last_run_at = when  # pyright: ignore[reportAttributeAccessIssue]
+            await session.commit()
 
     async def list_by_organization(self, organization_id: uuid.UUID, skip: int = 0, limit: int = 50) -> List[VerificationProfile]:
         async with AsyncSessionLocal() as session:

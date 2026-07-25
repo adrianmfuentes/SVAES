@@ -58,3 +58,7 @@ class INotificationService(ABC):
     @abstractmethod
     async def unsubscribe(self, user_id: UUID, event_type: str) -> None:
         pass
+
+    @abstractmethod
+    async def send_test_notification(self, channel_id: UUID) -> bool:
+        pass

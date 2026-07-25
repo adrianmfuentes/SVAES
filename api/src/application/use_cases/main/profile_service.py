@@ -1,5 +1,6 @@
 from typing import List, Optional
 from uuid import UUID, uuid4
+from croniter import croniter
 from application.ports.input.i_profile_service import IProfileService
 from application.ports.output.i_profile_repository import IProfileRepository
 from application.ports.output.i_verification_rule_repository import IVerificationRuleRepository
@@ -13,6 +14,17 @@ from core.logger import get_logger
 from core.rule_names import CUSTOM_FIELD_CHECK_OPERATORS
 
 _log = get_logger(__name__)
+
+
+def _validate_schedule(schedule: Optional[str]) -> None:
+    """`schedule` es una expresión cron de 5 campos (minuto hora dia mes dia_semana)
+    que dispara re-verificaciones automáticas (ver scheduler_worker.py). `None`/""
+    desactiva el cronograma, así que solo se valida cuando trae contenido.
+    """
+    if not schedule:
+        return
+    if not croniter.is_valid(schedule):
+        raise ValidationError(f"Expresión cron inválida: '{schedule}'")
 
 
 def _validate_rule_params(rule_template: str, params: dict) -> None:
@@ -78,8 +90,11 @@ class ProfileService(ManageProfileUseCase, IProfileService):
         description: Optional[str] = None,
         is_default: Optional[bool] = None,
         requested_by: Optional[UUID] = None,
+        schedule: Optional[str] = ...,
     ) -> VerificationProfile:
-        updated = await super().update_profile(profile_id, name, description, is_default)
+        if schedule is not ...:
+            _validate_schedule(schedule)
+        updated = await super().update_profile(profile_id, name, description, is_default, schedule)
         audit = get_audit_logger()
         audit.log(AuditEntry(
             event=AuditEvent.PROFILE_UPDATED,
@@ -87,7 +102,7 @@ class ProfileService(ManageProfileUseCase, IProfileService):
             organization_id=updated.organization_id,
             resource_type="profile",
             resource_id=profile_id,
-            details={"name": updated.name},
+            details={"name": updated.name, "schedule": updated.schedule},
         ))
         _log.info("Profile updated: id=%s org=%s", profile_id, updated.organization_id)
         return updated

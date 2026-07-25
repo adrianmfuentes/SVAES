@@ -164,6 +164,45 @@ services:
     networks:
       - svaes-dev-network
 
+  celery-beat:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    container_name: svaes-dev-celery-beat
+    restart: unless-stopped
+    command: celery -A src.infrastructure.secondary.queue.celery_app beat --loglevel=warning
+    env_file:
+      - .env.dev
+    environment:
+      DATABASE_URL: postgresql+psycopg://svaes:svaes_dev@postgres:5432/svaes
+      REDIS_URL: redis://:redis_dev@redis:6379/0
+      CELERY_BROKER_URL: redis://:redis_dev@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:redis_dev@redis:6379/0
+      JWT_SECRET_KEY: dev-jwt-secret-key-not-for-production-use-at-all
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: "60"
+      ENVIRONMENT: development
+      ALLOWED_ORIGINS: http://localhost,http://localhost:4200
+      ENGINE_URL: http://engine:8081
+      ENGINE_API_KEY: dev-engine-key
+      ADMIN_EMAIL: admin@svaes.local
+      ADMIN_PASSWORD: admin_dev_pass
+      APP_BASE_URL: http://localhost
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      engine:
+        condition: service_healthy
+    networks:
+      - svaes-dev-network
+
   web:
     build:
       context: ./web

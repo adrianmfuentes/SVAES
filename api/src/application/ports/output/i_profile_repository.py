@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Optional, List
 import uuid
 from domain.entities.verification_profile import VerificationProfile
@@ -30,4 +31,12 @@ class IProfileRepository(ABC):
 
     @abstractmethod
     async def delete(self, profile_id: uuid.UUID) -> None:
+        pass
+
+    @abstractmethod
+    async def list_scheduled(self) -> List[VerificationProfile]:
+        pass
+
+    @abstractmethod
+    async def update_schedule_last_run(self, profile_id: uuid.UUID, when: datetime) -> None:
         pass

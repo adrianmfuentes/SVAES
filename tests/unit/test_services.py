@@ -1130,7 +1130,7 @@ class TestNotificationService:
         )
         repo.list_channels = AsyncMock(return_value=[ch])
         result = await service.list_channels(uuid4())
-        assert len(result) == 3
+        assert len(result) == 4
         configured = [r for r in result if r["configured"]]
         assert len(configured) == 1
 

@@ -37,7 +37,7 @@ class VerificationService(IVerificationService):
         self._connector_repo = connector_repository
 
 
-    async def launch_verification(self, release_id: UUID, requested_by: UUID) -> str:
+    async def launch_verification(self, release_id: UUID, requested_by: UUID, triggered_by: str = "manual") -> str:
         release = await self._release_repo.get_by_id(release_id)
         if not release:
             raise ValidationError(_RELEASE_NOT_FOUND)
@@ -62,7 +62,7 @@ class VerificationService(IVerificationService):
         previous_status = release.status
         await self._release_repo.update_pending_task(release_id, None, previous_status)
         await self._release_repo.update_status(release_id, ReleaseStatus.EN_VERIFICACION)
-        task_id = await self._task_queue.enqueue_verification_task(release_id)
+        task_id = await self._task_queue.enqueue_verification_task(release_id, triggered_by=triggered_by)
         await self._release_repo.update_pending_task(release_id, task_id, None)
 
         audit = get_audit_logger()
@@ -72,9 +72,9 @@ class VerificationService(IVerificationService):
             organization_id=None,
             resource_type="release",
             resource_id=release_id,
-            details={"task_id": task_id},
+            details={"task_id": task_id, "triggered_by": triggered_by},
         ))
-        _log.info("Verification launched: release=%s task=%s", release_id, task_id)
+        _log.info("Verification launched: release=%s task=%s triggered_by=%s", release_id, task_id, triggered_by)
 
         return task_id
 

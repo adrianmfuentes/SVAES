@@ -23,6 +23,7 @@ class ProfileUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     is_default: Optional[bool] = None
+    schedule: Optional[str] = Field(None, max_length=120, description="Expresión cron (5 campos). null/omitido = sin cambios, '' = desactivar.")
 
 class RuleCreateRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -73,6 +74,8 @@ async def list_profiles(
                 "is_default": p.is_default,
                 "is_system": p.is_system,
                 "rules_count": len(p.rules),
+                "schedule": p.schedule,
+                "schedule_last_run_at": p.schedule_last_run_at.isoformat() if p.schedule_last_run_at else None,
             }
             for p in profiles
         ]
@@ -139,13 +142,22 @@ async def update_profile(
         - Lanza HTTPException con status 500 para cualquier error inesperado.
     """
     try:
+        schedule_kwargs = {}
+        if "schedule" in payload.model_fields_set:
+            schedule_kwargs["schedule"] = payload.schedule or None
         profile = await service.update_profile(
             profile_id=profile_id,
             name=payload.name,
             description=payload.description,
             is_default=payload.is_default,
+            **schedule_kwargs,
         )
-        return {"id": str(profile.id), "name": profile.name, "is_default": profile.is_default}
+        return {
+            "id": str(profile.id),
+            "name": profile.name,
+            "is_default": profile.is_default,
+            "schedule": profile.schedule,
+        }
     except EntityNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValidationError as e:
@@ -213,6 +225,8 @@ async def get_profile(
             "description": profile.description,
             "is_default": profile.is_default,
             "is_system": profile.is_system,
+            "schedule": profile.schedule,
+            "schedule_last_run_at": profile.schedule_last_run_at.isoformat() if profile.schedule_last_run_at else None,
             "rules": [
                 {
                     "id": str(r.id),

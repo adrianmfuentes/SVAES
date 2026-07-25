@@ -78,7 +78,7 @@ async def _call_verification_engine(
 
 
 @celery_app.task(name="infrastructure.workers.verification_worker.run_verification", bind=True)
-def run_verification(self, release_id: str) -> Dict[str, Any]:
+def run_verification(self, release_id: str, triggered_by: str = "manual") -> Dict[str, Any]:
     release_uuid = uuid.UUID(release_id)
 
     _report_progress(self, current=0, total=1, stage='loading')
@@ -86,7 +86,7 @@ def run_verification(self, release_id: str) -> Dict[str, Any]:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        result = loop.run_until_complete(_run_verification_async(release_uuid, self.request.id, self))
+        result = loop.run_until_complete(_run_verification_async(release_uuid, self.request.id, self, triggered_by))
         return result
     finally:
         loop.close()
@@ -371,23 +371,78 @@ def _enrich_rule_results(
             rule_result["evidence_params"] = None
 
 
-async def _notify_user(release_id: uuid.UUID, release: Any, saved_result: Any) -> None:
+def _is_drift(release: Any, saved_result: Any, triggered_by: str) -> bool:
+    """Una release re-verificada automáticamente (scheduler) que pasa de un
+    veredicto positivo a NO_VALIDA sin que nadie haya tocado su configuración:
+    el estado externo cambió por su cuenta entre verificaciones. Solo aplica a
+    disparos `triggered_by="scheduled"`; una re-verificación manual del mismo
+    tipo no es "drift", es simplemente el usuario comprobando de nuevo.
+    """
+    if triggered_by != "scheduled":
+        return False
+    if saved_result.verdict != VerdictType.INVALID:
+        return False
+    return release.previous_status in (ReleaseStatus.VALIDA, ReleaseStatus.CON_ADVERTENCIAS)
+
+
+async def _dispatch_org_channels(release: Any, event_type: str, verdict_value: str, release_id: uuid.UUID) -> None:
+    """Empuja `event_type` a los canales salientes (Slack/MS Teams/genérico) de la
+    organización, reutilizando el patrón declarativo de GenericHttpConnector pero
+    en dirección de salida. Independiente de las preferencias por-usuario: es un
+    aviso de equipo, no de una persona concreta.
+    """
+    organization_id = getattr(release, "organization_id", None)
+    if not organization_id:
+        return
+
+    from infrastructure.secondary.notifications.outbound_webhook_sender import (
+        OUTBOUND_CHANNEL_TYPES,
+        send_outbound_notification,
+    )
+
+    notification_repo = SqlNotificationRepository()
+    try:
+        channels = await notification_repo.list_channels(organization_id)
+    except Exception:
+        _wlog.exception("Failed to list notification channels for org %s", organization_id)
+        return
+
+    ctx = {
+        "release_name": release.name,
+        "version": release.version,
+        "verdict": verdict_value,
+        "project_name": getattr(release, "project_name", None),
+        "release_url": f"{settings.app_base_url}/app/releases/{release_id}",
+    }
+    for channel in channels:
+        if not channel.enabled or channel.channel_type not in OUTBOUND_CHANNEL_TYPES:
+            continue
+        await send_outbound_notification(channel, event_type, ctx)
+
+
+async def _notify_user(release_id: uuid.UUID, release: Any, saved_result: Any, triggered_by: str = "manual") -> None:
+    verdict_value = saved_result.verdict.value
+    drift = _is_drift(release, saved_result, triggered_by)
+    event_type = "DRIFT_DETECTED" if drift else (
+        "RELEASE_VALIDATED" if verdict_value in ("VALID", "VALID_WITH_WARNINGS") else "RELEASE_INVALIDATED"
+    )
+
+    await _dispatch_org_channels(release, event_type, verdict_value, release_id)
+
     user_repo = SqlUserRepository()
     user = await user_repo.get_by_id(release.created_by)
     if not user:
         _wlog.warning("Cannot notify: user not found for release %s (created_by=%s)", release_id, release.created_by)
         return
 
-    verdict_value = saved_result.verdict.value
-    if verdict_value in ("VALID", "VALID_WITH_WARNINGS"):
-        event_type = "RELEASE_VALIDATED"
-    else:
-        event_type = "RELEASE_INVALIDATED"
-
+    # DRIFT_DETECTED no tiene preferencia propia (ver PREFERENCE_EVENT_MAP en
+    # notification_service.py): para el email al propietario se trata como una
+    # invalidación normal, la distinción "drift" queda en el mensaje a los canales de equipo.
+    subscription_event = "RELEASE_INVALIDATED" if drift else event_type
     notification_repo = SqlNotificationRepository()
-    subscription = await notification_repo.get_subscription(user.id, event_type)
+    subscription = await notification_repo.get_subscription(user.id, subscription_event)
     if subscription is not None and not subscription.enabled:
-        _wlog.info("Skipping notification for release %s: user %s has disabled %s", release_id, user.id, event_type)
+        _wlog.info("Skipping notification for release %s: user %s has disabled %s", release_id, user.id, subscription_event)
         return
 
     try:
@@ -402,7 +457,9 @@ async def _notify_user(release_id: uuid.UUID, release: Any, saved_result: Any) -
         _wlog.exception("Failed to send verification email for release %s to %s", release_id, user.email)
 
 
-async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_task: Any) -> Dict[str, Any]:
+async def _run_verification_async(
+    release_id: uuid.UUID, task_id: str, celery_task: Any, triggered_by: str = "manual"
+) -> Dict[str, Any]:
     release_repo = SqlReleaseRepository()
     verification_repo = SqlVerificationResultRepository()
     profile_repo = SqlProfileRepository()
@@ -496,7 +553,7 @@ async def _run_verification_async(release_id: uuid.UUID, task_id: str, celery_ta
     notify_stage = save_stage + 1
     _report_progress(celery_task, current=notify_stage, total=total_stages, stage='notifying')
 
-    await _notify_user(release_id, release, saved_result)
+    await _notify_user(release_id, release, saved_result, triggered_by)
 
     return {
         "result_id": str(saved_result.id),

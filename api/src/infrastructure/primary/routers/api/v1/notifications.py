@@ -14,9 +14,36 @@ router = APIRouter(tags=["Notifications"])
 
 class NotificationChannelConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    channel_type: str = Field(..., description="EMAIL, SLACK, MS_TEAMS")
+    channel_type: str = Field(..., description="EMAIL, SLACK, MS_TEAMS, GENERIC")
     enabled: bool = True
     config_data: dict = Field(default_factory=dict, description="Channel-specific configuration")
+
+
+_CHANNEL_CONFIG_SCHEMAS: dict = {
+    "EMAIL": {},
+    "SLACK": {
+        "webhook_url": {
+            "type": "string", "label": "notification_field.slack_webhook_url",
+            "required": True, "sensitive": True,
+        },
+    },
+    "MS_TEAMS": {
+        "webhook_url": {
+            "type": "string", "label": "notification_field.teams_webhook_url",
+            "required": True, "sensitive": True,
+        },
+    },
+    "GENERIC": {
+        "webhook_url": {
+            "type": "string", "label": "notification_field.generic_webhook_url",
+            "required": True, "sensitive": True,
+        },
+        "signing_secret": {
+            "type": "string", "label": "notification_field.signing_secret",
+            "required": False, "sensitive": True,
+        },
+    },
+}
 
 
 class UserNotificationPreferences(BaseModel):
@@ -31,6 +58,46 @@ class SubscriptionRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     event_type: str = Field(..., description="RELEASE_VALIDATED, RELEASE_INVALIDATED, RELEASE_PENDING, WEEKLY_DIGEST")
     enabled: bool = True
+
+
+@router.get("/api/v1/notifications/channel-types")
+async def list_notification_channel_types(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+):
+    """Esquema de configuración de cada tipo de canal, para el formulario dinámico del panel admin.
+
+    Retorna:
+        - Diccionario `{channel_type: {field: {type,label,required,sensitive}}}`.
+    """
+    return {"channel_types": list(_CHANNEL_CONFIG_SCHEMAS.keys()), "config_schemas": _CHANNEL_CONFIG_SCHEMAS}
+
+
+@router.post("/api/v1/notifications/channels/{channel_id}/test", status_code=status.HTTP_200_OK)
+async def test_notification_channel(
+    channel_id: UUID,
+    current_user: Annotated[CurrentUser, Depends(require_permission(Permission.MANAGE_PROFILES))],
+    _: Annotated[CurrentUser, Depends(require_notification_channel_access())],
+    service: Annotated[INotificationService, Depends(get_notification_service)],
+):
+    """Envía un mensaje de prueba al canal saliente (Slack/MS Teams/genérico) configurado.
+
+    Atributos:
+        - channel_id: UUID - El ID del canal a probar.
+
+    Retorna:
+        - 200 OK con `{"delivered": bool}`.
+        - 404 Not Found si el canal no existe.
+        - 400 Bad Request si el tipo de canal no soporta envío de prueba (p. ej. EMAIL).
+    """
+    try:
+        delivered = await service.send_test_notification(channel_id)
+        return {"delivered": delivered}
+    except EntityNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_INTERNO)
 
 
 @router.get("/api/v1/notifications/channels")

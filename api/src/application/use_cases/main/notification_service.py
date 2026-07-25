@@ -10,8 +10,8 @@ from core.logger import get_logger
 
 _log = get_logger(__name__)
 
-SUPPORTED_CHANNEL_TYPES = {"EMAIL", "SLACK", "MS_TEAMS"}
-SUPPORTED_EVENT_TYPES = {"RELEASE_VALIDATED", "RELEASE_INVALIDATED", "RELEASE_PENDING", "WEEKLY_DIGEST"}
+SUPPORTED_CHANNEL_TYPES = {"EMAIL", "SLACK", "MS_TEAMS", "GENERIC"}
+SUPPORTED_EVENT_TYPES = {"RELEASE_VALIDATED", "RELEASE_INVALIDATED", "RELEASE_PENDING", "WEEKLY_DIGEST", "DRIFT_DETECTED"}
 PREFERENCE_EVENT_MAP = {
     "release_validated": "RELEASE_VALIDATED",
     "release_invalidated": "RELEASE_INVALIDATED",
@@ -226,3 +226,28 @@ class NotificationService(INotificationService):
             details={"event_type": event_type},
         ))
         _log.info("Notification unsubscription: user=%s", user_id)
+
+    async def send_test_notification(self, channel_id: UUID) -> bool:
+        from infrastructure.secondary.notifications.outbound_webhook_sender import (
+            OUTBOUND_CHANNEL_TYPES,
+            send_outbound_notification,
+        )
+
+        channel = await self._repo.get_channel_by_id(channel_id)
+        if not channel:
+            raise EntityNotFoundError(f"Canal de notificación no encontrado: {channel_id}")
+        if channel.channel_type not in OUTBOUND_CHANNEL_TYPES:
+            raise ValidationError(
+                f"El canal '{channel.channel_type}' no soporta mensajes de prueba salientes."
+            )
+
+        ctx = {
+            "release_name": "Release de ejemplo",
+            "version": "1.0.0",
+            "verdict": "VALID",
+            "project_name": "Proyecto de prueba",
+            "release_url": None,
+        }
+        delivered = await send_outbound_notification(channel, "RELEASE_VALIDATED", ctx)
+        _log.info("Test notification sent: channel=%s delivered=%s", channel_id, delivered)
+        return delivered

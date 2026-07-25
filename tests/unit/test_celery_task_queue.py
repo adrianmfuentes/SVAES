@@ -27,7 +27,29 @@ class TestCeleryTaskQueue:
         assert task_id == "task-abc-123"
         mock_celery_app.send_task.assert_called_once_with(
             "infrastructure.workers.verification_worker.run_verification",
-            args=[str(release_id)],
+            args=[str(release_id), "manual"],
+        )
+
+    @pytest.mark.asyncio
+    async def test_enqueue_verification_task_scheduled(self):
+        release_id = uuid.uuid4()
+        mock_result = MagicMock()
+        mock_result.id = "task-abc-456"
+        mock_celery_app = MagicMock()
+        mock_celery_app.send_task.return_value = mock_result
+
+        queue = CeleryTaskQueue()
+
+        with patch(
+            "infrastructure.secondary.queue.celery_task_queue.celery_app",
+            mock_celery_app,
+        ):
+            task_id = await queue.enqueue_verification_task(release_id, triggered_by="scheduled")
+
+        assert task_id == "task-abc-456"
+        mock_celery_app.send_task.assert_called_once_with(
+            "infrastructure.workers.verification_worker.run_verification",
+            args=[str(release_id), "scheduled"],
         )
 
     @pytest.mark.asyncio

@@ -18,7 +18,15 @@ interface Profile {
   is_default?: boolean;
   is_system?: boolean;
   created_at?: string;
+  schedule?: string | null;
+  schedule_last_run_at?: string | null;
 }
+
+const SCHEDULE_PRESETS: { key: string; cron: string }[] = [
+  { key: 'hourly', cron: '0 * * * *' },
+  { key: 'daily', cron: '0 6 * * *' },
+  { key: 'weekly', cron: '0 6 * * 1' },
+];
 
 interface ProfileRule {
   id: string;
@@ -65,6 +73,58 @@ const CUSTOM_FIELD_CHECK_OPERATORS = ['non_empty', 'equals', 'not_equals', 'cont
 
 const ARTIFACT_TYPES = ['TAREA', 'CODIGO', 'DOCUMENTO', 'PLAN', 'CAMBIO'];
 
+/** "80" -> 80 (number), but "007"/"1e10"/"v2" stay strings: a round-trip check
+ * (String(Number(x)) === x) tells apart a plain integer/decimal from an
+ * identifier that merely looks numeric. Mirrors what the API stores in
+ * `VerificationRule.params.value`, which the Rust engine reads back as a
+ * typed JSON value (see engine/src/rules/custom_field_check.rs).
+ */
+function coerceCustomFieldValue(raw: string): string | number {
+  const trimmed = raw.trim();
+  const asNumber = Number(trimmed);
+  const looksNumeric = trimmed.length > 0 && !Number.isNaN(asNumber) && String(asNumber) === trimmed;
+  return looksNumeric ? asNumber : raw;
+}
+
+/** Client-side mirror of `custom_field_check::field_matches` in the Rust engine,
+ * for the live preview only — never used to decide a real verdict. Keeping the
+ * two in sync is why every branch here is commented with its Rust counterpart.
+ */
+function isNonEmptyValue(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object') return Object.keys(value as object).length > 0;
+  return true;
+}
+
+function customFieldMatches(actual: unknown, operator: string, expected: string | number | undefined): boolean {
+  if (operator === 'non_empty') return isNonEmptyValue(actual);
+  if (actual === undefined || actual === null) return false;
+  switch (operator) {
+    case 'equals':
+      return actual === expected;
+    case 'not_equals':
+      return actual !== expected;
+    case 'contains':
+      return typeof actual === 'string' && typeof expected === 'string' && actual.includes(expected);
+    case 'gt':
+    case 'gte':
+    case 'lt':
+    case 'lte': {
+      const a = typeof actual === 'number' ? actual : NaN;
+      const e = typeof expected === 'number' ? expected : NaN;
+      if (Number.isNaN(a) || Number.isNaN(e)) return false;
+      if (operator === 'gt') return a > e;
+      if (operator === 'gte') return a >= e;
+      if (operator === 'lt') return a < e;
+      return a <= e;
+    }
+    default:
+      return false;
+  }
+}
+
 function ruleSupportsArtifactType(template: string): boolean {
   return template in RULE_DEFAULT_ARTIFACT_TYPES_FRONTEND;
 }
@@ -102,6 +162,7 @@ function defaultArtifactType(template: string): string {
                 <th scope="col">{{ 'profiles.table_name' | t }}</th>
                 <th scope="col">{{ 'common.description' | t }}</th>
                 <th scope="col">{{ 'profiles.table_rules' | t }}</th>
+                <th scope="col">{{ 'profiles.schedule_label' | t }}</th>
                 <th scope="col" class="th-actions" *ngIf="canManage">{{ 'common.actions' | t }}</th>
               </tr>
             </thead>
@@ -110,6 +171,10 @@ function defaultArtifactType(template: string): string {
                 <td class="cell-primary" [attr.data-label]="'profiles.table_name' | t">{{ translateProfileField(p.name) }}</td>
                 <td class="cell-muted" [attr.data-label]="'common.description' | t">{{ translateProfileField(p.description) }}</td>
                 <td [attr.data-label]="'profiles.table_rules' | t">{{ p.rules_count ?? '—' }}</td>
+                <td [attr.data-label]="'profiles.schedule_label' | t">
+                  <span *ngIf="p.schedule" class="schedule-badge" [title]="p.schedule">{{ 'profiles.schedule_active' | t }}</span>
+                  <span *ngIf="!p.schedule" class="cell-muted">—</span>
+                </td>
                 <td *ngIf="canManage && !p.is_default && !p.is_system" class="cell-actions" [attr.data-label]="'common.actions' | t">
                   <button class="btn-ghost" (click)="openEdit(p)">{{ 'common.edit' | t }}</button>
                   <button
@@ -151,6 +216,30 @@ function defaultArtifactType(template: string): string {
               <label for="prof-desc">{{ 'common.description' | t }}</label>
               <input id="prof-desc" type="text" formControlName="description" [placeholder]="'profiles.desc_placeholder' | t" [readonly]="isReadonlyProfile()" />
             </div>
+          </div>
+
+          <div *ngIf="editingProfile() && isEditableProfile()" class="rules-section">
+            <div class="rules-section-header">
+              <h4>{{ 'profiles.schedule_label' | t }}</h4>
+            </div>
+            <p class="form-hint">{{ 'profiles.schedule_hint' | t }}</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="prof-schedule">{{ 'profiles.schedule_cron_label' | t }}</label>
+                <input id="prof-schedule" type="text" formControlName="schedule" placeholder="0 6 * * *" />
+              </div>
+              <div class="form-group">
+                <label for="prof-schedule-preset">{{ 'profiles.schedule_preset_label' | t }}</label>
+                <select id="prof-schedule-preset" (change)="applySchedulePreset($any($event.target).value)">
+                  <option value="">-- {{ 'profiles.schedule_preset_placeholder' | t }} --</option>
+                  <option *ngFor="let preset of schedulePresets" [value]="preset.cron">{{ 'profiles.schedule_preset.' + preset.key | t }}</option>
+                  <option value="__clear__">{{ 'profiles.schedule_disable' | t }}</option>
+                </select>
+              </div>
+            </div>
+            <p *ngIf="editingProfile()?.schedule_last_run_at as lastRun" class="form-hint">
+              {{ 'profiles.schedule_last_run' | t }}: {{ lastRun | date:'short' }}
+            </p>
           </div>
 
           <div *ngIf="editingProfile()" class="rules-section">
@@ -247,6 +336,24 @@ function defaultArtifactType(template: string): string {
                     <p class="form-hint">{{ 'profiles.custom_value_hint' | t }}</p>
                   </div>
                 }
+                <p class="form-hint">{{ 'profiles.custom_and_hint' | t }}</p>
+
+                <div class="preview-box">
+                  <div class="preview-header">
+                    <span class="preview-title">{{ 'profiles.custom_preview_title' | t }}</span>
+                    <span class="preview-badge" [ngClass]="'preview-' + customPreviewResult().status">
+                      {{ 'profiles.custom_preview_status.' + customPreviewResult().status | t }}
+                    </span>
+                  </div>
+                  <p class="form-hint">{{ 'profiles.custom_preview_hint' | t }}</p>
+                  <textarea
+                    class="preview-textarea"
+                    rows="4"
+                    [value]="customPreviewSample()"
+                    (input)="customPreviewSample.set($any($event.target).value)"
+                  ></textarea>
+                  <p class="preview-message" [ngClass]="'preview-message-' + customPreviewResult().status">{{ customPreviewResult().message }}</p>
+                </div>
               }
               <div class="rule-form-actions">
                 <button type="button" class="btn-secondary btn-sm" (click)="cancelRuleForm()">{{ 'common.cancel' | t }}</button>
@@ -620,6 +727,78 @@ function defaultArtifactType(template: string): string {
       border: 0.0625rem solid var(--border);
     }
 
+    .preview-box {
+      background: var(--paper);
+      border: 0.0625rem solid var(--border);
+      border-radius: var(--rounded-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      margin-top: var(--spacing-sm);
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-sm);
+    }
+
+    .preview-title {
+      font-family: var(--font-sans);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+
+    .preview-badge {
+      font-family: var(--font-sans);
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.125rem 0.4375rem;
+      border-radius: var(--rounded-sm);
+    }
+
+    .preview-ok { background: #e8f5e9; color: #2e7d32; }
+    .preview-fail { background: #ffebee; color: #c62828; }
+    .preview-error, .preview-no_data { background: var(--paper-secondary); color: var(--muted); }
+
+    .preview-textarea {
+      width: 100%;
+      background: var(--paper);
+      color: var(--ink);
+      border: 0.0625rem solid var(--border-strong);
+      border-radius: var(--rounded-md);
+      padding: 0.5rem 0.625rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      resize: vertical;
+      margin-top: var(--spacing-xs);
+    }
+
+    .preview-message {
+      font-size: 0.75rem;
+      margin: var(--spacing-xs) 0 0;
+    }
+
+    .preview-message-ok { color: #2e7d32; }
+    .preview-message-fail { color: #c62828; }
+    .preview-message-error, .preview-message-no_data { color: var(--muted); }
+
+    .schedule-badge {
+      font-family: var(--font-sans);
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.125rem 0.4375rem;
+      border-radius: var(--rounded-sm);
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
     .artifact-type-badge {
       font-family: var(--font-sans);
       font-size: 0.625rem;
@@ -900,10 +1079,14 @@ export class ProfilesComponent implements OnInit {
     'custom_field_check',
   ]);
   customOperators = CUSTOM_FIELD_CHECK_OPERATORS;
+  customPreviewSample = signal<string>('{\n  "epic_id": "EPIC-1",\n  "status": "APPROVED",\n  "coverage": 85\n}');
+
+  schedulePresets = SCHEDULE_PRESETS;
 
   profileForm = this.fb.group({
     name: ['', [Validators.required]],
     description: [''],
+    schedule: [''],
   });
 
   ruleForm = this.fb.group({
@@ -940,7 +1123,7 @@ export class ProfilesComponent implements OnInit {
   openCreate(): void {
     this.editingProfile.set(null);
     this.profileRules.set([]);
-    this.profileForm.reset({ name: '', description: '' });
+    this.profileForm.reset({ name: '', description: '', schedule: '' });
     this.modalError.set(null);
     this.showModal.set(true);
   }
@@ -948,10 +1131,15 @@ export class ProfilesComponent implements OnInit {
   openEdit(p: Profile): void {
     this.editingProfile.set(p);
     this.profileRules.set([]);
-    this.profileForm.patchValue({ name: p.name, description: p.description ?? '' });
+    this.profileForm.patchValue({ name: p.name, description: p.description ?? '', schedule: p.schedule ?? '' });
     this.modalError.set(null);
     this.showModal.set(true);
     this.loadProfileRules(p.id);
+  }
+
+  applySchedulePreset(value: string): void {
+    if (!value) return;
+    this.profileForm.patchValue({ schedule: value === '__clear__' ? '' : value });
   }
 
   private loadProfileRules(profileId: string): void {
@@ -1008,6 +1196,34 @@ export class ProfilesComponent implements OnInit {
   defaultArtifactType = defaultArtifactType;
   selectedRuleTemplate = () => this.ruleForm.get('rule_template')?.value ?? '';
   selectedCustomOperator = () => this.ruleForm.get('customOperator')?.value ?? 'non_empty';
+
+  customPreviewResult(): { status: 'ok' | 'fail' | 'error' | 'no_data'; message: string } {
+    const field = (this.ruleForm.get('customField')?.value ?? '').trim();
+    const operator = this.selectedCustomOperator();
+    const rawValue = this.ruleForm.get('customValue')?.value ?? '';
+
+    if (!field) {
+      return { status: 'no_data', message: this.ts.translateInstant('profiles.custom_preview_no_field') };
+    }
+
+    let sample: Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(this.customPreviewSample());
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        throw new Error('not an object');
+      }
+      sample = parsed as Record<string, unknown>;
+    } catch {
+      return { status: 'error', message: this.ts.translateInstant('profiles.custom_preview_invalid_json') };
+    }
+
+    const expected = operator === 'non_empty' || !rawValue ? undefined : coerceCustomFieldValue(rawValue);
+    const passed = customFieldMatches(sample[field], operator, expected);
+    return {
+      status: passed ? 'ok' : 'fail',
+      message: this.ts.translateInstant(passed ? 'profiles.custom_preview_pass' : 'profiles.custom_preview_fail'),
+    };
+  }
 
   artifactTypeLabel(at: string): string {
     return this.ts.translateInstant('artifact_type.' + at) || at;
@@ -1110,7 +1326,7 @@ export class ProfilesComponent implements OnInit {
       }
       params['operator'] = customOperator || 'non_empty';
       if (customOperator !== 'non_empty' && customValue) {
-        params['value'] = customValue;
+        params['value'] = coerceCustomFieldValue(customValue);
       }
     }
 
@@ -1176,10 +1392,12 @@ export class ProfilesComponent implements OnInit {
     this.saving.set(true);
     this.modalError.set(null);
     const editing = this.editingProfile();
-    const body = { ...this.profileForm.value, is_default: false };
+    const name = this.profileForm.value.name ?? '';
+    const description = this.profileForm.value.description ?? '';
+    const schedule = this.profileForm.value.schedule ?? '';
     const req = editing
-      ? this.http.patch<Profile>(`/api/v1/profiles/${editing.id}`, body)
-      : this.http.post<Profile>(`/api/v1/organizations/${this.orgId}/profiles`, body);
+      ? this.http.patch<Profile>(`/api/v1/profiles/${editing.id}`, { name, description, schedule })
+      : this.http.post<Profile>(`/api/v1/organizations/${this.orgId}/profiles`, { name, description, is_default: false });
     req.pipe(catchError((err: HttpErrorResponse) => {
       this.modalError.set(err.error?.detail ?? this.ts.translateInstant('profiles.saving_error'));
       this.saving.set(false);
@@ -1191,9 +1409,10 @@ export class ProfilesComponent implements OnInit {
         if (editing) {
           this.orgProfiles.update(list => list.map(x =>
             x.id === p.id
-              ? { ...x, name: p.name, description: formDesc, is_default: p.is_default, rules_count: rulesCount }
+              ? { ...x, name: p.name, description: formDesc, is_default: p.is_default, rules_count: rulesCount, schedule: p.schedule }
               : x
           ));
+          this.editingProfile.update(current => current ? { ...current, schedule: p.schedule } : current);
         } else {
           this.orgProfiles.update(list => [...list, {
             id: p.id,

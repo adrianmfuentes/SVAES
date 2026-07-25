@@ -6,7 +6,7 @@ from domain.entities.verification_result import VerificationResult
 class IVerificationService(ABC):
 
     @abstractmethod
-    async def launch_verification(self, release_id: UUID, requested_by: UUID) -> str:
+    async def launch_verification(self, release_id: UUID, requested_by: UUID, triggered_by: str = "manual") -> str:
         pass
 
     @abstractmethod

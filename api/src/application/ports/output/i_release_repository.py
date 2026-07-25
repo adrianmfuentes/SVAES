@@ -26,6 +26,12 @@ class IReleaseRepository(ABC):
         pass
 
     @abstractmethod
+    async def list_by_profile(
+        self, profile_id: uuid.UUID, statuses: Optional[List[ReleaseStatus]] = None
+    ) -> List[Release]:
+        pass
+
+    @abstractmethod
     async def update(self, release: Release) -> Release:
         pass
 

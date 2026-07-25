@@ -120,6 +120,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'notification-channels',
+        canActivate: [roleGuard],
+        data: { role: 'MANAGER' },
+        loadComponent: () =>
+          import('./features/notification-channels/notification-channels.component').then(
+            (m) => m.NotificationChannelsComponent,
+          ),
+      },
+      {
         path: 'system',
         canActivate: [roleGuard],
         data: { role: 'ADMIN' },

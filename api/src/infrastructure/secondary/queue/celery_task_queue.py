@@ -7,10 +7,10 @@ Este archivo implementa la interfaz ITaskQueue utilizando Celery para manejar ta
 La clase CeleryTaskQueue proporciona métodos para encolar tareas de verificación, obtener el estado de las tareas y cancelar tareas en ejecución.
 """
 class CeleryTaskQueue(ITaskQueue):
-    async def enqueue_verification_task(self, release_id: uuid.UUID) -> str:
+    async def enqueue_verification_task(self, release_id: uuid.UUID, triggered_by: str = "manual") -> str:
         result = celery_app.send_task(
             "infrastructure.workers.verification_worker.run_verification",
-            args=[str(release_id)],
+            args=[str(release_id), triggered_by],
         )
         return result.id
 

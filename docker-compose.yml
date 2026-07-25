@@ -179,6 +179,50 @@ services:
     networks:
       - svaes-network
 
+  celery-beat:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: svaes-celery-beat
+    restart: always
+    command: celery -A src.infrastructure.secondary.queue.celery_app beat --loglevel=warning
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-svaes}:${POSTGRES_PASSWORD}@postgres:5432/svaes
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
+      API_KEY_PEPPER: ${API_KEY_PEPPER}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      ENGINE_URL: http://engine:8081
+      ENGINE_API_KEY: ${ENGINE_API_KEY}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      APP_BASE_URL: ${APP_BASE_URL}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      engine:
+        condition: service_healthy
+    networks:
+      - svaes-network
+
   web:
     build:
       context: ./web

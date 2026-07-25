@@ -4,7 +4,7 @@ from domain.enums import TaskStatus
 
 class ITaskQueue(ABC):
     @abstractmethod
-    async def enqueue_verification_task(self, release_id: uuid.UUID) -> str:
+    async def enqueue_verification_task(self, release_id: uuid.UUID, triggered_by: str = "manual") -> str:
         pass
 
     @abstractmethod

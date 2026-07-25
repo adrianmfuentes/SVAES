@@ -51,6 +51,7 @@ class ManageProfileUseCase:
         name: Optional[str] = None,
         description: Optional[str] = None,
         is_default: Optional[bool] = None,
+        schedule: Optional[str] = ...,
     ) -> VerificationProfile:
         profile = await self._profile_repo.get_by_id(profile_id)
         if not profile:
@@ -70,6 +71,9 @@ class ManageProfileUseCase:
             profile.description = description
         if is_default is not None:
             profile.is_default = is_default
+        if schedule is not ...:
+            profile.schedule = schedule
+            profile.schedule_last_run_at = None
 
         return await self._profile_repo.update(profile)
 

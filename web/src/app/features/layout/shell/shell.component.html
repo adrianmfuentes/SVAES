@@ -112,6 +112,16 @@
         {{ 'shell.nav_profiles' | t }}
       </a>
 
+      <a
+        *ngIf="isManager"
+        routerLink="/app/notification-channels"
+        routerLinkActive="nav-item-active"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="nav-item"
+      >
+        {{ 'shell.nav_notification_channels' | t }}
+      </a>
+
       <div class="nav-section">{{ 'shell.nav_account' | t }}</div>
 
       <a
