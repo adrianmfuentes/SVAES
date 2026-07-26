@@ -1,0 +1,170 @@
+
+    <div class="system-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-title">{{ 'system.title' | t }}</h1>
+          <span class="system-badge">{{ 'system.system_badge' | t }}</span>
+        </div>
+        <div class="refresh-controls">
+          <span class="refresh-label" *ngIf="!loading()">{{ 'system.updated_ago' | t : { n: secondsSince() } }}</span>
+          <button class="btn-refresh" (click)="loadAll()" [disabled]="loading()" [title]="loading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" [class.spinning]="loading()">
+              <path d="M10.5 6A4.5 4.5 0 1 1 6 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M6.5 1L9 3.5 6.5 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ loading() ? ('common.loading' | t) : ('system.refresh_btn' | t) }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Service status -->
+      <div class="section-label">{{ 'system.service_status_section' | t }}</div>
+      <div class="service-grid" *ngIf="!loading(); else servicesSkeleton">
+        <div
+          *ngFor="let svc of services()"
+          class="service-card"
+          [class.service-up]="svc.status === 'up'"
+          [class.service-down]="svc.status === 'down'"
+          [class.service-unknown]="svc.status === 'unknown'"
+        >
+          <div class="service-name">{{ svc.name }}</div>
+          <div class="service-status-row">
+            <span class="service-dot"></span>
+            <span class="service-status-label">{{ statusLabel(svc.status) }}</span>
+          </div>
+          <div class="service-detail" *ngIf="svc.detail">{{ svc.detail }}</div>
+        </div>
+      </div>
+      <ng-template #servicesSkeleton>
+        <div class="service-grid">
+          <div class="service-card skeleton-card" *ngFor="let i of [1,2,3,4]">
+            <div class="skeleton sk-sm"></div>
+            <div class="skeleton sk-md" style="margin-top:0.625rem"></div>
+          </div>
+        </div>
+      </ng-template>
+
+      <!-- Metrics -->
+      <div class="section-label" style="margin-top:var(--spacing-lg)">{{ 'system.metrics_section' | t }}</div>
+      <div class="metrics-grid" *ngIf="!loading(); else metricsSkeleton">
+        <div class="metric-card">
+          <div class="metric-label">{{ 'system.org_count_label' | t }}</div>
+          <div class="metric-value">{{ orgs().length }}</div>
+          <div class="metric-sub">{{ 'system.active_in_system' | t }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">{{ 'system.total_users_label' | t }}</div>
+          <div class="metric-value">{{ users().length }}</div>
+          <div class="metric-sub">{{ 'system.active_count' | t : { n: activeUserCount() } }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">{{ 'system.inactive_users_label' | t }}</div>
+          <div class="metric-value">{{ users().length - activeUserCount() }}</div>
+          <div class="metric-sub">{{ 'system.deactivated_label' | t }}</div>
+        </div>
+        <div class="metric-card" *ngIf="apiVersion()">
+          <div class="metric-label">{{ 'system.api_version_label' | t }}</div>
+          <div class="metric-value metric-mono">{{ apiVersion() }}</div>
+          <div class="metric-sub">{{ 'system.in_production' | t }}</div>
+        </div>
+      </div>
+      <ng-template #metricsSkeleton>
+        <div class="metrics-grid">
+          <div class="metric-card" *ngFor="let i of [1,2,3,4]">
+            <div class="skeleton sk-sm"></div>
+            <div class="skeleton sk-lg" style="margin-top:0.625rem"></div>
+          </div>
+        </div>
+      </ng-template>
+
+      <!-- Rules reload action -->
+      <div class="section-label" style="margin-top:var(--spacing-lg)">{{ 'system.actions_section' | t }}</div>
+      <div class="action-card">
+        <div class="action-info">
+          <div class="action-title">{{ 'system.rules_reload_title' | t }}</div>
+          <p class="action-desc">{{ 'system.rules_reload_desc' | t }}</p>
+          <div *ngIf="reloadResult()" class="reload-result" [class.reload-ok]="reloadResult()!.success" [class.reload-fail]="!reloadResult()!.success">
+            <span class="result-icon">{{ reloadResult()!.success ? '✓' : '✕' }}</span>
+            <span>{{ reloadResult()!.message }}</span>
+            <span class="result-count" *ngIf="reloadResult()!.success">&nbsp;&mdash;&nbsp;{{ 'system.rules_loaded_count' | t : { n: reloadResult()!.rules_loaded } }}</span>
+          </div>
+          <div *ngIf="reloadError()" class="reload-error">{{ reloadError() }}</div>
+        </div>
+        <div class="action-controls">
+          <ng-container *ngIf="!confirmingReload()">
+            <button class="btn-secondary" (click)="confirmingReload.set(true)" [disabled]="reloading()" [title]="reloading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+              {{ 'system.reload_btn' | t }}
+            </button>
+          </ng-container>
+          <ng-container *ngIf="confirmingReload()">
+            <span class="confirm-label">{{ 'system.confirm_reload_label' | t }}</span>
+            <button class="btn-primary" (click)="executeReload()" [disabled]="reloading()" [title]="reloading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+              {{ reloading() ? ('system.reloading_label' | t) : ('system.confirm_btn' | t) }}
+            </button>
+            <button class="btn-ghost-sm" (click)="confirmingReload.set(false)" [disabled]="reloading()" [title]="reloading() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+              {{ 'system.cancel_btn' | t }}
+            </button>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Organizations overview -->
+      <div class="section-label" style="margin-top:var(--spacing-lg)">{{ 'system.registered_orgs' | t }}</div>
+      <div *ngIf="loading()" class="skeleton-list">
+        <div class="skeleton sk-row" *ngFor="let i of [1,2,3]"></div>
+      </div>
+      <div *ngIf="!loading()" class="data-table-wrap">
+        <table class="data-table" *ngIf="orgs().length > 0; else orgsEmpty">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'system.org_name_col' | t }}</th>
+              <th scope="col">{{ 'system.org_id_col' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let org of anonymizedOrgs()">
+              <td class="cell-primary">{{ org.name }}</td>
+              <td><code class="mono-sm">{{ org.slug }}</code></td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #orgsEmpty>
+          <div class="empty-state">{{ 'system.no_system_orgs' | t }}</div>
+        </ng-template>
+      </div>
+
+      <!-- Users overview (anonymized) -->
+      <div class="section-label" style="margin-top:var(--spacing-lg)">
+        {{ 'system.system_users_section' | t }}
+        <span class="anon-note">{{ 'system.masked_ids_note' | t }}</span>
+      </div>
+      <div *ngIf="loading()" class="skeleton-list">
+        <div class="skeleton sk-row" *ngFor="let i of [1,2,3,4]"></div>
+      </div>
+      <div *ngIf="!loading()" class="data-table-wrap">
+        <table class="data-table" *ngIf="users().length > 0; else usersEmpty">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'system.user_id_partial_col' | t }}</th>
+              <th scope="col">{{ 'system.user_role_col' | t }}</th>
+              <th scope="col">{{ 'system.user_status_col' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of users()">
+              <td><code class="mono-sm">{{ maskId(u.id) }}</code></td>
+              <td class="cell-muted">{{ ts.translateInstant('user_role.' + u.role) }}</td>
+              <td>
+                <span class="status-badge" [class.badge-active]="u.is_active" [class.badge-inactive]="!u.is_active">
+                  {{ u.is_active ? ('system.status_active' | t) : ('system.status_inactive' | t) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #usersEmpty>
+          <div class="empty-state">{{ 'system.no_system_users' | t }}</div>
+        </ng-template>
+      </div>
+    </div>
+  

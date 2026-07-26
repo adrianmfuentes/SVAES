@@ -1,0 +1,261 @@
+
+    <div class="profiles-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-title">{{ 'profiles.title' | t }}</h1>
+        </div>
+        <button *ngIf="canManage" class="btn-primary" (click)="openCreate()">{{ 'profiles.create_button' | t }}</button>
+      </div>
+
+      <div *ngIf="loading()" class="skeleton-list">
+        <div class="skeleton skeleton-row" *ngFor="let i of [1,2,3,4]"></div>
+      </div>
+
+      <div *ngIf="error() && !loading()" class="error-banner">{{ error() }}</div>
+
+      <div *ngIf="!loading() && !error()">
+        <!-- Org profiles -->
+        <div class="section-label">{{ 'profiles.org_profiles' | t }}</div>
+        <div class="data-table-wrap">
+          <table class="data-table" *ngIf="orgProfiles().length > 0; else profilesEmpty">
+            <thead>
+              <tr>
+                <th scope="col">{{ 'profiles.table_name' | t }}</th>
+                <th scope="col">{{ 'common.description' | t }}</th>
+                <th scope="col">{{ 'profiles.table_rules' | t }}</th>
+                <th scope="col">{{ 'profiles.schedule_label' | t }}</th>
+                <th scope="col" class="th-actions" *ngIf="canManage">{{ 'common.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of orgProfiles()">
+                <td class="cell-primary" [attr.data-label]="'profiles.table_name' | t">{{ translateProfileField(p.name) }}</td>
+                <td class="cell-muted" [attr.data-label]="'common.description' | t">{{ translateProfileField(p.description) }}</td>
+                <td [attr.data-label]="'profiles.table_rules' | t">{{ p.rules_count ?? '—' }}</td>
+                <td [attr.data-label]="'profiles.schedule_label' | t">
+                  <span *ngIf="p.schedule" class="schedule-badge" [title]="p.schedule">{{ 'profiles.schedule_active' | t }}</span>
+                  <span *ngIf="!p.schedule" class="cell-muted">—</span>
+                </td>
+                <td *ngIf="canManage && !p.is_default && !p.is_system" class="cell-actions" [attr.data-label]="'common.actions' | t">
+                  <button class="btn-ghost" (click)="openEdit(p)">{{ 'common.edit' | t }}</button>
+                  <button
+                    class="btn-ghost btn-danger-ghost"
+                    [disabled]="deletingId() === p.id"
+                    [title]="deletingId() === p.id ? ('common.disabled_tooltip.operation_in_progress' | t) : ''"
+                    (click)="deleteProfile(p)"
+                  >
+                    {{ deletingId() === p.id ? ('profiles.deleting' | t) : ('common.delete' | t) }}
+                  </button>
+                </td>
+                <td *ngIf="canManage && (p.is_default || p.is_system)" class="cell-actions" [attr.data-label]="'common.actions' | t">
+                  <button class="btn-ghost btn-xs" (click)="openEdit(p)">{{ 'profiles.view_rules' | t }}</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ng-template #profilesEmpty>
+            <div class="empty-state">{{ 'profiles.no_profiles' | t }}</div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Create/Edit Template -->
+    <div class="modal-overlay" *ngIf="showModal()" (click)="showModal.set(false)">
+      <div class="modal-panel modal-panel-wide" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ modalTitle() }}</h3>
+          <button class="modal-close" (click)="showModal.set(false)">&times;</button>
+        </div>
+        <form [formGroup]="profileForm" (ngSubmit)="submitProfile()">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prof-name">{{ 'profiles.name_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+              <input id="prof-name" type="text" formControlName="name" aria-required="true" [placeholder]="'profiles.template_placeholder' | t" [readonly]="isReadonlyProfile()" />
+            </div>
+            <div class="form-group">
+              <label for="prof-desc">{{ 'common.description' | t }}</label>
+              <input id="prof-desc" type="text" formControlName="description" [placeholder]="'profiles.desc_placeholder' | t" [readonly]="isReadonlyProfile()" />
+            </div>
+          </div>
+
+          <div *ngIf="editingProfile() && isEditableProfile()" class="rules-section">
+            <div class="rules-section-header">
+              <h4>{{ 'profiles.schedule_label' | t }}</h4>
+            </div>
+            <p class="form-hint">{{ 'profiles.schedule_hint' | t }}</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="prof-schedule">{{ 'profiles.schedule_cron_label' | t }}</label>
+                <input id="prof-schedule" type="text" formControlName="schedule" placeholder="0 6 * * *" />
+              </div>
+              <div class="form-group">
+                <label for="prof-schedule-preset">{{ 'profiles.schedule_preset_label' | t }}</label>
+                <select id="prof-schedule-preset" (change)="applySchedulePreset($any($event.target).value)">
+                  <option value="">-- {{ 'profiles.schedule_preset_placeholder' | t }} --</option>
+                  <option *ngFor="let preset of schedulePresets" [value]="preset.cron">{{ 'profiles.schedule_preset.' + preset.key | t }}</option>
+                  <option value="__clear__">{{ 'profiles.schedule_disable' | t }}</option>
+                </select>
+              </div>
+            </div>
+            <p *ngIf="editingProfile()?.schedule_last_run_at as lastRun" class="form-hint">
+              {{ 'profiles.schedule_last_run' | t }}: {{ lastRun | date:'short' }}
+            </p>
+          </div>
+
+          <div *ngIf="editingProfile()" class="rules-section">
+            <div class="rules-section-header">
+              <h4>{{ 'profiles.rules_label' | t }}</h4>
+              <button *ngIf="editingProfile() && isEditableProfile()" type="button" class="btn-ghost btn-sm" (click)="openAddRule()">
+                + {{ 'profiles.add_rule' | t }}
+              </button>
+            </div>
+
+            <div *ngIf="showRuleForm() && editingProfile() && isEditableProfile()" class="rule-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="rule-template">{{ 'profiles.rule_template' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                  <select id="rule-template" [formControl]="ruleFormControl('rule_template')" aria-required="true">
+                    <option value="">-- {{ 'profiles.select_rule' | t }} --</option>
+                    <option *ngFor="let tmpl of ruleTemplates()" [value]="tmpl">{{ formatRuleName(tmpl) }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="rule-severity">{{ 'profiles.severity_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                  <select id="rule-severity" [formControl]="ruleFormControl('severity')" aria-required="true">
+                    <option value="INFO">{{ 'severity.INFO' | t }}</option>
+                    <option value="LOW">{{ 'severity.LOW' | t }}</option>
+                    <option value="MEDIUM">{{ 'severity.MEDIUM' | t }}</option>
+                    <option value="HIGH">{{ 'severity.HIGH' | t }}</option>
+                    <option value="CRITICAL">{{ 'severity.CRITICAL' | t }}</option>
+                  </select>
+                </div>
+              </div>
+              @if (ruleSupportsArtifactType(selectedRuleTemplate())) {
+                <div class="form-group">
+                  <label for="rule-artifact-type">{{ 'profiles.artifact_type_label' | t }}</label>
+                  <select id="rule-artifact-type" [formControl]="ruleFormControl('artifactType')">
+                    <option value="">{{ 'profiles.artifact_type_default' | t }} ({{ artifactTypeLabel(defaultArtifactType(selectedRuleTemplate())) }})</option>
+                    @for (at of artifactTypeOptions(); track at) {
+                      <option [value]="at">{{ artifactTypeLabel(at) }}</option>
+                    }
+                  </select>
+                </div>
+              }
+              @if (selectedRuleTemplate() === 'RV-06') {
+                <div class="form-group">
+                  <label for="rule-expected-value">{{ 'profiles.expected_value_label' | t }}</label>
+                  <input id="rule-expected-value" type="text" [formControl]="ruleFormControl('expectedValue')"
+                    [placeholder]="'profiles.expected_value_placeholder' | t" />
+                  <p class="form-hint">{{ 'profiles.expected_value_hint' | t }}</p>
+                </div>
+              }
+              @if (selectedRuleTemplate() === 'RV-10') {
+                <div class="form-group">
+                  <label for="rule-approved-states">{{ 'profiles.approved_states_label' | t }}</label>
+                  <input id="rule-approved-states" type="text" [formControl]="ruleFormControl('approvedStates')"
+                    [placeholder]="'profiles.approved_states_placeholder' | t" />
+                  <p class="form-hint">{{ 'profiles.approved_states_hint' | t }}</p>
+                </div>
+              }
+              @if (selectedRuleTemplate() === 'RV-08') {
+                <div class="form-group">
+                  <label for="rule-master-artifact-id">{{ 'profiles.master_artifact_id_label' | t }}</label>
+                  <input id="rule-master-artifact-id" type="text" [formControl]="ruleFormControl('masterArtifactId')"
+                    [placeholder]="'profiles.master_artifact_id_placeholder' | t" />
+                  <p class="form-hint">{{ 'profiles.master_artifact_id_hint' | t }}</p>
+                </div>
+                <div class="form-group">
+                  <label for="rule-master-field">{{ 'profiles.master_field_label' | t }}</label>
+                  <input id="rule-master-field" type="text" [formControl]="ruleFormControl('masterField')"
+                    [placeholder]="'profiles.master_field_placeholder' | t" />
+                  <p class="form-hint">{{ 'profiles.master_field_hint' | t }}</p>
+                </div>
+              }
+              @if (selectedRuleTemplate() === 'custom_field_check') {
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="rule-custom-field">{{ 'profiles.custom_field_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                    <input id="rule-custom-field" type="text" [formControl]="ruleFormControl('customField')"
+                      [placeholder]="'profiles.custom_field_placeholder' | t" aria-required="true" />
+                    <p class="form-hint">{{ 'profiles.custom_field_hint' | t }}</p>
+                  </div>
+                  <div class="form-group">
+                    <label for="rule-custom-operator">{{ 'profiles.custom_operator_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                    <select id="rule-custom-operator" [formControl]="ruleFormControl('customOperator')" aria-required="true">
+                      @for (op of customOperators; track op) {
+                        <option [value]="op">{{ 'profiles.operator.' + op | t }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+                @if (selectedCustomOperator() !== 'non_empty') {
+                  <div class="form-group">
+                    <label for="rule-custom-value">{{ 'profiles.custom_value_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+                    <input id="rule-custom-value" type="text" [formControl]="ruleFormControl('customValue')"
+                      [placeholder]="'profiles.custom_value_placeholder' | t" aria-required="true" />
+                    <p class="form-hint">{{ 'profiles.custom_value_hint' | t }}</p>
+                  </div>
+                }
+                <p class="form-hint">{{ 'profiles.custom_and_hint' | t }}</p>
+
+                <div class="preview-box">
+                  <div class="preview-header">
+                    <span class="preview-title">{{ 'profiles.custom_preview_title' | t }}</span>
+                    <span class="preview-badge" [ngClass]="'preview-' + customPreviewResult().status">
+                      {{ 'profiles.custom_preview_status.' + customPreviewResult().status | t }}
+                    </span>
+                  </div>
+                  <p class="form-hint">{{ 'profiles.custom_preview_hint' | t }}</p>
+                  <textarea
+                    class="preview-textarea"
+                    rows="4"
+                    [value]="customPreviewSample()"
+                    (input)="customPreviewSample.set($any($event.target).value)"
+                  ></textarea>
+                  <p class="preview-message" [ngClass]="'preview-message-' + customPreviewResult().status">{{ customPreviewResult().message }}</p>
+                </div>
+              }
+              <div class="rule-form-actions">
+                <button type="button" class="btn-secondary btn-sm" (click)="cancelRuleForm()">{{ 'common.cancel' | t }}</button>
+                <button type="button" class="btn-primary btn-sm" [disabled]="savingRule()" [title]="savingRule() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''" (click)="submitRule()">
+                  {{ savingRule() ? ('profiles.saving' | t) : (editingRule() ? ('profiles.update_rule' | t) : ('profiles.add_rule' | t)) }}
+                </button>
+              </div>
+            </div>
+
+            <div class="rules-list" *ngIf="profileRules().length > 0">
+              <div class="rule-item" *ngFor="let rule of profileRules()">
+                <div class="rule-info">
+                  <span class="rule-template">{{ formatRuleName(rule.rule_template) }}</span>
+                  <span class="severity-badge" [ngClass]="'severity-' + rule.severity.toLowerCase()">{{ 'severity.' + rule.severity | t }}</span>
+                  <span *ngFor="let ct of rule.connector_types" class="connector-type-badge">{{ 'connector_type.' + ct | t }}</span>
+                  @if (ruleConfiguredArtifactType(rule)) {
+                    <span class="artifact-type-badge">{{ artifactTypeLabel(ruleConfiguredArtifactType(rule)!) }}</span>
+                  }
+                </div>
+                <div class="rule-actions" *ngIf="editingProfile() && isEditableProfile()">
+                  <button type="button" class="btn-ghost btn-xs" (click)="openEditRule(rule)">{{ 'common.edit' | t }}</button>
+                  <button type="button" class="btn-ghost btn-danger-ghost btn-xs" (click)="deleteRule(rule)">{{ 'common.delete' | t }}</button>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="profileRules().length === 0 && !showRuleForm()" class="empty-rules">
+              {{ 'profiles.no_rules' | t }}
+            </div>
+          </div>
+
+          <div *ngIf="modalError()" class="error-banner error-banner-sm">{{ modalError() }}</div>
+          <div class="modal-footer" *ngIf="isEditableProfile()">
+            <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.cancel' | t }}</button>
+            <button type="submit" class="btn-primary" [disabled]="saving()" [title]="saving() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+              {{ saving() ? ('profiles.saving' | t) : (editingProfile() ? ('profiles.save_changes' | t) : ('profiles.create_button' | t)) }}
+            </button>
+          </div>
+          <div class="modal-footer" *ngIf="isViewOnlyProfile()">
+            <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.close' | t }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  

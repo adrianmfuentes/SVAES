@@ -1,0 +1,73 @@
+<div class="notif-page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">{{ 'notification_channels.title' | t }}</h1>
+    </div>
+  </div>
+  <p class="page-subtitle">{{ 'notification_channels.subtitle' | t }}</p>
+
+  <div *ngIf="loading()" class="skeleton-list">
+    <div class="skeleton skeleton-card" *ngFor="let i of [1,2,3]"></div>
+  </div>
+
+  <div *ngIf="error() && !loading()" class="error-banner">{{ error() }}</div>
+
+  <div *ngIf="!loading() && !error()" class="channels-grid">
+    <div class="channel-card" *ngFor="let type of outboundTypes">
+      <form [formGroup]="forms[type]" (ngSubmit)="save(type)">
+        <div class="channel-card-header">
+          <div class="channel-card-title-group">
+            <h3>{{ typeLabel(type) }}</h3>
+            <span class="status-badge" [ngClass]="channelFor(type)?.configured ? 'status-configured' : 'status-unconfigured'">
+              {{ (channelFor(type)?.configured ? 'notification_channels.configured' : 'notification_channels.not_configured') | t }}
+            </span>
+          </div>
+          <label class="toggle-label" *ngIf="canManage">
+            <input type="checkbox" formControlName="enabled" />
+            {{ 'notification_channels.enabled' | t }}
+          </label>
+        </div>
+
+        <div class="form-group" *ngFor="let entry of schemaFields(type)">
+          <label [attr.for]="type + '-' + entry[0]">
+            {{ fieldLabel(entry[1]) }}<span *ngIf="entry[1].required" class="required-star" aria-hidden="true">*</span>
+          </label>
+          <input
+            [id]="type + '-' + entry[0]"
+            [type]="entry[1].sensitive ? 'password' : 'text'"
+            [formControlName]="entry[0]"
+            [attr.aria-required]="entry[1].required"
+            [readonly]="!canManage"
+          />
+        </div>
+
+        <p *ngIf="channelFor(type)?.updated_at as updatedAt" class="form-hint">
+          {{ 'notification_channels.last_updated' | t }}: {{ updatedAt | date:'short' }}
+        </p>
+
+        <div class="channel-card-actions" *ngIf="canManage">
+          <button type="submit" class="btn-primary btn-sm" [disabled]="saving() === type">
+            {{ saving() === type ? ('common.saving' | t) : ('common.save' | t) }}
+          </button>
+          <button
+            type="button"
+            class="btn-secondary btn-sm"
+            [disabled]="!channelFor(type)?.configured || testing() === type"
+            (click)="sendTest(type)"
+          >
+            {{ testing() === type ? ('notification_channels.testing' | t) : ('notification_channels.send_test' | t) }}
+          </button>
+          <button
+            type="button"
+            class="btn-ghost btn-danger-ghost btn-sm"
+            *ngIf="channelFor(type)?.configured"
+            [disabled]="deleting() === type"
+            (click)="disable(type)"
+          >
+            {{ 'common.delete' | t }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

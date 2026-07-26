@@ -1,0 +1,153 @@
+
+    <div class="connectors-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1 class="page-title">{{ 'connectors.title' | t }}</h1>
+        </div>
+        <button *ngIf="canManage" class="btn-primary" (click)="openCreate()">{{ 'connectors.new_connector' | t }}</button>
+      </div>
+
+      <div *ngIf="loading()" class="skeleton-list">
+        <div class="skeleton skeleton-row" *ngFor="let i of [1,2,3]"></div>
+      </div>
+
+      <div *ngIf="error() && !loading()" class="error-banner">{{ error() }}</div>
+
+      <div *ngIf="!loading() && !error()">
+        <!-- Org connectors -->
+        <div class="section-label">{{ 'connectors.org' | t }}</div>
+        <div class="data-table-wrap" [class.empty-wrap]="globalConnectors().length === 0">
+          <table class="data-table" *ngIf="globalConnectors().length > 0; else orgEmpty">
+            <thead>
+              <tr>
+                <th scope="col">{{ 'connectors.table_name' | t }}</th>
+                <th scope="col">{{ 'connectors.table_type' | t }}</th>
+                <th scope="col">{{ 'connectors.table_status' | t }}</th>
+                <th scope="col">{{ 'connectors.last_tested' | t }}</th>
+                <th scope="col" class="th-actions" *ngIf="canManage">{{ 'common.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of globalConnectors()">
+                <td class="cell-primary" [attr.data-label]="'connectors.table_name' | t">{{ c.name }}</td>
+                <td [attr.data-label]="'connectors.table_type' | t"><span class="type-chip">{{ typeLabel(c.type) }}</span></td>
+                <td [attr.data-label]="'connectors.table_status' | t">
+                  <span class="status-dot" [ngClass]="'status-' + c.status"></span>
+                  <span class="status-label">{{ statusLabel(c.status) }}</span>
+                </td>
+                <td class="cell-muted" [attr.data-label]="'connectors.last_tested' | t">{{ c.last_tested_at ? (c.last_tested_at | date:'dd MMM yyyy') : '—' }}</td>
+                <td *ngIf="canManage" class="cell-actions" [attr.data-label]="'common.actions' | t">
+                  <button class="btn-ghost" (click)="openEdit(c)">{{ 'connectors.edit_label' | t }}</button>
+                  <button class="btn-ghost" (click)="testConnector(c)" [disabled]="testingId() === c.id" [title]="testingId() === c.id ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+                    {{ testingId() === c.id ? ('connectors.testing_label' | t) : ('connectors.test_label' | t) }}
+                  </button>
+                  <button class="btn-ghost" (click)="toggleConnector(c)">
+                    {{ c.status === 'inactive' ? ('connectors.activate' | t) : ('connectors.deactivate' | t) }}
+                  </button>
+                  <button *ngIf="c.type === 'REPO_CODIGO' && c.implementation !== 'CUSTOM'" class="btn-ghost" (click)="openWebhookConfig(c)">
+                    {{ 'connectors.webhook_label' | t }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ng-template #orgEmpty>
+            <div class="empty-state">{{ 'connectors.no_org' | t }}</div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Create/Edit Connector -->
+    <div class="modal-overlay" *ngIf="showModal()" (click)="showModal.set(false)">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ editingConnector() ? ('connectors.edit_title' | t) : ('connectors.new_global' | t) }}</h3>
+          <button class="modal-close" (click)="showModal.set(false)">&times;</button>
+        </div>
+        <form [formGroup]="connectorForm" (ngSubmit)="submitConnector()">
+          <div class="form-group">
+            <label for="conn-name">{{ 'connectors.name_label' | t }}</label>
+            <input id="conn-name" type="text" formControlName="name" [placeholder]="'connectors.name_placeholder' | t" />
+          </div>
+          <div class="form-group" *ngIf="connectorTypes()">
+            <label for="conn-type">{{ 'connectors.category_label' | t }}</label>
+            <select id="conn-type" formControlName="connectorType" (change)="onTypeChange($event)">
+              <option value="">-- {{ 'connectors.select_category' | t }} --</option>
+              <option *ngFor="let type of getConnectorTypes()" [value]="type">{{ typeLabel(type) }}</option>
+            </select>
+          </div>
+          <div class="form-group" *ngIf="selectedType()">
+            <label for="conn-implementation">{{ 'connectors.system_label' | t }}</label>
+            <select id="conn-implementation" formControlName="connectorImplementation" (change)="onImplementationChange($event)">
+              <option value="">-- {{ 'connectors.select_system' | t }} --</option>
+              <option *ngFor="let impl of availableImplementations()" [value]="impl.implementation">{{ impl.implementation === 'CUSTOM' ? ('connector_type.CUSTOM' | t) : impl.metadata.name }}</option>
+            </select>
+          </div>
+          <ng-container *ngIf="selectedImplementation() && currentConfigSchema()">
+            <div class="form-group" *ngFor="let field of getConfigFields()" [ngClass]="{'has-error': shouldShowError(field.key)}">
+              <label for="field-{{ field.key }}">{{ field.label | t }}</label>
+              <select *ngIf="field.type === 'select'"
+                id="field-{{ field.key }}"
+                [formControlName]="field.key">
+                <option *ngFor="let opt of field.options" [value]="opt.value">{{ opt.label | t }}</option>
+              </select>
+              <input *ngIf="field.type !== 'select' && !field.sensitive"
+                id="field-{{ field.key }}"
+                type="text"
+                [formControlName]="field.key"
+                [placeholder]="field.label | t" />
+              <input *ngIf="field.type !== 'select' && field.sensitive"
+                id="field-{{ field.key }}"
+                type="password"
+                [formControlName]="field.key"
+                [placeholder]="field.label | t" />
+            </div>
+          </ng-container>
+          <div *ngIf="modalError()" class="error-banner error-banner-sm">{{ modalError() }}</div>
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" (click)="showModal.set(false)">{{ 'common.cancel' | t }}</button>
+            <button type="submit" class="btn-primary" [disabled]="saving() || !isFormValid()" [title]="!isFormValid() ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
+              {{ saving() ? ('connectors.saving' | t) : (editingConnector() ? ('connectors.save_changes' | t) : ('connectors.create' | t)) }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Webhook configuration -->
+    <div class="modal-overlay" *ngIf="showWebhookModal()" (click)="closeWebhookModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'connectors.webhook_title' | t }} — {{ webhookConnector()?.name }}</h3>
+          <button class="modal-close" (click)="closeWebhookModal()">&times;</button>
+        </div>
+        <p class="form-hint">{{ 'connectors.webhook_hint' | t }}</p>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [checked]="webhookConnector()?.webhook_enabled" (change)="toggleWebhookEnabled($event)" [disabled]="webhookSaving()" />
+            {{ 'connectors.webhook_enable_label' | t }}
+          </label>
+        </div>
+        <ng-container *ngIf="webhookConnector()?.webhook_enabled">
+          <div class="form-group">
+            <label>{{ 'connectors.webhook_url_label' | t }}</label>
+            <input type="text" readonly [value]="webhookUrlTemplate()" />
+            <p class="form-hint">{{ 'connectors.webhook_url_hint' | t }}</p>
+          </div>
+          <div class="form-group" *ngIf="webhookSecret()">
+            <label>{{ 'connectors.webhook_secret_label' | t }}</label>
+            <input type="text" readonly [value]="webhookSecret()" />
+            <p class="form-hint">{{ 'connectors.webhook_secret_hint' | t }}</p>
+          </div>
+          <button type="button" class="btn-secondary btn-sm" (click)="regenerateWebhookSecret()" [disabled]="webhookSaving()">
+            {{ 'connectors.webhook_regenerate' | t }}
+          </button>
+        </ng-container>
+        <div *ngIf="webhookError()" class="error-banner error-banner-sm">{{ webhookError() }}</div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeWebhookModal()">{{ 'common.close' | t }}</button>
+        </div>
+      </div>
+    </div>
+  

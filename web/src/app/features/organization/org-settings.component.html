@@ -1,0 +1,147 @@
+
+    <div class="org-settings-page">
+      <div class="page-header">
+        <h1 class="page-title">{{ 'org_settings.title' | t }}</h1>
+      </div>
+
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <h2 class="tab-title">{{ 'org_settings.members_title' | t }}</h2>
+          <button class="btn-primary" (click)="openInviteModal()">
+            {{ 'org_settings.invite_btn' | t }}
+          </button>
+        </div>
+
+        <div *ngIf="membersLoading()" class="skeleton-list">
+          <div class="skeleton-row" *ngFor="let i of [1,2,3]"></div>
+        </div>
+
+        <div *ngIf="membersError() && !membersLoading()" class="error-banner">{{ membersError() }}</div>
+
+        <div *ngIf="!membersLoading() && !membersError()" class="data-table-wrap">
+          <table class="data-table" *ngIf="members().length > 0; else membersEmpty">
+            <thead>
+              <tr>
+                <th scope="col">{{ 'common.name' | t }}</th>
+                <th scope="col">{{ 'common.email' | t }}</th>
+                <th scope="col">{{ 'common.role' | t }}</th>
+                <th scope="col">{{ 'common.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let member of members()" [class.row-locked]="member.role === 'MANAGER'">
+                <td class="cell-primary" [attr.data-label]="'common.name' | t">
+                  {{ member.display_name }}
+                  <span class="self-tag" *ngIf="member.id === currentUserId">{{ 'org_settings.self_tag' | t }}</span>
+                  <span class="pending-tag" *ngIf="!member.is_active">{{ 'org_settings.pending_tag' | t }}</span>
+                </td>
+                <td class="cell-muted" [attr.data-label]="'common.email' | t">{{ member.email }}</td>
+                <td [attr.data-label]="'common.role' | t">
+                  <span *ngIf="member.role === 'MANAGER'" class="role-owner">{{ 'org_settings.role_owner' | t }}</span>
+                  <span *ngIf="member.role !== 'MANAGER'" class="role-text">{{ 'org_settings.role_' + member.role.toLowerCase() | t }}</span>
+                </td>
+                <td class="cell-actions" [attr.data-label]="'common.actions' | t">
+                  <button
+                    *ngIf="member.role === 'MANAGER' && members().length > 1"
+                    class="btn-ghost btn-transfer"
+                    (click)="openTransferModal()"
+                  >{{ 'org_settings.transfer_btn' | t }}</button>
+                  <button
+                    *ngIf="member.id !== currentUserId && member.role !== 'MANAGER'"
+                    class="btn-ghost btn-danger-ghost"
+                    (click)="confirmRemoveMember(member)"
+                  >{{ 'common.delete' | t }}</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ng-template #membersEmpty>
+            <div class="empty-state">{{ 'org_settings.no_members' | t }}</div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVITE MODAL -->
+    <div *ngIf="showInviteModal()" class="modal-overlay" (click)="closeInviteModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'org_settings.invite_title' | t }}</h3>
+          <button class="modal-close" (click)="closeInviteModal()">×</button>
+        </div>
+        <div class="form-group">
+          <label for="invite-email">{{ 'common.email' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+          <input
+            id="invite-email"
+            type="email"
+            [(ngModel)]="inviteEmail"
+            aria-required="true"
+            [placeholder]="'login.email_placeholder' | t"
+          />
+        </div>
+        <div class="form-group">
+          <label for="invite-role">{{ 'common.role' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+          <select id="invite-role" [(ngModel)]="inviteRole" class="form-group select" aria-required="true">
+            <option value="OPERATOR">{{ 'org_settings.role_operator' | t }}</option>
+            <option value="MANAGER">{{ 'org_settings.role_manager' | t }}</option>
+          </select>
+        </div>
+        <div *ngIf="inviteError()" class="error-banner error-sm">{{ inviteError() }}</div>
+        <div *ngIf="inviteSuccess()" class="alert-success">{{ inviteSuccess() }}</div>
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="closeInviteModal()">{{ 'common.cancel' | t }}</button>
+          <button class="btn-primary" (click)="sendInvite()" [disabled]="inviting()" [title]="inviting() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+            {{ inviting() ? ('common.loading' | t) : ('org_settings.send_invite' | t) }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSFER OWNERSHIP MODAL -->
+    <div *ngIf="showTransferModal()" class="modal-overlay" (click)="closeTransferModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'org_settings.transfer_title' | t }}</h3>
+          <button class="modal-close" (click)="closeTransferModal()">×</button>
+        </div>
+        <p class="modal-body-text transfer-warning">{{ 'org_settings.transfer_warning' | t }}</p>
+        <div class="form-group">
+          <label for="transfer-target">{{ 'org_settings.transfer_select_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+          <select id="transfer-target" [(ngModel)]="transferTargetId" class="form-group select" aria-required="true">
+            <option value="">{{ 'org_settings.transfer_select_placeholder' | t }}</option>
+            <option *ngFor="let m of nonOwnerMembers()" [value]="m.id">
+              {{ m.display_name }} ({{ 'org_settings.role_' + m.role.toLowerCase() | t }})
+            </option>
+          </select>
+        </div>
+        <div *ngIf="transferError()" class="error-banner error-sm">{{ transferError() }}</div>
+        <div *ngIf="transferSuccess()" class="alert-success">{{ transferSuccess() }}</div>
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="closeTransferModal()" [disabled]="transferring()" [title]="transferring() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">{{ 'common.cancel' | t }}</button>
+          <button class="btn-danger" (click)="confirmTransfer()" [disabled]="transferring() || !transferTargetId" [title]="!transferTargetId ? ('common.disabled_tooltip.no_target' | t) : ('common.disabled_tooltip.operation_in_progress' | t)">
+            {{ transferring() ? ('common.loading' | t) : ('org_settings.transfer_confirm_btn' | t) }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIRM REMOVE MODAL -->
+    <div *ngIf="memberToRemove()" class="modal-overlay" (click)="cancelRemoveMember()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'org_settings.remove_member_title' | t }}</h3>
+          <button class="modal-close" (click)="cancelRemoveMember()">×</button>
+        </div>
+        <p class="modal-body-text">{{ 'org_settings.remove_member_confirm' | t: { name: memberToRemove()!.display_name } }}</p>
+        <div *ngIf="removeError()" class="error-banner error-sm">{{ removeError() }}</div>
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="cancelRemoveMember()" [disabled]="removing()" [title]="removing() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">{{ 'common.cancel' | t }}</button>
+          <button class="btn-danger" (click)="removeMember()" [disabled]="removing()" [title]="removing() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+            {{ removing() ? ('common.loading' | t) : ('common.delete' | t) }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    
+  

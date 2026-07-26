@@ -1,0 +1,143 @@
+
+    <div class="projects-page">
+      <div class="page-header">
+        <h1 class="page-title">{{ 'projects.title' | t }}</h1>
+        <a *ngIf="isManager" routerLink="/app/projects/new" class="btn-primary">
+          {{ 'projects.new_btn' | t }}
+        </a>
+      </div>
+
+      <div *ngIf="loading()" class="skeleton-list">
+        <div class="skeleton skeleton-row" *ngFor="let i of [1,2,3,4]"></div>
+      </div>
+
+      <div *ngIf="error() && !loading()" class="error-banner">{{ error() }}</div>
+
+      <div *ngIf="!loading() && !error()">
+        <div class="data-table-wrap" *ngIf="projects().length > 0; else emptyState">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">{{ 'projects.col_name' | t }}</th>
+                <th scope="col">{{ 'projects.col_description' | t }}</th>
+                <th scope="col">{{ 'projects.col_status' | t }}</th>
+                <th scope="col">{{ 'projects.col_created' | t }}</th>
+                <th scope="col" *ngIf="isManager" class="cell-actions-header">{{ 'common.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of projects()">
+                <td class="cell-primary" [attr.data-label]="'projects.col_name' | t">{{ p.name }}</td>
+                <td class="cell-muted" [attr.data-label]="'projects.col_description' | t">{{ p.description || '—' }}</td>
+                <td [attr.data-label]="'projects.col_status' | t">
+                  <span class="status-badge" [class.status-archived]="p.is_archived">
+                    {{ (p.is_archived ? 'projects.status_archived' : 'projects.status_active') | t }}
+                  </span>
+                </td>
+                <td class="cell-muted" [attr.data-label]="'projects.col_created' | t">{{ p.created_at | date:'dd MMM yyyy' }}</td>
+                <td *ngIf="isManager" class="cell-actions" [attr.data-label]="'common.actions' | t">
+                  <button
+                    class="btn-ghost"
+                    (click)="openEdit(p)"
+                  >{{ 'projects.edit_btn' | t }}</button>
+                  <button
+                    *ngIf="!p.is_archived"
+                    class="btn-ghost"
+                    (click)="confirmArchive(p)"
+                  >{{ 'org_settings.archive_btn' | t }}</button>
+                  <button
+                    *ngIf="p.is_archived"
+                    class="btn-ghost"
+                    (click)="unarchive(p)"
+                  >{{ 'projects.unarchive_btn' | t }}</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #emptyState>
+          <div class="empty-state">
+            <p class="empty-text">{{ 'projects.empty_text' | t }}</p>
+            <a *ngIf="isManager" routerLink="/app/projects/new" class="btn-primary">
+              {{ 'projects.empty_cta' | t }}
+            </a>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- CONFIRM ARCHIVE MODAL -->
+    <div *ngIf="projectToArchive()" class="modal-overlay" (click)="cancelArchive()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'org_settings.archive_project_title' | t }}</h3>
+          <button class="modal-close" (click)="cancelArchive()">×</button>
+        </div>
+        <p class="modal-body-text">{{ 'org_settings.archive_project_confirm' | t: { name: projectToArchive()!.name } }}</p>
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="cancelArchive()">{{ 'common.cancel' | t }}</button>
+          <button class="btn-primary" (click)="archive()" [disabled]="archiving()" [title]="archiving() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+            {{ archiving() ? ('common.loading' | t) : ('org_settings.archive_btn' | t) }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT PROJECT MODAL -->
+    <div *ngIf="editingProject()" class="modal-overlay" (click)="cancelEdit()">
+      <div class="modal-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ 'projects.edit_title' | t }}</h3>
+          <button class="modal-close" (click)="cancelEdit()">×</button>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-proj-name">{{ 'project_new.name_label' | t }}</label>
+          <input
+            id="edit-proj-name"
+            type="text"
+            [ngModel]="editName()"
+            (ngModelChange)="editName.set($event)"
+            maxlength="100"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-proj-description">{{ 'project_new.description_label' | t }}</label>
+          <textarea
+            id="edit-proj-description"
+            [ngModel]="editDescription()"
+            (ngModelChange)="editDescription.set($event)"
+            rows="3"
+            maxlength="500"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-proj-profile">{{ 'project_new.profile_label' | t }}</label>
+          <select id="edit-proj-profile" [ngModel]="editProfileId()" (ngModelChange)="editProfileId.set($event)">
+            @for (p of editProfiles(); track p.id) {
+              <option [value]="p.id">
+                {{ p.name }}{{ p.is_system ? (' — ' + ('project_new.profile_system_tag' | t)) : '' }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <div *ngIf="editError()" class="alert-error">{{ editError() }}</div>
+
+        <div class="modal-footer">
+          <button class="btn-ghost" (click)="cancelEdit()">{{ 'common.cancel' | t }}</button>
+          <button
+            class="btn-primary"
+            (click)="saveEdit()"
+            [disabled]="editSubmitting() || !editName().trim()"
+            [title]="editSubmitting() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''">
+            {{ editSubmitting() ? ('common.loading' | t) : ('projects.edit_submit' | t) }}
+          </button>
+        </div>
+      </div>
+    </div>
+  

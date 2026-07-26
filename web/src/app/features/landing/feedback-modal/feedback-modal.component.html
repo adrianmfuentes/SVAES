@@ -1,0 +1,105 @@
+<div class="modal-overlay"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="feedback-title"
+     (click)="onOverlayClick($event)"
+     (keydown.escape)="onClose()">
+  <div class="modal" role="document">
+    <button class="modal-close" (click)="onClose()" [attr.aria-label]="'common.close' | t">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <h2 id="feedback-title" class="modal-title">{{ 'feedback.modal_title' | t }}</h2>
+    <p class="modal-subtitle">{{ 'feedback.modal_subtitle' | t }}</p>
+
+    @if (submitted) {
+      <div class="alert-success" role="alert">
+        <span class="alert-success-icon">✓</span>
+        <span>{{ 'feedback.success' | t }}</span>
+      </div>
+    } @else {
+      @if (error) {
+        <div class="alert-error" role="alert">
+          <span class="alert-error-icon">!</span>
+          <span>{{ error }}</span>
+        </div>
+      }
+
+      <form (ngSubmit)="onSubmit()" #feedbackForm="ngForm">
+        <div class="form-group">
+          <label for="fb-name">{{ 'feedback.field_name' | t }}</label>
+          <input
+            type="text"
+            id="fb-name"
+            name="name"
+            [(ngModel)]="payload.name"
+            required
+            maxlength="100"
+            [placeholder]="'feedback.name_placeholder' | t"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="fb-email">{{ 'feedback.field_email' | t }}</label>
+          <input
+            type="email"
+            id="fb-email"
+            name="email"
+            [(ngModel)]="payload.email"
+            maxlength="255"
+            [placeholder]="'feedback.email_placeholder' | t"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>{{ 'feedback.field_rating' | t }}</label>
+          <div class="stars" role="radiogroup" [attr.aria-label]="'feedback.rating_aria' | t">
+            @for (star of [1, 2, 3, 4, 5]; track star) {
+              <button
+                type="button"
+                class="star-btn"
+                [class.filled]="payload.rating >= star"
+                [attr.aria-label]="'feedback.star_aria' | t:{ n: star }"
+                (click)="payload.rating = star"
+              >
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </button>
+            }
+          </div>
+          <span class="rating-label">{{ ratingLabel }}</span>
+        </div>
+
+        <div class="form-group">
+          <label for="fb-comments">{{ 'feedback.field_comments' | t }}</label>
+          <textarea
+            id="fb-comments"
+            name="comments"
+            [(ngModel)]="payload.comments"
+            required
+            maxlength="2000"
+            rows="4"
+            [placeholder]="'feedback.comments_placeholder' | t"
+          ></textarea>
+          <span class="char-count">{{ payload.comments.length }}/2000</span>
+        </div>
+
+        <p class="disclosure">{{ 'feedback.disclosure' | t }}</p>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="onClose()">{{ 'common.cancel' | t }}</button>
+          <button type="submit" class="btn-accent" [disabled]="!isValid || loading">
+            @if (loading) {
+              {{ 'feedback.submitting' | t }}
+            } @else {
+              {{ 'feedback.submit' | t }}
+            }
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</div>

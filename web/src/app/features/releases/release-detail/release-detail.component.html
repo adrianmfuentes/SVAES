@@ -1,0 +1,547 @@
+
+    <div class="detail-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <a routerLink="/app/releases" class="back-link">{{ 'release_detail.back_releases' | t }}</a>
+          <h1 class="page-title">{{ release()?.name || ('common.loading' | t) }}</h1>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-secondary" [disabled]="!latestResult()" [title]="!latestResult() ? ('common.disabled_tooltip.no_verification' | t) : ''" (click)="exportPdf()">
+            {{ 'release_detail.export_pdf' | t }}
+          </button>
+        </div>
+      </div>
+
+      @if (loading()) {
+        <div class="skeleton-block">
+          <div class="skeleton skeleton-banner"></div>
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-row" *ngFor="let i of [1,2,3,4,5]"></div>
+        </div>
+      }
+
+      @if (error() && !loading()) {
+        <div class="error-banner">{{ error() }}</div>
+      }
+
+      @if (!loading() && !error() && release()) {
+        <!-- Verdict banner -->
+        @if (latestVerdict) {
+          <div class="verdict-banner" [ngClass]="verdictBannerClass()">
+            <span class="verdict-icon">{{ verdictIcon() }}</span>
+            <span class="verdict-badge" [ngClass]="verdictBadgeClass()">{{ verdictLabel() }}</span>
+            <code class="verdict-release-id">{{ release()!.id | slice:0:8 }}</code>
+            <span class="verdict-separator">|</span>
+            <span class="verdict-timestamp">{{ latestResult()?.executed_at | date:'dd MMM yyyy, HH:mm:ss' }}</span>
+          </div>
+        }
+
+        <!-- Release info card -->
+        <div class="card info-card">
+          <h2 class="card-title">{{ release()!.name }}</h2>
+          <div class="info-grid">
+            <div class="info-field">
+              <span class="info-label">{{ 'release_detail.field_version' | t }}</span>
+              <span class="info-value">{{ release()!.version }}</span>
+            </div>
+            <div class="info-field">
+              <span class="info-label">{{ 'release_detail.field_status' | t }}</span>
+              <span class="verdict-badge-sm" [ngClass]="statusBadgeClass()">{{ release()!.status }}</span>
+            </div>
+            <div class="info-field">
+              <span class="info-label">{{ 'release_detail.project' | t }}</span>
+              <span class="info-value project-name">{{ release()!.project_name || release()!.project_id }}</span>
+            </div>
+            <div class="info-field">
+              <span class="info-label">{{ 'release_detail.field_org' | t }}</span>
+              <span class="info-value text-muted">{{ release()!.organization_name || '—' }}</span>
+            </div>
+            <div class="info-field">
+              <span class="info-label">{{ 'release_detail.field_created' | t }}</span>
+              <span class="info-value text-muted">{{ release()!.created_at | date:'dd MMM yyyy, HH:mm' }}</span>
+            </div>
+            <div class="info-field">
+              <span class="info-label">{{ 'release_detail.field_updated' | t }}</span>
+              <span class="info-value text-muted">{{ release()!.updated_at | date:'dd MMM yyyy, HH:mm' }}</span>
+            </div>
+          </div>
+          @if (release()!.description) {
+            <div class="info-description">
+              <span class="info-label">{{ 'common.description' | t }}</span>
+              <p class="info-description-text">{{ release()!.description }}</p>
+            </div>
+          }
+        </div>
+
+        <!-- Verification progress card -->
+        @if (release()?.status === 'EN_VERIFICACION') {
+          <div class="verification-progress-card" role="status" aria-live="polite">
+            <div class="vp-header">
+              <span class="vp-dot" aria-hidden="true"></span>
+              <span class="vp-title">{{ 'release_detail.verify_progress_title' | t }}</span>
+              <span class="vp-pct" aria-hidden="true">{{ verificationProgress()?.pct ?? 0 }}%</span>
+            </div>
+            <div
+              class="vp-bar-track"
+              role="progressbar"
+              [attr.aria-valuenow]="verificationProgress()?.pct ?? 0"
+              aria-valuemin="0"
+              aria-valuemax="100">
+              <div class="vp-bar-fill" [style.width.%]="verificationProgress()?.pct ?? 0"></div>
+            </div>
+            <span class="vp-stage">{{ stageLabel() }}</span>
+          </div>
+        }
+
+        <!-- Verification rule results table -->
+        @if (latestResult(); as result) {
+          <div class="card rules-section">
+            <h2 class="card-title">{{ 'release_detail.verification_title' | t }}</h2>
+
+            @if (fetchErrors().length > 0) {
+              <div class="fetch-errors-banner">
+                <span class="fetch-errors-icon">⚠</span>
+                <span class="fetch-errors-title">{{ 'release_detail.fetch_errors_title' | t }}</span>
+                <ul class="fetch-errors-list">
+                  @for (fe of fetchErrors(); track fe.rule_id + '_' + $index) {
+                    <li class="fetch-error-item">
+                      <span class="fetch-error-detail">{{ translateEvidence(fe.evidence || fe.message, fe.evidence_params ?? undefined) }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <div class="data-table-wrap">
+              <table class="data-table rules-table">
+                <thead>
+                  <tr>
+                    <th scope="col" class="col-id">{{ 'release_detail.rule_id' | t }}</th>
+                    <th scope="col" class="col-name">{{ 'release_detail.rule_name' | t }}</th>
+                    <th scope="col" class="col-connector">{{ 'release_detail.rule_connector' | t }}</th>
+                    <th scope="col" class="col-result">{{ 'release_detail.rule_result' | t }}</th>
+                    <th scope="col" class="col-evidence">{{ 'release_detail.rule_evidence' | t }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (rule of result.rule_results; track rule.rule_id; let i = $index) {
+                    @if (rule.rule_id !== 'artifact_fetch_error') {
+                    <tr
+                      (click)="toggleEvidence(i)">
+                      <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm cell-rule-id" [attr.title]="rule.rule_id">{{ rule.rule_id }}</code></td>
+                      <td class="cell-primary" [attr.data-label]="'release_detail.rule_name' | t">{{ translateRuleName(rule) || ('common.dash' | t) }}</td>
+                      <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ rule.connector || ('common.na' | t) }}</td>
+                      <td [attr.data-label]="'release_detail.rule_result' | t">
+                        <span class="verdict-badge" [ngClass]="ruleResultClass(rule.status ?? rule.result ?? '')">
+                          {{ translateRuleResult(rule.status ?? rule.result ?? '') }}
+                        </span>
+                      </td>
+                      <td [attr.data-label]="'release_detail.rule_evidence' | t">
+                        @let evidenceText = translateEvidence(rule.evidence || rule.message, rule.evidence_params ?? undefined);
+                        @if (evidenceText) {
+                          <div class="cell-evidence-inner">
+                            <span class="evidence-text">{{ evidenceText }}</span>
+                            <button class="btn-expand" (click)="toggleEvidence(i); $event.stopPropagation()">{{ 'release_detail.see_more_btn' | t }}</button>
+                          </div>
+                        } @else {
+                          <span class="cell-muted">{{ 'common.dash' | t }}</span>
+                        }
+                      </td>
+                    </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+            @if (expandedEvidence(); as evidence) {
+              <div class="evidence-popover">
+                <div class="evidence-popover-header">
+                  <span class="evidence-popover-title">{{ 'release_detail.rule_evidence' | t }}</span>
+                  <button class="evidence-popover-close" (click)="expandedRule.set(null)">&times;</button>
+                </div>
+                <pre class="evidence-popover-body">{{ evidence }}</pre>
+              </div>
+            }
+            @if (result.summary) {
+              <div class="summary-bar">
+                <span class="summary-label">{{ 'release_detail.summary_label' | t }}</span>
+                @if (isSummaryString(result.summary)) {
+                  <span class="summary-text cell-muted">{{ result.summary }}</span>
+                } @else {
+                  @if (summaryTotal(result.summary) !== null) {
+                    <span class="summary-total">{{ 'release_detail.summary_total' | t : { n: summaryTotal(result.summary) } }}</span>
+                  }
+                  @for (item of summaryStatusItems(result.summary); track item[0]) {
+                    <span class="summary-chip" [ngClass]="ruleResultClass(item[0])">
+                      {{ item[1] }} {{ translateRuleResult(item[0]) }}
+                    </span>
+                  }
+                }
+                <span class="summary-duration text-muted">{{ result.duration_ms }}ms</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Artifacts section -->
+        @if (missingConnectorTypes().length > 0 && !loading()) {
+          <div class="missing-connectors-banner">
+            <span class="missing-connectors-icon">&#9888;</span>
+            <span>{{ 'release_detail.missing_connectors_warn' | t }}</span>
+            <div class="missing-connectors-types">
+              @for (ct of missingConnectorTypes(); track ct) {
+                <span class="connector-type-badge">{{ 'connector_type.' + ct | t }}</span>
+              }
+            </div>
+            <a routerLink="/app/connectors" class="missing-connectors-link">{{ 'release_detail.go_configure_connectors' | t }}</a>
+          </div>
+        }
+
+        <div class="card artifacts-section">
+          <div class="section-header">
+            <h2 class="card-title">{{ 'release_detail.artifacts_title' | t : { n: artifacts().length } }}</h2>
+            <div class="section-actions">
+              @if (artifacts().length > 0) {
+                @if (release()?.status === 'EN_VERIFICACION') {
+                  <button class="btn-danger" (click)="cancelVerification()">
+                    {{ 'release_detail.cancel_verification' | t }}
+                  </button>
+                } @else {
+                  <button
+                    class="btn-accent"
+                    [disabled]="verifying() || artifacts().length === 0"
+                    [title]="verifying() ? ('common.disabled_tooltip.verification_in_progress' | t) : (artifacts().length === 0 ? ('release_detail.no_artifacts_btn_disabled' | t) : '')"
+                    (click)="launchVerification()">
+                    @if (verifying()) { {{ 'release_detail.verifying_label' | t }} } @else { {{ 'release_detail.verify_label' | t }} }
+                  </button>
+                }
+              }
+              <button class="btn-secondary" (click)="openImportModal()">{{ 'release.import_artifacts' | t }}</button>
+            </div>
+          </div>
+          @if (artifacts().length > 0) {
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{{ 'release_detail.col_type' | t }}</th>
+                    <th scope="col">{{ 'release_detail.rule_connector' | t }}</th>
+                    <th scope="col">{{ 'release_detail.col_ext_ref' | t }}</th>
+                    <th scope="col">{{ 'common.description' | t }}</th>
+                    <th scope="col" class="col-actions"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (a of artifacts(); track a.id) {
+                    <tr>
+                      <td [attr.data-label]="'release_detail.col_type' | t">
+                        <span class="artifact-type-badge">{{ ts.translateInstant('artifact_type.' + a.artifact_type) }}</span>
+                      </td>
+                      <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ ts.translateInstant('connector_type.' + a.connector_implementation) || a.connector_implementation }}</td>
+                      <td [attr.data-label]="'release_detail.col_ext_ref' | t"><code class="mono-sm">{{ a.external_ref }}</code></td>
+                      <td class="cell-muted" [attr.data-label]="'common.description' | t">{{ a.description || ('common.dash' | t) }}</td>
+                      <td class="cell-actions" [attr.data-label]="'common.actions' | t">
+                        <button class="btn-icon btn-danger" (click)="deleteArtifact(a.id)" [title]="'common.delete' | t">
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2 4h10M5 4V3a1 1 0 011-1h2a1 1 0 011 1v1M11 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <p class="empty-state-text">{{ 'release.no_artifacts' | t }}</p>
+              <button class="btn-accent" (click)="openImportModal()">{{ 'release.import_first_artifact' | t }}</button>
+            </div>
+          }
+        </div>
+
+        <!-- Import Artifacts Modal -->
+        @if (showImportModal()) {
+          <div class="modal-overlay" (click)="closeImportModal()" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+            <div class="modal-panel" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h3 class="modal-title" id="import-modal-title">{{ 'release.import_artifacts' | t }}</h3>
+                <button class="modal-close" (click)="closeImportModal()" [attr.aria-label]="'common.close' | t">&times;</button>
+              </div>
+
+              <!-- Step indicator -->
+              <div class="import-steps">
+                <div class="step" [class.active]="!importConnector()">
+                  <span class="step-num">1</span>
+                  <span class="step-label">{{ 'release.step_select_connector' | t }}</span>
+                </div>
+                <div class="step-divider"></div>
+                <div class="step" [class.active]="!!importConnector()" [class.disabled]="!importConnector()">
+                  <span class="step-num">2</span>
+                  <span class="step-label">{{ 'release.step_select_artifact' | t }}</span>
+                </div>
+              </div>
+
+              <!-- Step 1: Connector selector -->
+              <div class="form-group">
+                <label class="form-label" for="import-connector">{{ 'release.artifact_connector' | t }}</label>
+                @if (connectorsLoading()) {
+                  <p class="form-hint">{{ 'release.loading_connectors' | t }}</p>
+                } @else if (orgConnectors().length === 0) {
+                  <p class="form-hint form-hint--warn">{{ 'release.no_connectors' | t }}</p>
+                } @else {
+                  <select id="import-connector" class="form-select" (change)="onConnectorSelect($any($event.target).value)">
+                    <option value="">{{ 'release.select_connector' | t }}</option>
+                    @for (conn of orgConnectors(); track conn.id) {
+                      <option [value]="conn.id">{{ conn.name }} · {{ conn.connector_type }}</option>
+                    }
+                  </select>
+                }
+                @if (importConnector(); as conn) {
+                  <div class="connector-meta">
+                    <span class="connector-meta-type">{{ conn.connector_type }}</span>
+                    <span class="connector-meta-status">{{ 'release.connector_status_active' | t }}</span>
+                  </div>
+                }
+              </div>
+
+              <!-- Step 2: Artifact type selector -->
+              <div class="form-group" [class.step-locked]="!importConnector()">
+                <label class="form-label" for="import-type">{{ 'release.artifact_type' | t }}</label>
+                <select id="import-type" class="form-select" [value]="importArtifactType()" (change)="importArtifactType.set($any($event.target).value)" [disabled]="!importConnector()">
+                  @for (type of availableArtifactTypes(); track type) {
+                    <option [value]="type">{{ 'artifact_type.' + type | t }}</option>
+                  }
+                </select>
+                @if (!importConnector()) {
+                  <p class="form-hint">{{ 'release.select_connector_first' | t }}</p>
+                }
+              </div>
+
+              @if (importConnector()) {
+                <div class="form-group">
+                  <div class="form-label-row">
+                    <label class="form-label">{{ 'release.external_ref' | t }}</label>
+                    <button type="button" class="btn-info" (click)="showArtifactTypeHelp.set(true)"
+                      [attr.aria-label]="'release.artifact_type_help_aria' | t">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  @if (browseLoading()) {
+                    <p class="form-hint">{{ 'release.browse_loading' | t }}</p>
+                  } @else if (browseError() && !browseManual()) {
+                    <p class="form-hint form-hint--warn">{{ 'release.browse_error' | t }}</p>
+                    <button type="button" class="btn-link" (click)="browseManual.set(true)">
+                      {{ 'release.browse_manual_label' | t }}
+                    </button>
+                  } @else if (!browseManual() && browseItems().length > 0) {
+                    @if (importExternalRef()) {
+                      <div class="browse-selected">
+                        <div class="browse-selected-info">
+                          <span class="browse-selected-title">{{ importDescription() || importExternalRef() }}</span>
+                          <code class="browse-selected-ref">{{ importExternalRef() }}</code>
+                        </div>
+                        <button type="button" class="btn-icon btn-danger" (click)="clearBrowseSelection()" aria-label="Clear selection">✕</button>
+                      </div>
+                    } @else {
+                      <input type="text" class="form-input browse-search"
+                        [placeholder]="'release.browse_search_placeholder' | t"
+                        [value]="browseSearch()"
+                        (input)="onBrowseSearchInput($any($event.target).value)"
+                        autocomplete="off" />
+                      <div class="browse-list" role="listbox" aria-label="Available items">
+                        @for (item of filteredBrowseItems(); track item.ref) {
+                          <button type="button" class="browse-item" role="option"
+                            (click)="selectBrowseItem(item)">
+                            <span class="browse-item-title">{{ item.title }}</span>
+                            <span class="browse-item-meta">
+                              <code class="browse-item-ref">{{ item.ref }}</code>
+                              @if (item.subtitle) {
+                                <span class="browse-item-sub">{{ item.subtitle }}</span>
+                              }
+                            </span>
+                          </button>
+                        }
+                        @if (filteredBrowseItems().length === 0) {
+                          <p class="browse-empty">{{ 'release.browse_empty' | t }}</p>
+                        }
+                      </div>
+                      <button type="button" class="btn-link" (click)="browseManual.set(true)">
+                        {{ 'release.browse_manual_label' | t }}
+                      </button>
+                    }
+                  } @else if (!browseManual() && browseItems().length === 0 && !browseLoading()) {
+                    <p class="form-hint">{{ 'release.browse_empty' | t }}</p>
+                    <button type="button" class="btn-link" (click)="browseManual.set(true)">
+                      {{ 'release.browse_manual_label' | t }}
+                    </button>
+                  }
+
+                  @if (browseManual()) {
+                    <input id="import-ref" type="text" class="form-input"
+                      [placeholder]="'release.external_ref_placeholder' | t"
+                      [value]="importExternalRef()"
+                      (input)="importExternalRef.set($any($event.target).value)" />
+                  }
+                </div>
+              }
+
+              <div class="form-group">
+                <label class="form-label" for="import-desc">{{ 'release.description_optional' | t }}</label>
+                <input id="import-desc" type="text" class="form-input"
+                  [placeholder]="'release.description_placeholder' | t"
+                  [value]="importDescription()"
+                  (input)="importDescription.set($any($event.target).value)" />
+              </div>
+
+              @if (importError()) {
+                <div class="error-banner error-banner-sm" role="alert">{{ importError() }}</div>
+              }
+              <div class="modal-footer">
+                <button type="button" class="btn-secondary" (click)="closeImportModal()">{{ 'common.cancel' | t }}</button>
+                <button type="button" class="btn-accent"
+                  [disabled]="importing() || !importConnector() || !importExternalRef()"
+                  [title]="(!importConnector() || !importExternalRef()) ? ('common.disabled_tooltip.no_connector' | t) : importing() ? ('common.disabled_tooltip.operation_in_progress' | t) : ''"
+                  (click)="importArtifacts()">
+                  {{ importing() ? ('release.importing' | t) : ('release.import' | t) }}
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (showArtifactTypeHelp()) {
+          <div class="help-overlay" (click)="showArtifactTypeHelp.set(false)" role="dialog" aria-modal="true" aria-labelledby="artifact-help-title">
+            <div class="help-panel" (click)="$event.stopPropagation()">
+              <div class="modal-header">
+                <h3 class="modal-title" id="artifact-help-title">{{ 'artifact_type.' + importArtifactType() | t }}</h3>
+                <button class="modal-close" (click)="showArtifactTypeHelp.set(false)" [attr.aria-label]="'common.close' | t">&times;</button>
+              </div>
+              <p class="help-text">{{ 'artifact_type_help.' + importArtifactType() | t }}</p>
+              <div class="help-format">
+                <span class="help-format-label">{{ 'release.artifact_type_help_format' | t }}</span>
+                <code class="help-format-code">{{ 'artifact_type_help.format.' + importArtifactType() | t }}</code>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn-secondary" (click)="showArtifactTypeHelp.set(false)">{{ 'common.close' | t }}</button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Verification history -->
+        @if (verificationHistory().length > 1) {
+          <div class="card history-section">
+            <h2 class="card-title">{{ 'release_detail.history' | t }}</h2>
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{{ 'release_detail.history_verdict' | t }}</th>
+                    <th scope="col">{{ 'release_detail.col_duration' | t }}</th>
+                    <th scope="col">{{ 'release_detail.col_executed' | t }}</th>
+                    <th scope="col"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (h of verificationHistory(); track h.id) {
+                    <tr>
+                      <td [attr.data-label]="'release_detail.history_verdict' | t">
+                        <span class="verdict-badge" [ngClass]="verdictBadgeMap(h.verdict)">
+                          {{ translateVerdict(h.verdict) }}
+                        </span>
+                      </td>
+                      <td class="cell-muted" [attr.data-label]="'release_detail.col_duration' | t">{{ h.duration_ms }}ms</td>
+                      <td class="cell-muted" [attr.data-label]="'release_detail.col_executed' | t">{{ h.executed_at | date:'dd MMM yyyy, HH:mm' }}</td>
+                      <td class="cell-action" [attr.data-label]="'common.actions' | t">
+                        <button class="btn-ghost" (click)="loadResultDetail(h.id)">{{ 'release_detail.see_btn' | t }}</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+        @if (!latestResult() && artifacts().length === 0) {
+          <div class="card empty-card">
+            <p class="empty-text">{{ 'release_detail.empty_desc' | t }}</p>
+            <p class="empty-hint">{{ 'release_detail.add_artifact_first' | t }}</p>
+            <button class="btn-accent" disabled>
+              {{ 'release_detail.start_verification_btn' | t }}
+            </button>
+          </div>
+        }
+      }
+
+      <!-- Verification launch notice overlay -->
+      @if (showVerifyNotice()) {
+        <div class="verify-overlay" role="dialog" aria-modal="true" aria-labelledby="verify-notice-title">
+          <div class="verify-notice-panel">
+            <div class="verify-scanner">
+              <div class="scanner-ring scanner-ring-1"></div>
+              <div class="scanner-ring scanner-ring-2"></div>
+              <div class="scanner-ring scanner-ring-3"></div>
+              <div class="scanner-core">
+                <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+                  <rect x="5" y="3" width="13" height="17" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M9 9h5M9 13h5M9 17h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <circle cx="20" cy="20" r="5" fill="var(--ink)" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M17.5 20l1.5 1.5 3-3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <div class="verify-notice-body">
+              <h2 class="verify-notice-title" id="verify-notice-title">{{ 'release_detail.verify_launched_title' | t }}</h2>
+              <p class="verify-notice-desc">{{ 'release_detail.verify_launched_desc' | t }}</p>
+              <div class="verify-channels">
+                <span class="verify-channel">
+                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.25"/>
+                    <path d="M7 1.5C7 1.5 5 4 5 7s2 5.5 2 5.5M7 1.5C7 1.5 9 4 9 7s-2 5.5-2 5.5M1.5 7h11" stroke="currentColor" stroke-width="1.25"/>
+                  </svg>
+                  {{ 'release_detail.verify_channel_web' | t }}
+                </span>
+                <span class="verify-channel">
+                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <rect x="1.5" y="3" width="11" height="8" rx="1.5" stroke="currentColor" stroke-width="1.25"/>
+                    <path d="M1.5 4.5l5.5 4 5.5-4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+                  </svg>
+                  {{ 'release_detail.verify_channel_email' | t }}
+                </span>
+              </div>
+
+              @if (verificationProgress(); as p) {
+                <div class="vp-overlay-progress" role="progressbar" [attr.aria-valuenow]="p.pct" aria-valuemin="0" aria-valuemax="100">
+                  <div class="vp-overlay-bar-track">
+                    <div class="vp-overlay-bar-fill" [style.width.%]="p.pct"></div>
+                  </div>
+                  <span class="vp-overlay-stage">{{ stageLabel() }}</span>
+                </div>
+              }
+            </div>
+            <button class="verify-notice-dismiss" (click)="dismissVerifyNotice()">
+              {{ 'release_detail.verify_launched_dismiss' | t }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (artifactToDelete()) {
+      <app-confirm-dialog
+        [title]="ts.translateInstant('release.confirm_delete_artifact_title')"
+        [message]="ts.translateInstant('release.confirm_delete_artifact_message')"
+        [confirmText]="ts.translateInstant('common.delete')"
+        [cancelText]="ts.translateInstant('common.cancel')"
+        (confirmed)="confirmDeleteArtifact()"
+        (cancelled)="artifactToDelete.set(null)">
+      </app-confirm-dialog>
+    }
+  
