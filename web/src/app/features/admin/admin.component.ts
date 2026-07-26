@@ -1,39 +1,18 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import {
+  AccessRequest,
+  AccessRequestStatus,
+  AdminService,
+  GlobalUser,
+  Org,
+} from './services/admin.service';
 
 type AdminTab = 'organizations' | 'users' | 'access-requests';
-type AccessRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-
-interface Org {
-  id: string;
-  name: string;
-  slug: string;
-}
-
-interface GlobalUser {
-  id: string;
-  email: string;
-  display_name: string;
-  role: string;
-  is_active: boolean;
-}
-
-interface AccessRequest {
-  id: string;
-  requester_name: string;
-  requester_email: string;
-  organization_name: string;
-  organization_description?: string;
-  slug_preview?: string;
-  status: AccessRequestStatus;
-  created_at?: string;
-  rejection_reason?: string;
-}
 
 
 @Component({
@@ -44,7 +23,7 @@ interface AccessRequest {
   styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly adminService = inject(AdminService);
   private readonly authService = inject(AuthService);
   readonly ts = inject(TranslationService);
 
@@ -135,7 +114,7 @@ export class AdminComponent implements OnInit {
 
   private loadOrgs(): void {
     this.orgsLoading.set(true);
-    this.http.get<Org[]>('/api/v1/organizations')
+    this.adminService.getOrganizations()
       .pipe(catchError(() => { this.orgsError.set(this.ts.translateInstant('admin.loading_orgs_error')); return of([]); }))
       .subscribe(data => {
         const anonymized = data.map(org => ({
@@ -151,7 +130,7 @@ export class AdminComponent implements OnInit {
 
   private loadUsers(): void {
     this.usersLoading.set(true);
-    this.http.get<GlobalUser[]>('/api/v1/admin/users?limit=200')
+    this.adminService.getUsers()
       .pipe(catchError(() => { this.usersError.set(this.ts.translateInstant('admin.loading_users_error')); return of([]); }))
       .subscribe(data => {
         const anonymized = data.map(user => ({
@@ -176,8 +155,8 @@ export class AdminComponent implements OnInit {
 
   private loadAccessRequests(): void {
     this.arLoading.set(true);
-    this.http
-      .get<AccessRequest[]>(`/api/v1/access-requests?status=${this.arStatus()}`)
+    this.adminService
+      .getAccessRequests(this.arStatus())
       .pipe(
         catchError(() => {
           this.arError.set(this.ts.translateInstant('admin.error_loading_access_requests'));

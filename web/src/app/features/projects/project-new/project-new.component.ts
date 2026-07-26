@@ -2,18 +2,12 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-
-interface Profile {
-  id: string;
-  name: string;
-  is_system?: boolean;
-  is_default?: boolean;
-}
+import { ProjectProfile, ProjectService } from '../services/project.service';
 
 @Component({
   selector: 'app-project-new',
@@ -23,13 +17,13 @@ interface Profile {
   styleUrls: ['./project-new.component.scss'],
 })
 export class ProjectNewComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly projectService = inject(ProjectService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
 
-  profiles = signal<Profile[]>([]);
+  profiles = signal<ProjectProfile[]>([]);
   profilesLoading = signal(true);
   submitting = signal(false);
   submitError = signal<string | null>(null);
@@ -48,8 +42,8 @@ export class ProjectNewComponent implements OnInit {
       this.profilesLoading.set(false);
       return;
     }
-    this.http.get<Profile[]>(`/api/v1/organizations/${orgId}/profiles`)
-      .pipe(catchError(() => of([] as Profile[])))
+    this.projectService.listProfiles(orgId)
+      .pipe(catchError(() => of([] as ProjectProfile[])))
       .subscribe(data => {
         this.profiles.set(data);
         const systemProfile = data.find(p => p.is_system);
@@ -73,7 +67,7 @@ export class ProjectNewComponent implements OnInit {
     const { name, description, profile_id } = this.form.value;
     const body = { name, description: description || '', profile_id };
 
-    this.http.post<{ id: string }>(`/api/v1/organizations/${orgId}/projects`, body)
+    this.projectService.create(orgId, body)
       .pipe(
         catchError((err: HttpErrorResponse) => {
           this.submitError.set(err.error?.detail ?? this.ts.translateInstant('project_new.error'));

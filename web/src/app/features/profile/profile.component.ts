@@ -1,37 +1,13 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { catchError, of, EMPTY } from 'rxjs';
 import { AuthService, TotpSetupResponse } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
-
-interface ApiKey {
-  id: string;
-  name: string;
-  prefix: string;
-  is_active: boolean;
-  expires_at: string | null;
-  created_at: string;
-  last_used_at: string | null;
-}
-
-interface UserProfile {
-  id: string;
-  email: string;
-  display_name: string;
-  role: string;
-  totp_enabled?: boolean;
-}
-
-interface UserNotificationPreferences {
-  release_validated: boolean;
-  release_invalidated: boolean;
-  release_pending_reminder: boolean;
-  weekly_digest: boolean;
-}
+import { ApiKey, UserNotificationPreferences, UserProfile, UserProfileService } from './services/user-profile.service';
 
 @Component({
   selector: 'app-profile',
@@ -41,7 +17,7 @@ interface UserNotificationPreferences {
   styleUrls: ['./profile.component.scss'],
 })
 export class ProfileComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly userProfileService = inject(UserProfileService);
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
@@ -132,7 +108,7 @@ export class ProfileComponent implements OnInit {
   notifPrefsError = signal<string | null>(null);
 
   ngOnInit(): void {
-    this.http.get<UserProfile>('/api/v1/users/me')
+    this.userProfileService.getMe()
       .pipe(catchError(() => of(null)))
       .subscribe(user => {
         this.profile.set(user);
@@ -144,7 +120,7 @@ export class ProfileComponent implements OnInit {
 
     const userId = this.authService.getUser()?.id;
     if (userId) {
-      this.http.get<ApiKey[]>(`/api/v1/users/${userId}/api-keys`)
+      this.userProfileService.listApiKeys(userId)
         .pipe(catchError(() => of([] as ApiKey[])))
         .subscribe(keys => {
           this.apiKeys.set(keys);
@@ -162,7 +138,7 @@ export class ProfileComponent implements OnInit {
     this.nameSaving.set(true);
     this.nameSaved.set(false);
     this.nameSaveError.set(null);
-    this.http.patch<UserProfile>('/api/v1/users/me', this.nameForm.value)
+    this.userProfileService.updateMe(this.nameForm.value)
       .pipe(catchError((err: HttpErrorResponse) => {
         this.nameSaveError.set(err.error?.detail ?? this.ts.translateInstant('common.error_saving'));
         this.nameSaving.set(false);
@@ -184,7 +160,7 @@ export class ProfileComponent implements OnInit {
     this.pwSaved.set(false);
     this.pwSaveError.set(null);
     const { current_password, new_password, confirm_password } = this.pwForm.value;
-    this.http.post('/api/v1/users/me/password', { current_password, new_password, confirm_password })
+    this.userProfileService.changePassword({ current_password, new_password, confirm_password })
       .pipe(catchError((err: HttpErrorResponse) => {
         this.pwSaveError.set(err.error?.detail ?? this.ts.translateInstant('profile_page.password_error'));
         this.pwSaving.set(false);
@@ -210,7 +186,7 @@ export class ProfileComponent implements OnInit {
     if (this.orgForm.invalid) { this.orgForm.markAllAsTouched(); return; }
     this.orgCreating.set(true);
     this.orgError.set(null);
-    this.http.post<{ id: string; name: string; slug: string }>('/api/v1/organizations', this.orgForm.value)
+    this.userProfileService.createOrganization(this.orgForm.value)
       .pipe(catchError((err: HttpErrorResponse) => {
         this.orgError.set(err.error?.detail ?? this.ts.translateInstant('profile_page.error.creating_org'));
         this.orgCreating.set(false);
@@ -239,7 +215,7 @@ export class ProfileComponent implements OnInit {
     const body: Record<string, unknown> = { name };
     if (expires_in_days) body['expires_in_days'] = expires_in_days;
 
-    this.http.post<ApiKey & { key: string }>(`/api/v1/users/${userId}/api-keys`, body)
+    this.userProfileService.createApiKey(userId, body)
       .pipe(catchError((err: HttpErrorResponse) => {
         this.keyCreateError.set(err.error?.detail ?? this.ts.translateInstant('common.error_occurred'));
         this.keyCreating.set(false);
@@ -258,7 +234,7 @@ export class ProfileComponent implements OnInit {
   revokeKey(keyId: string): void {
     const userId = this.authService.getUser()?.id;
     if (!userId) return;
-    this.http.delete(`/api/v1/users/${userId}/api-keys/${keyId}`)
+    this.userProfileService.revokeApiKey(userId, keyId)
       .pipe(catchError(() => of(null)))
       .subscribe(() => {
         this.apiKeys.update(keys => keys.filter(k => k.id !== keyId));
@@ -384,14 +360,14 @@ export class ProfileComponent implements OnInit {
       return;
     }
 
-    this.http.get<{ owner_id: string }>(`/api/v1/organizations/${orgId}`)
+    this.userProfileService.getOrganization(orgId)
       .pipe(catchError(() => {
         this.deleteAccountChecking.set(false);
         return of(null);
       }))
       .subscribe(org => {
         if (org && org.owner_id === this.authService.getUser()?.id) {
-          this.http.get<{ id: string }[]>(`/api/v1/organizations/${orgId}/users`)
+          this.userProfileService.listOrganizationUsers(orgId)
             .pipe(catchError(() => {
               this.deleteAccountChecking.set(false);
               return of([]);
@@ -423,7 +399,7 @@ export class ProfileComponent implements OnInit {
     this.deleteAccountError.set(null);
 
     const { password } = this.deleteAccountForm.value;
-    this.http.delete('/api/v1/users/me/account', { body: { password } })
+    this.userProfileService.deleteAccount(password)
       .pipe(catchError((err: HttpErrorResponse) => {
         const status = err.status;
         if (status === 400 || status === 401) {
@@ -449,7 +425,7 @@ export class ProfileComponent implements OnInit {
     this.exportDataDownloading.set(true);
     this.exportDataError.set(null);
 
-    this.http.get<object>('/api/v1/users/me/export')
+    this.userProfileService.exportUserData()
       .pipe(catchError((err: HttpErrorResponse) => {
         this.exportDataError.set(this.ts.translateInstant('profile_page.export_data_error'));
         this.exportDataDownloading.set(false);
@@ -472,7 +448,7 @@ export class ProfileComponent implements OnInit {
   }
 
   loadNotifPrefs(): void {
-    this.http.get<UserNotificationPreferences>('/api/v1/notifications/preferences')
+    this.userProfileService.getNotificationPreferences()
       .pipe(catchError(() => {
         this.notifPrefsLoading.set(false);
         return of(null);
@@ -488,7 +464,7 @@ export class ProfileComponent implements OnInit {
     const newValue = !current[key];
     this.notifPrefs.set({ ...current, [key]: newValue });
 
-    this.http.patch('/api/v1/notifications/preferences', { [key]: newValue })
+    this.userProfileService.updateNotificationPreference({ [key]: newValue })
       .pipe(catchError(() => {
         this.notifPrefs.set(current);
         this.notifPrefsError.set(this.ts.translateInstant('common.error_saving'));

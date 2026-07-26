@@ -1,35 +1,17 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { ToastService } from '../../core/services/toast.service';
 import { catchError, of } from 'rxjs';
-
-interface ConfigSchemaField {
-  type: string;
-  label: string;
-  required: boolean;
-  sensitive?: boolean;
-}
-
-interface ChannelTypesResponse {
-  channel_types: string[];
-  config_schemas: Record<string, Record<string, ConfigSchemaField>>;
-}
-
-interface NotificationChannel {
-  id: string | null;
-  organization_id: string;
-  channel_type: string;
-  enabled: boolean;
-  config_data: Record<string, unknown>;
-  configured: boolean;
-  created_at: string | null;
-  updated_at: string | null;
-}
+import {
+  ConfigSchemaField,
+  NotificationChannel,
+  NotificationChannelsService,
+} from './services/notification-channels.service';
 
 // EMAIL se gestiona por usuario en la página de perfil (preferencias de notificación);
 // aquí solo viven los canales de equipo, que empujan a un webhook saliente compartido.
@@ -43,7 +25,7 @@ const OUTBOUND_TYPES = ['SLACK', 'MS_TEAMS', 'GENERIC'];
   styleUrls: ['./notification-channels.component.scss'],
 })
 export class NotificationChannelsComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly notificationChannelsService = inject(NotificationChannelsService);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly ts = inject(TranslationService);
@@ -69,12 +51,12 @@ export class NotificationChannelsComponent implements OnInit {
   private loadAll(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.http.get<ChannelTypesResponse>('/api/v1/notifications/channel-types').pipe(
+    this.notificationChannelsService.getChannelTypes().pipe(
       catchError(() => { this.error.set(this.ts.translateInstant('notification_channels.loading_error')); return of(null); })
     ).subscribe(schemaRes => {
       if (!schemaRes) { this.loading.set(false); return; }
       this.configSchemas.set(schemaRes.config_schemas);
-      this.http.get<NotificationChannel[]>('/api/v1/notifications/channels').pipe(
+      this.notificationChannelsService.getChannels().pipe(
         catchError(() => { this.error.set(this.ts.translateInstant('notification_channels.loading_error')); return of([] as NotificationChannel[]); })
       ).subscribe(channels => {
         this.channels.set(channels);
@@ -118,8 +100,8 @@ export class NotificationChannelsComponent implements OnInit {
     const existing = this.channelFor(type);
     const body = { channel_type: type, enabled: !!enabled, config_data: configData };
     const req = existing?.configured
-      ? this.http.patch(`/api/v1/notifications/channels/${existing.id}`, body)
-      : this.http.post('/api/v1/notifications/channels', body);
+      ? this.notificationChannelsService.updateChannel(existing.id, body)
+      : this.notificationChannelsService.createChannel(body);
     req.pipe(
       catchError((err: HttpErrorResponse) => {
         this.toast.error(err.error?.detail ?? this.ts.translateInstant('notification_channels.saving_error'));
@@ -139,7 +121,7 @@ export class NotificationChannelsComponent implements OnInit {
     const existing = this.channelFor(type);
     if (!existing?.id) return;
     this.testing.set(type);
-    this.http.post<{ delivered: boolean }>(`/api/v1/notifications/channels/${existing.id}/test`, {}).pipe(
+    this.notificationChannelsService.testChannel(existing.id).pipe(
       catchError((err: HttpErrorResponse) => {
         this.toast.error(err.error?.detail ?? this.ts.translateInstant('notification_channels.test_error'));
         this.testing.set(null);
@@ -161,7 +143,7 @@ export class NotificationChannelsComponent implements OnInit {
     const existing = this.channelFor(type);
     if (!existing?.id) return;
     this.deleting.set(type);
-    this.http.delete(`/api/v1/notifications/channels/${existing.id}`).pipe(
+    this.notificationChannelsService.deleteChannel(existing.id).pipe(
       catchError(() => {
         this.toast.error(this.ts.translateInstant('notification_channels.deleting_error'));
         this.deleting.set(null);

@@ -2,21 +2,11 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { catchError, of } from 'rxjs';
-
-interface Release {
-  id: string;
-  name?: string;
-  verdict: string;
-  organization_id?: string;
-  organization_name?: string;
-  created_at: string;
-  created_by?: string;
-}
+import { ReleaseService, ReleaseSummary as Release } from './services/release.service';
 
 @Component({
   selector: 'app-releases',
@@ -26,7 +16,7 @@ interface Release {
   styleUrls: ['./releases.component.scss'],
 })
 export class ReleasesComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly releaseService = inject(ReleaseService);
   private readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
 
@@ -47,8 +37,7 @@ export class ReleasesComponent implements OnInit {
   filterVerdict = '';
 
   ngOnInit(): void {
-    const url = '/api/v1/releases';
-    this.http.get<Release[]>(url)
+    this.releaseService.listAll()
       .pipe(catchError(() => { this.error.set(this.ts.translateInstant('releases.loading_error')); return of([]); }))
       .subscribe(data => {
         this.releases.set(data);
@@ -106,7 +95,7 @@ export class ReleasesComponent implements OnInit {
     if (!release) return;
 
     this.deleting.set(true);
-    this.http.delete(`/api/v1/releases/${release.id}`)
+    this.releaseService.deleteRelease(release.id)
       .pipe(
         catchError(err => {
           this.error.set(this.ts.translateInstant('releases.delete_error'));

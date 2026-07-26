@@ -2,16 +2,13 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
-
-interface Project {
-  id: string;
-  name: string;
-}
+import { ReleaseService } from '../services/release.service';
+import { ProjectOption as Project, ProjectService } from '../../projects/services/project.service';
 
 @Component({
   selector: 'app-release-new',
@@ -21,7 +18,8 @@ interface Project {
   styleUrls: ['./release-new.component.scss'],
 })
 export class ReleaseNewComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly releaseService = inject(ReleaseService);
+  private readonly projectService = inject(ProjectService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -56,9 +54,7 @@ export class ReleaseNewComponent implements OnInit {
   }
 
   private loadRelease(): void {
-    this.http.get<{ id: string; name: string; version: string; description: string; project_id?: string }>(
-      `/api/v1/releases/${this.releaseId}`
-    ).pipe(
+    this.releaseService.getReleaseForEdit(this.releaseId!).pipe(
       catchError(() => {
         this.router.navigate(['/app/releases']);
         return of(null);
@@ -78,7 +74,7 @@ export class ReleaseNewComponent implements OnInit {
   }
 
   private loadProjects(): void {
-    this.http.get<Project[]>('/api/v1/projects')
+    this.projectService.listAccessible()
       .pipe(catchError(() => of([] as Project[])))
       .subscribe(data => {
         this.projects.set(data);
@@ -95,9 +91,7 @@ export class ReleaseNewComponent implements OnInit {
     const body: Record<string, unknown> = { name, version, description: description || '' };
 
     if (this.isEditMode() && this.releaseId) {
-      this.http.patch<{ id: string }>(
-        `/api/v1/releases/${this.releaseId}`, body
-      ).pipe(
+      this.releaseService.updateRelease(this.releaseId, body).pipe(
         catchError((err: HttpErrorResponse) => {
           this.submitError.set(err.error?.detail ?? this.ts.translateInstant('release_new.edit_error'));
           this.submitting.set(false);
@@ -110,9 +104,7 @@ export class ReleaseNewComponent implements OnInit {
       });
     } else {
       const { project_id } = this.form.value;
-      this.http.post<{ id: string; status: string }>(
-        `/api/v1/projects/${project_id}/releases`, body
-      ).pipe(
+      this.releaseService.createRelease(project_id!, body).pipe(
         catchError((err: HttpErrorResponse) => {
           this.submitError.set(err.error?.detail ?? this.ts.translateInstant('release_new.error'));
           this.submitting.set(false);

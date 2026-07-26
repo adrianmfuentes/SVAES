@@ -1,21 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
-
-
-
-interface OrgUser {
-  id: string;
-  email: string;
-  display_name: string;
-  role: 'OPERATOR' | 'ADMIN' | 'MANAGER';
-  is_active: boolean;
-}
+import { OrgUser, OrgService } from './services/org.service';
 
 @Component({
   selector: 'app-org-settings',
@@ -25,7 +16,7 @@ interface OrgUser {
   styleUrls: ['./org-settings.component.scss'],
 })
 export class OrgSettingsComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly orgService = inject(OrgService);
   private readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
 
@@ -73,7 +64,7 @@ export class OrgSettingsComponent implements OnInit {
 
   private loadMembers(): void {
     this.membersLoading.set(true);
-    this.http.get<OrgUser[]>(`/api/v1/organizations/${this.orgId}/users`)
+    this.orgService.listMembers(this.orgId)
       .pipe(catchError(() => {
         this.membersError.set(this.ts.translateInstant('org_settings.loading_members_error'));
         return of([] as OrgUser[]);
@@ -102,7 +93,7 @@ export class OrgSettingsComponent implements OnInit {
     this.inviteError.set(null);
     this.inviteSuccess.set(null);
 
-    this.http.post(`/api/v1/organizations/${this.orgId}/users/invite`, {
+    this.orgService.inviteMember(this.orgId, {
       email: this.inviteEmail,
       role: this.inviteRole,
     }).pipe(
@@ -136,7 +127,7 @@ export class OrgSettingsComponent implements OnInit {
     this.removing.set(true);
     this.removeError.set(null);
 
-    this.http.delete(`/api/v1/organizations/${this.orgId}/users/${member.id}`).subscribe({
+    this.orgService.removeMember(this.orgId, member.id).subscribe({
       next: () => {
         this.removing.set(false);
         this.members.update(members => members.filter(m => m.id !== member.id));
@@ -173,7 +164,7 @@ export class OrgSettingsComponent implements OnInit {
     this.transferring.set(true);
     this.transferError.set(null);
 
-    this.http.post(`/api/v1/organizations/${this.orgId}/transfer-ownership`, {
+    this.orgService.transferOwnership(this.orgId, {
       new_owner_id: this.transferTargetId,
     }).pipe(
       catchError(err => {

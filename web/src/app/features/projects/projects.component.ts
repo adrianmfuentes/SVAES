@@ -2,26 +2,12 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { catchError, of } from 'rxjs';
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  profile_id: string | null;
-  is_archived: boolean;
-  created_at: string | null;
-}
-
-interface Profile {
-  id: string;
-  name: string;
-  is_system?: boolean;
-}
+import { Project, ProjectProfile, ProjectService } from './services/project.service';
 
 @Component({
   selector: 'app-projects',
@@ -31,7 +17,7 @@ interface Profile {
   styleUrls: ['./projects.component.scss'],
 })
 export class ProjectsComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly projectService = inject(ProjectService);
   private readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
 
@@ -45,7 +31,7 @@ export class ProjectsComponent implements OnInit {
   archiving = signal(false);
 
   editingProject = signal<Project | null>(null);
-  editProfiles = signal<Profile[]>([]);
+  editProfiles = signal<ProjectProfile[]>([]);
   editName = signal('');
   editDescription = signal('');
   editProfileId = signal('');
@@ -53,7 +39,7 @@ export class ProjectsComponent implements OnInit {
   editError = signal<string | null>(null);
 
   ngOnInit(): void {
-    this.http.get<Project[]>(`/api/v1/organizations/${this.orgId}/projects`)
+    this.projectService.list(this.orgId)
       .pipe(catchError(() => {
         this.error.set(this.ts.translateInstant('projects.load_error'));
         return of([] as Project[]);
@@ -77,7 +63,7 @@ export class ProjectsComponent implements OnInit {
     if (!project) return;
     this.archiving.set(true);
 
-    this.http.post(`/api/v1/organizations/${this.orgId}/projects/${project.id}/archive`, {})
+    this.projectService.archive(this.orgId, project.id)
       .pipe(catchError(() => {
         this.archiving.set(false);
         return of(null);
@@ -92,7 +78,7 @@ export class ProjectsComponent implements OnInit {
   }
 
   unarchive(project: Project): void {
-    this.http.post(`/api/v1/organizations/${this.orgId}/projects/${project.id}/unarchive`, {})
+    this.projectService.unarchive(this.orgId, project.id)
       .pipe(catchError(() => of(null)))
       .subscribe(res => {
         if (res === null) return;
@@ -109,8 +95,8 @@ export class ProjectsComponent implements OnInit {
     this.editProfileId.set(project.profile_id ?? '');
     this.editError.set(null);
 
-    this.http.get<Profile[]>(`/api/v1/organizations/${this.orgId}/profiles`)
-      .pipe(catchError(() => of([] as Profile[])))
+    this.projectService.listProfiles(this.orgId)
+      .pipe(catchError(() => of([] as ProjectProfile[])))
       .subscribe(data => this.editProfiles.set(data));
   }
 
@@ -131,7 +117,7 @@ export class ProjectsComponent implements OnInit {
       profile_id: this.editProfileId() || null,
     };
 
-    this.http.patch<Project>(`/api/v1/projects/${project.id}`, body)
+    this.projectService.update(project.id, body)
       .pipe(catchError((err: HttpErrorResponse) => {
         this.editError.set(err.error?.detail ?? this.ts.translateInstant('projects.edit_error'));
         this.editSubmitting.set(false);

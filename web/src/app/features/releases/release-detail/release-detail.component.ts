@@ -1,60 +1,22 @@
 import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { TranslationService } from '../../../core/i18n/translation.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../../core/components/confirm-dialog/confirm-dialog.component';
 import { catchError, debounceTime, distinctUntilChanged, EMPTY, forkJoin, of, Subject, Subscription, switchMap } from 'rxjs';
-
-interface ReleaseDetail {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  status: string;
-  project_id: string;
-  profile_id: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  organization_id?: string;
-  project_name?: string;
-  organization_name?: string;
-  pending_task_id?: string | null;
-}
-
-interface VerificationProgress {
-  current: number;
-  total: number;
-  stage: string;
-  pct: number;
-}
-
-interface Artifact {
-  id: string;
-  release_id: string;
-  connector_instance_id: string;
-  connector_implementation: string;
-  artifact_type: string;
-  external_ref: string;
-  description?: string;
-  metadata?: Record<string, unknown>;
-  created_at?: string;
-}
-
-interface RuleResult {
-  rule_id: string;
-  rule_name?: string;
-  connector?: string;
-  status?: string;
-  result?: string;
-  message?: string;
-  evidence?: string;
-  evidence_params?: Record<string, string | number>;
-  severity?: string;
-}
+import {
+  Artifact,
+  BrowseItem,
+  ProfileRule,
+  ReleaseDetail,
+  ReleaseService,
+  RuleResult,
+  VerificationProgress,
+  VerificationResult,
+} from '../services/release.service';
+import { ConnectorService } from '../../connectors/services/connector.service';
 
 interface ConnectorApiItem {
   id: string;
@@ -66,12 +28,6 @@ interface ConnectorApiItem {
   last_tested_at?: string;
 }
 
-interface BrowseItem {
-  ref: string;
-  title: string;
-  subtitle: string;
-}
-
 const CONNECTOR_TYPE_TO_ARTIFACT: Record<string, string[]> = {
   'GESTOR_TAREAS': ['TAREA', 'CAMBIO'],
   'REPO_CODIGO': ['CODIGO'],
@@ -79,17 +35,6 @@ const CONNECTOR_TYPE_TO_ARTIFACT: Record<string, string[]> = {
   'HERRAMIENTA_PLANIFICACION': ['PLAN'],
   'GESTION_CAMBIOS': ['CAMBIO', 'TAREA'],
 };
-
-interface VerificationResult {
-  id: string;
-  release_id: string;
-  verdict: string;
-  rule_results: RuleResult[];
-  summary: Record<string, number> | string;
-  profile_snapshot?: Record<string, unknown>;
-  duration_ms: number;
-  executed_at: string;
-}
 
 @Component({
   selector: 'app-release-detail',
@@ -99,7 +44,8 @@ interface VerificationResult {
   styleUrls: ['./release-detail.component.scss'],
 })
 export class ReleaseDetailComponent implements OnInit, OnDestroy {
-  private readonly http = inject(HttpClient);
+  private readonly releaseService = inject(ReleaseService);
+  private readonly connectorService = inject(ConnectorService);
   private readonly route = inject(ActivatedRoute);
   readonly ts = inject(TranslationService);
   private readonly toast = inject(ToastService);
@@ -175,10 +121,10 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   private releaseId = '';
   private orgId = '';
-  private profileRules: { rule_template: string; connector_types: string[]; connector_types_mode: string }[] = [];
+  private profileRules: ProfileRule[] = [];
 
   private loadProfileRules(profileId: string): void {
-    this.http.get<{ rules: { rule_template: string; connector_types: string[]; connector_types_mode: string }[] }>(`/api/v1/profiles/${profileId}`)
+    this.releaseService.getProfileRules(profileId)
       .pipe(catchError(() => of(null)))
       .subscribe(data => {
         if (data?.rules) {
@@ -226,13 +172,13 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
           }
           this.releaseId = id;
           return forkJoin({
-            release: this.http.get<ReleaseDetail>(`/api/v1/releases/${id}`).pipe(
+            release: this.releaseService.getRelease(id).pipe(
               catchError(() => { this.error.set(this.ts.translateInstant('release_detail.loading_error')); return of(null); }),
             ),
-            artifacts: this.http.get<Artifact[]>(`/api/v1/releases/${id}/artifacts`).pipe(
+            artifacts: this.releaseService.listArtifacts(id).pipe(
               catchError(() => of([] as Artifact[])),
             ),
-            results: this.http.get<VerificationResult[]>(`/api/v1/releases/${id}/results`).pipe(
+            results: this.releaseService.getResults(id).pipe(
               catchError(() => of([] as VerificationResult[])),
             ),
           });
@@ -251,7 +197,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
         if (orgId) {
           this.orgId = orgId;
           this.connectorsLoading.set(true);
-          this.http.get<ConnectorApiItem[]>(`/api/v1/organizations/${orgId}/connectors`)
+          this.connectorService.list(orgId)
             .pipe(catchError(() => of([] as ConnectorApiItem[])))
             .subscribe(connectors => {
               this.orgConnectors.set(connectors);
@@ -279,8 +225,8 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     if ('Notification' in globalThis && Notification.permission === 'default') {
       Notification.requestPermission();
     }
-    this.http
-      .post<{ task_id: string; status: string }>(`/api/v1/releases/${this.releaseId}/verify`, {})
+    this.releaseService
+      .verify(this.releaseId)
       .pipe(
         catchError(() => {
           this.error.set(this.ts.translateInstant('release_detail.verification_error'));
@@ -308,8 +254,8 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
 
   cancelVerification(): void {
     if (!this.releaseId) return;
-    this.http
-      .post<{ cancelled: boolean }>(`/api/v1/releases/${this.releaseId}/cancel`, {})
+    this.releaseService
+      .cancel(this.releaseId)
       .pipe(
         catchError(() => {
           this.toast.error(this.ts.translateInstant('release_detail.cancel_verification_error'));
@@ -337,11 +283,11 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   private pollOnce(): void {
     const tid = this.taskId();
     const taskObs = tid
-      ? this.http.get<{ progress?: VerificationProgress }>(`/api/v1/tasks/${tid}`).pipe(catchError(() => of(null)))
+      ? this.releaseService.getTaskStatus(tid).pipe(catchError(() => of(null)))
       : of(null);
 
     forkJoin({
-      release: this.http.get<ReleaseDetail>(`/api/v1/releases/${this.releaseId}`).pipe(catchError(() => of(null))),
+      release: this.releaseService.getRelease(this.releaseId).pipe(catchError(() => of(null))),
       task: taskObs,
     }).subscribe(({ release, task }) => {
       if (task?.progress) this.verificationProgress.set(task.progress);
@@ -370,13 +316,13 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   private reloadData(): void {
     this.error.set(null);
     forkJoin({
-      release: this.http.get<ReleaseDetail>(`/api/v1/releases/${this.releaseId}`).pipe(
+      release: this.releaseService.getRelease(this.releaseId).pipe(
         catchError(() => { this.error.set(this.ts.translateInstant('release_detail.loading_error')); return of(null); }),
       ),
-      artifacts: this.http.get<Artifact[]>(`/api/v1/releases/${this.releaseId}/artifacts`).pipe(
+      artifacts: this.releaseService.listArtifacts(this.releaseId).pipe(
         catchError(() => of([] as Artifact[])),
       ),
-      results: this.http.get<VerificationResult[]>(`/api/v1/releases/${this.releaseId}/results`).pipe(
+      results: this.releaseService.getResults(this.releaseId).pipe(
         catchError(() => of([] as VerificationResult[])),
       ),
     }).subscribe(data => {
@@ -467,10 +413,8 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   private fetchBrowseItems(conn: ConnectorApiItem, q: string): void {
     this.browseLoading.set(true);
     this.browseError.set(null);
-    this.http.get<BrowseItem[]>(
-      `/api/v1/organizations/${this.orgId}/connectors/${conn.id}/browse`,
-      { params: q ? { q } : {} }
-    ).pipe(catchError(() => {
+    this.releaseService.browseConnector(this.orgId, conn.id, q)
+      .pipe(catchError(() => {
       this.browseError.set(this.ts.translateInstant('release.browse_error'));
       this.browseLoading.set(false);
       return of([] as BrowseItem[]);
@@ -509,7 +453,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
       }],
     };
 
-    this.http.post(`/api/v1/releases/${this.releaseId}/artifacts/import`, body)
+    this.releaseService.importArtifacts(this.releaseId, body)
       .pipe(
         catchError((err) => {
           this.importError.set(err.error?.detail || this.ts.translateInstant('release.import_error'));
@@ -521,7 +465,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
         this.importing.set(false);
         if (result) {
           this.closeImportModal();
-          this.http.get<Artifact[]>(`/api/v1/releases/${this.releaseId}/artifacts`)
+          this.releaseService.listArtifacts(this.releaseId)
             .pipe(catchError(() => of([] as Artifact[])))
             .subscribe(artifacts => this.artifacts.set(artifacts));
         }
@@ -537,7 +481,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     if (!artifactId) return;
     this.artifactToDelete.set(null);
     
-    this.http.delete(`/api/v1/releases/${this.releaseId}/artifacts/${artifactId}`)
+    this.releaseService.deleteArtifact(this.releaseId, artifactId)
       .pipe(
         catchError(() => {
           this.toast.error(this.ts.translateInstant('release.artifact_delete_error'));
@@ -551,8 +495,8 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   }
 
   loadResultDetail(resultId: string): void {
-    this.http
-      .get<VerificationResult>(`/api/v1/releases/${this.releaseId}/results/${resultId}`)
+    this.releaseService
+      .getResultDetail(this.releaseId, resultId)
       .pipe(catchError(() => of(null)))
       .subscribe((result) => {
         if (result) {
@@ -564,9 +508,8 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   exportPdf(): void {
     const result = this.latestResult();
     if (!result) return;
-    this.http.get(
-      `/api/v1/releases/${this.releaseId}/results/${result.id}/export?format=pdf&lang=${this.ts.currentLang ?? 'es'}`,
-      { responseType: 'blob' }
+    this.releaseService.exportResultPdf(
+      this.releaseId, result.id, this.ts.currentLang ?? 'es'
     ).pipe(
       catchError(() => {
         this.toast.error(this.ts.translateInstant('release_detail.export_error'));

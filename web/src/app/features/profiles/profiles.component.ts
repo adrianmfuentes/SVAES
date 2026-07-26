@@ -1,49 +1,18 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { catchError, of } from 'rxjs';
-
-interface Profile {
-  id: string;
-  name: string;
-  description?: string;
-  rules_count?: number;
-  organization_id?: string;
-  organization_name?: string;
-  is_template?: boolean;
-  is_default?: boolean;
-  is_system?: boolean;
-  created_at?: string;
-  schedule?: string | null;
-  schedule_last_run_at?: string | null;
-}
+import { Profile, ProfileRule, ProfileService, ProfileWithRules, SeverityType } from './services/profile.service';
 
 const SCHEDULE_PRESETS: { key: string; cron: string }[] = [
   { key: 'hourly', cron: '0 * * * *' },
   { key: 'daily', cron: '0 6 * * *' },
   { key: 'weekly', cron: '0 6 * * 1' },
 ];
-
-interface ProfileRule {
-  id: string;
-  rule_template: string;
-  severity: SeverityType;
-  connector_instance_id?: string;
-  params: Record<string, unknown>;
-  display_order: number;
-  is_active: boolean;
-  connector_types: string[];
-}
-
-interface ProfileWithRules extends Profile {
-  rules: ProfileRule[];
-}
-
-type SeverityType = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 const RULE_CONNECTOR_TYPES_FRONTEND: Record<string, string[]> = {
   'RV-01': [],
@@ -144,7 +113,7 @@ function defaultArtifactType(template: string): string {
   styleUrls: ['./profiles.component.scss'],
 })
 export class ProfilesComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly profileService = inject(ProfileService);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly ts = inject(TranslationService);
@@ -204,7 +173,7 @@ export class ProfilesComponent implements OnInit {
       this.loading.set(false);
       return;
     }
-    this.http.get<Profile[]>(`/api/v1/organizations/${this.orgId}/profiles`)
+    this.profileService.listProfiles(this.orgId)
       .pipe(catchError(() => { this.error.set(this.ts.translateInstant('profiles.loading_error')); return of([]); }))
       .subscribe(data => {
         this.allProfiles.set(data);
@@ -237,7 +206,7 @@ export class ProfilesComponent implements OnInit {
   }
 
   private loadProfileRules(profileId: string): void {
-    this.http.get<ProfileWithRules>(`/api/v1/profiles/${profileId}`)
+    this.profileService.getProfileWithRules(profileId)
       .pipe(catchError(() => of(null)))
       .subscribe(data => {
         if (data?.rules) {
@@ -440,7 +409,7 @@ export class ProfilesComponent implements OnInit {
     const params = this.buildRuleParams(template);
 
     if (editing) {
-      this.http.patch<{ id: string; is_active: boolean }>(`/api/v1/rules/${editing.id}`, {
+      this.profileService.updateRule(editing.id, {
         severity,
         params,
       }).pipe(
@@ -459,7 +428,7 @@ export class ProfilesComponent implements OnInit {
         this.savingRule.set(false);
       });
     } else {
-      this.http.post<{ id: string; rule_template: string }>(`/api/v1/profiles/${profileId}/rules`, {
+      this.profileService.addRule(profileId, {
         rule_template: template,
         severity,
         params,
@@ -489,7 +458,7 @@ export class ProfilesComponent implements OnInit {
   }
 
   deleteRule(rule: ProfileRule): void {
-    this.http.delete(`/api/v1/rules/${rule.id}`)
+    this.profileService.deleteRule(rule.id)
       .pipe(catchError(() => of(null)))
       .subscribe(() => {
         this.profileRules.update(rules => rules.filter(r => r.id !== rule.id));
@@ -505,8 +474,8 @@ export class ProfilesComponent implements OnInit {
     const description = this.profileForm.value.description ?? '';
     const schedule = this.profileForm.value.schedule ?? '';
     const req = editing
-      ? this.http.patch<Profile>(`/api/v1/profiles/${editing.id}`, { name, description, schedule })
-      : this.http.post<Profile>(`/api/v1/organizations/${this.orgId}/profiles`, { name, description, is_default: false });
+      ? this.profileService.updateProfile(editing.id, { name, description, schedule })
+      : this.profileService.createProfile(this.orgId!, { name, description, is_default: false });
     req.pipe(catchError((err: HttpErrorResponse) => {
       this.modalError.set(err.error?.detail ?? this.ts.translateInstant('profiles.saving_error'));
       this.saving.set(false);
@@ -540,7 +509,7 @@ export class ProfilesComponent implements OnInit {
 
   deleteProfile(p: Profile): void {
     this.deletingId.set(p.id);
-    this.http.delete(`/api/v1/profiles/${p.id}`)
+    this.profileService.deleteProfile(p.id)
       .pipe(catchError(() => { this.deletingId.set(null); return of(null); }))
       .subscribe(() => {
         this.orgProfiles.update(list => list.filter(x => x.id !== p.id));

@@ -1,12 +1,20 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { ToastService } from '../../core/services/toast.service';
 import { catchError, of } from 'rxjs';
+import {
+  ConnectorApiItem,
+  ConfigSchemaField,
+  ConfigSchemaOption,
+  ConnectorImplementation,
+  ConnectorTypesResponse,
+  ConnectorService,
+} from './services/connector.service';
 
 interface Connector {
   id: string;
@@ -21,42 +29,6 @@ interface Connector {
   webhook_enabled?: boolean;
 }
 
-interface ConnectorApiItem {
-  id: string;
-  name: string;
-  connector_type: string;
-  connector_implementation: string;
-  status: string;
-  created_at: string;
-  last_tested_at?: string;
-  webhook_enabled?: boolean;
-}
-
-interface ConfigSchemaOption {
-  value: string;
-  label: string;
-}
-
-interface ConfigSchemaField {
-  type: string;
-  label: string;
-  required: boolean;
-  sensitive?: boolean;
-  default?: string;
-  options?: ConfigSchemaOption[];
-}
-
-interface ConnectorImplementation {
-  implementation: string;
-  metadata: { name: string; description?: string };
-  config_schema: Record<string, ConfigSchemaField>;
-}
-
-interface ConnectorTypesResponse {
-  implementations: ConnectorImplementation[];
-  by_type: Record<string, ConnectorImplementation[]>;
-}
-
 @Component({
   selector: 'app-connectors',
   standalone: true,
@@ -65,7 +37,7 @@ interface ConnectorTypesResponse {
   styleUrls: ['./connectors.component.scss'],
 })
 export class ConnectorsComponent implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly connectorService = inject(ConnectorService);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly ts = inject(TranslationService);
@@ -115,7 +87,7 @@ export class ConnectorsComponent implements OnInit {
       this.loading.set(false);
       return;
     }
-    this.http.get<ConnectorApiItem[]>(`/api/v1/organizations/${this.orgId}/connectors`)
+    this.connectorService.list(this.orgId)
       .pipe(catchError(() => { this.error.set(this.ts.translateInstant('connectors.loading_error')); return of([]); }))
       .subscribe(data => {
         const mapped = data.map(c => this.mapApiConnector(c));
@@ -124,7 +96,7 @@ export class ConnectorsComponent implements OnInit {
         this.orgConnectors.set([]);
         this.loading.set(false);
       });
-    this.http.get<ConnectorTypesResponse>('/api/v1/connectors/types')
+    this.connectorService.listTypes()
       .pipe(catchError(() => of(null)))
       .subscribe(data => {
         if (data) {
@@ -220,8 +192,8 @@ export class ConnectorsComponent implements OnInit {
           credentials,
         };
     const req = editing
-      ? this.http.patch<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors/${editing.id}`, body)
-      : this.http.post<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors`, body);
+      ? this.connectorService.update(this.orgId!, editing.id, body as { name?: string | null; config: Record<string, string> })
+      : this.connectorService.create(this.orgId!, body as { connector_type: string; connector_implementation: string; name: string; credentials: Record<string, string> });
     req.pipe(catchError((err: HttpErrorResponse) => {
       this.modalError.set(err.error?.detail ?? this.ts.translateInstant('connectors.saving_error'));
       this.saving.set(false);
@@ -244,7 +216,7 @@ export class ConnectorsComponent implements OnInit {
 
   toggleConnector(c: Connector): void {
     const newApiStatus = c.status === 'inactive' ? 'ACTIVO' : 'INACTIVO';
-    this.http.post<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors/${c.id}/toggle`, { status: newApiStatus })
+    this.connectorService.toggle(this.orgId!, c.id, newApiStatus)
       .pipe(catchError(() => {
         this.toast.error(this.ts.translateInstant('common.error_occurred'));
         return of(null);
@@ -263,7 +235,7 @@ export class ConnectorsComponent implements OnInit {
 
   testConnector(c: Connector): void {
     this.testingId.set(c.id);
-    this.http.post<ConnectorApiItem>(`/api/v1/organizations/${this.orgId}/connectors/${c.id}/test`, {})
+    this.connectorService.test(this.orgId!, c.id)
       .pipe(catchError(() => {
         this.toast.error(this.ts.translateInstant('connectors.test_failure'));
         this.testingId.set(null);
@@ -303,10 +275,7 @@ export class ConnectorsComponent implements OnInit {
     if (!c || !this.orgId) return;
     this.webhookSaving.set(true);
     this.webhookError.set(null);
-    this.http.post<{ id: string; webhook_enabled: boolean; webhook_secret: string | null }>(
-      `/api/v1/organizations/${this.orgId}/connectors/${c.id}/webhook`,
-      { enabled, regenerate_secret: regenerateSecret },
-    ).pipe(
+    this.connectorService.setWebhook(this.orgId, c.id, enabled, regenerateSecret).pipe(
       catchError((err: HttpErrorResponse) => {
         this.webhookError.set(err.error?.detail ?? this.ts.translateInstant('common.error_occurred'));
         this.webhookSaving.set(false);
