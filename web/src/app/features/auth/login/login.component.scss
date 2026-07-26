@@ -157,10 +157,6 @@
         line-height: 1.5;
       }
 
-      .form-group {
-        margin-bottom: var(--spacing-md);
-      }
-
       .form-group label {
         display: block;
         font-family: var(--font-sans);
@@ -170,12 +166,6 @@
         text-transform: uppercase;
         color: var(--ink);
         margin-bottom: var(--spacing-xs);
-      }
-
-      .required-star {
-        color: var(--verdict-invalid);
-        margin-left: 0.25rem;
-        font-size: 0.75rem;
       }
 
       .form-group input {

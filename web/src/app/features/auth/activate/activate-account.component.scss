@@ -166,12 +166,6 @@
       color: var(--ink);
     }
 
-    .required-star {
-      color: var(--verdict-invalid);
-      margin-left: 0.25rem;
-      font-size: 0.75rem;
-    }
-
     .input-wrap {
       position: relative;
       display: flex;
@@ -281,28 +275,6 @@
     }
 
     .btn-full { width: 100%; }
-
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--spacing-sm);
-      background: var(--ink);
-      color: var(--paper);
-      border: 0.0625rem solid var(--ink);
-      border-radius: var(--rounded-md);
-      padding: 0.5625rem 1.125rem;
-      font-family: var(--font-sans);
-      font-size: 0.6875rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: background-color 0.15s ease;
-    }
-
-    .btn-primary:hover:not(:disabled) { background: var(--ink-secondary); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .btn-secondary {
       display: inline-flex;

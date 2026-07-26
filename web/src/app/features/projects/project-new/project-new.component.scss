@@ -13,14 +13,6 @@
   gap: var(--spacing-xs);
 }
 
-.back-link {
-  font-family: var(--font-sans);
-  font-size: 0.8125rem;
-  color: var(--muted);
-  text-decoration: none;
-  transition: color 0.12s ease;
-}
-
 .back-link:hover { color: var(--ink); }
 
 .page-title {
@@ -52,8 +44,6 @@
   color: var(--ink);
 }
 
-.form-group { margin-bottom: var(--spacing-md); }
-
 .form-group label {
   display: block;
   font-family: var(--font-sans);
@@ -63,20 +53,6 @@
   text-transform: uppercase;
   color: var(--ink);
   margin-bottom: var(--spacing-xs);
-}
-
-.optional {
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-
-.required-star {
-  color: var(--verdict-invalid);
-  margin-left: 0.25rem;
-  font-size: 0.75rem;
 }
 
 .form-group input,
@@ -188,19 +164,7 @@
   gap: var(--spacing-md);
 }
 
-.skeleton {
-  border-radius: var(--rounded-md);
-  background: linear-gradient(90deg, var(--paper-secondary) 25%, #e5e2db 50%, var(--paper-secondary) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.6s linear infinite;
-}
-
 .sk-input { height: 2.5rem; }
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 
 .empty-notice {
   font-size: 0.9375rem;

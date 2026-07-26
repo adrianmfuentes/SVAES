@@ -32,18 +32,6 @@
   color: var(--ink);
 }
 
-.skeleton {
-  border-radius: var(--rounded-md);
-  background: linear-gradient(
-    90deg,
-    var(--paper-secondary) 25%,
-    #e5e2db 50%,
-    var(--paper-secondary) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.6s linear infinite;
-}
-
 .skeleton-label {
   height: 0.6875rem;
   width: 55%;
@@ -53,11 +41,6 @@
 .skeleton-value {
   height: 2.5rem;
   width: 45%;
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
 }
 
 .error-banner {

@@ -3,13 +3,6 @@
 
     .connectors-page { padding: 0; }
 
-    .page-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--spacing-lg);
-    }
-
     .page-header-left {
       display: flex;
       align-items: baseline;
@@ -24,19 +17,6 @@
       letter-spacing: -0.02em;
       margin: 0;
       color: var(--ink);
-    }
-
-    .global-badge {
-      font-family: var(--font-sans);
-      font-size: 0.6875rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: var(--paper-secondary);
-      border: 0.0625rem solid var(--border);
-      border-radius: var(--rounded-sm);
-      padding: 0.125rem 0.5rem;
     }
 
     .section-label {
@@ -61,38 +41,8 @@
 
     .empty-wrap { padding: 0; }
 
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .data-table th {
-      font-family: var(--font-sans);
-      font-size: 0.6875rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      padding: var(--spacing-sm) var(--spacing-md);
-      text-align: left;
-      border-bottom: 0.0625rem solid var(--border);
-      background: var(--paper-secondary);
-    }
-
-    .data-table td {
-      font-size: 0.8125rem;
-      color: var(--ink);
-      padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 0.0625rem solid var(--border);
-      vertical-align: middle;
-      height: 2.75rem;
-    }
-
     .data-table tr:last-child td { border-bottom: none; }
     .data-table tr:hover td { background: var(--paper-secondary); }
-
-    .cell-primary { font-weight: 500; }
-    .cell-muted { color: var(--muted); }
 
     .cell-actions {
       display: flex;
@@ -134,22 +84,6 @@
       color: var(--muted);
     }
 
-    .btn-ghost {
-      font-family: var(--font-sans);
-      font-size: 0.6875rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: none;
-      border: 0.0625rem solid transparent;
-      border-radius: var(--rounded-md);
-      padding: 0.25rem 0.625rem;
-      cursor: pointer;
-      transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
-    }
-
-    .btn-ghost:hover:not(:disabled) { color: var(--ink); background: var(--paper-secondary); border-color: var(--border); }
     .btn-ghost:disabled { opacity: 0.45; cursor: not-allowed; }
 
     .btn-primary {
@@ -203,43 +137,6 @@
 
     .error-banner-sm { margin-bottom: 0; margin-top: var(--spacing-sm); }
 
-    .skeleton-list { display: flex; flex-direction: column; gap: var(--spacing-sm); }
-
-    .skeleton {
-      border-radius: var(--rounded-md);
-      background: linear-gradient(90deg, var(--paper-secondary) 25%, #e5e2db 50%, var(--paper-secondary) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.6s linear infinite;
-    }
-
-    .skeleton-row { height: 2.75rem; }
-
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    .empty-state {
-      padding: var(--spacing-xl) var(--spacing-lg);
-      text-align: center;
-      font-size: 0.8125rem;
-      color: var(--muted);
-    }
-
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      inset: 0;
-      background: var(--overlay);
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
     .modal-panel {
       background: var(--surface-raised);
       border: 0.0625rem solid var(--border);
@@ -249,13 +146,6 @@
       max-width: calc(100vw - 3rem);
       max-height: calc(100vh - 3rem);
       overflow-y: auto;
-    }
-
-    .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--spacing-lg);
     }
 
     .modal-title {
@@ -285,10 +175,6 @@
       margin-top: var(--spacing-lg);
       padding-top: var(--spacing-md);
       border-top: 0.0625rem solid var(--border);
-    }
-
-    .form-group {
-      margin-bottom: var(--spacing-md);
     }
 
     .form-group label {
