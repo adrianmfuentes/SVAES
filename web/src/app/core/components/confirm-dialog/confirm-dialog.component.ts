@@ -45,6 +45,13 @@ export class ConfirmDialogComponent implements AfterViewInit {
     }
   }
 
+  onDialogKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.onConfirm();
+    }
+  }
+
   onCancel(): void {
     this.cancelled.emit();
   }

@@ -71,38 +71,16 @@ describe('FeedbackModalComponent', () => {
   });
 
   describe('isValid getter', () => {
-    it('should return false when name is empty', () => {
-      component.payload.name = '';
-      component.payload.rating = 5;
-      component.payload.comments = 'Great app';
-      expect(component.isValid).toBeFalsy();
-    });
-
-    it('should return false when name is only whitespace', () => {
-      component.payload.name = '   ';
-      component.payload.rating = 5;
-      component.payload.comments = 'Great app';
-      expect(component.isValid).toBeFalsy();
-    });
-
-    it('should return false when rating is 0', () => {
-      component.payload.name = 'Test';
-      component.payload.rating = 0;
-      component.payload.comments = 'Great app';
-      expect(component.isValid).toBeFalsy();
-    });
-
-    it('should return false when comments is empty', () => {
-      component.payload.name = 'Test';
-      component.payload.rating = 5;
-      component.payload.comments = '';
-      expect(component.isValid).toBeFalsy();
-    });
-
-    it('should return false when comments is only whitespace', () => {
-      component.payload.name = 'Test';
-      component.payload.rating = 5;
-      component.payload.comments = '   ';
+    it.each([
+      { name: '', rating: 5, comments: 'Great app', description: 'name is empty' },
+      { name: '   ', rating: 5, comments: 'Great app', description: 'name is only whitespace' },
+      { name: 'Test', rating: 0, comments: 'Great app', description: 'rating is 0' },
+      { name: 'Test', rating: 5, comments: '', description: 'comments is empty' },
+      { name: 'Test', rating: 5, comments: '   ', description: 'comments is only whitespace' },
+    ])('should return false when $description', ({ name, rating, comments }) => {
+      component.payload.name = name;
+      component.payload.rating = rating;
+      component.payload.comments = comments;
       expect(component.isValid).toBeFalsy();
     });
 

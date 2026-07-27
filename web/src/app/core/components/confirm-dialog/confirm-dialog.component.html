@@ -1,6 +1,7 @@
     <dialog #dialogEl class="dialog-overlay"
          [attr.aria-labelledby]="'dialog-title-' + dialogId"
          (click)="onOverlayClick($event)"
+         (keydown)="onDialogKeydown($event)"
          (cancel)="onCancel()">
       <div class="dialog">
         <div class="dialog-icon" aria-hidden="true">

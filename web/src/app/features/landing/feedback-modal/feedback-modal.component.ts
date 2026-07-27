@@ -54,6 +54,13 @@ export class FeedbackModalComponent implements AfterViewInit {
     }
   }
 
+  onDialogKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && event.target === this.dialogElRef.nativeElement) {
+      event.preventDefault();
+      this.onClose();
+    }
+  }
+
   onClose(): void {
     this.closed.emit();
   }

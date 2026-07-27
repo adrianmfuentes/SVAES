@@ -1,6 +1,7 @@
 <dialog #dialogEl class="modal-overlay"
      aria-labelledby="feedback-title"
      (click)="onOverlayClick($event)"
+     (keydown)="onDialogKeydown($event)"
      (cancel)="onClose()">
   <div class="modal">
     <button class="modal-close" (click)="onClose()" [attr.aria-label]="'common.close' | t">
