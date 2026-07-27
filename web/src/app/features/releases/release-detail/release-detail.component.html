@@ -120,11 +120,7 @@
                   @for (rule of result.rule_results; track rule.rule_id; let i = $index) {
                     @if (rule.rule_id !== 'artifact_fetch_error') {
                     <tr
-                      tabindex="0"
-                      role="button"
-                      (click)="toggleEvidence(i)"
-                      (keydown.enter)="toggleEvidence(i)"
-                      (keydown.space)="$event.preventDefault(); toggleEvidence(i)">
+                      (click)="toggleEvidence(i)">
                       <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm cell-rule-id" [attr.title]="rule.rule_id">{{ rule.rule_id }}</code></td>
                       <td class="cell-primary" [attr.data-label]="'release_detail.rule_name' | t">{{ translateRuleName(rule) || ('common.dash' | t) }}</td>
                       <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ rule.connector || ('common.na' | t) }}</td>
@@ -259,7 +255,7 @@
 
         <!-- Import Artifacts Modal -->
         @if (showImportModal()) {
-          <dialog #importDialogEl class="modal-overlay" (click)="$event.target === importDialogEl && closeImportModal()" (cancel)="$event.preventDefault(); closeImportModal()" aria-labelledby="import-modal-title">
+          <dialog #importDialogEl class="modal-overlay" (click)="$event.target === importDialogEl && closeImportModal()" (keydown.escape)="closeImportModal()" (cancel)="$event.preventDefault(); closeImportModal()" aria-labelledby="import-modal-title">
             <div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
               <div class="modal-header">
                 <h3 class="modal-title" id="import-modal-title">{{ 'release.import_artifacts' | t }}</h3>
@@ -348,6 +344,7 @@
                     } @else {
                       <input id="browse-search-input" type="text" class="form-input browse-search"
                         [placeholder]="'release.browse_search_placeholder' | t"
+                        [attr.aria-label]="'release.external_ref' | t"
                         [value]="browseSearch()"
                         (input)="onBrowseSearchInput($any($event.target).value)"
                         autocomplete="off" />
@@ -382,6 +379,7 @@
                   @if (browseManual()) {
                     <input id="import-ref" type="text" class="form-input"
                       [placeholder]="'release.external_ref_placeholder' | t"
+                      [attr.aria-label]="'release.external_ref' | t"
                       [value]="importExternalRef()"
                       (input)="importExternalRef.set($any($event.target).value)" />
                   }
@@ -413,7 +411,7 @@
         }
 
         @if (showArtifactTypeHelp()) {
-          <dialog #helpDialogEl class="help-overlay" (click)="$event.target === helpDialogEl && showArtifactTypeHelp.set(false)" (cancel)="$event.preventDefault(); showArtifactTypeHelp.set(false)" aria-labelledby="artifact-help-title">
+          <dialog #helpDialogEl class="help-overlay" (click)="$event.target === helpDialogEl && showArtifactTypeHelp.set(false)" (keydown.escape)="showArtifactTypeHelp.set(false)" (cancel)="$event.preventDefault(); showArtifactTypeHelp.set(false)" aria-labelledby="artifact-help-title">
             <div class="help-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
               <div class="modal-header">
                 <h3 class="modal-title" id="artifact-help-title">{{ 'artifact_type.' + importArtifactType() | t }}</h3>
