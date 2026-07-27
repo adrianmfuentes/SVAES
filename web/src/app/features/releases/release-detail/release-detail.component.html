@@ -75,22 +75,15 @@
 
         <!-- Verification progress card -->
         @if (release()?.status === 'EN_VERIFICACION') {
-          <div class="verification-progress-card" role="status" aria-live="polite">
+          <output class="verification-progress-card" aria-live="polite">
             <div class="vp-header">
               <span class="vp-dot" aria-hidden="true"></span>
               <span class="vp-title">{{ 'release_detail.verify_progress_title' | t }}</span>
               <span class="vp-pct" aria-hidden="true">{{ verificationProgress()?.pct ?? 0 }}%</span>
             </div>
-            <div
-              class="vp-bar-track"
-              role="progressbar"
-              [attr.aria-valuenow]="verificationProgress()?.pct ?? 0"
-              aria-valuemin="0"
-              aria-valuemax="100">
-              <div class="vp-bar-fill" [style.width.%]="verificationProgress()?.pct ?? 0"></div>
-            </div>
+            <progress class="vp-bar-track" [value]="verificationProgress()?.pct ?? 0" max="100"></progress>
             <span class="vp-stage">{{ stageLabel() }}</span>
-          </div>
+          </output>
         }
 
         <!-- Verification rule results table -->
@@ -127,7 +120,11 @@
                   @for (rule of result.rule_results; track rule.rule_id; let i = $index) {
                     @if (rule.rule_id !== 'artifact_fetch_error') {
                     <tr
-                      (click)="toggleEvidence(i)">
+                      tabindex="0"
+                      role="button"
+                      (click)="toggleEvidence(i)"
+                      (keydown.enter)="toggleEvidence(i)"
+                      (keydown.space)="$event.preventDefault(); toggleEvidence(i)">
                       <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm cell-rule-id" [attr.title]="rule.rule_id">{{ rule.rule_id }}</code></td>
                       <td class="cell-primary" [attr.data-label]="'release_detail.rule_name' | t">{{ translateRuleName(rule) || ('common.dash' | t) }}</td>
                       <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ rule.connector || ('common.na' | t) }}</td>
@@ -262,8 +259,8 @@
 
         <!-- Import Artifacts Modal -->
         @if (showImportModal()) {
-          <div class="modal-overlay" (click)="closeImportModal()" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
-            <div class="modal-panel" (click)="$event.stopPropagation()">
+          <dialog #importDialogEl class="modal-overlay" (click)="$event.target === importDialogEl && closeImportModal()" (cancel)="$event.preventDefault(); closeImportModal()" aria-labelledby="import-modal-title">
+            <div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
               <div class="modal-header">
                 <h3 class="modal-title" id="import-modal-title">{{ 'release.import_artifacts' | t }}</h3>
                 <button class="modal-close" (click)="closeImportModal()" [attr.aria-label]="'common.close' | t">&times;</button>
@@ -321,7 +318,7 @@
               @if (importConnector()) {
                 <div class="form-group">
                   <div class="form-label-row">
-                    <label class="form-label">{{ 'release.external_ref' | t }}</label>
+                    <label class="form-label" [attr.for]="browseManual() ? 'import-ref' : 'browse-search-input'">{{ 'release.external_ref' | t }}</label>
                     <button type="button" class="btn-info" (click)="showArtifactTypeHelp.set(true)"
                       [attr.aria-label]="'release.artifact_type_help_aria' | t">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -349,14 +346,14 @@
                         <button type="button" class="btn-icon btn-danger" (click)="clearBrowseSelection()" aria-label="Clear selection">✕</button>
                       </div>
                     } @else {
-                      <input type="text" class="form-input browse-search"
+                      <input id="browse-search-input" type="text" class="form-input browse-search"
                         [placeholder]="'release.browse_search_placeholder' | t"
                         [value]="browseSearch()"
                         (input)="onBrowseSearchInput($any($event.target).value)"
                         autocomplete="off" />
-                      <div class="browse-list" role="listbox" aria-label="Available items">
+                      <div class="browse-list">
                         @for (item of filteredBrowseItems(); track item.ref) {
-                          <button type="button" class="browse-item" role="option"
+                          <button type="button" class="browse-item"
                             (click)="selectBrowseItem(item)">
                             <span class="browse-item-title">{{ item.title }}</span>
                             <span class="browse-item-meta">
@@ -412,12 +409,12 @@
                 </button>
               </div>
             </div>
-          </div>
+          </dialog>
         }
 
         @if (showArtifactTypeHelp()) {
-          <div class="help-overlay" (click)="showArtifactTypeHelp.set(false)" role="dialog" aria-modal="true" aria-labelledby="artifact-help-title">
-            <div class="help-panel" (click)="$event.stopPropagation()">
+          <dialog #helpDialogEl class="help-overlay" (click)="$event.target === helpDialogEl && showArtifactTypeHelp.set(false)" (cancel)="$event.preventDefault(); showArtifactTypeHelp.set(false)" aria-labelledby="artifact-help-title">
+            <div class="help-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
               <div class="modal-header">
                 <h3 class="modal-title" id="artifact-help-title">{{ 'artifact_type.' + importArtifactType() | t }}</h3>
                 <button class="modal-close" (click)="showArtifactTypeHelp.set(false)" [attr.aria-label]="'common.close' | t">&times;</button>
@@ -431,7 +428,7 @@
                 <button type="button" class="btn-secondary" (click)="showArtifactTypeHelp.set(false)">{{ 'common.close' | t }}</button>
               </div>
             </div>
-          </div>
+          </dialog>
         }
 
         <!-- Verification history -->
@@ -482,7 +479,7 @@
 
       <!-- Verification launch notice overlay -->
       @if (showVerifyNotice()) {
-        <div class="verify-overlay" role="dialog" aria-modal="true" aria-labelledby="verify-notice-title">
+        <dialog #verifyDialogEl class="verify-overlay" aria-labelledby="verify-notice-title" (cancel)="$event.preventDefault(); dismissVerifyNotice()">
           <div class="verify-notice-panel">
             <div class="verify-scanner">
               <div class="scanner-ring scanner-ring-1"></div>
@@ -518,10 +515,8 @@
               </div>
 
               @if (verificationProgress(); as p) {
-                <div class="vp-overlay-progress" role="progressbar" [attr.aria-valuenow]="p.pct" aria-valuemin="0" aria-valuemax="100">
-                  <div class="vp-overlay-bar-track">
-                    <div class="vp-overlay-bar-fill" [style.width.%]="p.pct"></div>
-                  </div>
+                <div class="vp-overlay-progress">
+                  <progress class="vp-overlay-bar-track" [value]="p.pct" max="100"></progress>
                   <span class="vp-overlay-stage">{{ stageLabel() }}</span>
                 </div>
               }
@@ -530,7 +525,7 @@
               {{ 'release_detail.verify_launched_dismiss' | t }}
             </button>
           </div>
-        </div>
+        </dialog>
       }
     </div>
 

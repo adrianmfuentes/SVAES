@@ -150,8 +150,9 @@ describe('FeedbackModalComponent', () => {
   describe('onOverlayClick', () => {
     it('should call onClose when clicking overlay', () => {
       const closeSpy = vi.spyOn(component, 'onClose');
+      const dialogEl = fixture.nativeElement.querySelector('dialog');
       const event = new MouseEvent('click');
-      Object.defineProperty(event, 'target', { value: { classList: { contains: () => true } } });
+      Object.defineProperty(event, 'target', { value: dialogEl });
 
       component.onOverlayClick(event);
 
@@ -160,8 +161,9 @@ describe('FeedbackModalComponent', () => {
 
     it('should not call onClose when clicking modal content', () => {
       const closeSpy = vi.spyOn(component, 'onClose');
+      const innerEl = fixture.nativeElement.querySelector('.modal');
       const event = new MouseEvent('click');
-      Object.defineProperty(event, 'target', { value: { classList: { contains: () => false } } });
+      Object.defineProperty(event, 'target', { value: innerEl });
 
       component.onOverlayClick(event);
 

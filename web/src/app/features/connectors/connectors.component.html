@@ -59,8 +59,8 @@
     </div>
 
     <!-- MODAL: Create/Edit Connector -->
-    <div class="modal-overlay" *ngIf="showModal()" (click)="showModal.set(false)">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-overlay" *ngIf="showModal()" (click)="showModal.set(false)" (keydown.escape)="showModal.set(false)">
+      <div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
         <div class="modal-header">
           <h3 class="modal-title">{{ editingConnector() ? ('connectors.edit_title' | t) : ('connectors.new_global' | t) }}</h3>
           <button class="modal-close" (click)="showModal.set(false)">&times;</button>
@@ -116,8 +116,8 @@
     </div>
 
     <!-- MODAL: Webhook configuration -->
-    <div class="modal-overlay" *ngIf="showWebhookModal()" (click)="closeWebhookModal()">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-overlay" *ngIf="showWebhookModal()" (click)="closeWebhookModal()" (keydown.escape)="closeWebhookModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
         <div class="modal-header">
           <h3 class="modal-title">{{ 'connectors.webhook_title' | t }} — {{ webhookConnector()?.name }}</h3>
           <button class="modal-close" (click)="closeWebhookModal()">&times;</button>
@@ -131,13 +131,13 @@
         </div>
         <ng-container *ngIf="webhookConnector()?.webhook_enabled">
           <div class="form-group">
-            <label>{{ 'connectors.webhook_url_label' | t }}</label>
-            <input type="text" readonly [value]="webhookUrlTemplate()" />
+            <label for="webhook-url">{{ 'connectors.webhook_url_label' | t }}</label>
+            <input id="webhook-url" type="text" readonly [value]="webhookUrlTemplate()" />
             <p class="form-hint">{{ 'connectors.webhook_url_hint' | t }}</p>
           </div>
           <div class="form-group" *ngIf="webhookSecret()">
-            <label>{{ 'connectors.webhook_secret_label' | t }}</label>
-            <input type="text" readonly [value]="webhookSecret()" />
+            <label for="webhook-secret">{{ 'connectors.webhook_secret_label' | t }}</label>
+            <input id="webhook-secret" type="text" readonly [value]="webhookSecret()" />
             <p class="form-hint">{{ 'connectors.webhook_secret_hint' | t }}</p>
           </div>
           <button type="button" class="btn-secondary btn-sm" (click)="regenerateWebhookSecret()" [disabled]="webhookSaving()">

@@ -61,8 +61,8 @@
     </div>
 
     <!-- MODAL: Create/Edit Template -->
-    <div class="modal-overlay" *ngIf="showModal()" (click)="showModal.set(false)">
-      <div class="modal-panel modal-panel-wide" (click)="$event.stopPropagation()">
+    <div class="modal-overlay" *ngIf="showModal()" (click)="showModal.set(false)" (keydown.escape)="showModal.set(false)">
+      <div class="modal-panel modal-panel-wide" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
         <div class="modal-header">
           <h3 class="modal-title">{{ modalTitle() }}</h3>
           <button class="modal-close" (click)="showModal.set(false)">&times;</button>
@@ -206,8 +206,10 @@
                       {{ 'profiles.custom_preview_status.' + customPreviewResult().status | t }}
                     </span>
                   </div>
+                  <label for="custom-preview-sample" class="sr-only">{{ 'profiles.custom_preview_hint' | t }}</label>
                   <p class="form-hint">{{ 'profiles.custom_preview_hint' | t }}</p>
                   <textarea
+                    id="custom-preview-sample"
                     class="preview-textarea"
                     rows="4"
                     [value]="customPreviewSample()"

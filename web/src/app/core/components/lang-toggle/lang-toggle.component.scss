@@ -2,6 +2,8 @@
 
     .lt {
       display: inline-flex;
+      margin: 0;
+      min-inline-size: auto;
       border-radius: var(--rounded-sm);
       background: var(--paper-secondary);
       border: 0.0625rem solid var(--border);

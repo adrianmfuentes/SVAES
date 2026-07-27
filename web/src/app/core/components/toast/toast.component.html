@@ -1,8 +1,7 @@
     <div class="toast-container" role="log" aria-live="polite" aria-atomic="false">
       @for (toast of toastService.toasts(); track toast.id) {
         <div class="toast" [class]="'toast-' + toast.type"
-             [attr.role]="toast.type === 'error' ? 'alert' : 'status'"
-             (click)="dismiss(toast.id)">
+             [attr.role]="toast.type === 'error' ? 'alert' : 'status'">
           <div class="toast-icon" aria-hidden="true">
             @switch (toast.type) {
               @case ('success') {

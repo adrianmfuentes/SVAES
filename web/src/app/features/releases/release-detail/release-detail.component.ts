@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, ElementRef, effect, inject, OnInit, OnDestroy, signal, computed, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { TranslationService } from '../../../core/i18n/translation.service';
@@ -12,7 +12,6 @@ import {
   ProfileRule,
   ReleaseDetail,
   ReleaseService,
-  RuleResult,
   VerificationProgress,
   VerificationResult,
 } from '../services/release.service';
@@ -75,6 +74,25 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   showArtifactTypeHelp = signal(false);
 
   missingConnectorTypes = signal<string[]>([]);
+
+  private readonly importDialogEl = viewChild<ElementRef<HTMLDialogElement>>('importDialogEl');
+  private readonly helpDialogEl = viewChild<ElementRef<HTMLDialogElement>>('helpDialogEl');
+  private readonly verifyDialogEl = viewChild<ElementRef<HTMLDialogElement>>('verifyDialogEl');
+
+  constructor() {
+    effect(() => {
+      const el = this.importDialogEl();
+      if (el && !el.nativeElement.open && typeof el.nativeElement.showModal === 'function') el.nativeElement.showModal();
+    });
+    effect(() => {
+      const el = this.helpDialogEl();
+      if (el && !el.nativeElement.open && typeof el.nativeElement.showModal === 'function') el.nativeElement.showModal();
+    });
+    effect(() => {
+      const el = this.verifyDialogEl();
+      if (el && !el.nativeElement.open && typeof el.nativeElement.showModal === 'function') el.nativeElement.showModal();
+    });
+  }
 
   browseItems = signal<BrowseItem[]>([]);
   browseLoading = signal(false);

@@ -1,4 +1,4 @@
-import { Component, inject, input, output } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslationService } from '../../i18n/translation.service';
 
@@ -9,9 +9,11 @@ import { TranslationService } from '../../i18n/translation.service';
   templateUrl: './confirm-dialog.component.html',
   styleUrls: ['./confirm-dialog.component.scss'],
 })
-export class ConfirmDialogComponent {
+export class ConfirmDialogComponent implements AfterViewInit {
+  @ViewChild('dialogEl') private readonly dialogElRef!: ElementRef<HTMLDialogElement>;
+
   private readonly ts = inject(TranslationService);
-  
+
   readonly title = input.required<string>();
   readonly message = input.required<string>();
   readonly confirmText = input<string>('common.confirm');
@@ -31,8 +33,14 @@ export class ConfirmDialogComponent {
     return this.ts.translateInstant('a11y.confirm_action');
   }
 
+  ngAfterViewInit(): void {
+    if (typeof this.dialogElRef.nativeElement.showModal === 'function') {
+      this.dialogElRef.nativeElement.showModal();
+    }
+  }
+
   onOverlayClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement).classList.contains('dialog-overlay')) {
+    if (event.target === this.dialogElRef.nativeElement) {
       this.onCancel();
     }
   }

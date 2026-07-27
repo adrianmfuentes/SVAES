@@ -355,45 +355,45 @@
           </div>
 
           <div *ngIf="!notifPrefsLoading()" class="notif-prefs-list">
-            <label class="toggle-row">
+            <div class="toggle-row">
               <span class="toggle-label-wrap">
-                <span class="toggle-label-title">{{ 'profile_page.notif_release_validated' | t }}</span>
+                <span class="toggle-label-title" id="toggle-label-release-validated">{{ 'profile_page.notif_release_validated' | t }}</span>
                 <span class="toggle-label-desc">{{ 'profile_page.notif_release_validated_desc' | t }}</span>
               </span>
-              <span class="toggle-switch" [class.active]="notifPrefs().release_validated" (click)="toggleNotifPref('release_validated')">
+              <span class="toggle-switch" role="switch" tabindex="0" aria-labelledby="toggle-label-release-validated" [attr.aria-checked]="notifPrefs().release_validated" [class.active]="notifPrefs().release_validated" (click)="toggleNotifPref('release_validated')" (keydown.enter)="toggleNotifPref('release_validated')" (keydown.space)="$event.preventDefault(); toggleNotifPref('release_validated')">
                 <span class="toggle-thumb"></span>
               </span>
-            </label>
+            </div>
 
-            <label class="toggle-row">
+            <div class="toggle-row">
               <span class="toggle-label-wrap">
-                <span class="toggle-label-title">{{ 'profile_page.notif_release_invalidated' | t }}</span>
+                <span class="toggle-label-title" id="toggle-label-release-invalidated">{{ 'profile_page.notif_release_invalidated' | t }}</span>
                 <span class="toggle-label-desc">{{ 'profile_page.notif_release_invalidated_desc' | t }}</span>
               </span>
-              <span class="toggle-switch" [class.active]="notifPrefs().release_invalidated" (click)="toggleNotifPref('release_invalidated')">
+              <span class="toggle-switch" role="switch" tabindex="0" aria-labelledby="toggle-label-release-invalidated" [attr.aria-checked]="notifPrefs().release_invalidated" [class.active]="notifPrefs().release_invalidated" (click)="toggleNotifPref('release_invalidated')" (keydown.enter)="toggleNotifPref('release_invalidated')" (keydown.space)="$event.preventDefault(); toggleNotifPref('release_invalidated')">
                 <span class="toggle-thumb"></span>
               </span>
-            </label>
+            </div>
 
-            <label class="toggle-row">
+            <div class="toggle-row">
               <span class="toggle-label-wrap">
-                <span class="toggle-label-title">{{ 'profile_page.notif_release_pending' | t }}</span>
+                <span class="toggle-label-title" id="toggle-label-release-pending">{{ 'profile_page.notif_release_pending' | t }}</span>
                 <span class="toggle-label-desc">{{ 'profile_page.notif_release_pending_desc' | t }}</span>
               </span>
-              <span class="toggle-switch" [class.active]="notifPrefs().release_pending_reminder" (click)="toggleNotifPref('release_pending_reminder')">
+              <span class="toggle-switch" role="switch" tabindex="0" aria-labelledby="toggle-label-release-pending" [attr.aria-checked]="notifPrefs().release_pending_reminder" [class.active]="notifPrefs().release_pending_reminder" (click)="toggleNotifPref('release_pending_reminder')" (keydown.enter)="toggleNotifPref('release_pending_reminder')" (keydown.space)="$event.preventDefault(); toggleNotifPref('release_pending_reminder')">
                 <span class="toggle-thumb"></span>
               </span>
-            </label>
+            </div>
 
-            <label class="toggle-row">
+            <div class="toggle-row">
               <span class="toggle-label-wrap">
-                <span class="toggle-label-title">{{ 'profile_page.notif_weekly_digest' | t }}</span>
+                <span class="toggle-label-title" id="toggle-label-weekly-digest">{{ 'profile_page.notif_weekly_digest' | t }}</span>
                 <span class="toggle-label-desc">{{ 'profile_page.notif_weekly_digest_desc' | t }}</span>
               </span>
-              <span class="toggle-switch" [class.active]="notifPrefs().weekly_digest" (click)="toggleNotifPref('weekly_digest')">
+              <span class="toggle-switch" role="switch" tabindex="0" aria-labelledby="toggle-label-weekly-digest" [attr.aria-checked]="notifPrefs().weekly_digest" [class.active]="notifPrefs().weekly_digest" (click)="toggleNotifPref('weekly_digest')" (keydown.enter)="toggleNotifPref('weekly_digest')" (keydown.space)="$event.preventDefault(); toggleNotifPref('weekly_digest')">
                 <span class="toggle-thumb"></span>
               </span>
-            </label>
+            </div>
           </div>
 
           <div *ngIf="notifPrefsError()" class="alert-error" style="margin-top: var(--spacing-sm);">{{ notifPrefsError() }}</div>
@@ -429,8 +429,8 @@
       </div>
 
       <!-- DELETE ACCOUNT MODAL -->
-      <div *ngIf="showDeleteModal()" class="modal-overlay" (click)="closeDeleteModal()">
-        <div class="modal-panel" (click)="$event.stopPropagation()">
+      <div *ngIf="showDeleteModal()" class="modal-overlay" (click)="closeDeleteModal()" (keydown.escape)="closeDeleteModal()">
+        <div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
           <div class="modal-header">
             <h3 class="modal-title">{{ 'profile_page.delete_account_modal_title' | t }}</h3>
             <button class="modal-close" (click)="closeDeleteModal()">×</button>

@@ -1,4 +1,4 @@
-import { Component, inject, output } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, inject, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeedbackService, FeedbackPayload } from '../../../core/services/feedback.service';
@@ -12,7 +12,9 @@ import { TranslationService } from '../../../core/i18n/translation.service';
   templateUrl: './feedback-modal.component.html',
   styleUrls: ['./feedback-modal.component.scss'],
 })
-export class FeedbackModalComponent {
+export class FeedbackModalComponent implements AfterViewInit {
+  @ViewChild('dialogEl') private readonly dialogElRef!: ElementRef<HTMLDialogElement>;
+
   private readonly feedbackService = inject(FeedbackService);
   private readonly ts = inject(TranslationService);
 
@@ -40,8 +42,14 @@ export class FeedbackModalComponent {
     return this.ts.translateInstant(key) || this.ts.translateInstant('feedback.rating_0');
   }
 
+  ngAfterViewInit(): void {
+    if (typeof this.dialogElRef.nativeElement.showModal === 'function') {
+      this.dialogElRef.nativeElement.showModal();
+    }
+  }
+
   onOverlayClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+    if (event.target === this.dialogElRef.nativeElement) {
       this.onClose();
     }
   }

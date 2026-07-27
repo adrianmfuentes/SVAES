@@ -63,8 +63,8 @@
     </div>
 
     <!-- INVITE MODAL -->
-    <div *ngIf="showInviteModal()" class="modal-overlay" (click)="closeInviteModal()">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div *ngIf="showInviteModal()" class="modal-overlay" (click)="closeInviteModal()" (keydown.escape)="closeInviteModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
         <div class="modal-header">
           <h3 class="modal-title">{{ 'org_settings.invite_title' | t }}</h3>
           <button class="modal-close" (click)="closeInviteModal()">×</button>
@@ -98,8 +98,8 @@
     </div>
 
     <!-- TRANSFER OWNERSHIP MODAL -->
-    <div *ngIf="showTransferModal()" class="modal-overlay" (click)="closeTransferModal()">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div *ngIf="showTransferModal()" class="modal-overlay" (click)="closeTransferModal()" (keydown.escape)="closeTransferModal()">
+      <div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
         <div class="modal-header">
           <h3 class="modal-title">{{ 'org_settings.transfer_title' | t }}</h3>
           <button class="modal-close" (click)="closeTransferModal()">×</button>
@@ -126,8 +126,8 @@
     </div>
 
     <!-- CONFIRM REMOVE MODAL -->
-    <div *ngIf="memberToRemove()" class="modal-overlay" (click)="cancelRemoveMember()">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div *ngIf="memberToRemove()" class="modal-overlay" (click)="cancelRemoveMember()" (keydown.escape)="cancelRemoveMember()">
+      <div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
         <div class="modal-header">
           <h3 class="modal-title">{{ 'org_settings.remove_member_title' | t }}</h3>
           <button class="modal-close" (click)="cancelRemoveMember()">×</button>

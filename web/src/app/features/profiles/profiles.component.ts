@@ -6,7 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { catchError, of } from 'rxjs';
-import { Profile, ProfileRule, ProfileService, ProfileWithRules, SeverityType } from './services/profile.service';
+import { Profile, ProfileRule, ProfileService, SeverityType } from './services/profile.service';
 
 const SCHEDULE_PRESETS: { key: string; cron: string }[] = [
   { key: 'hourly', cron: '0 * * * *' },

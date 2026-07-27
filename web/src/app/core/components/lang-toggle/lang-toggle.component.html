@@ -1,4 +1,4 @@
-    <div class="lt" [class.lt--dark]="theme === 'dark'" role="group" [attr.aria-label]="ts.translateInstant('common.language')">
+    <fieldset class="lt" [class.lt--dark]="theme === 'dark'" [attr.aria-label]="ts.translateInstant('common.language')">
       <button class="lt-btn" [class.lt-btn--on]="currentLang === 'es'"
               [attr.aria-label]="ts.translateInstant('a11y.lang_es')"
               [attr.aria-pressed]="currentLang === 'es'"
@@ -7,4 +7,4 @@
               [attr.aria-label]="ts.translateInstant('a11y.lang_en')"
               [attr.aria-pressed]="currentLang === 'en'"
               (click)="setLang('en')">EN</button>
-    </div>
+    </fieldset>

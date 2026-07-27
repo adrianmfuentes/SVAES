@@ -94,12 +94,12 @@ describe('ToastComponent', () => {
     expect(toastEl.textContent).toContain('Info');
   });
 
-  it('should call dismiss when toast is clicked', () => {
+  it('should call dismiss when close button is clicked', () => {
     toastService.show('Click me', 'info');
     fixture.detectChanges();
 
-    const toastEl = fixture.nativeElement.querySelector('.toast');
-    toastEl.click();
+    const closeBtn = fixture.nativeElement.querySelector('.toast-close');
+    closeBtn.click();
     fixture.detectChanges();
 
     expect(toastService.toasts().length).toBe(0);
@@ -110,8 +110,8 @@ describe('ToastComponent', () => {
     toastService.show('Second', 'error');
     fixture.detectChanges();
 
-    const firstToast = fixture.nativeElement.querySelector('.toast');
-    firstToast.click();
+    const firstCloseBtn = fixture.nativeElement.querySelector('.toast-close');
+    firstCloseBtn.click();
     fixture.detectChanges();
 
     expect(toastService.toasts().length).toBe(1);

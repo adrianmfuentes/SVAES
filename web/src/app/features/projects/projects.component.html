@@ -68,8 +68,8 @@
     </div>
 
     <!-- CONFIRM ARCHIVE MODAL -->
-    <div *ngIf="projectToArchive()" class="modal-overlay" (click)="cancelArchive()">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div *ngIf="projectToArchive()" class="modal-overlay" (click)="cancelArchive()" (keydown.escape)="cancelArchive()">
+      <div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
         <div class="modal-header">
           <h3 class="modal-title">{{ 'org_settings.archive_project_title' | t }}</h3>
           <button class="modal-close" (click)="cancelArchive()">×</button>
@@ -85,8 +85,8 @@
     </div>
 
     <!-- EDIT PROJECT MODAL -->
-    <div *ngIf="editingProject()" class="modal-overlay" (click)="cancelEdit()">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div *ngIf="editingProject()" class="modal-overlay" (click)="cancelEdit()" (keydown.escape)="cancelEdit()">
+      <div class="modal-panel" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
         <div class="modal-header">
           <h3 class="modal-title">{{ 'projects.edit_title' | t }}</h3>
           <button class="modal-close" (click)="cancelEdit()">×</button>

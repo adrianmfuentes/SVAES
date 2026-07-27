@@ -72,22 +72,22 @@ describe('ConfirmDialogComponent', () => {
   });
 
   describe('onOverlayClick', () => {
-    it('should call onCancel when target has dialog-overlay class', () => {
+    it('should call onCancel when target is the dialog element itself', () => {
       const cancelledSpy = vi.fn();
       component.cancelled.subscribe(cancelledSpy);
 
-      const target = { classList: { contains: vi.fn().mockReturnValue(true) } } as unknown as HTMLElement;
-      component.onOverlayClick({ target } as unknown as MouseEvent);
+      const dialogEl = fixture.nativeElement.querySelector('dialog');
+      component.onOverlayClick({ target: dialogEl } as unknown as MouseEvent);
 
       expect(cancelledSpy).toHaveBeenCalled();
     });
 
-    it('should not call onCancel when target does not have dialog-overlay class', () => {
+    it('should not call onCancel when target is not the dialog element', () => {
       const cancelledSpy = vi.fn();
       component.cancelled.subscribe(cancelledSpy);
 
-      const target = { classList: { contains: vi.fn().mockReturnValue(false) } } as unknown as HTMLElement;
-      component.onOverlayClick({ target } as unknown as MouseEvent);
+      const innerEl = fixture.nativeElement.querySelector('.dialog');
+      component.onOverlayClick({ target: innerEl } as unknown as MouseEvent);
 
       expect(cancelledSpy).not.toHaveBeenCalled();
     });

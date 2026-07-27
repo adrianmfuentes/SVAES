@@ -9,14 +9,17 @@
       </div>
 
       <div class="filters-bar">
+        <label for="releases-filter-text" class="sr-only">{{ 'releases.filter_placeholder' | t }}</label>
         <input
+          id="releases-filter-text"
           type="text"
           class="filter-input"
           [placeholder]="'releases.filter_placeholder' | t"
           [(ngModel)]="filterText"
           (ngModelChange)="onFilterChange()"
         />
-        <select class="filter-select" [(ngModel)]="filterVerdict" (ngModelChange)="onFilterChange()">
+        <label for="releases-filter-verdict" class="sr-only">{{ 'releases.filter_verdict' | t }}</label>
+        <select id="releases-filter-verdict" class="filter-select" [(ngModel)]="filterVerdict" (ngModelChange)="onFilterChange()">
           <option value="">{{ 'releases.filter_all' | t }}</option>
           <option value="VALID">{{ 'releases.verdict_valid' | t }}</option>
           <option value="WITH_WARNINGS">{{ 'releases.verdict_with_warnings' | t }}</option>
@@ -58,7 +61,7 @@
                 </span>
               </td>
               <td class="cell-muted" [attr.data-label]="'releases.table_date' | t">{{ r.created_at | date:'dd MMM yyyy, HH:mm' }}</td>
-              <td *ngIf="!isAdmin" class="cell-actions" [attr.data-label]="'releases.table_actions' | t" (click)="$event.stopPropagation()">
+              <td *ngIf="!isAdmin" class="cell-actions" [attr.data-label]="'releases.table_actions' | t" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
                 <a [routerLink]="['/app/releases', r.id, 'edit']" class="btn-action btn-edit" title="{{ 'common.edit' | t }}">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -89,8 +92,8 @@
       </div>
 
       @if (showDeleteModal()) {
-        <div class="modal-overlay" (click)="cancelDelete()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-overlay" (click)="cancelDelete()" (keydown.escape)="cancelDelete()">
+          <div class="modal-content" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
             <h3 class="modal-title">{{ 'common.confirm' | t }}</h3>
             <p class="modal-message">{{ 'releases.delete_confirm' | t }}</p>
             <div class="modal-footer">

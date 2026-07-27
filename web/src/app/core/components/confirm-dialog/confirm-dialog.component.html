@@ -1,10 +1,8 @@
-    <div class="dialog-overlay"
-         role="dialog"
-         aria-modal="true"
+    <dialog #dialogEl class="dialog-overlay"
          [attr.aria-labelledby]="'dialog-title-' + dialogId"
          (click)="onOverlayClick($event)"
-         (keydown.escape)="onCancel()">
-      <div class="dialog" role="document">
+         (cancel)="onCancel()">
+      <div class="dialog">
         <div class="dialog-icon" aria-hidden="true">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M12 9v4M12 17h.01M12 3L2 21h20L12 3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -25,4 +23,4 @@
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
