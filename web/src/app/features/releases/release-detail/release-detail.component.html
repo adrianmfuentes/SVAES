@@ -120,7 +120,9 @@
                   @for (rule of result.rule_results; track rule.rule_id; let i = $index) {
                     @if (rule.rule_id !== 'artifact_fetch_error') {
                     <tr
-                      (click)="toggleEvidence(i)">
+                      tabindex="0"
+                      (click)="toggleEvidence(i)"
+                      (keydown)="onRowKeydown($event, i)">
                       <td [attr.data-label]="'release_detail.rule_id' | t"><code class="mono-sm cell-rule-id" [attr.title]="rule.rule_id">{{ rule.rule_id }}</code></td>
                       <td class="cell-primary" [attr.data-label]="'release_detail.rule_name' | t">{{ translateRuleName(rule) || ('common.dash' | t) }}</td>
                       <td class="cell-muted" [attr.data-label]="'release_detail.rule_connector' | t">{{ rule.connector || ('common.na' | t) }}</td>

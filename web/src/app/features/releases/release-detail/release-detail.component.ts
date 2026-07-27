@@ -562,6 +562,13 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     this.expandedRule.update((current) => (current === index ? null : index));
   }
 
+  onRowKeydown(event: KeyboardEvent, index: number): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.toggleEvidence(index);
+    }
+  }
+
   get latestVerdict(): string | null {
     return this.latestResult()?.verdict || null;
   }
