@@ -232,18 +232,20 @@
 // ── Definition list (titular data) ───────────────────────────────────────────
 
 .legal-dl {
+  display: grid;
+  grid-template-columns: 12.5rem 1fr;
   margin: var(--spacing-lg) 0 0;
   border: 0.0625rem solid var(--border);
   border-radius: var(--rounded-lg);
   overflow: hidden;
-}
 
-.legal-dl-row {
-  display: grid;
-  grid-template-columns: 12.5rem 1fr;
-  border-bottom: 0.0625rem solid var(--border);
+  dt, dd {
+    border-bottom: 0.0625rem solid var(--border);
+  }
 
-  &:last-child { border-bottom: none; }
+  dt:last-of-type, dd:last-of-type {
+    border-bottom: none;
+  }
 
   dt {
     font-size: 0.8125rem;
@@ -338,12 +340,11 @@ abbr[title] {
   .legal-header { padding: var(--spacing-lg); }
   .legal-title  { font-size: 1.75rem; }
 
-  .legal-dl-row {
+  .legal-dl {
     grid-template-columns: 1fr;
 
     dt {
       border-right: none;
-      border-bottom: 0.0625rem solid var(--border);
       padding: 0.5rem var(--spacing-md);
     }
 
