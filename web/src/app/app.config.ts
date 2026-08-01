@@ -1,4 +1,10 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection, inject, provideAppInitializer } from '@angular/core';
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+  provideZonelessChangeDetection,
+  inject,
+  provideAppInitializer,
+} from '@angular/core';
 import { provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
@@ -7,6 +13,7 @@ import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { timeoutInterceptor } from './core/interceptors/timeout.interceptor';
 import { TranslationService } from './core/i18n/translation.service';
 import { firstValueFrom } from 'rxjs';
+import { provideClientHydration } from '@angular/platform-browser';
 
 export function initializeTranslations(): Promise<void> {
   const ts = inject(TranslationService);
@@ -20,5 +27,6 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withPreloading(PreloadAllModules)),
     provideHttpClient(withInterceptors([jwtInterceptor, errorInterceptor, timeoutInterceptor])),
     provideAppInitializer(initializeTranslations),
+    provideClientHydration(),
   ],
 };

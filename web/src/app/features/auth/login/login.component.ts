@@ -8,6 +8,7 @@ import { Router, RouterModule } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { SeoService } from '../../../core/services/seo.service';
 
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../../core/components/lang-toggle/lang-toggle.component';
@@ -63,6 +64,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly http = inject(HttpClient);
+  private readonly seo = inject(SeoService);
 
   readonly loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -89,6 +91,12 @@ export class LoginComponent implements OnInit, OnDestroy {
   private cooldownTimer?: ReturnType<typeof setInterval>;
 
   ngOnInit(): void {
+    this.seo.setPage({
+      title: 'Iniciar sesión',
+      description: 'Acceda a su cuenta de SVAES para gestionar releases, reglas de verificación y conectores.',
+      path: '/auth/login',
+    });
+
     if (this.authService.isAuthenticated()) {
       this.router.navigate(['/app/dashboard']);
     }

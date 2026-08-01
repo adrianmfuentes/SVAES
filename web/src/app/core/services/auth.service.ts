@@ -1,4 +1,5 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
@@ -81,10 +82,23 @@ interface JwtPayload {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   private readonly TOKEN_KEY = 'access_token';
   private readonly REFRESH_KEY = 'refresh_token';
   private readonly USER_KEY = 'user';
+
+  private getItem(key: string): string | null {
+    return this.isBrowser ? localStorage.getItem(key) : null;
+  }
+
+  private setItem(key: string, value: string): void {
+    if (this.isBrowser) localStorage.setItem(key, value);
+  }
+
+  private removeItem(key: string): void {
+    if (this.isBrowser) localStorage.removeItem(key);
+  }
 
   decodeToken(token: string): JwtPayload | null {
     try {
@@ -115,9 +129,9 @@ export class AuthService {
   storeTokens(response: LoginStep1Response, email: string): void {
     if (!response.access_token) return;
     _accessToken = response.access_token;
-    localStorage.setItem(this.TOKEN_KEY, response.access_token);
+    this.setItem(this.TOKEN_KEY, response.access_token);
     if (response.refresh_token) {
-      localStorage.setItem(this.REFRESH_KEY, response.refresh_token);
+      this.setItem(this.REFRESH_KEY, response.refresh_token);
     }
     const payload = this.decodeToken(response.access_token);
     const user: UserInfo = {
@@ -127,7 +141,7 @@ export class AuthService {
       role: payload?.role ?? response.role ?? 'USER',
       organization_id: payload?.organization_id,
     };
-    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    this.setItem(this.USER_KEY, JSON.stringify(user));
   }
 
   verify2fa(totpToken: string, code: string): Observable<LoginStep1Response> {
@@ -151,22 +165,22 @@ export class AuthService {
 
   logout(): void {
     _accessToken = null;
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.REFRESH_KEY);
-    localStorage.removeItem(this.USER_KEY);
+    this.removeItem(this.TOKEN_KEY);
+    this.removeItem(this.REFRESH_KEY);
+    this.removeItem(this.USER_KEY);
     this.router.navigate(['/']);
   }
 
   isAuthenticated(): boolean {
-    return !!_accessToken || !!localStorage.getItem(this.TOKEN_KEY);
+    return !!_accessToken || !!this.getItem(this.TOKEN_KEY);
   }
 
   getToken(): string | null {
-    return _accessToken ?? localStorage.getItem(this.TOKEN_KEY);
+    return _accessToken ?? this.getItem(this.TOKEN_KEY);
   }
 
   getUser(): UserInfo | null {
-    const raw = localStorage.getItem(this.USER_KEY);
+    const raw = this.getItem(this.USER_KEY);
     if (!raw) return null;
     try {
       return JSON.parse(raw) as UserInfo;
@@ -204,13 +218,13 @@ export class AuthService {
       .pipe(
         tap((response) => {
           _accessToken = response.access_token;
-          localStorage.setItem(this.TOKEN_KEY, response.access_token);
-          localStorage.setItem(this.REFRESH_KEY, response.refresh_token);
+          this.setItem(this.TOKEN_KEY, response.access_token);
+          this.setItem(this.REFRESH_KEY, response.refresh_token);
           const current = this.getUser();
           if (current) {
             current.organization_id = response.organization_id;
             current.role = response.role;
-            localStorage.setItem(this.USER_KEY, JSON.stringify(current));
+            this.setItem(this.USER_KEY, JSON.stringify(current));
           }
         }),
       );

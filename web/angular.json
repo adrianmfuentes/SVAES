@@ -34,9 +34,10 @@
                 "output": "assets"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ]
+            "styles": ["src/styles.scss"],
+            "server": "src/main.server.ts",
+            "outputMode": "static",
+            "prerender": true
           },
           "configurations": {
             "production": {

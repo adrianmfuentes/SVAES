@@ -27,6 +27,18 @@ export class LandingComponent implements OnInit, AfterViewInit {
         'Conecte sus herramientas de desarrollo, defina reglas de verificación y obtenga trazabilidad completa de cada release. Infraestructura honesta para equipos que operan con exigencia.',
       path: '/',
     });
+
+    this.seo.setJsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'SVAES',
+      alternateName: 'Sistema de Verificación Automática de Entregas',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      url: 'https://svaes.amfserver.duckdns.org/',
+      description:
+        'Sistema de verificación automática de entregas: conecte sus herramientas de desarrollo, defina reglas de verificación y obtenga trazabilidad completa de cada release.',
+    });
   }
 
   navigateToRequestAccess(): void {

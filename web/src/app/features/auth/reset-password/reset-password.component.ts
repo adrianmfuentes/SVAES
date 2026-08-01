@@ -11,6 +11,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { SeoService } from '../../../core/services/seo.service';
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const password = control.get('password');
@@ -43,6 +44,7 @@ export class ResetPasswordComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly seo = inject(SeoService);
 
   token: string | null = null;
   loading = false;
@@ -58,6 +60,7 @@ export class ResetPasswordComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    this.seo.setNoIndex('Restablecer contraseña');
     this.token = this.route.snapshot.queryParamMap.get('token');
   }
 

@@ -1,0 +1,18 @@
+{
+  "name": "SVAES — Verificación Automática de Entregas",
+  "short_name": "SVAES",
+  "description": "Sistema de verificación automática de entregas: conecte sus herramientas de desarrollo, defina reglas de verificación y obtenga trazabilidad completa de cada release.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "lang": "es",
+  "background_color": "#F6F4F0",
+  "theme_color": "#0D0F12",
+  "icons": [
+    { "src": "/favicon.ico", "type": "image/x-icon", "sizes": "16x16 32x32" },
+    { "src": "/images/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/images/icon-512.png", "type": "image/png", "sizes": "512x512" },
+    { "src": "/images/icon-192-maskable.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
+    { "src": "/images/icon-512-maskable.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

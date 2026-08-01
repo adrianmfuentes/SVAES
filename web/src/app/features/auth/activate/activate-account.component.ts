@@ -13,6 +13,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { finalize, Subscription } from 'rxjs';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../core/i18n/translation.service';
+import { SeoService } from '../../../core/services/seo.service';
 
 interface ActivateResponse {
   access_token: string;
@@ -58,6 +59,7 @@ export class ActivateAccountComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly ts = inject(TranslationService);
   private readonly authService = inject(AuthService);
+  private readonly seo = inject(SeoService);
 
   readonly activateForm = this.fb.group(
     {
@@ -95,6 +97,8 @@ export class ActivateAccountComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.seo.setNoIndex('Activar cuenta');
+
     const token = this.route.snapshot.queryParamMap.get('token');
     if (token) {
       this.activateForm.patchValue({ activation_code: token });

@@ -1,4 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { TranslationService } from './core/i18n/translation.service';
 
@@ -12,6 +13,7 @@ import { TranslationService } from './core/i18n/translation.service';
 })
 export class App implements OnInit {
   private readonly ts = inject(TranslationService);
+  private readonly document = inject(DOCUMENT);
 
   ngOnInit(): void {
     this.updateHtmlLang(this.ts.currentLang);
@@ -19,6 +21,6 @@ export class App implements OnInit {
   }
 
   private updateHtmlLang(lang: string): void {
-    document.documentElement.lang = lang;
+    this.document.documentElement.lang = lang;
   }
 }
