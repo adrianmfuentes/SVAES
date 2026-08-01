@@ -1,8 +1,9 @@
-import { AfterViewInit, Component, ElementRef, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../core/components/lang-toggle/lang-toggle.component';
 import { FeedbackModalComponent } from './feedback-modal/feedback-modal.component';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'app-landing',
@@ -11,12 +12,22 @@ import { FeedbackModalComponent } from './feedback-modal/feedback-modal.componen
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })
-export class LandingComponent implements AfterViewInit {
+export class LandingComponent implements OnInit, AfterViewInit {
   private readonly router = inject(Router);
+  private readonly seo = inject(SeoService);
 
   @ViewChild('accessInner') private readonly accessInnerRef!: ElementRef<HTMLElement>;
 
   showFeedback = false;
+
+  ngOnInit(): void {
+    this.seo.setPage({
+      title: 'SVAES — Verificación Automática de Entregas',
+      description:
+        'Conecte sus herramientas de desarrollo, defina reglas de verificación y obtenga trazabilidad completa de cada release. Infraestructura honesta para equipos que operan con exigencia.',
+      path: '/',
+    });
+  }
 
   navigateToRequestAccess(): void {
     this.router.navigate(['/request-access']);

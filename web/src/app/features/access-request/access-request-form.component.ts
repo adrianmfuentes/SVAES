@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { catchError, of } from 'rxjs';
 import { TranslationService } from '../../core/i18n/translation.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { SeoService } from '../../core/services/seo.service';
 
 interface AccessRequestResponse {
   id: string;
@@ -33,10 +34,19 @@ function generateSlug(name: string): string {
   templateUrl: './access-request-form.component.html',
   styleUrl: './access-request-form.component.scss',
 })
-export class AccessRequestFormComponent {
+export class AccessRequestFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
   private readonly ts = inject(TranslationService);
+  private readonly seo = inject(SeoService);
+
+  ngOnInit(): void {
+    this.seo.setPage({
+      title: 'Solicitar acceso',
+      description: 'Solicite acceso a SVAES para su organización y empiece a verificar sus releases en minutos.',
+      path: '/request-access',
+    });
+  }
 
   readonly requestForm = this.fb.group({
     requester_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
