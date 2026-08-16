@@ -37,7 +37,7 @@ dev = [
     "factory-boy",
     "faker",
     "testcontainers",
-    "locust>=2.46.2",
+    "locust>=2.46.3",
     "aiosqlite>=0.22.1",
     "respx>=0.23.1",
 ]
