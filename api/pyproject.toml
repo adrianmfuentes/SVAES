@@ -7,7 +7,7 @@ dependencies = [
     "uvicorn[standard]>=0.52.4",
     "alembic>=1.19.1",
     "sqlalchemy>=2.0.52",
-    "psycopg[binary]>=3.3.4",
+    "psycopg[binary]>=3.3.5",
     "python-dotenv>=1.2.3",
     "passlib[bcrypt]>=1.7.4",
     "bcrypt<5.1.0",
