@@ -178,7 +178,7 @@ jobs:
           chmod 700 ~/.ssh
           printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          if ! ssh-keyscan -T 15 -H -p 4422 "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+          if ! ssh-keyscan -t ed25519 -T 15 -H -p 4422 "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
             echo "ssh-keyscan on port 4422 failed; disabling StrictHostKeyChecking for this host"
             cat >> ~/.ssh/config << SSHCONF
           Host $SERVER_HOST
@@ -188,6 +188,12 @@ jobs:
             LogLevel ERROR
           SSHCONF
           fi
+          cat >> ~/.ssh/config << SSHCONF
+          Host $SERVER_HOST
+            ControlMaster auto
+            ControlPath ~/.ssh/cm-%r@%h:%p
+            ControlPersist 10m
+          SSHCONF
 
       - name: Create deployment directory
         env:
