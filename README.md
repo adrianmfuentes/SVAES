@@ -76,17 +76,7 @@ Más detalle en [api/README.md](api/README.md) y [web/README.md](web/README.md).
 Los usuarios pueden enviar feedback (valoración 1-5 y comentario) desde un formulario en el footer de la landing page. Una GitHub Action programada ([`feedback-sync.yml`](.github/workflows/feedback-sync.yml)) sincroniza periódicamente el feedback recibido para que quede constancia pública:
 
 <!-- FEEDBACK:START -->
-> ★★★★★ "Honestamente es un sistema muy completo, con una estética cuidada y claramente con un gran trabajo detrás."
-> — Javier Carrasco
-
-> ★★★★★ "El sistema es muy robusto y que la interfaz esté en varios idiomas está genial. Al principio configurar las reglas desde cero cuesta un poco, pero luego funciona de maravilla"
-> — Lara
-
-> ★★★★★ "Interfaz muy intuitiva y visualmente bonita. Proyecto con gran ambición y de gran utilidad para el desarrollo general de software"
-> — Daniel
-
-> ★★★★★ "En general, la navegación es muy intuitiva y el atractivo de la web es sobresaliente, me encantan los colores escogidos y la tipografía. No obstante, he detectado durante mi tiempo de prueba con la aplicación algunos aspectos que considero…"
-> — Vicente
+_Todavía no hay feedback publicado. Sé el primero en dejar tu opinión desde la landing page._
 <!-- FEEDBACK:END -->
 
 ---
