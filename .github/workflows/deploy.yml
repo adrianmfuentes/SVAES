@@ -195,9 +195,8 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          source .github/scripts/ssh_retry.sh
           echo "Testing SSH connection..."
-          retry ssh -v -o ConnectTimeout=30 -o ServerAliveInterval=15 -o BatchMode=yes -p 4422 "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
+          ssh -v -o ConnectTimeout=30 -o ServerAliveInterval=15 -o BatchMode=yes -p 4422 "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
 
       - name: Copy Docker Compose file
         env:
@@ -205,8 +204,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          source .github/scripts/ssh_retry.sh
-          retry scp $SSH_OPTS -P 4422 docker-compose.prod.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/docker-compose.yml"
+          scp -P 4422 docker-compose.prod.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/docker-compose.yml"
 
       - name: Copy nginx configuration
         env:
@@ -214,8 +212,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          source .github/scripts/ssh_retry.sh
-          retry scp $SSH_OPTS -P 4422 nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/"
+          scp -P 4422 nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/" 2>/dev/null || true
 
       - name: Create .env file and copy to server
         env:
@@ -269,8 +266,7 @@ jobs:
             printf 'JWT_EXPIRE_MINUTES=60\n'
             printf 'ENVIRONMENT=production\n'
           } > .env.prod
-          source .github/scripts/ssh_retry.sh
-          retry scp $SSH_OPTS -P 4422 .env.prod "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/.env"
+          scp -P 4422 .env.prod "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/.env"
 
       - name: Pull latest images
         env:
@@ -284,8 +280,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
-          source .github/scripts/ssh_retry.sh
-          retry ssh $SSH_OPTS -p 4422 "$SERVER_USER@$SERVER_HOST" "export REGISTRY='$REGISTRY' API_IMAGE='$API_IMAGE' WEB_IMAGE='$WEB_IMAGE' ENGINE_IMAGE='$ENGINE_IMAGE' && cd ~/svaes/$ENVIRONMENT && \
+          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "export REGISTRY='$REGISTRY' API_IMAGE='$API_IMAGE' WEB_IMAGE='$WEB_IMAGE' ENGINE_IMAGE='$ENGINE_IMAGE' && cd ~/svaes/$ENVIRONMENT && \
             echo '$GITHUB_TOKEN' | docker login $REGISTRY -u '$GITHUB_ACTOR' --password-stdin && \
             docker compose pull"
 
