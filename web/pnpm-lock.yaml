@@ -59,8 +59,8 @@ importers:
         specifier: ^22.0.8
         version: 22.0.8(@angular/common@22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2))(@angular/platform-browser@22.0.8(@angular/animations@22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)))(@angular/common@22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)))(rxjs@7.8.2)
       '@angular/ssr':
-        specifier: ^22.1.5
-        version: 22.1.5(abf07f072a2e5349273ec3eb6361eb5d)
+        specifier: ^22.1.7
+        version: 22.1.7(abf07f072a2e5349273ec3eb6361eb5d)
       chart.js:
         specifier: ^4.5.1
         version: 4.5.1
@@ -76,7 +76,7 @@ importers:
     devDependencies:
       '@angular/build':
         specifier: ^22.1.1
-        version: 22.1.1(d9370a1cc71a6d1dee829d821acadd48)
+        version: 22.1.1(e93a02df5fd6749f40fd9aa8a37ef3b9)
       '@angular/cli':
         specifier: ^22.1.7
         version: 22.1.7(@types/node@26.2.0)(chokidar@5.0.0)
@@ -329,8 +329,8 @@ packages:
       '@angular/platform-browser': 22.0.8
       rxjs: ^6.5.3 || ^7.4.0
 
-  '@angular/ssr@22.1.5':
-    resolution: {integrity: sha512-mXREJv4RJECIPixU7LxlnXFAYqemhi67vzj/V6rCXra4cTk/tMP4aYMECtR9RYcSA8npd2ej4RhaBcgHvoNM4w==}
+  '@angular/ssr@22.1.7':
+    resolution: {integrity: sha512-fX766QHDeiMTIa+D1/OQaCMyW0EKO7nR+hUBcCd9gOcu3dMr3JnugEmLYReCCkQNKRjMmALSs7QS7o+ptrKsKg==}
     peerDependencies:
       '@angular/common': ^22.0.0
       '@angular/core': ^22.0.0
@@ -4037,7 +4037,7 @@ snapshots:
       '@angular/core': 22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)
       tslib: 2.8.1
 
-  '@angular/build@22.1.1(d9370a1cc71a6d1dee829d821acadd48)':
+  '@angular/build@22.1.1(e93a02df5fd6749f40fd9aa8a37ef3b9)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@angular-devkit/architect': 0.2201.1(chokidar@5.0.0)
@@ -4073,7 +4073,7 @@ snapshots:
       '@angular/core': 22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)
       '@angular/platform-browser': 22.0.8(@angular/animations@22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)))(@angular/common@22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2))
       '@angular/platform-server': 22.1.6(@angular/common@22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/compiler@22.0.8)(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2))(@angular/platform-browser@22.0.8(@angular/animations@22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)))(@angular/common@22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)))(rxjs@7.8.2)
-      '@angular/ssr': 22.1.5(abf07f072a2e5349273ec3eb6361eb5d)
+      '@angular/ssr': 22.1.7(abf07f072a2e5349273ec3eb6361eb5d)
       istanbul-lib-instrument: 6.0.3
       karma: 6.4.4
       lmdb: 3.5.6
@@ -4204,7 +4204,7 @@ snapshots:
       rxjs: 7.8.2
       tslib: 2.8.1
 
-  '@angular/ssr@22.1.5(abf07f072a2e5349273ec3eb6361eb5d)':
+  '@angular/ssr@22.1.7(abf07f072a2e5349273ec3eb6361eb5d)':
     dependencies:
       '@angular/common': 22.0.8(@angular/core@22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2))(rxjs@7.8.2)
       '@angular/core': 22.0.8(@angular/compiler@22.0.8)(rxjs@7.8.2)
