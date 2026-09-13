@@ -206,7 +206,7 @@ jobs:
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           source .github/scripts/ssh_retry.sh
-          retry scp -P 4422 docker-compose.prod.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/docker-compose.yml"
+          retry scp $SSH_OPTS -P 4422 docker-compose.prod.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/docker-compose.yml"
 
       - name: Copy nginx configuration
         env:
@@ -215,7 +215,7 @@ jobs:
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
           source .github/scripts/ssh_retry.sh
-          retry scp -P 4422 nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/"
+          retry scp $SSH_OPTS -P 4422 nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/"
 
       - name: Create .env file and copy to server
         env:
@@ -270,7 +270,7 @@ jobs:
             printf 'ENVIRONMENT=production\n'
           } > .env.prod
           source .github/scripts/ssh_retry.sh
-          retry scp -P 4422 .env.prod "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/.env"
+          retry scp $SSH_OPTS -P 4422 .env.prod "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/.env"
 
       - name: Pull latest images
         env:
@@ -285,7 +285,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
           source .github/scripts/ssh_retry.sh
-          retry ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "export REGISTRY='$REGISTRY' API_IMAGE='$API_IMAGE' WEB_IMAGE='$WEB_IMAGE' ENGINE_IMAGE='$ENGINE_IMAGE' && cd ~/svaes/$ENVIRONMENT && \
+          retry ssh $SSH_OPTS -p 4422 "$SERVER_USER@$SERVER_HOST" "export REGISTRY='$REGISTRY' API_IMAGE='$API_IMAGE' WEB_IMAGE='$WEB_IMAGE' ENGINE_IMAGE='$ENGINE_IMAGE' && cd ~/svaes/$ENVIRONMENT && \
             echo '$GITHUB_TOKEN' | docker login $REGISTRY -u '$GITHUB_ACTOR' --password-stdin && \
             docker compose pull"
 
