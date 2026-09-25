@@ -35,7 +35,7 @@ export class LandingComponent implements OnInit, AfterViewInit {
       alternateName: 'Sistema de Verificación Automática de Entregas',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
-      url: 'https://svaes.amfserver.duckdns.org/',
+      url: 'https://svaes.adrianmf.dev/',
       description:
         'Sistema de verificación automática de entregas: conecte sus herramientas de desarrollo, defina reglas de verificación y obtenga trazabilidad completa de cada release.',
     });

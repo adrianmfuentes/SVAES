@@ -4,4 +4,4 @@ Disallow: /app/
 Disallow: /auth/activate
 Disallow: /auth/reset-password
 
-Sitemap: https://svaes.amfserver.duckdns.org/sitemap.xml
+Sitemap: https://svaes.adrianmf.dev/sitemap.xml

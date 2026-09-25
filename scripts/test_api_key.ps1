@@ -2,7 +2,7 @@
 # test_api_key.ps1 - Verifica que una API Key del sistema SVAES funciona correctamente
 # Uso: .\scripts\test_api_key.ps1
 
-$HOST_URL = "https://svaes.amfserver.duckdns.org"
+$HOST_URL = "https://svaes.adrianmf.dev"
 
 # ─── Colores ────────────────────────────────────────────────────────────────
 function Write-Pass($msg)  { Write-Host "  [PASS] $msg" -ForegroundColor Green }

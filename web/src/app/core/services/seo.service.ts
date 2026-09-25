@@ -3,7 +3,7 @@ import { DOCUMENT } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 
 const SITE_NAME = 'SVAES';
-const BASE_URL = 'https://svaes.amfserver.duckdns.org';
+const BASE_URL = 'https://svaes.adrianmf.dev';
 const JSONLD_ID = 'seo-jsonld';
 
 export interface PageSeo {
