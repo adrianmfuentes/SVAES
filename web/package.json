@@ -34,7 +34,7 @@
     "@hey-api/client-fetch": "^0.13.1",
     "@hey-api/openapi-ts": "^0.99.0",
     "@openapitools/openapi-generator-cli": "^2.41.0",
-    "@types/jasmine": "^6.0.0",
+    "@types/jasmine": "^7.0.0",
     "@types/node": "^26.6.2",
     "@vitest/coverage-v8": "4.1.11",
     "jsdom": "^30.1.1",
