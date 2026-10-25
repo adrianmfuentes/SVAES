@@ -33,7 +33,7 @@
     "@angular/compiler-cli": "^22.1.6",
     "@hey-api/client-fetch": "^0.13.1",
     "@hey-api/openapi-ts": "^0.99.0",
-    "@openapitools/openapi-generator-cli": "^2.41.0",
+    "@openapitools/openapi-generator-cli": "^2.42.0",
     "@types/jasmine": "^7.0.0",
     "@types/node": "^26.6.3",
     "@vitest/coverage-v8": "4.1.11",
