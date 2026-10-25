@@ -1,3 +1,8 @@
 # Forzar LF en scripts de shell para que funcionen en cualquier OS
 .githooks/*     text eol=lf
 *.sh            text eol=lf
+
+# Spec Kit: finales LF para que coincidan los hashes de los manifiestos
+.specify/** text eol=lf
+.claude/skills/speckit-*/** text eol=lf
+.agents/skills/speckit-*/** text eol=lf
