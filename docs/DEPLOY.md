@@ -99,6 +99,15 @@ sudo ufw enable
 
 ## Running the Deployment
 
+### Promote `main` to production
+
+1. Wait for the Sonar workflow and the SonarCloud Quality Gate on the commit to promote.
+2. Open a pull request from `main` to `deploy`.
+3. Wait for **Validate deploy promotion** and select **Create a merge commit**. GitHub starts **Deploy to Server** when the merge updates `deploy`.
+4. Check the production deployment in **Actions**. Automatic deployments run migrations and preserve data volumes.
+
+### Run a manual deployment
+
 1. Go to your GitHub repository
 2. Click on **Actions** tab
 3. Select **Deploy to Server** workflow

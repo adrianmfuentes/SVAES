@@ -1,6 +1,9 @@
 name: Deploy to Server
 
 on:
+  push:
+    branches:
+      - deploy
   workflow_dispatch:
     inputs:
       environment:
@@ -27,7 +30,12 @@ on:
         default: false
         type: boolean
 
+concurrency:
+  group: deploy-to-server
+  queue: max
+
 env:
+  DEPLOY_ENVIRONMENT: ${{ inputs.environment || 'production' }}
   REGISTRY: ghcr.io
   API_IMAGE: ${{ github.repository_owner }}/svaes-api
   WEB_IMAGE: ${{ github.repository_owner }}/svaes-web
@@ -36,23 +44,10 @@ env:
 jobs:
   check-sonar-status:
     name: Check Sonar workflow status
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check Sonar workflow run
-        run: |
-          latest_run=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow=sonar.yml --limit 1 --json status,conclusion --jq '.[0]' 2>/dev/null)
-          if [ -z "$latest_run" ] || [ "$latest_run" = "null" ]; then
-            echo "ERROR: No Sonar workflow run found. Deploy blocked."
-            exit 1
-          fi
-          conclusion=$(echo "$latest_run" | jq -r '.conclusion')
-          if [ "$conclusion" != "success" ]; then
-            echo "ERROR: Last Sonar workflow run was not successful (conclusion: $conclusion). Deploy blocked."
-            exit 1
-          fi
-          echo "Last Sonar workflow run was successful"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      actions: read
+      contents: read
+    uses: ./.github/workflows/validate-deploy.yml
 
   build-and-push:
     needs: check-sonar-status
@@ -86,6 +81,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.API_IMAGE }}
           tags: |
             type=sha,prefix={{branch}}-,format=short
+            type=sha,prefix=sha-,format=long
             type=raw,value=latest
 
       - name: Build and push API image
@@ -105,6 +101,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.WEB_IMAGE }}
           tags: |
             type=sha,prefix={{branch}}-,format=short
+            type=sha,prefix=sha-,format=long
             type=raw,value=latest
 
       - name: Build and push Web image
@@ -124,6 +121,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.ENGINE_IMAGE }}
           tags: |
             type=sha,prefix={{branch}}-,format=short
+            type=sha,prefix=sha-,format=long
             type=raw,value=latest
 
       - name: Build and push Engine image
@@ -141,7 +139,7 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.environment }}
+      name: ${{ inputs.environment || 'production' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -155,7 +153,7 @@ jobs:
           _USER_V: ${{ vars.SERVER_USER }}
           _KEY_V: ${{ vars.SERVER_SSH_KEY }}
         run: |
-          echo "=== Environment input: ${{ inputs.environment }} ==="
+          echo "=== Deployment environment: $DEPLOY_ENVIRONMENT ==="
           echo "secrets.SERVER_HOST  : $([ -n "$_HOST_S" ] && echo SET || echo EMPTY)"
           echo "secrets.SERVER_USER  : $([ -n "$_USER_S" ] && echo SET || echo EMPTY)"
           echo "secrets.SERVER_SSH_KEY: $([ -n "$_KEY_S" ] && echo SET || echo EMPTY)"
@@ -170,8 +168,8 @@ jobs:
           SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY || vars.SERVER_SSH_KEY }}
         run: |
           if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_USER" ] || [ -z "$SERVER_SSH_KEY" ]; then
-            echo "ERROR: SERVER_HOST, SERVER_USER, or SERVER_SSH_KEY is not set in the '${{ inputs.environment }}' environment."
-            echo "Add them under Settings > Environments > ${{ inputs.environment }} > Secrets (or Secrets > Actions for repo-level)."
+            echo "ERROR: SERVER_HOST, SERVER_USER, or SERVER_SSH_KEY is not set in the '$DEPLOY_ENVIRONMENT' environment."
+            echo "Add them under Settings > Environments > $DEPLOY_ENVIRONMENT > Secrets (or Secrets > Actions for repo-level)."
             exit 1
           fi
           mkdir -p ~/.ssh
@@ -199,7 +197,7 @@ jobs:
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           echo "Testing SSH connection..."
           ssh -v -o ConnectTimeout=30 -o ServerAliveInterval=15 -o BatchMode=yes -p 4422 "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
@@ -208,7 +206,7 @@ jobs:
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           scp -P 4422 docker-compose.prod.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/docker-compose.yml"
 
@@ -216,7 +214,7 @@ jobs:
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           scp -P 4422 nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/" 2>/dev/null || true
 
@@ -224,7 +222,7 @@ jobs:
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
           REGISTRY: ${{ env.REGISTRY }}
           API_IMAGE: ${{ env.API_IMAGE }}
           WEB_IMAGE: ${{ env.WEB_IMAGE }}
@@ -252,6 +250,7 @@ jobs:
             printf 'API_IMAGE=%s\n'               "$API_IMAGE"
             printf 'WEB_IMAGE=%s\n'               "$WEB_IMAGE"
             printf 'ENGINE_IMAGE=%s\n'            "$ENGINE_IMAGE"
+            printf 'SVAES_IMAGE_TAG=sha-%s\n'   "$GITHUB_SHA"
             printf 'POSTGRES_USER=%s\n'           "$POSTGRES_USER"
             printf 'POSTGRES_PASSWORD=%s\n'       "$POSTGRES_PASSWORD"
             printf 'REDIS_PASSWORD=%s\n'          "$REDIS_PASSWORD"
@@ -278,7 +277,7 @@ jobs:
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
           REGISTRY: ${{ env.REGISTRY }}
           API_IMAGE: ${{ env.API_IMAGE }}
           WEB_IMAGE: ${{ env.WEB_IMAGE }}
@@ -291,21 +290,21 @@ jobs:
             docker compose pull"
 
       - name: Run database migration
-        if: inputs.skip_migration == false
+        if: github.event_name == 'push' || !inputs.skip_migration
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
             docker compose run --rm api python -m alembic upgrade head"
 
       - name: Clean SVAES data volumes
-        if: inputs.clean_volumes == true
+        if: github.event_name == 'workflow_dispatch' && inputs.clean_volumes
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
             docker compose down --volumes --remove-orphans 2>/dev/null && \
@@ -315,7 +314,7 @@ jobs:
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
             docker compose down --remove-orphans 2>/dev/null; \
@@ -325,7 +324,7 @@ jobs:
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" " \
             healthy=false; \
@@ -352,6 +351,6 @@ jobs:
         env:
           SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && docker compose ps"

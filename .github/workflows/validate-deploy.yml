@@ -1,0 +1,95 @@
+name: Validate Deploy Promotion
+
+on:
+  pull_request:
+    branches:
+      - deploy
+  workflow_call:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  promotion:
+    name: Validate deploy promotion
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SONAR_PROJECT_KEY: adrianmfuentes_SVAES
+    steps:
+      - name: Verify the promoted main revision
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+
+          commit=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$GITHUB_SHA")
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              if ! jq -e --arg repository "$GITHUB_REPOSITORY" '
+                .pull_request.head.repo.full_name == $repository
+                and .pull_request.head.ref == "main"
+              ' "$GITHUB_EVENT_PATH" >/dev/null; then
+                echo "::error::Production promotions must come from main in this repository."
+                exit 1
+              fi
+              promoted_sha=$(jq -er '.pull_request.head.sha' "$GITHUB_EVENT_PATH")
+              ;;
+            push)
+              previous_sha=$(jq -er '.before' "$GITHUB_EVENT_PATH")
+              if ! jq -e --arg previous "$previous_sha" '
+                (.parents | length) == 2 and .parents[0].sha == $previous
+              ' <<< "$commit" >/dev/null; then
+                echo "::error::Production promotions must use a pull request merge commit."
+                exit 1
+              fi
+              promoted_sha=$(jq -er '.parents[1].sha' <<< "$commit")
+              ;;
+            *)
+              echo "::error::Unsupported event: $GITHUB_EVENT_NAME"
+              exit 1
+              ;;
+          esac
+
+          promoted_tree=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$promoted_sha" --jq '.tree.sha')
+          if [[ "$(jq -er '.tree.sha' <<< "$commit")" != "$promoted_tree" ]]; then
+            echo "::error::The promoted tree differs from the analyzed main revision."
+            exit 1
+          fi
+
+          workflow_status=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow sonar.yml \
+            --branch main --event push --commit "$promoted_sha" --limit 1 \
+            --json conclusion --jq '.[0].conclusion // ""')
+          if [[ "$workflow_status" != "success" ]]; then
+            echo "::error::The Sonar workflow for main revision $promoted_sha has not succeeded."
+            exit 1
+          fi
+
+          analyses=$(curl -fsS --max-time 20 --get https://sonarcloud.io/api/project_analyses/search \
+            --data-urlencode "project=$SONAR_PROJECT_KEY" --data-urlencode 'branch=main' \
+            --data-urlencode 'ps=100')
+          analysis_id=$(jq -r --arg revision "$promoted_sha" '
+            [.analyses[] | select(.revision == $revision)] | first | .key // ""
+          ' <<< "$analyses")
+          if [[ -z "$analysis_id" ]]; then
+            echo "::error::SonarCloud has no main analysis for $promoted_sha."
+            exit 1
+          fi
+          gate=$(curl -fsS --max-time 20 --get https://sonarcloud.io/api/qualitygates/project_status \
+            --data-urlencode "analysisId=$analysis_id")
+          if [[ "$(jq -r '.projectStatus.status' <<< "$gate")" != "OK" ]]; then
+            echo "::error::SonarCloud has not passed the Quality Gate for $promoted_sha."
+            exit 1
+          fi
+          echo "Verified production promotion of $promoted_sha."
+
+      - name: Check Sonar workflow for a manual deployment
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          conclusion=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow sonar.yml \
+            --limit 1 --json conclusion --jq '.[0].conclusion // ""')
+          if [[ "$conclusion" != "success" ]]; then
+            echo "::error::The latest Sonar workflow has not succeeded."
+            exit 1
+          fi
