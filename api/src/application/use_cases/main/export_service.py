@@ -645,33 +645,26 @@ def _build_pdf(pdf_path: str, result, release, lang: str) -> None:
     LOGO_OFF  = (LOGO_SZ + 3 * mm) if _use_logo else 0
 
     # ── story ─────────────────────────────────────────────────────────────────
-    story: list = []
-
-    story.append(_HeaderFlowable(CONTENT_W, LOGO_SZ, LOGO_OFF, _use_logo, gen_date, lang))
-    story.append(HRFlowable(
-        width=CONTENT_W, thickness=0.5, color=border_c,
-        spaceBefore=3 * mm, spaceAfter=5 * mm,
-    ))
-
-    story.append(Paragraph(
-        _t(lang, "report_title"),
-        ParagraphStyle("Title", fontName="Times-Roman", fontSize=22,
-                      textColor=ink_c, leading=26, spaceAfter=2 * mm),
-    ))
-
-    story.append(Paragraph(
-        f"{r_name}  ·  {r_version}  ·  {_t(lang, 'field_executed_at')}: {exec_at}",
-        ParagraphStyle("Meta", fontName="Helvetica", fontSize=8,
-                      textColor=muted_c, leading=11, spaceAfter=4 * mm),
-    ))
-
-    story.append(HRFlowable(
-        width=CONTENT_W, thickness=0.5, color=border_c, spaceAfter=0,
-    ))
-    story.append(_VerdictBlock(CONTENT_W, verdict_text, str(result.id), exec_at, fg_v))
-    story.append(HRFlowable(
-        width=CONTENT_W, thickness=0.5, color=border_c, spaceAfter=5 * mm,
-    ))
+    story = [
+        _HeaderFlowable(CONTENT_W, LOGO_SZ, LOGO_OFF, _use_logo, gen_date, lang),
+        HRFlowable(
+            width=CONTENT_W, thickness=0.5, color=border_c,
+            spaceBefore=3 * mm, spaceAfter=5 * mm,
+        ),
+        Paragraph(
+            _t(lang, "report_title"),
+            ParagraphStyle("Title", fontName="Times-Roman", fontSize=22,
+                           textColor=ink_c, leading=26, spaceAfter=2 * mm),
+        ),
+        Paragraph(
+            f"{r_name}  ·  {r_version}  ·  {_t(lang, 'field_executed_at')}: {exec_at}",
+            ParagraphStyle("Meta", fontName="Helvetica", fontSize=8,
+                           textColor=muted_c, leading=11, spaceAfter=4 * mm),
+        ),
+        HRFlowable(width=CONTENT_W, thickness=0.5, color=border_c, spaceAfter=0),
+        _VerdictBlock(CONTENT_W, verdict_text, str(result.id), exec_at, fg_v),
+        HRFlowable(width=CONTENT_W, thickness=0.5, color=border_c, spaceAfter=5 * mm),
+    ]
 
     # ── Delivery info ─────────────────────────────────────────────────────────
     story.extend(_section_label(_t(lang, "section_release"), CONTENT_W, muted_c, border_c))
@@ -712,17 +705,18 @@ def _build_pdf(pdf_path: str, result, release, lang: str) -> None:
     summary_para, rules_table = _build_rules_table(
         rules, ok_count, err_count, warn_count, lang, CONTENT_W, muted_c, ink_c,
     )
-    story.append(summary_para)
-    story.append(rules_table)
+    story.extend([summary_para, rules_table])
 
     # ── Footer ────────────────────────────────────────────────────────────────
-    story.append(Spacer(1, 8 * mm))
-    story.append(HRFlowable(width=CONTENT_W, thickness=0.5, color=border_c, spaceAfter=3 * mm))
-    story.append(Paragraph(
-        f"SVAES  ·  {_t(lang, 'footer_note')}  ·  {gen_date}",
-        ParagraphStyle("Foot", fontName="Helvetica", fontSize=7.5,
-                      textColor=muted_c, leading=10, alignment=1),
-    ))
+    story.extend([
+        Spacer(1, 8 * mm),
+        HRFlowable(width=CONTENT_W, thickness=0.5, color=border_c, spaceAfter=3 * mm),
+        Paragraph(
+            f"SVAES  ·  {_t(lang, 'footer_note')}  ·  {gen_date}",
+            ParagraphStyle("Foot", fontName="Helvetica", fontSize=7.5,
+                           textColor=muted_c, leading=10, alignment=1),
+        ),
+    ])
 
     doc.build(story)
 

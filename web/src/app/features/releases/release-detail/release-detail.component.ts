@@ -1,4 +1,4 @@
-import { Component, ElementRef, effect, inject, OnInit, OnDestroy, signal, computed, viewChild } from '@angular/core';
+import { Component, ElementRef, effect, inject, OnInit, OnDestroy, signal, computed, viewChild, ErrorHandler } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { TranslationService } from '../../../core/i18n/translation.service';
@@ -48,6 +48,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   readonly ts = inject(TranslationService);
   private readonly toast = inject(ToastService);
+  private readonly errorHandler = inject(ErrorHandler);
 
   release = signal<ReleaseDetail | null>(null);
   artifacts = signal<Artifact[]>([]);
@@ -241,7 +242,7 @@ export class ReleaseDetailComponent implements OnInit, OnDestroy {
     if (this.artifacts().length === 0) return;
     this.verifying.set(true);
     if ('Notification' in globalThis && Notification.permission === 'default') {
-      Notification.requestPermission();
+      void Notification.requestPermission().catch(error => this.errorHandler.handleError(error));
     }
     this.releaseService
       .verify(this.releaseId)

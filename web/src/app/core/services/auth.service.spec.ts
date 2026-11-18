@@ -31,7 +31,7 @@ describe('AuthService', () => {
     localStorage.clear();
 
     const routerMock = {
-      navigate: vi.fn(),
+      navigate: vi.fn().mockResolvedValue(true),
     };
 
     TestBed.configureTestingModule({

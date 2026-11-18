@@ -46,7 +46,11 @@
     .admin-tab:hover { color: var(--ink); }
     .admin-tab-active { color: var(--ink); border-bottom-color: var(--accent); }
 
-    .tab-content { animation: fadeIn 0.12s ease; }
+    @media (prefers-reduced-motion: no-preference) {
+      .tab-content {
+        animation: fadeIn 0.12s ease;
+      }
+    }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(0.25rem); }

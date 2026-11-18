@@ -102,7 +102,6 @@
     .service-up       { border-left-color: var(--verdict-valid); }
     .service-down     { border-left-color: var(--verdict-invalid); }
     .service-unknown  { border-left-color: var(--border-strong); }
-    .skeleton-card { border-left-color: var(--border) !important; }
 
     .service-name {
       font-family: var(--font-sans);

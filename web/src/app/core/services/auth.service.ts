@@ -1,4 +1,4 @@
-import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID, ErrorHandler } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -82,6 +82,7 @@ interface JwtPayload {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly errorHandler = inject(ErrorHandler);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   private readonly TOKEN_KEY = 'access_token';
@@ -168,7 +169,7 @@ export class AuthService {
     this.removeItem(this.TOKEN_KEY);
     this.removeItem(this.REFRESH_KEY);
     this.removeItem(this.USER_KEY);
-    this.router.navigate(['/']);
+    void this.router.navigate(['/']).catch(error => this.errorHandler.handleError(error));
   }
 
   isAuthenticated(): boolean {

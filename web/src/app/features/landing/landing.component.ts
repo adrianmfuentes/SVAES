@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, inject, ErrorHandler } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../core/components/lang-toggle/lang-toggle.component';
@@ -14,6 +14,7 @@ import { SeoService } from '../../core/services/seo.service';
 })
 export class LandingComponent implements OnInit, AfterViewInit {
   private readonly router = inject(Router);
+  private readonly errorHandler = inject(ErrorHandler);
   private readonly seo = inject(SeoService);
 
   @ViewChild('accessInner') private readonly accessInnerRef!: ElementRef<HTMLElement>;
@@ -42,7 +43,7 @@ export class LandingComponent implements OnInit, AfterViewInit {
   }
 
   navigateToRequestAccess(): void {
-    this.router.navigate(['/request-access']);
+    void this.router.navigate(['/request-access']).catch(error => this.errorHandler.handleError(error));
   }
 
   openFeedback(): void {

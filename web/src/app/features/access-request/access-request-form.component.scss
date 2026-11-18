@@ -126,7 +126,9 @@
       /* -- Step block ------------------------------------------------─ */
 
       .step-block {
-        animation: stepIn 0.22s ease both;
+        @media (prefers-reduced-motion: no-preference) {
+          animation: stepIn 0.22s ease both;
+        }
       }
 
       .card-title {

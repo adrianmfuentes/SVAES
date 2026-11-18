@@ -58,12 +58,16 @@ async def lifespan(app: FastAPI):
     await seed_admin_user(settings)
     await seed_system_profile()
     from sqlalchemy import text
-    from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
-    async with AsyncSessionLocal() as _session:
-        await _session.execute(text("SELECT 1"))
-    _log.info("SVAES API starting up (env=%s)", settings.environment)
-    yield
-    _log.info("SVAES API shutting down")
+    from infrastructure.secondary.database.get_async_session import AsyncSessionLocal, engine
+
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+        _log.info("SVAES API starting up (env=%s)", settings.environment)
+        yield
+    finally:
+        _log.info("SVAES API shutting down")
+        await engine.dispose()
 
 
 app = FastAPI(

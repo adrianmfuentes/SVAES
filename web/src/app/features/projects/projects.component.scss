@@ -34,8 +34,8 @@
 
     .data-table tr:last-child td { border-bottom: none; }
 
-    .data-table th.cell-actions-header, .data-table td.cell-actions { text-align: right !important; }
-    .data-table th.cell-actions-header { text-align: center !important; }
+    .data-table th.cell-actions-header { text-align: center; }
+    .data-table td.cell-actions { text-align: right; }
     .cell-actions { padding-right: var(--spacing-md); }
 
     .status-badge {
