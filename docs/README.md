@@ -1,6 +1,6 @@
 # SVAES — Automatic Software Delivery Verification System
 
-> **Final Degree Project — Completed** (30/06/2026) — Software Engineering Degree, University of Oviedo (2025/2026)
+> **Final Degree Project — Completed** (30/06/2026) · **Master's Thesis (TFM) — In progress** — University of Oviedo (TFG 2025/2026; TFM: Master in Web Engineering, Cybersecurity)
 > Author: Adrian Martinez Fuentes
 > Status: **Deployed in production**
 

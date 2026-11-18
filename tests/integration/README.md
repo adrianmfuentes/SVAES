@@ -1,6 +1,6 @@
 # Integration Tests — Plan de Pruebas
 
-> **TFG terminado** (30/06/2026) — All 27 integration tests passing.
+> **TFG terminado** (30/06/2026) · **TFM en curso** (Máster en Ingeniería Web, Universidad de Oviedo) — All 27 integration tests passing.
 
 Validates interactions between real components using ephemeral PostgreSQL + Redis containers. The FastAPI app is served via `ASGITransport` — no running HTTP server required.
 

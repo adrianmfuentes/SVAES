@@ -1,5 +1,5 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adrianmfuentes_SVAES&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adrianmfuentes_SVAES)
-[![Status](https://img.shields.io/badge/Thesis-Completed-success)](https://github.com/adrianmfuentes/SVAES)
+[![Status](https://img.shields.io/badge/TFG-Completed-success)](https://github.com/adrianmfuentes/SVAES) [![TFM](https://img.shields.io/badge/TFM-In%20progress-orange)](https://github.com/adrianmfuentes/SVAES)
 [![Deploy](https://img.shields.io/badge/Deploy-Production-blue)](https://github.com/adrianmfuentes/SVAES)
 
 **[Español](README.md)** · **[Français](README.fr.md)**
@@ -8,8 +8,10 @@
 
 ## Automatic Software Delivery Verification System
 
-Final Degree Project — Completed
-Bachelor's Degree in Software Engineering, University of Oviedo · Academic Year 2025/2026 · Grade: 10/10
+Final Degree Project (TFG) — Bachelor's Degree in Software Engineering, University of Oviedo · 2025/2026 · Grade: 10/10
+Master's Thesis (TFM, in progress) — Master in Web Engineering, Cybersecurity specialisation, University of Oviedo
+
+> **TFM:** _Semantic verification of software deliveries using local language models: an extension of SVAES._ Continuation of the TFG adding semantic verification with locally-run LLMs. TFG documentation is kept as history. See [docs/tfm](docs/tfm/README.md).
 
 Author: Adrián Martínez Fuentes
 

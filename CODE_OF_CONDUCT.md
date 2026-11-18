@@ -2,7 +2,7 @@
 
 ## Our Commitment
 
-As a university software engineering project (TFG), we are committed to maintaining a
+As a university project (TFG, continued as TFM), we are committed to maintaining a
 professional and respectful environment for contributors, reviewers, and users.
 
 ## Standards

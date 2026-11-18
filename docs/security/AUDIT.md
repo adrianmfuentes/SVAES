@@ -33,7 +33,7 @@
 - **Project:** SVAES — Sistema de Verificación Automática de Entregas de Software
 - **Purpose:** Quality Gate platform for automated software delivery verification
 - **Author:** Adrian Martinez Fuentes (UO295454) — University of Oviedo
-- **Context:** Final Degree Project (TFG), Software Engineering, 2025/2026
+- **Context:** Final Degree Project (TFG, 2025/2026), extended as Master's Thesis (TFM, Master in Web Engineering — Cybersecurity, University of Oviedo)
 - **License:** MIT
 
 ### Architecture
