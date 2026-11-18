@@ -6,7 +6,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY alembic.ini ./
 COPY alembic/ ./alembic/
-RUN pip install uv==0.11.11 && uv sync --frozen --no-install-project --no-build
+RUN pip install uv==0.13.6 && uv sync --frozen --no-install-project --no-build
 
 # ── Stage 2: production runtime ───────────────────────────────────────────────
 FROM python:3.13-slim-trixie AS runtime
