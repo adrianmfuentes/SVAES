@@ -45,7 +45,7 @@ services:
       - svaes-network
 
   engine:
-    image: ${REGISTRY:-ghcr.io}/${ENGINE_IMAGE:-svaes-engine}:latest
+    image: ${REGISTRY:-ghcr.io}/${ENGINE_IMAGE:-svaes-engine}:${SVAES_IMAGE_TAG:-latest}
     container_name: svaes-engine
     restart: always
     logging:
@@ -67,7 +67,7 @@ services:
       - svaes-network
 
   api:
-    image: ${REGISTRY:-ghcr.io}/${API_IMAGE:-svaes-api}:latest
+    image: ${REGISTRY:-ghcr.io}/${API_IMAGE:-svaes-api}:${SVAES_IMAGE_TAG:-latest}
     container_name: svaes-api
     restart: always
     ports:
@@ -116,7 +116,7 @@ services:
       - svaes-network
 
   celery-worker:
-    image: ${REGISTRY:-ghcr.io}/${API_IMAGE:-svaes-api}:latest
+    image: ${REGISTRY:-ghcr.io}/${API_IMAGE:-svaes-api}:${SVAES_IMAGE_TAG:-latest}
     container_name: svaes-celery
     restart: always
     command: celery -A src.infrastructure.secondary.queue.celery_app worker --loglevel=warning
@@ -158,7 +158,7 @@ services:
       - svaes-network
 
   web:
-    image: ${REGISTRY:-ghcr.io}/${WEB_IMAGE:-svaes-web}:latest
+    image: ${REGISTRY:-ghcr.io}/${WEB_IMAGE:-svaes-web}:${SVAES_IMAGE_TAG:-latest}
     container_name: svaes-web
     restart: always
     ports:
