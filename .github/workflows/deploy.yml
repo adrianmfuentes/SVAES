@@ -53,6 +53,7 @@ jobs:
     needs: check-sonar-status
     name: Build and Push Images
     runs-on: [self-hosted, ARM64, oracle-ampere]
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
@@ -91,6 +92,7 @@ jobs:
           file: ./api/Dockerfile
           push: true
           tags: ${{ steps.meta-api.outputs.tags }}
+          no-cache: ${{ inputs.force_rebuild == true }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -111,6 +113,7 @@ jobs:
           file: ./web/Dockerfile
           push: true
           tags: ${{ steps.meta-web.outputs.tags }}
+          no-cache: ${{ inputs.force_rebuild == true }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -131,40 +134,36 @@ jobs:
           file: ./engine/Dockerfile
           push: true
           tags: ${{ steps.meta-engine.outputs.tags }}
+          no-cache: ${{ inputs.force_rebuild == true }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Runner self-hosted persistente: evita que crezcan imágenes huérfanas y caché de build.
+      - name: Cleanup runner
+        if: always()
+        continue-on-error: true
+        run: |
+          docker image prune -f
+          docker builder prune -f --filter "until=168h"
 
   deploy:
     name: Deploy to Server
     needs: build-and-push
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: ${{ inputs.environment || 'production' }}
+    env:
+      SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Debug - secrets vs vars
-        env:
-          _HOST_S: ${{ secrets.SERVER_HOST }}
-          _USER_S: ${{ secrets.SERVER_USER }}
-          _KEY_S: ${{ secrets.SERVER_SSH_KEY }}
-          _HOST_V: ${{ vars.SERVER_HOST }}
-          _USER_V: ${{ vars.SERVER_USER }}
-          _KEY_V: ${{ vars.SERVER_SSH_KEY }}
-        run: |
-          echo "=== Deployment environment: $DEPLOY_ENVIRONMENT ==="
-          echo "secrets.SERVER_HOST  : $([ -n "$_HOST_S" ] && echo SET || echo EMPTY)"
-          echo "secrets.SERVER_USER  : $([ -n "$_USER_S" ] && echo SET || echo EMPTY)"
-          echo "secrets.SERVER_SSH_KEY: $([ -n "$_KEY_S" ] && echo SET || echo EMPTY)"
-          echo "vars.SERVER_HOST     : $([ -n "$_HOST_V" ] && echo SET || echo EMPTY)"
-          echo "vars.SERVER_USER     : $([ -n "$_USER_V" ] && echo SET || echo EMPTY)"
-          echo "vars.SERVER_SSH_KEY  : $([ -n "$_KEY_V" ] && echo SET || echo EMPTY)"
+        with:
+          persist-credentials: false
 
       - name: Configure SSH
         env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
           SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY || vars.SERVER_SSH_KEY }}
         run: |
           if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_USER" ] || [ -z "$SERVER_SSH_KEY" ]; then
@@ -195,33 +194,25 @@ jobs:
 
       - name: Create deployment directory
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           echo "Testing SSH connection..."
-          ssh -v -o ConnectTimeout=30 -o ServerAliveInterval=15 -o BatchMode=yes -p 4422 "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
+          ssh -o ConnectTimeout=30 -o ServerAliveInterval=15 -o BatchMode=yes -p 4422 "$SERVER_USER@$SERVER_HOST" "mkdir -p ~/svaes/$ENVIRONMENT"
 
       - name: Copy Docker Compose file
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           scp -P 4422 docker-compose.prod.yml "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/docker-compose.yml"
 
       - name: Copy nginx configuration
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           scp -P 4422 nginx.conf "$SERVER_USER@$SERVER_HOST:~/svaes/$ENVIRONMENT/" 2>/dev/null || true
 
       - name: Create .env file and copy to server
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
           REGISTRY: ${{ env.REGISTRY }}
           API_IMAGE: ${{ env.API_IMAGE }}
@@ -275,8 +266,6 @@ jobs:
 
       - name: Pull latest images
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
           REGISTRY: ${{ env.REGISTRY }}
           API_IMAGE: ${{ env.API_IMAGE }}
@@ -285,15 +274,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
         run: |
-          ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "export REGISTRY='$REGISTRY' API_IMAGE='$API_IMAGE' WEB_IMAGE='$WEB_IMAGE' ENGINE_IMAGE='$ENGINE_IMAGE' && cd ~/svaes/$ENVIRONMENT && \
-            echo '$GITHUB_TOKEN' | docker login $REGISTRY -u '$GITHUB_ACTOR' --password-stdin && \
-            docker compose pull"
+          # El token viaja por stdin (no aparece en la lista de procesos del servidor)
+          # y se cierra la sesión del registro al terminar, falle o no el pull.
+          printf '%s' "$GITHUB_TOKEN" | ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "export REGISTRY='$REGISTRY' API_IMAGE='$API_IMAGE' WEB_IMAGE='$WEB_IMAGE' ENGINE_IMAGE='$ENGINE_IMAGE' && cd ~/svaes/$ENVIRONMENT && \
+            docker login $REGISTRY -u '$GITHUB_ACTOR' --password-stdin && \
+            { docker compose pull; rc=\$?; docker logout $REGISTRY; exit \$rc; }"
 
       - name: Run database migration
         if: github.event_name == 'push' || !inputs.skip_migration
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
@@ -302,8 +291,6 @@ jobs:
       - name: Clean SVAES data volumes
         if: github.event_name == 'workflow_dispatch' && inputs.clean_volumes
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
@@ -312,8 +299,6 @@ jobs:
 
       - name: Restart services
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && \
@@ -322,8 +307,6 @@ jobs:
 
       - name: Health check
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" " \
@@ -349,8 +332,23 @@ jobs:
 
       - name: Show container status
         env:
-          SERVER_USER: ${{ secrets.SERVER_USER || vars.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST || vars.SERVER_HOST }}
           ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
         run: |
           ssh -p 4422 "$SERVER_USER@$SERVER_HOST" "cd ~/svaes/$ENVIRONMENT && docker compose ps"
+
+      # Limpieza: siempre, aunque el despliegue falle.
+      - name: Cleanup (runner and server)
+        if: always()
+        continue-on-error: true
+        env:
+          ENVIRONMENT: ${{ env.DEPLOY_ENVIRONMENT }}
+        run: |
+          # Servidor: imágenes sin usar de más de 7 días (las en uso nunca se eliminan)
+          if [ -n "$SERVER_HOST" ] && [ -n "$SERVER_USER" ]; then
+            ssh -o ConnectTimeout=15 -o BatchMode=yes -p 4422 "$SERVER_USER@$SERVER_HOST" \
+              "docker image prune -af --filter 'until=168h' && docker builder prune -f --filter 'until=168h'" || true
+            ssh -O exit -p 4422 "$SERVER_USER@$SERVER_HOST" 2>/dev/null || true
+          fi
+          # Runner: secretos en disco
+          rm -f .env.prod ~/.ssh/id_rsa ~/.ssh/config ~/.ssh/known_hosts
+          rm -f ~/.ssh/cm-* 2>/dev/null || true
