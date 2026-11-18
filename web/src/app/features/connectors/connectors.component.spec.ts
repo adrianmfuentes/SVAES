@@ -252,7 +252,7 @@ describe('ConnectorsComponent', () => {
 
   describe('custom connector (select field)', () => {
     beforeEach(() => {
-      component.ngOnInit();
+      fixture.detectChanges();
       flushInitRequests();
     });
 
@@ -282,6 +282,33 @@ describe('ConnectorsComponent', () => {
       const authField = fields.find(f => f.key === 'auth_type');
       expect(authField?.type).toBe('select');
       expect(authField?.options).toEqual(customImpl.config_schema.auth_type.options);
+    });
+
+    it('associates each configuration label with its unique control', () => {
+      component.openCreate();
+      component.availableImplementations.set([{
+        ...customImpl,
+        config_schema: {
+          ...customImpl.config_schema,
+          token: { type: 'string', label: 'connector_field.token', required: false, sensitive: true },
+        },
+      } as any]);
+      component.onImplementationChange({ target: { value: 'CUSTOM' } } as unknown as Event);
+      fixture.detectChanges();
+
+      const host: HTMLElement = fixture.nativeElement;
+      const fields = [
+        host.querySelector<HTMLSelectElement>('select[id$="-auth_type"]'),
+        host.querySelector<HTMLInputElement>('input[placeholder="connector_field.base_url"]'),
+        host.querySelector<HTMLInputElement>('input[placeholder="connector_field.token"]'),
+      ];
+      expect(fields.map(field => field?.type)).toEqual(['select-one', 'text', 'password']);
+      const labels = Array.from(host.querySelectorAll('label'));
+      for (const field of fields) {
+        expect(field?.id).toBeTruthy();
+        expect(host.querySelectorAll(`[id="${field?.id}"]`)).toHaveLength(1);
+        expect(labels.find(label => label.htmlFor === field?.id)?.control).toBe(field);
+      }
     });
 
     it('submits the selected auth_type value as part of credentials', () => {

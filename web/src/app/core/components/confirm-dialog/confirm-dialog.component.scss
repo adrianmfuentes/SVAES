@@ -13,7 +13,9 @@
       align-items: center;
       justify-content: center;
       z-index: 10000;
-      animation: fadeIn 0.15s ease-out;
+      @media (prefers-reduced-motion: no-preference) {
+        animation: fadeIn 0.15s ease-out;
+      }
     }
 
     .dialog-overlay::backdrop {
@@ -32,7 +34,9 @@
       padding: var(--spacing-lg);
       max-width: 24rem;
       width: 90%;
-      animation: scaleIn 0.15s ease-out;
+      @media (prefers-reduced-motion: no-preference) {
+        animation: scaleIn 0.15s ease-out;
+      }
       text-align: center;
     }
 
@@ -84,7 +88,7 @@
       border-radius: var(--rounded-md);
       border: 0.0625rem solid;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
       font-family: var(--font-sans);
     }
 

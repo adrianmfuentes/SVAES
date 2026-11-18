@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, ErrorHandler } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -20,6 +20,7 @@ export class ProjectNewComponent implements OnInit {
   private readonly projectService = inject(ProjectService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly errorHandler = inject(ErrorHandler);
   private readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
 
@@ -77,7 +78,7 @@ export class ProjectNewComponent implements OnInit {
       )
       .subscribe(res => {
         if (res) {
-          this.router.navigate(['/app/projects']);
+          void this.router.navigate(['/app/projects']).catch(error => this.errorHandler.handleError(error));
         }
       });
   }

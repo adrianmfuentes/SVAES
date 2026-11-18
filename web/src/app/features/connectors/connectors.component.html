@@ -86,20 +86,15 @@
           </div>
           <ng-container *ngIf="selectedImplementation() && currentConfigSchema()">
             <div class="form-group" *ngFor="let field of getConfigFields()" [ngClass]="{'has-error': shouldShowError(field.key)}">
-              <label for="field-{{ field.key }}">{{ field.label | t }}</label>
+              <label [attr.for]="(field.type === 'select' ? 'field-select-' : 'field-input-') + field.key">{{ field.label | t }}</label>
               <select *ngIf="field.type === 'select'"
-                id="field-{{ field.key }}"
+                [id]="'field-select-' + field.key"
                 [formControlName]="field.key">
                 <option *ngFor="let opt of field.options" [value]="opt.value">{{ opt.label | t }}</option>
               </select>
-              <input *ngIf="field.type !== 'select' && !field.sensitive"
-                id="field-{{ field.key }}"
-                type="text"
-                [formControlName]="field.key"
-                [placeholder]="field.label | t" />
-              <input *ngIf="field.type !== 'select' && field.sensitive"
-                id="field-{{ field.key }}"
-                type="password"
+              <input *ngIf="field.type !== 'select'"
+                [id]="'field-input-' + field.key"
+                [type]="field.sensitive ? 'password' : 'text'"
                 [formControlName]="field.key"
                 [placeholder]="field.label | t" />
             </div>

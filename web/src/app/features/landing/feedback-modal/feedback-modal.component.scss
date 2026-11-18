@@ -12,7 +12,9 @@
   align-items: center;
   justify-content: center;
   z-index: 10000;
-  animation: fadeIn 0.15s ease-out;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: fadeIn 0.15s ease-out;
+  }
   padding: var(--spacing-md);
 }
 
@@ -32,7 +34,9 @@
   padding: var(--spacing-xl);
   max-width: 28rem;
   width: 100%;
-  animation: scaleIn 0.15s ease-out;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: scaleIn 0.15s ease-out;
+  }
   position: relative;
 }
 
@@ -155,11 +159,15 @@ textarea {
   cursor: pointer;
   color: var(--border);
   padding: 2px;
-  transition: color 0.15s ease, transform 0.1s ease;
-}
+  transition: color 0.15s ease;
 
-.star-btn:hover {
-  transform: scale(1.1);
+  @media (prefers-reduced-motion: no-preference) {
+    transition: color 0.15s ease, transform 0.1s ease;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
 }
 
 .star-btn.filled {

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef, ErrorHandler } from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
@@ -61,6 +61,7 @@ function parseLoginErrorKey(err: HttpErrorResponse): string {
 export class LoginComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly errorHandler = inject(ErrorHandler);
   private readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly http = inject(HttpClient);
@@ -98,7 +99,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     });
 
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/app/dashboard']);
+      void this.router.navigate(['/app/dashboard']).catch(error => this.errorHandler.handleError(error));
     }
   }
 
@@ -195,7 +196,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
           this.authService.storeTokens(response, this.pendingEmail);
           const destination = this.authService.isAdmin() ? '/app/system' : '/app/dashboard';
-          this.router.navigate([destination]);
+          void this.router.navigate([destination]).catch(error => this.errorHandler.handleError(error));
         },
       });
   }
@@ -233,7 +234,7 @@ export class LoginComponent implements OnInit, OnDestroy {
           }
           this.authService.storeTokens(response, this.pendingEmail);
           const destination = this.authService.isAdmin() ? '/app/system' : '/app/dashboard';
-          this.router.navigate([destination]);
+          void this.router.navigate([destination]).catch(error => this.errorHandler.handleError(error));
         },
       });
   }

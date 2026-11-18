@@ -237,7 +237,7 @@
                       <td class="cell-muted" [attr.data-label]="'common.description' | t">{{ a.description || ('common.dash' | t) }}</td>
                       <td class="cell-actions" [attr.data-label]="'common.actions' | t">
                         <button class="btn-icon btn-danger" (click)="deleteArtifact(a.id)" [title]="'common.delete' | t">
-                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none">
                             <path d="M2 4h10M5 4V3a1 1 0 011-1h2a1 1 0 011 1v1M11 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
                           </svg>
                         </button>
@@ -319,7 +319,7 @@
                     <label class="form-label" [attr.for]="browseManual() ? 'import-ref' : 'browse-search-input'">{{ 'release.external_ref' | t }}</label>
                     <button type="button" class="btn-info" (click)="showArtifactTypeHelp.set(true)"
                       [attr.aria-label]="'release.artifact_type_help_aria' | t">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                         <circle cx="12" cy="12" r="10"/>
                         <line x1="12" y1="16" x2="12" y2="12"/>
                         <line x1="12" y1="8" x2="12.01" y2="8"/>

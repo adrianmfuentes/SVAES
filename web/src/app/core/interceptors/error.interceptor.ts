@@ -1,5 +1,5 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { inject, PLATFORM_ID } from '@angular/core';
+import { inject, PLATFORM_ID, ErrorHandler } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
@@ -7,6 +7,7 @@ import { clearAccessToken } from '../services/auth.service';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
+  const errorHandler = inject(ErrorHandler);
   const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   const isAuthEndpoint =
@@ -22,7 +23,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           localStorage.removeItem('refresh_token');
           localStorage.removeItem('user');
         }
-        router.navigate(['/auth/login']);
+        void router.navigate(['/auth/login']).catch(error => errorHandler.handleError(error));
       }
       return throwError(() => error);
     }),

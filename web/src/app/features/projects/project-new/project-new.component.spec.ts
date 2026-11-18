@@ -53,7 +53,7 @@ describe('ProjectNewComponent', () => {
   let httpCtrl: HttpTestingController;
   let router: Router;
   let authService: ReturnType<typeof createMockAuthService>;
-  const routerMock = { navigate: vi.fn() } as unknown as Router;
+  const routerMock = { navigate: vi.fn().mockResolvedValue(true) } as unknown as Router;
 
   const userWithOrg: MockUser = {
     id: 'user-1',

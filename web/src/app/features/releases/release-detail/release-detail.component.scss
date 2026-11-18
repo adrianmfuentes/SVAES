@@ -1035,7 +1035,9 @@
       max-width: 22rem;
       width: 100%;
       overflow: hidden;
-      animation: verifyPanelIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      @media (prefers-reduced-motion: no-preference) {
+        animation: verifyPanelIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
     }
 
     @keyframes verifyPanelIn {
@@ -1058,7 +1060,9 @@
       border: 1.5px solid rgba(232, 213, 163, 0.55);
       width: 3.5rem;
       height: 3.5rem;
-      animation: verifyRingPulse 2.1s ease-out infinite;
+      @media (prefers-reduced-motion: no-preference) {
+        animation: verifyRingPulse 2.1s ease-out infinite;
+      }
     }
 
     .scanner-ring-1 { animation-delay: 0s; }
@@ -1223,7 +1227,9 @@
       border-radius: 50%;
       background: var(--accent-dark);
       flex-shrink: 0;
-      animation: vpDotPulse 1.8s ease-in-out infinite;
+      @media (prefers-reduced-motion: no-preference) {
+        animation: vpDotPulse 1.8s ease-in-out infinite;
+      }
     }
 
     @keyframes vpDotPulse {
@@ -1430,7 +1436,9 @@
       padding: var(--spacing-lg);
       width: 26rem;
       max-width: calc(100vw - 3rem);
-      animation: scaleIn 0.12s ease-out;
+      @media (prefers-reduced-motion: no-preference) {
+        animation: scaleIn 0.12s ease-out;
+      }
     }
 
     @keyframes scaleIn {

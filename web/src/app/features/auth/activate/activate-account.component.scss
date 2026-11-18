@@ -190,9 +190,9 @@
       transition: border-color 0.15s ease, background-color 0.15s ease;
     }
 
-    .input-mono {
-      font-family: var(--font-mono) !important;
-      font-size: 0.8125rem !important;
+    .form-group input.input-mono {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
       letter-spacing: 0.02em;
     }
 
@@ -395,7 +395,7 @@
         min-height: 2.75rem;
         font-size: 0.875rem;
       }
-      .input-mono { font-size: 0.75rem !important; }
+      .form-group input.input-mono { font-size: 0.75rem; }
 
       .password-checklist {
         grid-template-columns: 1fr;

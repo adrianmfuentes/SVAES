@@ -19,7 +19,9 @@
       max-width: 25rem;
       pointer-events: auto;
       cursor: pointer;
-      animation: slideIn 0.3s ease-out;
+      @media (prefers-reduced-motion: no-preference) {
+        animation: slideIn 0.3s ease-out;
+      }
       font-family: var(--font-sans);
       font-size: 0.875rem;
       line-height: 1.4;

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, ErrorHandler } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -22,6 +22,7 @@ export class ReleaseNewComponent implements OnInit {
   private readonly projectService = inject(ProjectService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly errorHandler = inject(ErrorHandler);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   private readonly ts = inject(TranslationService);
@@ -56,7 +57,7 @@ export class ReleaseNewComponent implements OnInit {
   private loadRelease(): void {
     this.releaseService.getReleaseForEdit(this.releaseId!).pipe(
       catchError(() => {
-        this.router.navigate(['/app/releases']);
+        void this.router.navigate(['/app/releases']).catch(error => this.errorHandler.handleError(error));
         return of(null);
       })
     ).subscribe(data => {
@@ -99,7 +100,7 @@ export class ReleaseNewComponent implements OnInit {
         })
       ).subscribe(res => {
         if (res) {
-          this.router.navigate(['/app/releases', this.releaseId]);
+          void this.router.navigate(['/app/releases', this.releaseId]).catch(error => this.errorHandler.handleError(error));
         }
       });
     } else {
@@ -112,7 +113,7 @@ export class ReleaseNewComponent implements OnInit {
         })
       ).subscribe(res => {
         if (res) {
-          this.router.navigate(['/app/releases', res.id]);
+          void this.router.navigate(['/app/releases', res.id]).catch(error => this.errorHandler.handleError(error));
         }
       });
     }
