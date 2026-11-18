@@ -1,31 +1,114 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, inject, ErrorHandler } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  OnInit,
+  afterNextRender,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../core/components/lang-toggle/lang-toggle.component';
-import { FeedbackModalComponent } from './feedback-modal/feedback-modal.component';
+import { SiteFooterComponent } from '../../core/components/site-footer/site-footer.component';
 import { SeoService } from '../../core/services/seo.service';
+import { HeroFlow } from './hero-flow';
+
+type RuleStatus = 'valid' | 'warning';
+type Severity = 'blocking' | 'non_blocking';
+
+interface ActaRow {
+  readonly id: string;
+  readonly severity: Severity;
+  readonly status: RuleStatus;
+}
+
+interface ConnectorGroup {
+  readonly labelKey: string;
+  readonly items: readonly string[];
+}
+
+/** Sections reachable from the navbar, footer and in-page links. */
+export type SectionId = 'que-hace' | 'reglas' | 'conectores' | 'investigacion';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [RouterModule, TranslatePipe, LangToggleComponent, FeedbackModalComponent],
+  imports: [RouterModule, TranslatePipe, LangToggleComponent, SiteFooterComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })
-export class LandingComponent implements OnInit, AfterViewInit {
-  private readonly router = inject(Router);
-  private readonly errorHandler = inject(ErrorHandler);
+export class LandingComponent implements OnInit {
   private readonly seo = inject(SeoService);
 
-  @ViewChild('accessInner') private readonly accessInnerRef!: ElementRef<HTMLElement>;
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly heroCanvas = viewChild.required<ElementRef<HTMLCanvasElement>>('heroCanvas');
+  private readonly acta = viewChild.required<ElementRef<HTMLElement>>('acta');
+  private readonly siteNav = viewChild<ElementRef<HTMLElement>>('siteNav');
+  private hovering = false;
 
-  showFeedback = false;
+  readonly menuOpen = signal(false);
+  readonly activeSection = signal<string | null>(null);
+
+  readonly sections: readonly { readonly id: SectionId; readonly labelKey: string }[] = [
+    { id: 'que-hace', labelKey: 'landing.nav_product' },
+    { id: 'reglas', labelKey: 'landing.nav_rules' },
+    { id: 'conectores', labelKey: 'landing.nav_connectors' },
+    { id: 'investigacion', labelKey: 'landing.nav_research' },
+  ];
+
+  /** Ten built-in rules (RV-01..RV-10). Severity follows the engine's defaults. */
+  readonly rules: readonly ActaRow[] = [
+    { id: 'RV01', severity: 'blocking', status: 'valid' },
+    { id: 'RV02', severity: 'blocking', status: 'valid' },
+    { id: 'RV03', severity: 'blocking', status: 'valid' },
+    { id: 'RV04', severity: 'blocking', status: 'valid' },
+    { id: 'RV05', severity: 'blocking', status: 'valid' },
+    { id: 'RV06', severity: 'non_blocking', status: 'warning' },
+    { id: 'RV07', severity: 'blocking', status: 'valid' },
+    { id: 'RV08', severity: 'blocking', status: 'valid' },
+    { id: 'RV09', severity: 'non_blocking', status: 'warning' },
+    { id: 'RV10', severity: 'blocking', status: 'valid' },
+  ];
+
+  readonly connectorGroups: readonly ConnectorGroup[] = [
+    { labelKey: 'landing.conn_cat_tasks', items: ['Jira', 'Linear', 'Trello', 'Asana'] },
+    { labelKey: 'landing.conn_cat_source', items: ['GitHub', 'GitLab', 'Bitbucket', 'Gitea'] },
+    { labelKey: 'landing.conn_cat_docs', items: ['Confluence', 'Notion', 'Wiki.js', 'BookStack'] },
+    {
+      labelKey: 'landing.conn_cat_change',
+      items: ['Jira Service Management', 'GLPI', 'Zammad', 'Redmine'],
+    },
+    { labelKey: 'landing.conn_cat_planning', items: ['ClickUp', 'Taiga', 'Plane', 'Miro'] },
+  ];
+
+  constructor() {
+    // Browser only: the hero animation never runs during prerender/SSR.
+    afterNextRender(() => {
+      const supported =
+        typeof window.matchMedia === 'function' &&
+        typeof ResizeObserver !== 'undefined' &&
+        typeof IntersectionObserver !== 'undefined';
+      if (!supported) return;
+      const flow = new HeroFlow(this.heroCanvas().nativeElement, this.acta().nativeElement);
+      this.destroyRef.onDestroy(() => flow.destroy());
+      this.watchSections();
+      window.addEventListener('resize', this.settlePill);
+      this.destroyRef.onDestroy(() => window.removeEventListener('resize', this.settlePill));
+    });
+  }
+
+  /** One entry per model in the feasibility test: true = detected the failure (10 of 12). */
+  readonly pocDots: readonly boolean[] = Array.from({ length: 12 }, (_, i) => i !== 9 && i !== 10);
+
 
   ngOnInit(): void {
     this.seo.setPage({
       title: 'SVAES — Verificación Automática de Entregas',
       description:
-        'Conecte sus herramientas de desarrollo, defina reglas de verificación y obtenga trazabilidad completa de cada release. Infraestructura honesta para equipos que operan con exigencia.',
+        'Antes de publicar una versión, SVAES comprueba que sus tareas, código y documentos existen, están completos y encajan entre sí, y guarda el motivo de cada decisión.',
       path: '/',
     });
 
@@ -42,37 +125,83 @@ export class LandingComponent implements OnInit, AfterViewInit {
     });
   }
 
-  navigateToRequestAccess(): void {
-    void this.router.navigate(['/request-access']).catch(error => this.errorHandler.handleError(error));
+  /** Scroll-spy: the navbar pill follows the section that is being read. */
+  private watchSections(): void {
+    const targets = this.sections
+      .map((s) => document.getElementById(s.id)?.closest('section'))
+      .filter((el): el is HTMLElement => !!el);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = entry.target.querySelector('h2')?.id ?? null;
+          if (entry.isIntersecting) this.activeSection.set(id);
+          else if (this.activeSection() === id) this.activeSection.set(null);
+        }
+        requestAnimationFrame(this.settlePill);
+      },
+      { rootMargin: '-35% 0px -60% 0px' },
+    );
+    targets.forEach((el) => observer.observe(el));
+    this.destroyRef.onDestroy(() => observer.disconnect());
   }
 
-  openFeedback(): void {
-    this.showFeedback = true;
-    document.body.style.overflow = 'hidden';
+  /** Slides the navbar pill under the hovered or focused link. */
+  movePill(event: Event): void {
+    const link = (event.currentTarget as HTMLElement | null) ?? null;
+    this.hovering = true;
+    this.placePill(link);
   }
 
-  closeFeedback(): void {
-    this.showFeedback = false;
-    document.body.style.overflow = '';
+  leavePill(): void {
+    this.hovering = false;
+    this.settlePill();
   }
 
-  ngAfterViewInit(): void {
-    const el = this.accessInnerRef?.nativeElement;
-    if (!el || typeof IntersectionObserver === 'undefined') {
-      el?.classList.add('is-visible');
+  /** Returns the pill to the active section's link, or hides it at the top of the page. */
+  private readonly settlePill = (): void => {
+    if (this.hovering) return;
+    const nav = this.siteNav()?.nativeElement;
+    this.placePill(nav?.querySelector<HTMLElement>('a[aria-current="true"]') ?? null);
+  };
+
+  private placePill(link: HTMLElement | null): void {
+    const nav = this.siteNav()?.nativeElement;
+    if (!nav) return;
+    if (!link) {
+      nav.style.setProperty('--pill-o', '0');
       return;
     }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 },
-    );
-
-    observer.observe(el);
+    const box = nav.getBoundingClientRect();
+    const rect = link.getBoundingClientRect();
+    nav.style.setProperty('--pill-x', `${rect.left - box.left}px`);
+    nav.style.setProperty('--pill-w', `${rect.width}px`);
+    nav.style.setProperty('--pill-o', '1');
   }
+
+  toggleMenu(): void {
+    this.menuOpen.update((open) => !open);
+  }
+
+  @HostListener('document:keydown.escape')
+  closeMenu(): void {
+    this.menuOpen.set(false);
+  }
+
+  /**
+   * Scrolls to a section and moves keyboard focus to its heading, so screen-reader
+   * and keyboard users land where the visual jump takes them (WCAG 2.4.3).
+   */
+  goTo(id: string, event: Event): void {
+    event.preventDefault();
+    this.menuOpen.set(false);
+
+    const target = document.getElementById(id);
+    if (!target) return;
+
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    target.focus({ preventScroll: true });
+    history.replaceState(null, '', `#${id}`);
+  }
+
 }

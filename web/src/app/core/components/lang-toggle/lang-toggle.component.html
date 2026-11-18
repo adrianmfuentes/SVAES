@@ -1,4 +1,5 @@
     <fieldset class="lt" [class.lt--dark]="theme === 'dark'" [attr.aria-label]="ts.translateInstant('common.language')">
+      <span class="lt-thumb" aria-hidden="true" [class.lt-thumb--en]="currentLang === 'en'"></span>
       <button class="lt-btn" [class.lt-btn--on]="currentLang === 'es'"
               [attr.aria-label]="ts.translateInstant('a11y.lang_es')"
               [attr.aria-pressed]="currentLang === 'es'"

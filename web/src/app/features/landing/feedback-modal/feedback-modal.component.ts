@@ -29,12 +29,21 @@ export class FeedbackModalComponent implements AfterViewInit {
 
   loading = false;
   submitted = false;
+  showErrors = false;
   error: string | null = null;
+
+  private static readonly EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  get emailInvalid(): boolean {
+    const email = this.payload.email?.trim();
+    return !!email && !FeedbackModalComponent.EMAIL_PATTERN.test(email);
+  }
 
   get isValid(): boolean {
     return !!this.payload.name?.trim() &&
            this.payload.rating > 0 &&
-           !!this.payload.comments?.trim();
+           !!this.payload.comments?.trim() &&
+           !this.emailInvalid;
   }
 
   get ratingLabel(): string {
@@ -46,6 +55,34 @@ export class FeedbackModalComponent implements AfterViewInit {
     if (typeof this.dialogElRef.nativeElement.showModal === 'function') {
       this.dialogElRef.nativeElement.showModal();
     }
+    this.dialogElRef.nativeElement.querySelector<HTMLInputElement>('#fb-name')?.focus();
+  }
+
+  /** Radio-group keyboard support: arrows move and select, Home/End jump (WAI-ARIA APG). */
+  onStarKeydown(event: KeyboardEvent, star: number): void {
+    let next = star;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowUp':
+        next = Math.min(5, star + 1);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        next = Math.max(1, star - 1);
+        break;
+      case 'Home':
+        next = 1;
+        break;
+      case 'End':
+        next = 5;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.payload.rating = next;
+    const buttons = this.dialogElRef.nativeElement.querySelectorAll<HTMLButtonElement>('.star-btn');
+    buttons[next - 1]?.focus();
   }
 
   onOverlayClick(event: MouseEvent): void {
@@ -61,12 +98,27 @@ export class FeedbackModalComponent implements AfterViewInit {
     }
   }
 
+  private focusFirstInvalid(): void {
+    const root = this.dialogElRef.nativeElement;
+    const target =
+      (!this.payload.name?.trim() && root.querySelector<HTMLElement>('#fb-name')) ||
+      (this.emailInvalid && root.querySelector<HTMLElement>('#fb-email')) ||
+      (this.payload.rating === 0 && root.querySelector<HTMLElement>('.star-btn')) ||
+      (!this.payload.comments?.trim() && root.querySelector<HTMLElement>('#fb-comments'));
+    if (target) target.focus();
+  }
+
   onClose(): void {
     this.closed.emit();
   }
 
   onSubmit(): void {
-    if (!this.isValid || this.loading) return;
+    if (this.loading) return;
+    if (!this.isValid) {
+      this.showErrors = true;
+      this.focusFirstInvalid();
+      return;
+    }
 
     this.loading = true;
     this.error = null;

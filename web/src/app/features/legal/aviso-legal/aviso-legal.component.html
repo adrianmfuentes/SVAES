@@ -2,7 +2,7 @@
 
 <div class="legal-page">
   <header class="legal-header" role="banner">
-    <a routerLink="/" class="legal-logo">SVAES</a>
+    <a routerLink="/" class="legal-logo" aria-label="SVAES"><img class="brand-logo" src="/images/logo/svaes-logo-ink.svg" alt="" width="98" height="36" /></a>
     <div class="legal-header-nav">
       <app-lang-toggle theme="light" />
       <a routerLink="/" class="btn-secondary">{{ 'legal.common.back_start' | t }}</a>
@@ -109,4 +109,5 @@
       </article>
     </main>
   </div>
+  <app-site-footer />
 </div>
