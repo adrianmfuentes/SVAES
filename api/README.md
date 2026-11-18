@@ -1,6 +1,6 @@
 # SVAES API
 
-> **TFG terminado** (30/06/2026) — FastAPI backend for the SVAES system (Sistema de Verificación Automática de Entregas de Software).
+> **TFG terminado** (30/06/2026) · **TFM en curso** (Máster en Ingeniería Web, Universidad de Oviedo) — FastAPI backend for the SVAES system (Sistema de Verificación Automática de Entregas de Software).
 
 ## Description
 

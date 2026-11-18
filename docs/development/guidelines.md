@@ -12,8 +12,10 @@
 academic platform that automates the validation of software *releases* against a
 configurable set of verification rules (RV-01 to RV-10).
 
-The project is the Final Degree Project (TFG) of **Adrian Martinez Fuentes (UO295454)**
-in the Software Engineering degree at the University of Oviedo (EII).
+The project started as the Final Degree Project (TFG) of **Adrian Martinez Fuentes (UO295454)**
+(Software Engineering, University of Oviedo, EII) and continues as his Master's Thesis (TFM,
+Master in Web Engineering, Cybersecurity specialisation): "Semantic verification of software
+deliveries using local language models: an extension of SVAES".
 
 **There is no real production environment.** All external connectors (GitLab, Jira, etc.)
 are reference connectors implementing the `IConnector` port; they are not mandatory

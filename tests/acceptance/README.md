@@ -1,6 +1,6 @@
 # Acceptance Tests — Plan de Pruebas
 
-> **TFG terminado** (30/06/2026) — All E2E acceptance tests passing.
+> **TFG terminado** (30/06/2026) · **TFM en curso** (Máster en Ingeniería Web, Universidad de Oviedo) — All E2E acceptance tests passing.
 
 End-to-end tests with Cypress against the Angular frontend. Follow ISO 29119-4 structured test case IDs.
 

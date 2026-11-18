@@ -1,75 +1,115 @@
 <dialog #dialogEl class="modal-overlay"
      aria-labelledby="feedback-title"
+     aria-describedby="feedback-subtitle"
      (click)="onOverlayClick($event)"
      (keydown)="onDialogKeydown($event)"
      (cancel)="onClose()">
   <div class="modal">
-    <button class="modal-close" (click)="onClose()" [attr.aria-label]="'common.close' | t">
+    <button type="button" class="modal-close" (click)="onClose()" [attr.aria-label]="'common.close' | t">
       <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
       </svg>
     </button>
 
-    <h2 id="feedback-title" class="modal-title">{{ 'feedback.modal_title' | t }}</h2>
-    <p class="modal-subtitle">{{ 'feedback.modal_subtitle' | t }}</p>
+    <header class="modal-head">
+      <h2 id="feedback-title" class="modal-title">{{ 'feedback.modal_title' | t }}</h2>
+      <p id="feedback-subtitle" class="modal-subtitle">{{ 'feedback.modal_subtitle' | t }}</p>
+    </header>
 
     @if (submitted) {
-      <div class="alert-success" role="alert">
-        <span class="alert-success-icon">✓</span>
-        <span>{{ 'feedback.success' | t }}</span>
+      <div class="alert-success" role="status">
+        <svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <path d="M7 12.5l3.5 3.5L17 9" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
+        </svg>
+        <div>
+          <strong class="alert-success-title">{{ 'feedback.success_title' | t }}</strong>
+          <p>{{ 'feedback.success_text' | t }}</p>
+        </div>
       </div>
     } @else {
       @if (error) {
         <div class="alert-error" role="alert">
-          <span class="alert-error-icon">!</span>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3l10 18H2L12 3z" stroke="currentColor" stroke-width="2" stroke-linejoin="miter"/>
+            <path d="M12 10v5M12 17.5v.1" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
+          </svg>
           <span>{{ error }}</span>
         </div>
       }
 
-      <form (ngSubmit)="onSubmit()" #feedbackForm="ngForm">
-        <div class="form-group">
-          <label for="fb-name">{{ 'feedback.field_name' | t }}</label>
-          <input
-            type="text"
-            id="fb-name"
-            name="name"
-            [(ngModel)]="payload.name"
-            required
-            maxlength="100"
-            [placeholder]="'feedback.name_placeholder' | t"
-          />
-        </div>
+      <form (ngSubmit)="onSubmit()" #feedbackForm="ngForm" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fb-name">{{ 'feedback.field_name' | t }}</label>
+            <input
+              type="text"
+              id="fb-name"
+              name="name"
+              autocomplete="name"
+              [(ngModel)]="payload.name"
+              required
+              aria-required="true"
+              maxlength="100"
+              [attr.aria-invalid]="showErrors && !payload.name.trim() ? 'true' : null"
+              [attr.aria-describedby]="showErrors && !payload.name.trim() ? 'fb-name-error' : null"
+              [placeholder]="'feedback.name_placeholder' | t"
+            />
+            @if (showErrors && !payload.name.trim()) {
+              <span class="field-error" id="fb-name-error">{{ 'feedback.error_name' | t }}</span>
+            }
+          </div>
 
-        <div class="form-group">
-          <label for="fb-email">{{ 'feedback.field_email' | t }}</label>
-          <input
-            type="email"
-            id="fb-email"
-            name="email"
-            [(ngModel)]="payload.email"
-            maxlength="255"
-            [placeholder]="'feedback.email_placeholder' | t"
-          />
+          <div class="form-group">
+            <label for="fb-email">{{ 'feedback.field_email' | t }}</label>
+            <input
+              type="email"
+              id="fb-email"
+              name="email"
+              autocomplete="email"
+              [(ngModel)]="payload.email"
+              maxlength="255"
+              [attr.aria-invalid]="showErrors && emailInvalid ? 'true' : null"
+              aria-describedby="fb-email-hint"
+              [placeholder]="'feedback.email_placeholder' | t"
+            />
+            @if (showErrors && emailInvalid) {
+              <span class="field-error" id="fb-email-error">{{ 'feedback.error_email' | t }}</span>
+            } @else {
+              <span class="field-hint" id="fb-email-hint">{{ 'feedback.field_email_hint' | t }}</span>
+            }
+          </div>
         </div>
 
         <div class="form-group">
           <span class="rating-field-label" id="rating-field-label">{{ 'feedback.field_rating' | t }}</span>
-          <div class="stars" role="radiogroup" aria-labelledby="rating-field-label">
-            @for (star of [1, 2, 3, 4, 5]; track star) {
-              <button
-                type="button"
-                class="star-btn"
-                [class.filled]="payload.rating >= star"
-                [attr.aria-label]="'feedback.star_aria' | t:{ n: star }"
-                (click)="payload.rating = star"
-              >
-                <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              </button>
-            }
+          <div class="rating" role="radiogroup" aria-labelledby="rating-field-label" aria-describedby="rating-hint">
+            <div class="stars">
+              @for (star of [1, 2, 3, 4, 5]; track star) {
+                <button
+                  type="button"
+                  role="radio"
+                  class="star-btn"
+                  [class.filled]="payload.rating >= star"
+                  [attr.aria-checked]="payload.rating === star"
+                  [attr.tabindex]="payload.rating === star || (payload.rating === 0 && star === 1) ? 0 : -1"
+                  [attr.aria-label]="'feedback.star_aria' | t:{ n: star }"
+                  (click)="payload.rating = star"
+                  (keydown)="onStarKeydown($event, star)"
+                >
+                  <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                </button>
+              }
+            </div>
+            <span class="rating-label" aria-live="polite">{{ ratingLabel }}</span>
           </div>
-          <span class="rating-label">{{ ratingLabel }}</span>
+          @if (showErrors && payload.rating === 0) {
+            <span class="field-error" id="rating-hint">{{ 'feedback.error_rating' | t }}</span>
+          } @else {
+            <span class="field-hint" id="rating-hint">{{ 'feedback.field_rating_hint' | t }}</span>
+          }
         </div>
 
         <div class="form-group">
@@ -79,18 +119,32 @@
             name="comments"
             [(ngModel)]="payload.comments"
             required
+            aria-required="true"
             maxlength="2000"
             rows="4"
+            [attr.aria-invalid]="showErrors && !payload.comments.trim() ? 'true' : null"
+            aria-describedby="fb-comments-count"
             [placeholder]="'feedback.comments_placeholder' | t"
           ></textarea>
-          <span class="char-count">{{ payload.comments.length }}/2000</span>
+          <div class="field-foot">
+            @if (showErrors && !payload.comments.trim()) {
+              <span class="field-error">{{ 'feedback.error_comments' | t }}</span>
+            }
+            <span class="char-count" id="fb-comments-count">{{ payload.comments.length }}/2000<span class="sr-only"> {{ 'feedback.comments_count' | t:{ n: payload.comments.length } }}</span></span>
+          </div>
         </div>
 
-        <p class="disclosure">{{ 'feedback.disclosure' | t }}</p>
+        <aside class="disclosure">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 11v6M12 7.5v.1" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
+          </svg>
+          <p>{{ 'feedback.disclosure' | t }}</p>
+        </aside>
 
         <div class="modal-actions">
           <button type="button" class="btn-secondary" (click)="onClose()">{{ 'common.cancel' | t }}</button>
-          <button type="submit" class="btn-accent" [disabled]="!isValid || loading">
+          <button type="submit" class="btn-accent" [disabled]="loading" [attr.aria-disabled]="!isValid ? 'true' : null">
             @if (loading) {
               {{ 'feedback.submitting' | t }}
             } @else {

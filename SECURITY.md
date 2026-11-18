@@ -6,7 +6,7 @@
 
 ## Supported Versions
 
-SVAES is an academic project (TFG — Trabajo de Fin de Grado) under active development.
+SVAES is an academic project (TFG — Trabajo de Fin de Grado — continued as TFM, Master in Web Engineering) under active development.
 Only the `main` branch receives security updates. Tagged releases are not yet issued.
 
 | Version | Security Support |

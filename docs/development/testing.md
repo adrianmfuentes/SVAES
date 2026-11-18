@@ -1,6 +1,6 @@
 # SVAES Testing Guide — Plan de Pruebas
 
-> **TFG terminado** (30/06/2026) — All test suites passing as of final delivery.
+> **TFG terminado** (30/06/2026) · **TFM en curso** (Máster en Ingeniería Web, Universidad de Oviedo) — All test suites passing as of final delivery.
 
 Overview of the test infrastructure, conventions, and execution procedures for the SVAES project. All tests follow the **Plan de Pruebas** structured according to **ISO 29119-4** with unique test case identifiers (`TC-*`) where a case traces to a formal requirement.
 

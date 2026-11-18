@@ -1,5 +1,5 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adrianmfuentes_SVAES&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adrianmfuentes_SVAES)
-[![Status](https://img.shields.io/badge/TFG-Finalizado-success)](https://github.com/adrianmfuentes/SVAES)
+[![Status](https://img.shields.io/badge/TFG-Finalizado-success)](https://github.com/adrianmfuentes/SVAES) [![TFM](https://img.shields.io/badge/TFM-En%20curso-orange)](https://github.com/adrianmfuentes/SVAES)
 [![Deploy](https://img.shields.io/badge/Deploy-Producción-blue)](https://github.com/adrianmfuentes/SVAES)
 
 **[English](README.en.md)** · **[Français](README.fr.md)**
@@ -8,8 +8,10 @@
 
 ## Sistema de Verificación Automática de Entregas de Software
 
-Trabajo Fin de Grado — Grado en Ingeniería Informática del Software
-Universidad de Oviedo · Curso 2025/2026 · Calificación: 10/10
+Trabajo Fin de Grado (TFG) — Grado en Ingeniería Informática del Software · Universidad de Oviedo · Curso 2025/2026 · Calificación: 10/10
+Trabajo Fin de Máster (TFM, en curso) — Máster en Ingeniería Web, especialidad Ciberseguridad · Universidad de Oviedo
+
+> **TFM:** _Verificación semántica de entregas software mediante modelos de lenguaje locales: extensión de SVAES._ Continuación del TFG que añade verificación semántica con LLM ejecutados en local. La documentación del TFG se conserva como histórico. Ver [docs/tfm](docs/tfm/README.md).
 
 Autor: Adrián Martínez Fuentes
 

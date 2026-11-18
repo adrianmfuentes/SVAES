@@ -1,0 +1,125 @@
+<a class="skip-link" href="#contenido">{{ 'info.skip' | t }}</a>
+
+<div class="info">
+  <header class="info__header">
+    <a routerLink="/" class="info__brand"><img src="/images/logo/svaes-logo-ink.svg" alt="SVAES" width="110" height="40" /></a>
+    <div class="info__actions">
+      <app-lang-toggle theme="light" />
+      <a routerLink="/" class="info__back">{{ 'info.back' | t }}</a>
+    </div>
+  </header>
+
+  <main id="contenido" class="info__main" tabindex="-1">
+    @if (page === 'accessibility') {
+      <article aria-labelledby="info-title">
+        <h1 id="info-title" class="info__title">{{ 'info.a11y.title' | t }}</h1>
+        <p class="info__intro">{{ 'info.a11y.intro' | t }}</p>
+        <p class="info__updated">{{ 'info.updated' | t }}</p>
+
+        <section aria-labelledby="a11y-goal">
+          <h2 id="a11y-goal">{{ 'info.a11y.goal_title' | t }}</h2>
+          <p>{{ 'info.a11y.goal_text' | t }}</p>
+        </section>
+
+        <section aria-labelledby="a11y-done">
+          <h2 id="a11y-done">{{ 'info.a11y.done_title' | t }}</h2>
+          <ul class="info__list">
+            @for (n of doneItems; track n) {
+              <li>{{ 'info.a11y.done_' + n | t }}</li>
+            }
+          </ul>
+        </section>
+
+        <section aria-labelledby="a11y-tests">
+          <h2 id="a11y-tests">{{ 'info.a11y.tests_title' | t }}</h2>
+          <p>{{ 'info.a11y.tests_text' | t }}</p>
+        </section>
+
+        <section aria-labelledby="a11y-limits">
+          <h2 id="a11y-limits">{{ 'info.a11y.limits_title' | t }}</h2>
+          <ul class="info__list">
+            @for (n of limitItems; track n) {
+              <li>{{ 'info.a11y.limit_' + n | t }}</li>
+            }
+          </ul>
+        </section>
+
+        <section aria-labelledby="a11y-report">
+          <h2 id="a11y-report">{{ 'info.a11y.report_title' | t }}</h2>
+          <p>{{ 'info.a11y.report_text' | t }}</p>
+          <p>
+            <a href="https://github.com/adrianmfuentes/SVAES/issues/new" target="_blank" rel="noopener noreferrer" class="info__link">
+              {{ 'info.a11y.report_link' | t }} <span class="sr-only">{{ 'info.a11y.report_new_tab' | t }}</span>
+            </a>
+          </p>
+        </section>
+      </article>
+    } @else {
+      <article aria-labelledby="info-title">
+        <h1 id="info-title" class="info__title">{{ 'info.map.title' | t }}</h1>
+        <p class="info__intro">{{ 'info.map.intro' | t }}</p>
+
+        <div class="map">
+          <section class="map__group" aria-labelledby="map-public">
+            <h2 id="map-public" class="map__heading">{{ 'info.map.public' | t }}</h2>
+            <ul class="map__list">
+              @for (entry of publicPages; track entry.key) {
+                <li class="map__item">
+                  <a [routerLink]="entry.link" class="map__link">
+                    <span class="map__name">{{ entry.key | t }}</span>
+                    <span class="map__desc">{{ entry.desc | t }}</span>
+                    <svg class="map__arrow" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
+                  </a>
+                  @if (entry.children) {
+                    <ul class="map__chips">
+                      @for (child of entry.children; track child.fragment) {
+                        <li><a routerLink="/" [fragment]="child.fragment" class="map__chip">{{ child.key | t }}</a></li>
+                      }
+                    </ul>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+
+          <section class="map__group" aria-labelledby="map-legal">
+            <h2 id="map-legal" class="map__heading">{{ 'info.map.legal' | t }}</h2>
+            <ul class="map__list">
+              @for (entry of legalPages; track entry.key) {
+                <li class="map__item">
+                  <a [routerLink]="entry.link" class="map__link" [attr.aria-current]="entry.current ? 'page' : null">
+                    <span class="map__name">{{ entry.key | t }}</span>
+                    <span class="map__desc">{{ entry.desc | t }}</span>
+                    <svg class="map__arrow" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
+                  </a>
+                </li>
+              }
+            </ul>
+          </section>
+
+          <section class="map__group map__group--wide" aria-labelledby="map-app">
+            <h2 id="map-app" class="map__heading">
+              {{ 'info.map.app' | t }}
+              <span class="map__lock">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><rect x="3" y="7" width="10" height="7" stroke="currentColor" stroke-width="1.8" /><path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.8" /></svg>
+                {{ 'info.map.requires_account' | t }}
+              </span>
+            </h2>
+            <ul class="map__list map__list--grid">
+              @for (entry of appPages; track entry.key) {
+                <li class="map__item">
+                  <span class="map__link map__link--static">
+                    <span class="map__name">{{ entry.key | t }}</span>
+                    <span class="map__desc">{{ entry.desc | t }}</span>
+                  </span>
+                </li>
+              }
+            </ul>
+          </section>
+        </div>
+      </article>
+    }
+  </main>
+
+  <app-site-footer />
+</div>

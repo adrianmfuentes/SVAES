@@ -1,6 +1,6 @@
 # SVAES Engine — Motor de Verificación de Artefactos
 
-> **TFG terminado** (30/06/2026) — Motor de verificación de artefactos de software escrito en Rust.
+> **TFG terminado** (30/06/2026) · **TFM en curso** (Máster en Ingeniería Web, Universidad de Oviedo) — Motor de verificación de artefactos de software escrito en Rust.
 
 Motor de verificacion de artefactos de software escrito en Rust. Recibe un payload JSON con artefactos y reglas de verificacion, evalua todas las reglas en paralelo y devuelve un veredicto global junto con los resultados detallados de cada regla.
 

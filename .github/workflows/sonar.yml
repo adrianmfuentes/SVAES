@@ -6,9 +6,19 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+
+# En PR se cancela la ejecución anterior; en push a main nunca (la promoción a deploy
+# exige un análisis completo por commit).
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   sonarcloud:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     services:
       postgres:
@@ -36,15 +46,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: "3.13"
           version: "0.13.6"
+          enable-cache: true
 
       - name: Run unit tests
         run: uv run --frozen --no-build --project api --extra dev pytest tests/unit --cov=api/src --cov-report=
@@ -80,15 +92,17 @@ jobs:
       - name: Run performance structure and RNF tests
         run: uv run --frozen --no-build --project api --extra dev pytest tests/performance/test_coverage_threshold.py tests/performance/test_rnf_coverage.py tests/performance/test_rnf_security_rf.py -v --tb=short
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-
       - name: Install pnpm
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.0.0
         with:
           version: "10"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Install frontend dependencies
         working-directory: web
@@ -102,6 +116,18 @@ jobs:
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           components: llvm-tools-preview
+
+      - name: Cache Cargo registry and build artifacts
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            engine/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39

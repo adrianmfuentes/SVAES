@@ -1,6 +1,6 @@
 # SVAES — Web Frontend
 
-> **TFG terminado** (30/06/2026) — Frontend application for the **Automatic Software Delivery Verification System (SVAES)**
+> **TFG terminado** (30/06/2026) · **TFM en curso** (Máster en Ingeniería Web, Universidad de Oviedo) — Frontend application for the **Automatic Software Delivery Verification System (SVAES)**
 > built with **Angular 21** (standalone components, zoneless).
 
 ---

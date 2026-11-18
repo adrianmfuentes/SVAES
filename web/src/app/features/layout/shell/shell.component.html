@@ -5,7 +5,7 @@
 
   <aside class="sidebar" id="sidebar" [class.is-open]="sidebarOpen">
     <div class="sidebar-brand">
-      <a routerLink="/" class="sidebar-logo">SVAES</a>
+      <a routerLink="/" class="sidebar-logo" aria-label="SVAES"><img class="brand-logo brand-logo--sm" src="/images/logo/svaes-logo.svg" alt="" width="88" height="32" /></a>
     </div>
 
     <nav class="sidebar-nav" *ngIf="isAdmin" [attr.aria-label]="'shell.nav_admin_label' | t" (click)="closeSidebar()" (keydown.enter)="closeSidebar()">

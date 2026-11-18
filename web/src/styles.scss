@@ -28,8 +28,8 @@
   --surface-raised: #FFFFFF;
   --overlay: rgba(13, 15, 18, 0.55);
 
-  --font-display: 'DM Serif Display', serif;
-  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-display: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 
   --spacing-xs: 0.25rem;
@@ -52,6 +52,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-padding-top: 6rem;
+}
+
 html,
 body {
   height: 100%;
@@ -69,7 +73,7 @@ body {
 h1 {
   font-family: var(--font-display);
   font-size: clamp(1.75rem, 1.25rem + 2vw, 3rem);
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.02em;
   margin: 0 0 var(--spacing-md);
@@ -78,7 +82,7 @@ h1 {
 h2 {
   font-family: var(--font-display);
   font-size: clamp(1.25rem, 1rem + 1vw, 2rem);
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.01em;
   margin: 0 0 var(--spacing-sm);
@@ -307,7 +311,7 @@ label {
 .page-title {
   font-family: var(--font-display);
   font-size: 2.25rem;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.02em;
   margin: 0;
@@ -317,7 +321,7 @@ label {
 .card-title {
   font-family: var(--font-display);
   font-size: 1.5rem;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.01em;
   margin: 0 0 var(--spacing-md);
@@ -594,5 +598,61 @@ textarea:focus-visible,
 
   label {
     font-size: 0.8125rem;
+  }
+}
+
+.brand-logo {
+  display: block;
+  height: 2.25rem;
+  width: auto;
+}
+
+.brand-logo--sm {
+  height: 2rem;
+}
+
+
+/* Route changes: soft cross-fade (View Transitions API), opacity only. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: vt-fade-out 0.2s ease-out both;
+  }
+
+  ::view-transition-new(root) {
+    animation: vt-fade-in 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes vt-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes vt-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Language change: text fades out, swaps, fades in (see lang-toggle.component.ts). */
+  main,
+  footer,
+  header nav {
+    transition: opacity 0.34s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  html.lang-switching main,
+  html.lang-switching footer,
+  html.lang-switching header nav {
+    opacity: 0;
+    transition-duration: 0.16s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

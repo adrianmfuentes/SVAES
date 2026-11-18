@@ -1,165 +1,320 @@
 <div class="landing">
-  <a class="skip-link" href="#main-content">{{ 'a11y.skip_to_main' | t }}</a>
+  <a class="skip-link" href="#main-content" (click)="goTo('main-content', $event)">{{ 'a11y.skip_to_main' | t }}</a>
 
-  <header class="landing-header">
-    <div class="landing-logo">SVAES</div>
-    <nav class="landing-nav" aria-label="{{ 'landing.aria_nav_main' | t }}">
-      <span class="landing-nav-tagline">{{ 'landing.tagline' | t }}</span>
-      <app-lang-toggle theme="light" />
-      <a routerLink="/auth/login" class="btn-primary">{{ 'landing.login_button' | t }}</a>
-    </nav>
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a routerLink="/" class="brand">
+        <img class="brand__logo" src="/images/logo/svaes-logo-ink.svg" alt="SVAES" width="140" height="51" />
+      </a>
+
+      <nav #siteNav class="site-nav" [attr.aria-label]="'landing.aria_nav_main' | t" (mouseleave)="leavePill()" (focusout)="leavePill()">
+        <span class="site-nav__pill" aria-hidden="true"></span>
+        <ul class="site-nav__list">
+          @for (section of sections; track section.id) {
+            <li>
+              <a
+                class="site-nav__link"
+                [href]="'#' + section.id"
+                [attr.aria-current]="activeSection() === section.id ? 'true' : null"
+                (click)="goTo(section.id, $event)"
+                (mouseenter)="movePill($event)"
+                (focus)="movePill($event)"
+              >{{ section.labelKey | t }}</a>
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <div class="site-header__actions">
+        <app-lang-toggle theme="light" />
+        <span class="site-header__divider" aria-hidden="true"></span>
+        <a routerLink="/auth/login" class="btn btn--pill btn--ghost site-header__login">{{ 'landing.login_button' | t }}</a>
+        <a routerLink="/request-access" class="btn btn--pill btn--solid site-header__cta">
+          {{ 'landing.register_button' | t }}
+          <svg class="btn__arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
+        </a>
+        <button
+          type="button"
+          class="menu-toggle"
+          aria-controls="mobile-menu"
+          [attr.aria-expanded]="menuOpen()"
+          [attr.aria-label]="(menuOpen() ? 'landing.menu_close' : 'landing.menu_open') | t"
+          (click)="toggleMenu()"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+            @if (menuOpen()) {
+              <path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="square" />
+            } @else {
+              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="square" />
+            }
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="mobile-menu" [hidden]="!menuOpen()">
+      <nav [attr.aria-label]="'landing.aria_nav_main' | t">
+        <ul class="mobile-menu__list">
+          @for (section of sections; track section.id) {
+            <li>
+              <a class="mobile-menu__link" [href]="'#' + section.id" (click)="goTo(section.id, $event)">{{ section.labelKey | t }}</a>
+            </li>
+          }
+        </ul>
+      </nav>
+      <div class="mobile-menu__actions">
+        <a routerLink="/auth/login" class="btn btn--ghost">{{ 'landing.login_button' | t }}</a>
+        <a routerLink="/request-access" class="btn btn--solid">{{ 'landing.register_button' | t }}</a>
+      </div>
+    </div>
   </header>
 
-  <section class="landing-hero" id="main-content">
-    <div class="landing-hero-inner">
+  <main id="main-content" tabindex="-1">
+    <!-- Hero: the page opens as a verification record being sealed -->
+    <section class="hero" aria-labelledby="hero-title">
+      <canvas #heroCanvas class="hero__canvas" aria-hidden="true"></canvas>
+      <div class="hero__inner">
+        <div class="hero__copy">
+          <h1 id="hero-title" class="hero__title">
+            <span>{{ 'landing.hero_title_1' | t }} </span><span>{{ 'landing.hero_title_2' | t }}</span>
+            <span>{{ 'landing.hero_title_3' | t }}</span>
+          </h1>
+          <p class="hero__lead">{{ 'landing.hero_lead' | t }}</p>
+          <div class="hero__actions">
+            <a routerLink="/request-access" class="btn btn--solid btn--lg">{{ 'landing.register_button' | t }}</a>
+            <a routerLink="/auth/login" class="btn btn--outline btn--lg">{{ 'landing.login_system_button' | t }}</a>
+          </div>
+          <dl class="hero__facts">
+            <div><dt>10</dt><dd>{{ 'landing.fact_rules' | t }}</dd></div>
+            <div><dt>20</dt><dd>{{ 'landing.fact_connectors' | t }}</dd></div>
+            <div><dt>5</dt><dd>{{ 'landing.fact_categories' | t }}</dd></div>
+          </dl>
+        </div>
 
-      <div class="landing-left">
-        <span class="landing-eyebrow">{{ 'landing.eyebrow_hero' | t }}</span>
-        <h1 class="landing-heading">
-          {{ 'landing.heading_line1' | t }}<br>
-          {{ 'landing.heading_line2' | t }}<br>
-          {{ 'landing.heading_line3' | t }}
-        </h1>
-        <p class="landing-subtitle">{{ 'landing.subtitle' | t }}</p>
-        <div class="landing-actions">
-          <a class="btn-accent" (click)="navigateToRequestAccess()">{{ 'landing.register_button' | t }}</a>
-          <a routerLink="/auth/login" class="btn-secondary">{{ 'landing.login_system_button' | t }}</a>
-        </div>
-        <div class="landing-stats">
-          <div class="landing-stat">
-            <span class="landing-stat-value">10</span>
-            <span class="landing-stat-label">{{ 'landing.stat_rules' | t }}</span>
+        <figure #acta class="acta" aria-labelledby="acta-title">
+          <div class="acta__bar">
+            <span id="acta-title" class="acta__title">{{ 'landing.acta_title' | t }}</span>
+            <span class="acta__meta">{{ 'landing.acta_label' | t }}</span>
           </div>
-          <span class="landing-stat-sep"></span>
-          <div class="landing-stat">
-            <span class="landing-stat-value">5+</span>
-            <span class="landing-stat-label">{{ 'landing.stat_connectors' | t }}</span>
-          </div>
-          <span class="landing-stat-sep"></span>
-          <div class="landing-stat">
-            <span class="landing-stat-value">100%</span>
-            <span class="landing-stat-label">{{ 'landing.stat_traceability' | t }}</span>
-          </div>
-        </div>
+
+          <table class="acta__table">
+            <caption class="sr-only">{{ 'landing.acta_caption' | t }}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{{ 'landing.acta_col_rule' | t }}</th>
+                <th scope="col" class="acta__col-sev">{{ 'landing.acta_col_severity' | t }}</th>
+                <th scope="col">{{ 'landing.acta_col_result' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rule of rules; track rule.id; let i = $index) {
+                <tr [style.--i]="i">
+                  <th scope="row">
+                    <span class="mono">{{ rule.id.replace('RV', 'RV-') }}</span>
+                    <span class="acta__rule-name">{{ 'landing.rule_' + rule.id + '_name' | t }}</span>
+                  </th>
+                  <td class="acta__col-sev">{{ (rule.severity === 'blocking' ? 'landing.sev_blocking' : 'landing.sev_non_blocking') | t }}</td>
+                  <td>
+                    <span class="status" [class.status--valid]="rule.status === 'valid'" [class.status--warning]="rule.status === 'warning'">
+                      @if (rule.status === 'valid') {
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="M3 8.5l3.2 3L13 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
+                        {{ 'landing.status_valid' | t }}
+                      } @else {
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="M8 2.5l6 10.5H2L8 2.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter" /><path d="M8 7v2.8M8 11.4v.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" /></svg>
+                        {{ 'landing.status_warning' | t }}
+                      }
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <figcaption class="acta__foot">
+            <p class="acta__summary">{{ 'landing.acta_summary' | t }}</p>
+            <p class="acta__verdict">
+              <span class="acta__verdict-label">{{ 'landing.acta_verdict_label' | t }}</span>
+              <strong class="acta__verdict-value">{{ 'landing.acta_verdict' | t }}</strong>
+            </p>
+            <span class="seal" aria-hidden="true">
+              <span class="seal__ring">{{ 'landing.acta_verdict' | t }}</span>
+            </span>
+          </figcaption>
+        </figure>
       </div>
 
-      <div class="landing-right" aria-hidden="true">
-        <div class="mock-window">
-          <div class="mock-window-bar">
-            <span class="mock-window-title">{{ 'landing.mock_verification' | t }} · release/2024-Q3-hotfix</span>
+      <a class="hero__scroll" href="#que-hace" (click)="goTo('que-hace', $event)">
+        <span>{{ 'landing.scroll_hint' | t }}</span>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><path d="M4 7.5l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
+      </a>
+    </section>
+
+    <!-- What it does -->
+    <section class="sheet" aria-labelledby="que-hace">
+      <div class="sheet__inner">
+        <div class="sheet__rail">
+          <h2 id="que-hace" class="sheet__title" tabindex="-1">{{ 'landing.product_title' | t }}</h2>
+          <p class="sheet__lead">{{ 'landing.product_lead' | t }}</p>
+        </div>
+        <div class="sheet__body">
+          <ol class="flow">
+            <li class="flow__step">
+              <h3 class="flow__title">{{ 'landing.flow1_title' | t }}</h3>
+              <p>{{ 'landing.flow1_desc' | t }}</p>
+            </li>
+            <li class="flow__step">
+              <h3 class="flow__title">{{ 'landing.flow2_title' | t }}</h3>
+              <p>{{ 'landing.flow2_desc' | t }}</p>
+            </li>
+            <li class="flow__step">
+              <h3 class="flow__title">{{ 'landing.flow3_title' | t }}</h3>
+              <p>{{ 'landing.flow3_desc' | t }}</p>
+            </li>
+            <li class="flow__step">
+              <h3 class="flow__title">{{ 'landing.flow4_title' | t }}</h3>
+              <p>{{ 'landing.flow4_desc' | t }}</p>
+            </li>
+          </ol>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Rules -->
+    <section class="sheet sheet--tint" aria-labelledby="reglas">
+      <div class="sheet__inner">
+        <div class="sheet__rail">
+          <h2 id="reglas" class="sheet__title" tabindex="-1">{{ 'landing.rules_title' | t }}</h2>
+          <p class="sheet__lead">{{ 'landing.rules_lead' | t }}</p>
+        </div>
+        <div class="sheet__body">
+          <h3 class="sheet__subtitle">{{ 'landing.verdicts_title' | t }}</h3>
+          <dl class="verdicts">
+            <div class="verdicts__item verdicts__item--valid">
+              <dt>
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="M3 8.5l3.2 3L13 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
+                {{ 'landing.verdict_valid_title' | t }}
+              </dt>
+              <dd>{{ 'landing.verdict_valid_desc' | t }}</dd>
+            </div>
+            <div class="verdicts__item verdicts__item--warning">
+              <dt>
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="M8 2.5l6 10.5H2L8 2.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter" /><path d="M8 7v2.8M8 11.4v.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" /></svg>
+                {{ 'landing.verdict_warning_title' | t }}
+              </dt>
+              <dd>{{ 'landing.verdict_warning_desc' | t }}</dd>
+            </div>
+            <div class="verdicts__item verdicts__item--invalid">
+              <dt>
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
+                {{ 'landing.verdict_invalid_title' | t }}
+              </dt>
+              <dd>{{ 'landing.verdict_invalid_desc' | t }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- Connectors -->
+    <section class="sheet" aria-labelledby="conectores">
+      <div class="sheet__inner">
+        <div class="sheet__rail">
+          <h2 id="conectores" class="sheet__title" tabindex="-1">{{ 'landing.connectors_title' | t }}</h2>
+          <p class="sheet__lead">{{ 'landing.connectors_lead' | t }}</p>
+        </div>
+        <div class="sheet__body">
+          <dl class="connectors">
+            @for (group of connectorGroups; track group.labelKey) {
+              <div class="connectors__row">
+                <dt>{{ group.labelKey | t }}</dt>
+                <dd>{{ group.items.join(' · ') }}</dd>
+              </div>
+            }
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- Research line (TFM) -->
+    <section class="research" aria-labelledby="investigacion">
+      <div class="research__inner">
+        <div class="research__main">
+          <div class="research__head">
+            <h2 id="investigacion" class="research__title" tabindex="-1">{{ 'landing.research_title' | t }}</h2>
+            <p class="research__status" role="note">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" /><path d="M10 5.5V10l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
+              <span>{{ 'landing.research_status' | t }}</span>
+            </p>
           </div>
 
-          <div class="mock-verdict">
-            <span class="mock-verdict-icon">✕</span>
-            <span class="mock-verdict-badge">INVALID</span>
-            <span class="mock-verdict-release">release/2024-Q3-hotfix</span>
-            <span class="mock-verdict-sep" aria-hidden="true">·</span>
-            <span class="mock-verdict-meta">2 min ago</span>
-            <span class="mock-verdict-hash">a3f2c1d9</span>
+          <div class="research__text">
+            <p>{{ 'landing.research_p1' | t }}</p>
+            <p>{{ 'landing.research_p2' | t }}</p>
           </div>
 
-          <div class="mock-scan-area">
-            <div class="mock-table">
-              <div class="mock-row mock-row-1">
-                <span class="mock-id">RV-01</span>
-                <span class="mock-name">Artifact count</span>
-                <span class="mock-connector">GitLab</span>
-                <span class="mock-result"><span class="mock-badge mock-valid">✓ VALID</span></span>
-                <span class="mock-evidence"></span>
+          <div class="poc">
+            <h3 class="research__subtitle">{{ 'landing.poc_title' | t }}</h3>
+            <p class="poc__result">
+              <span class="sr-only">{{ 'landing.dots_alt' | t }}</span>
+              <strong class="poc__big" aria-hidden="true">10/12</strong>
+              <span aria-hidden="true">{{ 'landing.poc_result' | t }}</span>
+            </p>
+            <p class="poc__note">{{ 'landing.poc_note' | t }}</p>
+          </div>
+        </div>
+
+        <aside class="research__visual" [attr.aria-label]="'landing.flow_title' | t">
+          <h3 class="research__subtitle">{{ 'landing.flow_title' | t }}</h3>
+
+          <div class="pipe">
+            <span class="pipe__boundary">{{ 'landing.flow_boundary' | t }}</span>
+
+            <div class="pipe__inputs">
+              <div class="pipe__node">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><path d="M4 3h9l3 3v11H4V3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter" /><path d="M7 9h6M7 12h6M7 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" /></svg>
+                {{ 'landing.flow_in1' | t }}
               </div>
-              <div class="mock-row mock-row-2">
-                <span class="mock-id">RV-02</span>
-                <span class="mock-name">Build status</span>
-                <span class="mock-connector">Jenkins</span>
-                <span class="mock-result"><span class="mock-badge mock-valid">✓ VALID</span></span>
-                <span class="mock-evidence"></span>
-              </div>
-              <div class="mock-row mock-row-3">
-                <span class="mock-id">RV-03</span>
-                <span class="mock-name">Code coverage</span>
-                <span class="mock-connector">SonarQube</span>
-                <span class="mock-result"><span class="mock-badge mock-invalid">✕ INVALID</span></span>
-                <span class="mock-evidence"></span>
-              </div>
-              <div class="mock-row mock-row-4">
-                <span class="mock-id">RV-04</span>
-                <span class="mock-name">Security scan</span>
-                <span class="mock-connector">Trivy</span>
-                <span class="mock-result"><span class="mock-badge mock-warning">⚠ WARNING</span></span>
-                <span class="mock-evidence"></span>
-              </div>
-              <div class="mock-row mock-row-5">
-                <span class="mock-id">RV-05</span>
-                <span class="mock-name">Approval gate</span>
-                <span class="mock-connector">GitHub</span>
-                <span class="mock-result"><span class="mock-badge mock-unevaluated">— NOT_EVALUATED</span></span>
-                <span class="mock-evidence"></span>
+              <div class="pipe__node">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><path d="M6 3v10M6 13a2 2 0 100 4 2 2 0 000-4zM14 7a2 2 0 100-4 2 2 0 000 4zM14 7c0 4-8 2-8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" /></svg>
+                {{ 'landing.flow_in2' | t }}
               </div>
             </div>
-          </div>
 
-          <div class="mock-footer">
-            <span>{{ 'landing.mock_footer' | t }}</span>
-            <span>{{ 'landing.mock_footer_date' | t }}</span>
-          </div>
+            <svg class="pipe__arrow" width="20" height="28" viewBox="0 0 20 28" fill="none" aria-hidden="true" focusable="false"><path d="M10 2v22M4 18l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
 
-        </div>
+            <div class="pipe__node pipe__node--model">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><rect x="4" y="4" width="12" height="12" stroke="currentColor" stroke-width="1.8" /><path d="M8 1v3M12 1v3M8 16v3M12 16v3M1 8h3M1 12h3M16 8h3M16 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" /></svg>
+              {{ 'landing.flow_model' | t }}
+            </div>
+
+            <svg class="pipe__arrow" width="20" height="28" viewBox="0 0 20 28" fill="none" aria-hidden="true" focusable="false"><path d="M10 2v22M4 18l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
+
+            <div class="pipe__node pipe__node--out">
+              <svg width="20" height="20" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="M3 8.5l3.2 3L13 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="square" /></svg>
+              {{ 'landing.flow_out' | t }}
+            </div>
+          </div>
+          <p class="pipe__note">{{ 'landing.flow_note' | t }}</p>
+
+          <div class="dots" role="img" [attr.aria-label]="'landing.dots_alt' | t">
+            <p class="dots__label" aria-hidden="true">{{ 'landing.dots_label' | t }}</p>
+            <div class="dots__grid" aria-hidden="true">
+              @for (ok of pocDots; track $index) {
+                <span class="dots__cell" [class.dots__cell--ko]="!ok">
+                  @if (ok) {
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.2 3L13 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="square" /></svg>
+                  } @else {
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="square" /></svg>
+                  }
+                </span>
+              }
+            </div>
+          </div>
+        </aside>
       </div>
+    </section>
+  </main>
 
-    </div>
-  </section>
-
-  <section class="landing-access">
-    <div class="landing-access-inner" #accessInner>
-
-      <div class="landing-access-text">
-        <span class="landing-eyebrow">{{ 'landing.eyebrow_register' | t }}</span>
-        <h2 class="landing-access-title">{{ 'landing.register_title' | t }}</h2>
-        <p class="landing-access-desc">{{ 'landing.register_desc' | t }}</p>
-        <a routerLink="/request-access" class="btn-primary">{{ 'landing.register_button' | t }}</a>
-      </div>
-
-      <div class="landing-access-steps">
-        <div class="access-step">
-          <span class="access-step-num">01</span>
-          <div class="access-step-body">
-            <strong class="access-step-title">{{ 'landing.step1_title' | t }}</strong>
-            <span class="access-step-desc">{{ 'landing.step1_desc' | t }}</span>
-          </div>
-        </div>
-        <div class="access-step">
-          <span class="access-step-num">02</span>
-          <div class="access-step-body">
-            <strong class="access-step-title">{{ 'landing.step2_title' | t }}</strong>
-            <span class="access-step-desc">{{ 'landing.step2_desc' | t }}</span>
-          </div>
-        </div>
-        <div class="access-step">
-          <span class="access-step-num">03</span>
-          <div class="access-step-body">
-            <strong class="access-step-title">{{ 'landing.step3_title' | t }}</strong>
-            <span class="access-step-desc">{{ 'landing.step3_desc' | t }}</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <footer class="landing-footer">
-    <span class="landing-footer-copy">{{ 'landing.footer_copy' | t }}</span>
-    <nav class="landing-footer-nav" aria-label="{{ 'landing.aria_nav_footer' | t }}">
-      <button class="feedback-btn" (click)="openFeedback()">{{ 'landing.feedback_button' | t }}</button>
-      <span aria-hidden="true">·</span>
-      <a href="https://github.com/adrianmfuentes/SVAES" target="_blank" rel="noopener noreferrer">Github</a>
-      <span aria-hidden="true">·</span>
-      <a routerLink="/legal/privacidad">{{ 'landing.footer_privacy' | t }}</a>
-      <span aria-hidden="true">·</span>
-      <a routerLink="/legal/aviso-legal">{{ 'landing.footer_legal' | t }}</a>
-    </nav>
-  </footer>
-
-  @if (showFeedback) {
-    <app-feedback-modal (closed)="closeFeedback()" />
-  }
+  <app-site-footer />
 </div>
