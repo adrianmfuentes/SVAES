@@ -14,7 +14,7 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../core/components/lang-toggle/lang-toggle.component';
 import { SiteFooterComponent } from '../../core/components/site-footer/site-footer.component';
 import { SeoService } from '../../core/services/seo.service';
-import { HeroFlow } from './hero-flow';
+import { initLandingMotion, type LandingMotion } from './landing-motion';
 
 type RuleStatus = 'valid' | 'warning';
 type Severity = 'blocking' | 'non_blocking';
@@ -44,13 +44,15 @@ export class LandingComponent implements OnInit {
   private readonly seo = inject(SeoService);
 
   private readonly destroyRef = inject(DestroyRef);
-  private readonly heroCanvas = viewChild.required<ElementRef<HTMLCanvasElement>>('heroCanvas');
-  private readonly acta = viewChild.required<ElementRef<HTMLElement>>('acta');
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private motion: LandingMotion | null = null;
   private readonly siteNav = viewChild<ElementRef<HTMLElement>>('siteNav');
   private hovering = false;
 
   readonly menuOpen = signal(false);
   readonly activeSection = signal<string | null>(null);
+
+  readonly flowSteps = [1, 2, 3, 4] as const;
 
   readonly sections: readonly { readonly id: SectionId; readonly labelKey: string }[] = [
     { id: 'que-hace', labelKey: 'landing.nav_product' },
@@ -59,17 +61,12 @@ export class LandingComponent implements OnInit {
     { id: 'investigacion', labelKey: 'landing.nav_research' },
   ];
 
-  /** Ten built-in rules (RV-01..RV-10). Severity follows the engine's defaults. */
+  /** Five of the ten built-in rules (RV-01..RV-10), as a sample record. Severity follows the engine's defaults. */
   readonly rules: readonly ActaRow[] = [
     { id: 'RV01', severity: 'blocking', status: 'valid' },
     { id: 'RV02', severity: 'blocking', status: 'valid' },
-    { id: 'RV03', severity: 'blocking', status: 'valid' },
     { id: 'RV04', severity: 'blocking', status: 'valid' },
-    { id: 'RV05', severity: 'blocking', status: 'valid' },
     { id: 'RV06', severity: 'non_blocking', status: 'warning' },
-    { id: 'RV07', severity: 'blocking', status: 'valid' },
-    { id: 'RV08', severity: 'blocking', status: 'valid' },
-    { id: 'RV09', severity: 'non_blocking', status: 'warning' },
     { id: 'RV10', severity: 'blocking', status: 'valid' },
   ];
 
@@ -91,17 +88,29 @@ export class LandingComponent implements OnInit {
         typeof window.matchMedia === 'function' &&
         typeof ResizeObserver !== 'undefined' &&
         typeof IntersectionObserver !== 'undefined';
-      if (!supported) return;
-      const flow = new HeroFlow(this.heroCanvas().nativeElement, this.acta().nativeElement);
-      this.destroyRef.onDestroy(() => flow.destroy());
+      const release = (): void => document.documentElement.classList.add('motion-done');
+      if (!supported) {
+        release();
+        return;
+      }
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce) {
+        let destroyed = false;
+        this.destroyRef.onDestroy(() => {
+          destroyed = true;
+          this.motion?.destroy();
+        });
+        initLandingMotion(this.host.nativeElement)
+          .then((m) => (destroyed ? m.destroy() : (this.motion = m)))
+          .catch(release);
+        // Safety net: never leave the intro hidden if the animation chunk is slow or fails.
+        window.setTimeout(release, 4000);
+      }
       this.watchSections();
       window.addEventListener('resize', this.settlePill);
       this.destroyRef.onDestroy(() => window.removeEventListener('resize', this.settlePill));
     });
   }
-
-  /** One entry per model in the feasibility test: true = detected the failure (10 of 12). */
-  readonly pocDots: readonly boolean[] = Array.from({ length: 12 }, (_, i) => i !== 9 && i !== 10);
 
 
   ngOnInit(): void {
@@ -178,6 +187,17 @@ export class LandingComponent implements OnInit {
     nav.style.setProperty('--pill-o', '1');
   }
 
+  /** The logo on the home page scrolls to the top smoothly instead of jumping. */
+  goTop(event: Event): void {
+    event.preventDefault();
+    this.menuOpen.set(false);
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    if (this.motion && !reduceMotion) this.motion.scrollTop();
+    else window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    document.getElementById('main-content')?.focus({ preventScroll: true });
+    history.replaceState(null, '', '/');
+  }
+
   toggleMenu(): void {
     this.menuOpen.update((open) => !open);
   }
@@ -199,7 +219,8 @@ export class LandingComponent implements OnInit {
     if (!target) return;
 
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    if (this.motion && !reduceMotion) this.motion.scrollTo(target);
+    else target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
     target.focus({ preventScroll: true });
     history.replaceState(null, '', `#${id}`);
   }

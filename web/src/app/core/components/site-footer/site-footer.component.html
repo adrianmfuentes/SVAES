@@ -38,6 +38,7 @@
             </a>
           </li>
           <li><button type="button" class="site-footer__linkbtn" (click)="openFeedback()">{{ 'landing.feedback_button' | t }}</button></li>
+          <li><button type="button" class="site-footer__linkbtn" (click)="openGlossary()">{{ 'landing.glossary_title' | t }}</button></li>
         </ul>
       </section>
 
@@ -53,17 +54,6 @@
     </nav>
   </div>
 
-  <details class="glossary">
-    <summary>{{ 'landing.glossary_title' | t }}</summary>
-    <dl class="glossary__list">
-      @for (term of glossary; track term) {
-        <div>
-          <dt>{{ 'landing.gl_' + term + '_term' | t }}</dt>
-          <dd>{{ 'landing.gl_' + term + '_def' | t }}</dd>
-        </div>
-      }
-    </dl>
-  </details>
 
   <div class="site-footer__bar">
     <span>{{ 'landing.footer_copy' | t }}</span>
@@ -74,3 +64,20 @@
 @if (showFeedback()) {
   <app-feedback-modal (closed)="closeFeedback()" />
 }
+
+<dialog #glossaryEl class="glossary-dialog" aria-labelledby="glossary-title" (click)="onGlossaryClick($event)">
+  <div class="glossary-dialog__panel">
+    <button type="button" class="glossary-dialog__close" (click)="closeGlossary()" [attr.aria-label]="'common.close' | t">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg>
+    </button>
+    <h2 id="glossary-title" class="glossary-dialog__title">{{ 'landing.glossary_title' | t }}</h2>
+    <dl class="glossary-dialog__list">
+      @for (term of glossary; track term) {
+        <div>
+          <dt>{{ 'landing.gl_' + term + '_term' | t }}</dt>
+          <dd>{{ 'landing.gl_' + term + '_def' | t }}</dd>
+        </div>
+      }
+    </dl>
+  </div>
+</dialog>
