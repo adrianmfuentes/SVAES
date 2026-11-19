@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, signal, viewChild } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { FeedbackModalComponent } from '../../../features/landing/feedback-modal/feedback-modal.component';
@@ -18,6 +18,7 @@ interface FooterSection {
 })
 export class SiteFooterComponent {
   readonly showFeedback = signal(false);
+  private readonly glossaryEl = viewChild<ElementRef<HTMLDialogElement>>('glossaryEl');
 
   readonly sections: readonly FooterSection[] = [
     { id: 'que-hace', labelKey: 'landing.nav_product' },
@@ -61,5 +62,20 @@ export class SiteFooterComponent {
   closeFeedback(): void {
     this.showFeedback.set(false);
     document.body.style.overflow = '';
+  }
+
+  openGlossary(): void {
+    const dialog = this.glossaryEl()?.nativeElement;
+    if (dialog && typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
+  }
+
+  closeGlossary(): void {
+    const dialog = this.glossaryEl()?.nativeElement;
+    if (dialog && typeof dialog.close === 'function') dialog.close();
+  }
+
+  /** A click on the backdrop (the dialog element itself) closes it. */
+  onGlossaryClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) this.closeGlossary();
   }
 }

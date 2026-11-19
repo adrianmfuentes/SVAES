@@ -30,8 +30,8 @@ describe('LandingComponent', () => {
     }
   });
 
-  it('lists the ten built-in rules in the sample record', () => {
-    expect(host.querySelectorAll('.acta tbody tr')).toHaveLength(10);
+  it('lists five sample rules in the record', () => {
+    expect(host.querySelectorAll('.acta tbody tr')).toHaveLength(5);
   });
 
   it('toggles the mobile menu and exposes its state', () => {

@@ -512,3 +512,68 @@ line — the uppercase label is enough visual separation.
 - Do not use `Inter`. The choice of IBM Plex is intentional; substitute with
   an equivalent grotesque (Suisse Int'l, Aktiv Grotesk) only if licensing
   requires it.
+
+---
+
+## Public surface: Midnight
+
+The landing, login, access request, legal pages, accessibility, site map, footer and the
+feedback dialog use a second, quieter language. The signed-in application keeps the
+paper-and-ink system above. The shared source is `src/app/shared/styles/_midnight.scss`
+(tokens, auth layout, fields, buttons) and `_midnight-doc.scss` (long-form pages).
+
+**Idea:** one statement per screen, a light serif for the voice, hairlines instead of
+boxes, two colours that sit together and one that asks to be pressed.
+
+### Colour
+
+| Token | Value | Use |
+|---|---|---|
+| `ink` | `#070B16` | Midnight ground, 16:1 with moonlight |
+| `ink-2` | `#0D1424` | Panels, dark sections |
+| `text-d` | `#E9EDF6` | Moonlight: text on dark, primary button hover |
+| `muted-d` | `#AEB6C8` | Secondary text on dark (9:1) |
+| `paper` | `#EEF1F7` | Light sections and the footer |
+| `muted-l` | `#414A5E` | Secondary text on light (8:1) |
+| `gold` (lemon) | `#E3F27E` | The attention colour: primary button, accent word, bars, hover marker |
+| `gold-l` | `#4A5400` | Lemon darkened for text on light (7.4:1) |
+
+Lemon appears as: the one filled button, one italic word in the hero, a 3-4px bar over
+panels, the section currently read, hover markers on light surfaces, and focus rings.
+Verdict colours stay semantic (green, amber, salmon) and always carry an icon and text.
+
+### Type
+
+Newsreader (light, 300) for headings and statements. Manrope for body, controls and labels.
+IBM Plex Mono only for rule identifiers and code. Fonts are self-hosted from `public/fonts`
+(latin subset, `font-display: swap`); Newsreader and Manrope are preloaded. No third-party
+font requests. Maximum display size 4rem; body 1rem; labels are sentence case, not uppercase.
+
+### Layout and components
+
+- Hero: centred statement, one primary action, a text link, then the verification record
+  peeking above the fold (heights follow `vh` so it also peeks on laptops).
+- Alternating dark and light bands: hero dark, process light, rules dark, connectors light,
+  research dark, footer light. Adjacent bands never share a ground.
+- Panels: `ink-2`, 1px hairline, 14-16px radius, lemon bar at the top edge. No shadows on panels.
+- Tables and lists: hairline rows, no zebra, no boxes.
+- Buttons: pills. Primary lemon fill; secondary hairline outline. Minimum 44px.
+- Fields: 1px border, transparent ground, lemon border and halo on focus, salmon on error.
+- Hover on light surfaces: lemon marker behind the text. On dark: text turns lemon.
+- Topographic contour lines (`public/images/topo.svg`, `topo-ink.svg`) at 10-17% opacity,
+  masked clear behind text, drifting over 90-120 s.
+
+### Motion
+
+GSAP and Lenis, loaded lazily and only in the browser. The hero entrance is CSS (it must
+not wait for JavaScript). Below the fold: the record fills in row by row, sections rise once.
+Lenis smooth scrolling is mouse and trackpad only; touch keeps native scrolling. Route
+changes use a View Transition that fades the new page in over the old one (no dip to the page
+background). Everything is off under `prefers-reduced-motion`.
+
+### Accessibility and performance
+
+Text contrast at or above 7:1 on both grounds, 44px targets, visible focus, in-page links move
+focus to their target, status never relies on colour alone. Only routes flagged
+`data: { preload: true }` (login, access request) are preloaded. nginx compresses text and
+sends hashed assets with a one-year immutable cache; HTML is revalidated.

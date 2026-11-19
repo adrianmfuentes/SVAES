@@ -4,6 +4,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../../core/components/lang-toggle/lang-toggle.component';
 import { SiteFooterComponent } from '../../../core/components/site-footer/site-footer.component';
 import { SeoService } from '../../../core/services/seo.service';
+import { TocNavigation } from '../toc-navigation';
 
 @Component({
   selector: 'app-privacidad',
@@ -12,7 +13,7 @@ import { SeoService } from '../../../core/services/seo.service';
   templateUrl: './privacidad.component.html',
   styleUrl: './privacidad.component.scss',
 })
-export class PrivacidadComponent implements OnInit {
+export class PrivacidadComponent extends TocNavigation implements OnInit {
   private readonly seo = inject(SeoService);
 
   ngOnInit(): void {

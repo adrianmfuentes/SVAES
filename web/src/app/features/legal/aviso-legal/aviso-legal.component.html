@@ -2,10 +2,10 @@
 
 <div class="legal-page">
   <header class="legal-header" role="banner">
-    <a routerLink="/" class="legal-logo" aria-label="SVAES"><img class="brand-logo" src="/images/logo/svaes-logo-ink.svg" alt="" width="98" height="36" /></a>
+    <a routerLink="/" class="legal-logo" aria-label="SVAES"><img class="brand-logo" src="/images/logo/svaes-logo-moon.svg" alt="" width="98" height="36" /></a>
     <div class="legal-header-nav">
-      <app-lang-toggle theme="light" />
-      <a routerLink="/" class="btn-secondary">{{ 'legal.common.back_start' | t }}</a>
+      <app-lang-toggle theme="dark" />
+      <a routerLink="/" class="legal-back">{{ 'legal.common.back_start' | t }}</a>
     </div>
   </header>
 
@@ -14,13 +14,13 @@
       <nav [attr.aria-label]="'legal.notice.nav_label' | t">
         <p class="legal-toc-heading" aria-hidden="true">{{ 'legal.common.toc_heading' | t }}</p>
         <ol class="legal-toc-list">
-          <li class="legal-toc-item"><a href="/legal/aviso-legal#datos-titular" class="legal-toc-link">{{ 'legal.notice.toc.1' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/aviso-legal#objeto-aceptacion" class="legal-toc-link">{{ 'legal.notice.toc.2' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/aviso-legal#acceso-uso" class="legal-toc-link">{{ 'legal.notice.toc.3' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/aviso-legal#propiedad-intelectual" class="legal-toc-link">{{ 'legal.notice.toc.4' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/aviso-legal#exclusion-responsabilidad" class="legal-toc-link">{{ 'legal.notice.toc.5' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/aviso-legal#proteccion-datos" class="legal-toc-link">{{ 'legal.notice.toc.6' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/aviso-legal#ley-aplicable" class="legal-toc-link">{{ 'legal.notice.toc.7' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#datos-titular" class="legal-toc-link" [attr.aria-current]="active() === 'datos-titular' ? 'location' : null" (click)="goTo('datos-titular', $event)">{{ 'legal.notice.toc.1' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#objeto-aceptacion" class="legal-toc-link" [attr.aria-current]="active() === 'objeto-aceptacion' ? 'location' : null" (click)="goTo('objeto-aceptacion', $event)">{{ 'legal.notice.toc.2' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#acceso-uso" class="legal-toc-link" [attr.aria-current]="active() === 'acceso-uso' ? 'location' : null" (click)="goTo('acceso-uso', $event)">{{ 'legal.notice.toc.3' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#propiedad-intelectual" class="legal-toc-link" [attr.aria-current]="active() === 'propiedad-intelectual' ? 'location' : null" (click)="goTo('propiedad-intelectual', $event)">{{ 'legal.notice.toc.4' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#exclusion-responsabilidad" class="legal-toc-link" [attr.aria-current]="active() === 'exclusion-responsabilidad' ? 'location' : null" (click)="goTo('exclusion-responsabilidad', $event)">{{ 'legal.notice.toc.5' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#proteccion-datos" class="legal-toc-link" [attr.aria-current]="active() === 'proteccion-datos' ? 'location' : null" (click)="goTo('proteccion-datos', $event)">{{ 'legal.notice.toc.6' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#ley-aplicable" class="legal-toc-link" [attr.aria-current]="active() === 'ley-aplicable' ? 'location' : null" (click)="goTo('ley-aplicable', $event)">{{ 'legal.notice.toc.7' | t }}</a></li>
         </ol>
       </nav>
     </aside>
