@@ -1,29 +1,10 @@
-import {
-  Component,
-  DestroyRef,
-  ElementRef,
-  HostListener,
-  OnInit,
-  afterNextRender,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, DestroyRef, ElementRef, HostListener, OnInit, afterNextRender, inject, signal, viewChild } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../core/components/lang-toggle/lang-toggle.component';
 import { SiteFooterComponent } from '../../core/components/site-footer/site-footer.component';
+import { FlutedGlassComponent } from '../../core/components/fluted-glass/fluted-glass.component';
 import { SeoService } from '../../core/services/seo.service';
-import { initLandingMotion, type LandingMotion } from './landing-motion';
-
-type RuleStatus = 'valid' | 'warning';
-type Severity = 'blocking' | 'non_blocking';
-
-interface ActaRow {
-  readonly id: string;
-  readonly severity: Severity;
-  readonly status: RuleStatus;
-}
 
 interface ConnectorGroup {
   readonly labelKey: string;
@@ -31,44 +12,36 @@ interface ConnectorGroup {
 }
 
 /** Sections reachable from the navbar, footer and in-page links. */
-export type SectionId = 'que-hace' | 'reglas' | 'conectores' | 'investigacion';
+export type SectionId = 'que-hace' | 'conectores' | 'investigacion';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [RouterModule, TranslatePipe, LangToggleComponent, SiteFooterComponent],
+  imports: [RouterModule, TranslatePipe, LangToggleComponent, SiteFooterComponent, FlutedGlassComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })
 export class LandingComponent implements OnInit {
   private readonly seo = inject(SeoService);
-
   private readonly destroyRef = inject(DestroyRef);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private motion: LandingMotion | null = null;
-  private readonly siteNav = viewChild<ElementRef<HTMLElement>>('siteNav');
-  private hovering = false;
+  private readonly scrollProgress = viewChild<ElementRef<HTMLElement>>('scrollProgress');
 
   readonly menuOpen = signal(false);
-  readonly activeSection = signal<string | null>(null);
-
-  readonly flowSteps = [1, 2, 3, 4] as const;
+  /** True once the glass backdrop is painted; sections then let it show through. */
+  readonly glass = signal(false);
+  /** True when the sections stack as sheets (wide screens, motion allowed). */
+  readonly stack = signal(false);
 
   readonly sections: readonly { readonly id: SectionId; readonly labelKey: string }[] = [
     { id: 'que-hace', labelKey: 'landing.nav_product' },
-    { id: 'reglas', labelKey: 'landing.nav_rules' },
     { id: 'conectores', labelKey: 'landing.nav_connectors' },
     { id: 'investigacion', labelKey: 'landing.nav_research' },
   ];
 
-  /** Five of the ten built-in rules (RV-01..RV-10), as a sample record. Severity follows the engine's defaults. */
-  readonly rules: readonly ActaRow[] = [
-    { id: 'RV01', severity: 'blocking', status: 'valid' },
-    { id: 'RV02', severity: 'blocking', status: 'valid' },
-    { id: 'RV04', severity: 'blocking', status: 'valid' },
-    { id: 'RV06', severity: 'non_blocking', status: 'warning' },
-    { id: 'RV10', severity: 'blocking', status: 'valid' },
-  ];
+  /** The four things SVAES does with a release, in order. */
+  readonly stations = ['link', 'read', 'eval', 'decide'] as const;
+
+  readonly researchSteps = ['requirement', 'evidence', 'compare', 'result'] as const;
 
   readonly connectorGroups: readonly ConnectorGroup[] = [
     { labelKey: 'landing.conn_cat_tasks', items: ['Jira', 'Linear', 'Trello', 'Asana'] },
@@ -82,40 +55,136 @@ export class LandingComponent implements OnInit {
   ];
 
   constructor() {
-    // Browser only: the hero animation never runs during prerender/SSR.
+    // Browser only: sheets stack on wide screens when motion is allowed.
     afterNextRender(() => {
-      const supported =
-        typeof window.matchMedia === 'function' &&
-        typeof ResizeObserver !== 'undefined' &&
-        typeof IntersectionObserver !== 'undefined';
-      const release = (): void => document.documentElement.classList.add('motion-done');
-      if (!supported) {
-        release();
-        return;
-      }
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (!reduce) {
-        let destroyed = false;
-        this.destroyRef.onDestroy(() => {
-          destroyed = true;
-          this.motion?.destroy();
-        });
-        initLandingMotion(this.host.nativeElement)
-          .then((m) => (destroyed ? m.destroy() : (this.motion = m)))
-          .catch(release);
-        // Safety net: never leave the intro hidden if the animation chunk is slow or fails.
-        window.setTimeout(release, 4000);
-      }
-      this.watchSections();
-      window.addEventListener('resize', this.settlePill);
-      this.destroyRef.onDestroy(() => window.removeEventListener('resize', this.settlePill));
+      this.initSheets();
+      this.initScrollProgress();
     });
   }
 
+  /**
+   * Two sheets, one passing behind the other. The hero sticks under the header while the next one
+   * slides over it; `--cover` (0..1) says how much of it the next sheet has already covered, and
+   * the CSS uses it to push the sheet back, dim it and fade its content. Sections taller than the
+   * viewport stick by their bottom edge instead, so none of their content is lost.
+   */
+  private initSheets(): void {
+    if (typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia(
+      '(min-width: 64rem) and (min-height: 35rem) and (prefers-reduced-motion: no-preference)',
+    );
+    const sheets = ['.hero'];
+    const nextOf = ['.rest'];
+    let frame = 0;
+    // Eased copy of each sheet's cover: the page follows the scroll with a little inertia, so the
+    // sheets glide instead of tracking every wheel notch.
+    const shown = sheets.map(() => 0);
+    const smooth = (t: number): number => t * t * (3 - 2 * t);
+
+    const update = (): void => {
+      frame = 0;
+      const vh = window.innerHeight;
+      const header = document.querySelector('.site-header')?.getBoundingClientRect().height ?? 72;
+      let settling = false;
+      sheets.forEach((sel, i) => {
+        const el = document.querySelector<HTMLElement>(sel);
+        if (!el) return;
+        el.style.top = `${Math.min(header, vh - el.offsetHeight)}px`;
+        const nextTop = document.querySelector(nextOf[i])?.getBoundingClientRect().top ?? vh;
+        // The next sheet has to climb a sixth of the way before the one below starts to recede;
+        // then an S-curve takes it from 0 to 1.
+        const raw = (vh - nextTop) / (vh - header);
+        const target = smooth(Math.min(1, Math.max(0, (raw - 0.15) / 0.85)));
+        shown[i] += (target - shown[i]) * 0.14;
+        if (Math.abs(target - shown[i]) > 0.002) settling = true;
+        else shown[i] = target;
+        el.style.setProperty('--cover', shown[i].toFixed(3));
+      });
+      // The glass behind paints the dimming from --cover, so tell it to repaint.
+      window.dispatchEvent(new Event('sheet-cover'));
+      if (settling) frame = requestAnimationFrame(update);
+    };
+    const schedule = (): void => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    const apply = (): void => {
+      this.stack.set(media.matches);
+      if (media.matches) {
+        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', schedule, { passive: true });
+        update();
+      } else {
+        window.removeEventListener('scroll', schedule);
+        window.removeEventListener('resize', schedule);
+        for (const sel of sheets) {
+          const el = document.querySelector<HTMLElement>(sel);
+          el?.style.removeProperty('top');
+          el?.style.removeProperty('--cover');
+        }
+      }
+    };
+    // Keyboard users: a sheet that is covered would hide the focus ring (WCAG 2.4.11), so the first
+    // Tab turns the stacking off for the rest of the visit and the page reads as plain sections.
+    let keyboard = false;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Tab' || keyboard) return;
+      keyboard = true;
+      media.removeEventListener('change', apply);
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      this.stack.set(false);
+      for (const sel of sheets) {
+        const el = document.querySelector<HTMLElement>(sel);
+        el?.style.removeProperty('top');
+        el?.style.removeProperty('--cover');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    media.addEventListener('change', apply);
+    apply();
+    this.destroyRef.onDestroy(() => {
+      window.removeEventListener('keydown', onKey);
+      media.removeEventListener('change', apply);
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      if (frame) cancelAnimationFrame(frame);
+    });
+  }
+
+  private initScrollProgress(): void {
+    const indicator = this.scrollProgress()?.nativeElement;
+    const root = document.scrollingElement;
+    if (!indicator || !root) return;
+
+    let frame: number | undefined;
+    const update = (): void => {
+      frame = undefined;
+      const distance = root.scrollHeight - root.clientHeight;
+      const fraction = distance > 0 ? Math.min(1, Math.max(0, root.scrollTop / distance)) : 0;
+      indicator.style.transform = `scaleX(${fraction})`;
+    };
+    const schedule = (): void => {
+      frame ??= requestAnimationFrame(update);
+    };
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    const landing = indicator.closest('.landing');
+    const observer = landing && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(schedule) : null;
+    if (observer && landing) observer.observe(landing);
+    update();
+
+    this.destroyRef.onDestroy(() => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      observer?.disconnect();
+      if (frame !== undefined) cancelAnimationFrame(frame);
+    });
+  }
 
   ngOnInit(): void {
     this.seo.setPage({
-      title: 'SVAES — Verificación Automática de Entregas',
+      title: 'SVAES: Verificación Automática de Entregas',
       description:
         'Antes de publicar una versión, SVAES comprueba que sus tareas, código y documentos existen, están completos y encajan entre sí, y guarda el motivo de cada decisión.',
       path: '/',
@@ -134,66 +203,11 @@ export class LandingComponent implements OnInit {
     });
   }
 
-  /** Scroll-spy: the navbar pill follows the section that is being read. */
-  private watchSections(): void {
-    const targets = this.sections
-      .map((s) => document.getElementById(s.id)?.closest('section'))
-      .filter((el): el is HTMLElement => !!el);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const id = entry.target.querySelector('h2')?.id ?? null;
-          if (entry.isIntersecting) this.activeSection.set(id);
-          else if (this.activeSection() === id) this.activeSection.set(null);
-        }
-        requestAnimationFrame(this.settlePill);
-      },
-      { rootMargin: '-35% 0px -60% 0px' },
-    );
-    targets.forEach((el) => observer.observe(el));
-    this.destroyRef.onDestroy(() => observer.disconnect());
-  }
-
-  /** Slides the navbar pill under the hovered or focused link. */
-  movePill(event: Event): void {
-    const link = (event.currentTarget as HTMLElement | null) ?? null;
-    this.hovering = true;
-    this.placePill(link);
-  }
-
-  leavePill(): void {
-    this.hovering = false;
-    this.settlePill();
-  }
-
-  /** Returns the pill to the active section's link, or hides it at the top of the page. */
-  private readonly settlePill = (): void => {
-    if (this.hovering) return;
-    const nav = this.siteNav()?.nativeElement;
-    this.placePill(nav?.querySelector<HTMLElement>('a[aria-current="true"]') ?? null);
-  };
-
-  private placePill(link: HTMLElement | null): void {
-    const nav = this.siteNav()?.nativeElement;
-    if (!nav) return;
-    if (!link) {
-      nav.style.setProperty('--pill-o', '0');
-      return;
-    }
-    const box = nav.getBoundingClientRect();
-    const rect = link.getBoundingClientRect();
-    nav.style.setProperty('--pill-x', `${rect.left - box.left}px`);
-    nav.style.setProperty('--pill-w', `${rect.width}px`);
-    nav.style.setProperty('--pill-o', '1');
-  }
-
-  /** The logo on the home page scrolls to the top smoothly instead of jumping. */
+  /** The logo on the home page scrolls to the top instead of reloading. */
   goTop(event: Event): void {
     event.preventDefault();
     this.menuOpen.set(false);
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    if (this.motion && !reduceMotion) this.motion.scrollTop();
-    else window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    window.scrollTo({ top: 0, behavior: this.scrollBehavior() });
     document.getElementById('main-content')?.focus({ preventScroll: true });
     history.replaceState(null, '', '/');
   }
@@ -218,11 +232,13 @@ export class LandingComponent implements OnInit {
     const target = document.getElementById(id);
     if (!target) return;
 
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    if (this.motion && !reduceMotion) this.motion.scrollTo(target);
-    else target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    target.scrollIntoView({ behavior: this.scrollBehavior(), block: 'start' });
     target.focus({ preventScroll: true });
     history.replaceState(null, '', `#${id}`);
   }
 
+  private scrollBehavior(): ScrollBehavior {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    return reduce ? 'auto' : 'smooth';
+  }
 }

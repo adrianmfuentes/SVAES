@@ -22,7 +22,6 @@ export class SiteFooterComponent {
 
   readonly sections: readonly FooterSection[] = [
     { id: 'que-hace', labelKey: 'landing.nav_product' },
-    { id: 'reglas', labelKey: 'landing.nav_rules' },
     { id: 'conectores', labelKey: 'landing.nav_connectors' },
     { id: 'investigacion', labelKey: 'landing.nav_research' },
   ];
@@ -77,5 +76,12 @@ export class SiteFooterComponent {
   /** A click on the backdrop (the dialog element itself) closes it. */
   onGlossaryClick(event: MouseEvent): void {
     if (event.target === event.currentTarget) this.closeGlossary();
+  }
+
+  /** Keyboard support: backdrop click equivalent or Escape. */
+  onGlossaryKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape' || (event.key === 'Enter' && event.target === event.currentTarget)) {
+      this.closeGlossary();
+    }
   }
 }

@@ -1,7 +1,5 @@
-@use '../../../shared/styles/midnight' as m;
-
-// Feedback dialog in the midnight language: dark panel, hairlines, one lemon accent.
-// Contrast >= 7:1 for text, 44px targets, visible focus ring, errors not colour-only.
+@use '../../../shared/styles/ledger' as m;
+@use '../../../shared/styles/ledger-glass' as glass;
 
 :host {
   @include m.tokens;
@@ -39,7 +37,7 @@ h2 {
 }
 
 .modal-overlay::backdrop {
-  background: rgba(4, 6, 12, 0.78);
+  background: rgb(11 22 32 / 65%);
 }
 
 @keyframes fadeIn {
@@ -49,35 +47,38 @@ h2 {
 }
 
 .modal {
-  position: relative;
+  @include glass.flutes(
+    var(--accent),
+    radial-gradient(ellipse 30rem 20rem at 100% 0, #779fbe 98%, transparent)
+  );
+
   width: 100%;
-  max-width: 36rem;
-  max-height: calc(100vh - 2rem);
+  max-width: 39rem;
+  max-height: calc(100dvh - 2rem);
   overflow-y: auto;
-  padding: clamp(1.25rem, 3vw, 1.75rem) clamp(1.25rem, 3vw, 2rem);
-  background: var(--ink-2);
-  color: var(--text-d);
-  border: 1px solid var(--line-d);
-  border-radius: 16px;
-  box-shadow: 0 2.5rem 5rem -1.5rem rgba(0, 0, 0, 0.7);
+  padding: clamp(0.5rem, 1.5vw, 0.875rem);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  box-shadow: 0 1rem 3rem rgb(11 22 32 / 32%);
   font-family: var(--sans);
   font-size: 1rem;
   line-height: 1.6;
 
-  // Lemon bar, same mark as the other panels.
-  &::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: 2rem;
-    width: 4rem;
-    height: 3px;
-    background: var(--gold);
-  }
-
   @media (prefers-reduced-motion: no-preference) {
     animation: rise 0.3s var(--ease);
   }
+}
+
+.modal__surface {
+  @include glass.paper;
+
+  position: relative;
+  padding: clamp(0.875rem, 3vw, 1.75rem);
+}
+
+.modal__surface ::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
 }
 
 @keyframes rise {
@@ -90,11 +91,13 @@ h2 {
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--signal);
   outline-offset: 3px;
 }
 
 .modal-close {
+  @include glass.hover-tint;
+
   position: absolute;
   top: 0.9rem;
   right: 0.9rem;
@@ -103,18 +106,10 @@ textarea:focus-visible {
   width: 44px;
   height: 44px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 2px;
   background: transparent;
-  color: var(--muted-d);
+  color: var(--fg-2);
   cursor: pointer;
-  transition:
-    color 0.2s,
-    border-color 0.2s;
-
-  &:hover {
-    border-color: var(--gold);
-    color: var(--gold);
-  }
 }
 
 .modal-head {
@@ -123,9 +118,9 @@ textarea:focus-visible {
 }
 
 .modal-title {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-size: 1.625rem;
-  font-weight: 300;
+  font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.015em;
   text-wrap: balance;
@@ -133,7 +128,7 @@ textarea:focus-visible {
 
 .modal-subtitle {
   margin-top: 0.35rem;
-  color: var(--muted-d);
+  color: var(--fg-2);
   font-size: 0.9375rem;
   text-wrap: pretty;
 }
@@ -152,23 +147,23 @@ textarea:focus-visible {
   .rating-field-label {
     display: block;
     margin-bottom: 0.35rem;
-    color: var(--text-d);
+    color: var(--fg);
     font-size: 0.875rem;
     font-weight: 600;
     letter-spacing: 0;
     text-transform: none;
   }
 
-  input,
+  input:not(.sr-only),
   textarea {
     display: block;
     width: 100%;
     min-height: 44px;
     padding: 0.55rem 0.95rem;
     border: 1px solid var(--line-strong);
-    border-radius: 10px;
+    border-radius: 2px;
     background: transparent;
-    color: var(--text-d);
+    color: var(--fg);
     font-family: inherit;
     font-size: 1rem;
     transition:
@@ -176,21 +171,21 @@ textarea:focus-visible {
       box-shadow 0.2s;
 
     &::placeholder {
-      color: var(--faint-d);
+      color: var(--fg-3);
     }
 
     &:hover {
-      border-color: var(--muted-d);
+      border-color: var(--fg-2);
     }
 
     &:focus {
       outline: none;
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(227, 242, 126, 0.22);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
     }
 
     &[aria-invalid='true'] {
-      border-color: var(--bad-d);
+      border-color: var(--bad);
     }
   }
 
@@ -208,11 +203,11 @@ textarea:focus-visible {
 }
 
 .field-hint {
-  color: var(--muted-d);
+  color: var(--fg-2);
 }
 
 .field-error {
-  color: var(--bad-d);
+  color: var(--bad);
 }
 
 .field-foot {
@@ -229,7 +224,7 @@ textarea:focus-visible {
 
 .char-count {
   margin-left: auto;
-  color: var(--muted-d);
+  color: var(--fg-2);
   font-size: 0.8125rem;
 }
 
@@ -243,17 +238,21 @@ textarea:focus-visible {
 
 .stars {
   display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   gap: 0.1rem;
 }
 
 .star-btn {
+  position: relative;
   display: grid;
   place-items: center;
+  flex: 0 0 44px;
   width: 44px;
   height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 2px;
   background: transparent;
   color: var(--line-strong);
   cursor: pointer;
@@ -266,21 +265,27 @@ textarea:focus-visible {
   }
 
   &:hover {
-    color: var(--gold);
+    color: var(--accent);
     transform: translateY(-2px);
   }
 
   &.filled {
-    color: var(--gold);
+    color: var(--accent);
 
     svg {
       fill: currentColor;
     }
   }
+
+  &:has(input:focus-visible),
+  &:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
 }
 
 .rating-label {
-  color: var(--muted-d);
+  color: var(--fg-2);
   font-size: 0.9375rem;
 }
 
@@ -291,15 +296,15 @@ textarea:focus-visible {
   gap: 0.7rem;
   margin-top: 1rem;
   padding: 0.65rem 0.9rem;
-  border: 1px solid var(--line-d);
-  border-radius: 10px;
-  color: var(--muted-d);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--fg-2);
   font-size: 0.875rem;
 
   svg {
     flex: none;
     margin-top: 0.15rem;
-    color: var(--gold);
+    color: var(--accent);
   }
 }
 
@@ -312,7 +317,7 @@ textarea:focus-visible {
   margin-bottom: 0.5rem;
   padding: 0.9rem 1rem;
   border: 1px solid currentColor;
-  border-radius: 10px;
+  border-radius: 2px;
   font-size: 0.9375rem;
 
   svg {
@@ -322,25 +327,25 @@ textarea:focus-visible {
 }
 
 .alert-error {
-  color: var(--bad-d);
+  color: var(--bad);
 }
 
 .alert-success {
   align-items: center;
   padding: 1.5rem;
-  color: var(--ok-d);
+  color: var(--ok);
 
   p {
     margin-top: 0.25rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
   }
 }
 
 .alert-success-title {
-  color: var(--text-d);
-  font-family: var(--serif);
+  color: var(--fg);
+  font-family: var(--display);
   font-size: 1.375rem;
-  font-weight: 300;
+  font-weight: 800;
 }
 
 // Actions
@@ -360,7 +365,7 @@ textarea:focus-visible {
   min-height: 48px;
   padding: 0 1.6rem;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 2px;
   font-family: inherit;
   font-size: 1rem;
   font-weight: 600;
@@ -381,23 +386,18 @@ textarea:focus-visible {
 }
 
 .btn-secondary {
+  @include glass.hover-tint;
+
   border-color: var(--line-strong);
   background: transparent;
-  color: var(--text-d);
-
-  &:hover:not(:disabled) {
-    border-color: var(--gold);
-    color: var(--gold);
-  }
+  color: var(--fg);
 }
 
 .btn-accent {
-  background: var(--gold);
-  color: var(--ink);
+  @include glass.hover-tint(var(--fg), 0.28);
 
-  &:hover:not(:disabled) {
-    background: var(--text-d);
-  }
+  background: var(--accent);
+  color: var(--accent-fg);
 }
 
 @media (max-width: 560px) {

@@ -1,49 +1,27 @@
-// Midnight design language shared by the footer, login and access request.
-// Midnight blue ground, moonlight text, one lemon accent, hairlines instead of boxes.
+@use 'ledger-glass' as glass;
+
+// Shared public-page palette, typography and form styles.
 // Text contrast targets WCAG 2.2 AAA (>= 7:1) except placeholders (>= 4.5:1).
 
 @mixin tokens {
-  --ink: #070b16;
-  --ink-2: #0d1424;
-  --text-d: #e9edf6; // 16:1 on ink
-  --muted-d: #aeb6c8; // 9:1 on ink
-  --faint-d: #8d95a8; // 6:1 on ink (placeholders)
-  --line-d: rgba(170, 190, 255, 0.18);
-  --line-strong: rgba(170, 190, 255, 0.34);
-  --gold: #e3f27e; // lemon, 15:1 on ink
-  --ok-d: #8fe0b0;
-  --warn-d: #f2b66b;
-  --bad-d: #f4b3a6; // 10:1 on ink
+  --bg: #f5f8fb; // polar white, the paper
+  --bg-2: #e7eef5;
+  --fg: #0b1620; // 17:1 on bg
+  --fg-2: #334a5e; // 9:1 on bg
+  --fg-3: #4f6478; // 5.8:1 on bg (placeholders)
+  --line: rgba(11, 22, 32, 0.2);
+  --line-strong: rgba(11, 22, 32, 0.5);
+  --accent: #1d4e76; // deep glacier blue, 8.6:1 on bg
+  --accent-fg: #ffffff;
+  --signal: #c8202f; // racing red: focus only
+  --ok: #1e6a3a;
+  --warn: #7a5200;
+  --bad: #8b1a1a;
   --gutter: clamp(1.5rem, 5vw, 4rem);
   --max: 72rem;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --serif: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+  --display: 'Manrope Variable', 'Manrope', system-ui, sans-serif;
   --sans: 'Manrope Variable', 'Manrope', system-ui, sans-serif;
-}
-
-@mixin topo-bg($opacity: 0.12) {
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -4% -2%;
-    background: url('/images/topo.svg') center / cover no-repeat;
-    opacity: $opacity;
-    mask-image: radial-gradient(ellipse 80% 90% at 50% 50%, transparent 30%, #000 85%);
-    animation: midnight-topo-drift 120s ease-in-out infinite alternate;
-    pointer-events: none;
-  }
-}
-
-@keyframes midnight-topo-drift {
-  from {
-    transform: translate3d(-1.5%, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(1.5%, -2%, 0) scale(1.05);
-  }
 }
 
 @mixin sr-only {
@@ -65,15 +43,15 @@
   }
 
   ::selection {
-    background: var(--gold);
-    color: var(--ink);
+    background: var(--accent);
+    color: var(--accent-fg);
   }
 
   a:focus-visible,
   button:focus-visible,
   input:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid var(--gold);
+    outline: 2px solid var(--signal);
     outline-offset: 3px;
   }
 
@@ -90,40 +68,42 @@
   h1,
   h2 {
     margin: 0;
-    font-family: var(--serif);
-    font-weight: 300;
-    letter-spacing: -0.015em;
+    font-family: var(--display);
+    font-weight: 800;
+    letter-spacing: -0.035em;
     text-wrap: balance;
   }
 
   .auth {
-    @include topo-bg(0.12);
+    @include glass.light-scene;
+
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-    background:
-      radial-gradient(54rem 26rem at 50% -10%, rgba(70, 100, 230, 0.2), transparent 70%),
-      var(--ink);
-    color: var(--text-d);
+    min-height: 100dvh;
+    color: var(--fg);
     font-family: var(--sans);
     font-size: 1rem;
     line-height: 1.65;
-
-    > * {
-      position: relative;
-    }
   }
 
   // Header
+  .auth__top,
+  .auth__foot {
+    @include glass.paper;
+
+    max-width: calc(var(--max) - 2 * var(--gutter));
+    width: calc(100% - 2 * var(--gutter));
+    margin-inline: auto;
+    padding-inline: clamp(0.75rem, 2vw, 1.5rem);
+  }
+
   .auth__top {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    max-width: var(--max);
-    width: 100%;
-    margin-inline: auto;
-    padding: 1.25rem var(--gutter);
+    margin-top: clamp(0.75rem, 2vw, 1.5rem);
+    padding-block: 0.75rem;
   }
 
   .auth__logo {
@@ -143,23 +123,28 @@
     align-items: center;
     gap: 0.5rem;
     min-height: 44px;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 0.9375rem;
     font-weight: 500;
-    text-decoration: none;
-    transition: color 0.2s;
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 0.3rem;
+    transition:
+      color 180ms ease,
+      text-decoration-color 180ms ease;
 
     &:hover {
-      color: var(--gold);
+      color: var(--accent);
+      text-decoration-color: var(--accent);
     }
   }
 
-  // Body
+  // Body: heading on the left, the form pushed to the right edge.
   .auth__main {
     display: grid;
     flex: 1;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 28rem);
-    gap: clamp(3rem, 8vw, 8rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+    gap: clamp(1rem, 4vw, 4rem);
     align-items: center;
     max-width: var(--max);
     width: 100%;
@@ -167,40 +152,25 @@
     padding: clamp(1.5rem, 4vw, 3rem) var(--gutter) clamp(3rem, 6vw, 5rem);
   }
 
-  .auth__intro h1 {
-    max-width: 14ch;
-    font-size: clamp(2.25rem, 4.4vw, 3.5rem);
-    line-height: 1.06;
+  .auth__intro,
+  .auth__panel {
+    @include glass.paper;
+
+    min-width: 0;
+    padding: clamp(1rem, 3vw, 2.5rem);
   }
 
-  .auth__intro em {
-    font-style: italic;
-    color: var(--gold);
+  .auth__intro h1 {
+    max-width: 12ch;
+    font-size: clamp(2.5rem, 5.2vw, 4.75rem);
+    line-height: 0.98;
   }
 
   .auth__intro p {
     max-width: 38ch;
     margin-top: 1.5rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
     text-wrap: pretty;
-  }
-
-  .auth__panel {
-    position: relative;
-    padding: clamp(1.75rem, 3vw, 2.5rem);
-    border: 1px solid var(--line-d);
-    border-radius: 16px;
-    background: var(--ink-2);
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: 2rem;
-      width: 4rem;
-      height: 3px;
-      background: var(--gold);
-    }
   }
 
   .auth__title {
@@ -210,19 +180,19 @@
 
   .auth__hint {
     margin-top: 0.75rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 0.9375rem;
     text-wrap: pretty;
   }
 
-  // Fields
+  // Fields: underline only, so they do not look like buttons or cards.
   .field {
     margin-top: 1.5rem;
 
     label {
       display: block;
-      margin-bottom: 0.5rem;
-      color: var(--text-d);
+      margin-bottom: 0.25rem;
+      color: var(--fg);
       font-size: 0.875rem;
       font-weight: 600;
       letter-spacing: 0;
@@ -234,29 +204,28 @@
       display: block;
       width: 100%;
       min-height: 48px;
-      padding: 0.7rem 0.95rem;
-      border: 1px solid var(--line-strong);
-      border-radius: 10px;
+      padding: 0.7rem 0;
+      border: 0;
+      border-bottom: 1px solid var(--line-strong);
+      border-radius: 0;
       background: transparent;
-      color: var(--text-d);
+      color: var(--fg);
       font-family: inherit;
       font-size: 1rem;
-      transition:
-        border-color 0.2s,
-        box-shadow 0.2s;
+      transition: border-color 0.2s;
 
       &::placeholder {
-        color: var(--faint-d);
+        color: var(--fg-3);
       }
 
       &:hover {
-        border-color: var(--muted-d);
+        border-bottom-color: var(--fg);
       }
 
       &:focus {
         outline: none;
-        border-color: var(--gold);
-        box-shadow: 0 0 0 3px rgba(227, 242, 126, 0.22);
+        border-bottom: 2px solid var(--accent);
+        margin-bottom: -1px;
       }
     }
 
@@ -266,14 +235,14 @@
     }
 
     .input-error {
-      border-color: var(--bad-d);
+      border-bottom-color: var(--bad);
     }
   }
 
   .field__error,
   .field-error {
     margin-top: 0.4rem;
-    color: var(--bad-d);
+    color: var(--bad);
     font-size: 0.875rem;
   }
 
@@ -282,7 +251,7 @@
     justify-content: space-between;
     gap: 1rem;
     margin-top: 0.4rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 0.8125rem;
 
     code {
@@ -291,24 +260,26 @@
   }
 
   .field__note--over {
-    color: var(--bad-d);
+    color: var(--bad);
   }
 
   .optional {
     margin-left: 0.4rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-weight: 400;
   }
 
+  // Errors: a full hairline in the error colour, never a coloured side edge.
   .alert {
     display: flex;
     align-items: flex-start;
     gap: 0.6rem;
     margin-top: 1.5rem;
     padding: 0.8rem 1rem;
-    border: 1px solid var(--bad-d);
-    border-radius: 10px;
-    color: var(--bad-d);
+    border: 1px solid var(--bad);
+    border-radius: 2px;
+    background: var(--bg-2);
+    color: var(--bad);
     font-size: 0.9375rem;
 
     svg {
@@ -317,7 +288,7 @@
     }
   }
 
-  // Buttons
+  // Buttons: rectangular, 2px radius, never a pill.
   .btn {
     display: inline-flex;
     align-items: center;
@@ -326,37 +297,28 @@
     min-height: 48px;
     padding: 0 1.6rem;
     border: 1px solid transparent;
-    border-radius: 999px;
+    border-radius: 2px;
     font-family: inherit;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1;
     text-decoration: none;
     cursor: pointer;
-    transition:
-      background-color 0.25s,
-      color 0.25s,
-      border-color 0.25s,
-      opacity 0.2s;
+    transition: opacity 180ms ease;
 
     &--primary {
-      background: var(--gold);
-      color: var(--ink);
+      @include glass.hover-tint(var(--fg), 0.28);
 
-      &:hover:not(:disabled) {
-        background: var(--text-d);
-      }
+      background: var(--accent);
+      color: var(--accent-fg);
     }
 
     &--ghost {
-      border-color: var(--line-strong);
-      background: transparent;
-      color: var(--text-d);
+      @include glass.hover-tint;
 
-      &:hover:not(:disabled) {
-        border-color: var(--gold);
-        color: var(--gold);
-      }
+      border-color: var(--fg);
+      background: transparent;
+      color: var(--fg);
     }
 
     &--block {
@@ -377,7 +339,7 @@
     padding: 0;
     border: 0;
     background: none;
-    color: var(--text-d);
+    color: var(--fg);
     font-family: inherit;
     font-size: 0.9375rem;
     text-decoration: underline;
@@ -385,12 +347,12 @@
     text-underline-offset: 0.3rem;
     cursor: pointer;
     transition:
-      color 0.2s,
-      text-decoration-color 0.2s;
+      color 180ms ease,
+      text-decoration-color 180ms ease;
 
     &:hover {
-      color: var(--gold);
-      text-decoration-color: var(--gold);
+      color: var(--accent);
+      text-decoration-color: var(--accent);
     }
   }
 
@@ -400,7 +362,7 @@
     align-items: center;
     gap: 0 1.25rem;
     margin-top: 1.25rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 0.9375rem;
   }
 
@@ -411,12 +373,9 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem 1.5rem;
-    max-width: var(--max);
-    width: 100%;
-    margin-inline: auto;
-    padding: 1rem var(--gutter) 1.25rem;
-    border-top: 1px solid var(--line-d);
-    color: var(--muted-d);
+    margin-bottom: clamp(0.75rem, 2vw, 1.5rem);
+    padding-block: 0.5rem;
+    color: var(--fg-2);
     font-size: 0.875rem;
 
     nav {
@@ -430,26 +389,28 @@
       display: inline-flex;
       align-items: center;
       min-height: 44px;
-      color: var(--muted-d);
+      color: var(--fg-2);
       text-decoration: underline;
       text-decoration-color: var(--line-strong);
       text-underline-offset: 0.3rem;
+      transition: color 180ms ease;
 
       &:hover {
-        color: var(--gold);
+        color: var(--accent);
       }
     }
   }
 
   @media (max-width: 880px) {
     .auth__main {
-      grid-template-columns: 1fr;
-      gap: 2.5rem;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1rem;
+      align-items: start;
     }
 
     .auth__intro h1 {
-      max-width: 18ch;
-      font-size: clamp(2rem, 8vw, 2.75rem);
+      max-width: 14ch;
+      font-size: clamp(2.25rem, 9vw, 3.75rem);
     }
   }
 

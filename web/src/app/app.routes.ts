@@ -202,6 +202,12 @@ export const routes: Routes = [
       import('./features/info/info-page.component').then((m) => m.InfoPageComponent),
   },
   {
+    path: 'legal/cookies',
+    data: { page: 'cookies' },
+    loadComponent: () =>
+      import('./features/info/info-page.component').then((m) => m.InfoPageComponent),
+  },
+  {
     path: 'legal/aviso-legal',
     loadComponent: () =>
       import('./features/legal/aviso-legal/aviso-legal.component').then(

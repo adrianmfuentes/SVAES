@@ -1,7 +1,7 @@
     <div class="auth">
       <header class="auth__top">
         <a routerLink="/" class="auth__home">
-          <img class="auth__logo" src="/images/logo/svaes-logo-moon.svg" alt="SVAES" width="98" height="36" />
+          <img class="auth__logo" src="/images/logo/svaes-logo-ink.svg" alt="SVAES" width="98" height="36" />
         </a>
         <a routerLink="/" class="auth__back">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
@@ -13,9 +13,7 @@
 
       <main class="auth__main">
         <div class="auth__intro">
-          <h1>
-            {{ 'login.context_title_line1' | t }} <em>{{ 'login.context_title_line2' | t }}</em> {{ 'login.context_title_line3' | t }}
-          </h1>
+          <h1>{{ 'login.context_title' | t }}</h1>
           <p>{{ 'login.context_desc' | t }}</p>
         </div>
 
@@ -190,7 +188,7 @@
       <footer class="auth__foot">
         <span>&copy; 2026 SVAES</span>
         <nav>
-          <app-lang-toggle theme="dark" />
+          <app-lang-toggle theme="light" />
           <a routerLink="/legal/privacidad">{{ 'login.footer_privacy' | t }}</a>
           <a routerLink="/legal/aviso-legal">{{ 'login.footer_legal' | t }}</a>
         </nav>

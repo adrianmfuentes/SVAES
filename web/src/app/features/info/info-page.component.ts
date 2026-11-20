@@ -4,8 +4,39 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { LangToggleComponent } from '../../core/components/lang-toggle/lang-toggle.component';
 import { SiteFooterComponent } from '../../core/components/site-footer/site-footer.component';
 import { SeoService } from '../../core/services/seo.service';
+import { TocNavigation } from '../legal/toc-navigation';
 
-export type InfoPage = 'accessibility' | 'sitemap';
+const PAGE_DETAILS = {
+  accessibility: {
+    title: 'Declaración de accesibilidad',
+    description: 'Declaración de accesibilidad de SVAES: objetivo WCAG 2.2, medidas aplicadas, limitaciones conocidas y cómo avisar de un problema.',
+    path: '/accesibilidad',
+    sections: ['goal', 'done', 'tests', 'limits', 'report'].map((key) => ({
+      id: 'a11y-' + key,
+      label: 'info.a11y.' + key + '_title',
+    })),
+  },
+  sitemap: {
+    title: 'Mapa del sitio',
+    description: 'Mapa del sitio de SVAES: todas las páginas públicas y de la aplicación.',
+    path: '/mapa-del-sitio',
+    sections: ['public', 'legal', 'app'].map((key) => ({
+      id: 'map-' + key,
+      label: 'info.map.' + key,
+    })),
+  },
+  cookies: {
+    title: 'Política de cookies',
+    description: 'Información sobre cookies y almacenamiento local en SVAES.',
+    path: '/legal/cookies',
+    sections: ['storage', 'manage', 'privacy'].map((key) => ({
+      id: 'cookies-' + key,
+      label: 'info.cookies.' + key + '_title',
+    })),
+  },
+} as const;
+
+export type InfoPage = keyof typeof PAGE_DETAILS;
 
 interface MapChild {
   readonly key: string;
@@ -20,7 +51,6 @@ interface MapEntry {
   readonly children?: readonly MapChild[];
 }
 
-/** Public information pages: accessibility statement and site map. */
 @Component({
   selector: 'app-info-page',
   standalone: true,
@@ -28,11 +58,13 @@ interface MapEntry {
   templateUrl: './info-page.component.html',
   styleUrl: './info-page.component.scss',
 })
-export class InfoPageComponent implements OnInit {
+export class InfoPageComponent extends TocNavigation implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly seo = inject(SeoService);
 
   readonly page: InfoPage = (this.route.snapshot.data['page'] as InfoPage) ?? 'accessibility';
+
+  readonly details = PAGE_DETAILS[this.page];
 
   readonly doneItems = [1, 2, 3, 4, 5, 6, 7, 8];
   readonly limitItems = [1, 2, 3];
@@ -44,7 +76,6 @@ export class InfoPageComponent implements OnInit {
       link: '/',
       children: [
         { key: 'info.map.home_what', fragment: 'que-hace' },
-        { key: 'info.map.home_rules', fragment: 'reglas' },
         { key: 'info.map.home_connectors', fragment: 'conectores' },
         { key: 'info.map.home_research', fragment: 'investigacion' },
       ],
@@ -55,6 +86,7 @@ export class InfoPageComponent implements OnInit {
 
   readonly legalPages: readonly MapEntry[] = [
     { key: 'info.map.privacy', desc: 'info.map.privacy_desc', link: '/legal/privacidad' },
+    { key: 'info.map.cookies', desc: 'info.map.cookies_desc', link: '/legal/cookies' },
     { key: 'info.map.notice', desc: 'info.map.notice_desc', link: '/legal/aviso-legal' },
     { key: 'info.map.accessibility', desc: 'info.map.accessibility_desc', link: '/accesibilidad' },
     { key: 'info.map.sitemap', desc: 'info.map.sitemap_desc', link: '/mapa-del-sitio', current: true },
@@ -75,13 +107,6 @@ export class InfoPageComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    const accessibility = this.page === 'accessibility';
-    this.seo.setPage({
-      title: accessibility ? 'Declaración de accesibilidad' : 'Mapa del sitio',
-      description: accessibility
-        ? 'Declaración de accesibilidad de SVAES: objetivo WCAG 2.2, medidas aplicadas, limitaciones conocidas y cómo avisar de un problema.'
-        : 'Mapa del sitio de SVAES: todas las páginas públicas y de la aplicación.',
-      path: accessibility ? '/accesibilidad' : '/mapa-del-sitio',
-    });
+    this.seo.setPage(this.details);
   }
 }

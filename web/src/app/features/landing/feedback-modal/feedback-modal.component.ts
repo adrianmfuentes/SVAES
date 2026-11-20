@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, ViewChild, inject, output } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, ViewChild, inject, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeedbackService, FeedbackPayload } from '../../../core/services/feedback.service';
@@ -15,6 +15,7 @@ import { TranslationService } from '../../../core/i18n/translation.service';
 export class FeedbackModalComponent implements AfterViewInit {
   @ViewChild('dialogEl') private readonly dialogElRef!: ElementRef<HTMLDialogElement>;
 
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly feedbackService = inject(FeedbackService);
   private readonly ts = inject(TranslationService);
 
@@ -32,7 +33,7 @@ export class FeedbackModalComponent implements AfterViewInit {
   showErrors = false;
   error: string | null = null;
 
-  private static readonly EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  private static readonly EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+\.[^\s@]+$/;
 
   get emailInvalid(): boolean {
     const email = this.payload.email?.trim();
@@ -60,7 +61,7 @@ export class FeedbackModalComponent implements AfterViewInit {
 
   /** Radio-group keyboard support: arrows move and select, Home/End jump (WAI-ARIA APG). */
   onStarKeydown(event: KeyboardEvent, star: number): void {
-    let next = star;
+    let next: number;
     switch (event.key) {
       case 'ArrowRight':
       case 'ArrowUp':
@@ -81,8 +82,8 @@ export class FeedbackModalComponent implements AfterViewInit {
     }
     event.preventDefault();
     this.payload.rating = next;
-    const buttons = this.dialogElRef.nativeElement.querySelectorAll<HTMLButtonElement>('.star-btn');
-    buttons[next - 1]?.focus();
+    const inputs = this.dialogElRef.nativeElement.querySelectorAll<HTMLInputElement>('.stars input');
+    inputs[next - 1]?.focus();
   }
 
   onOverlayClick(event: MouseEvent): void {
@@ -103,7 +104,7 @@ export class FeedbackModalComponent implements AfterViewInit {
     const target =
       (!this.payload.name?.trim() && root.querySelector<HTMLElement>('#fb-name')) ||
       (this.emailInvalid && root.querySelector<HTMLElement>('#fb-email')) ||
-      (this.payload.rating === 0 && root.querySelector<HTMLElement>('.star-btn')) ||
+      (this.payload.rating === 0 && (root.querySelector<HTMLElement>('.stars input') || root.querySelector<HTMLElement>('.star-btn'))) ||
       (!this.payload.comments?.trim() && root.querySelector<HTMLElement>('#fb-comments'));
     if (target) target.focus();
   }
@@ -127,11 +128,13 @@ export class FeedbackModalComponent implements AfterViewInit {
       next: () => {
         this.submitted = true;
         this.loading = false;
+        this.changeDetector.markForCheck();
         setTimeout(() => this.onClose(), 1500);
       },
       error: () => {
         this.error = this.ts.translateInstant('feedback.error');
         this.loading = false;
+        this.changeDetector.markForCheck();
       },
     });
   }

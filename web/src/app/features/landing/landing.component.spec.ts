@@ -30,10 +30,6 @@ describe('LandingComponent', () => {
     }
   });
 
-  it('lists five sample rules in the record', () => {
-    expect(host.querySelectorAll('.acta tbody tr')).toHaveLength(5);
-  });
-
   it('toggles the mobile menu and exposes its state', () => {
     const toggle = host.querySelector<HTMLButtonElement>('.menu-toggle')!;
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
@@ -49,15 +45,18 @@ describe('LandingComponent', () => {
 
   it('moves focus to the target heading when navigating to a section', () => {
     const scrollSpy = vi.fn();
-    const target = host.querySelector<HTMLElement>('#reglas')!;
+    const target = host.querySelector<HTMLElement>('#conectores')!;
     target.scrollIntoView = scrollSpy;
     const event = new Event('click', { cancelable: true });
 
-    component.goTo('reglas', event);
+    component.goTo('conectores', event);
 
     expect(event.defaultPrevented).toBe(true);
     expect(scrollSpy).toHaveBeenCalled();
     expect(document.activeElement).toBe(target);
   });
 
+  it('lists the four steps', () => {
+    expect(host.querySelectorAll('.steps .step')).toHaveLength(4);
+  });
 });

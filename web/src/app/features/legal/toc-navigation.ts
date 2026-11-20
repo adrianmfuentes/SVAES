@@ -1,4 +1,4 @@
-import { DestroyRef, afterNextRender, inject, signal } from '@angular/core';
+import { DestroyRef, ElementRef, afterNextRender, inject, signal } from '@angular/core';
 
 /**
  * In-page table of contents for the legal documents: smooth scroll without reloading the page,
@@ -7,12 +7,16 @@ import { DestroyRef, afterNextRender, inject, signal } from '@angular/core';
 export abstract class TocNavigation {
   private readonly destroyRef = inject(DestroyRef);
 
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
   readonly active = signal<string | null>(null);
 
   constructor() {
     afterNextRender(() => {
       if (typeof IntersectionObserver === 'undefined') return;
-      const sections = Array.from(document.querySelectorAll<HTMLElement>('.legal-section[id]'));
+      const sections = this.host.nativeElement.querySelectorAll<HTMLElement>('main article section[id]');
+      if (!sections.length) return;
+
       const observer = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {

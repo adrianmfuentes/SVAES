@@ -1,53 +1,48 @@
-// Long-form pages (legal notices, accessibility, site map) in the midnight language.
-@use 'midnight' as m;
+// Long-form pages (legal notices, accessibility, site map) in the ledger language.
+@use 'ledger' as m;
+@use 'ledger-glass' as glass;
 
 @mixin doc-page {
+  @include glass.light-scene;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background:
-    radial-gradient(54rem 22rem at 50% -8%, rgba(70, 100, 230, 0.18), transparent 70%),
-    var(--ink);
-  color: var(--text-d);
+  min-height: 100dvh;
+  color: var(--fg);
   font-family: var(--sans);
   font-size: 1.0625rem;
   line-height: 1.7;
 }
 
 @mixin doc-header {
+  @include glass.paper;
+
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  max-width: var(--max);
-  width: 100%;
+  max-width: calc(var(--max) - 2 * var(--gutter));
+  width: calc(100% - 2 * var(--gutter));
+  margin-block-start: clamp(0.75rem, 2vw, 1.5rem);
   margin-inline: auto;
-  padding: 1.25rem var(--gutter);
+  padding: 0.75rem clamp(0.75rem, 2vw, 1.5rem);
 }
 
 @mixin doc-back {
+  @include glass.hover-tint;
+
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   padding: 0 1.2rem;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  border-radius: 2px;
   background: transparent;
-  color: var(--text-d);
+  color: var(--fg);
   font-family: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
   text-decoration: none;
-  transition:
-    background-color 0.2s,
-    border-color 0.2s,
-    color 0.2s;
-
-  &:hover {
-    border-color: var(--gold);
-    background: var(--gold);
-    color: var(--ink);
-  }
 }
 
 @mixin doc-base {
@@ -56,14 +51,14 @@
   }
 
   ::selection {
-    background: var(--gold);
-    color: var(--ink);
+    background: var(--accent);
+    color: var(--bg);
   }
 
   a:focus-visible,
   button:focus-visible,
   [tabindex='-1']:focus-visible {
-    outline: 2px solid var(--gold);
+    outline: 2px solid var(--signal);
     outline-offset: 3px;
   }
 
@@ -73,8 +68,8 @@
     top: -4rem;
     z-index: 100;
     padding: 0.75rem 1.25rem;
-    background: var(--gold);
-    color: var(--ink);
+    background: var(--accent);
+    color: var(--bg);
     font-weight: 600;
     transition: top 0.15s var(--ease);
 
@@ -102,8 +97,8 @@
 
   h1,
   h2 {
-    font-family: var(--serif);
-    font-weight: 300;
+    font-family: var(--display);
+    font-weight: 800;
     letter-spacing: -0.015em;
     text-wrap: balance;
   }
@@ -113,35 +108,35 @@
   p,
   li,
   dd {
-    color: var(--muted-d);
+    color: var(--fg-2);
     text-wrap: pretty;
   }
 
   strong {
-    color: var(--text-d);
+    color: var(--fg);
     font-weight: 600;
   }
 
   a {
-    color: var(--text-d);
+    color: var(--fg);
     text-decoration: underline;
-    text-decoration-color: var(--gold);
+    text-decoration-color: var(--accent);
     text-decoration-thickness: 2px;
     text-underline-offset: 0.25rem;
-    transition: color 0.2s;
+    transition: color 180ms ease;
 
     &:hover {
-      color: var(--gold);
+      color: var(--accent);
     }
   }
 
   code {
     padding: 0.1rem 0.4rem;
-    border: 1px solid var(--line-d);
+    border: 1px solid var(--line);
     border-radius: 4px;
     font-family: var(--font-mono);
     font-size: 0.875em;
-    color: var(--text-d);
+    color: var(--fg);
   }
 
   ul > li {
@@ -153,14 +148,87 @@
       position: absolute;
       left: 0;
       top: 0.8em;
-      width: 0.5rem;
-      height: 0.5rem;
-      background: var(--gold);
+      width: 0.6rem;
+      height: 2px;
+      background: var(--fg-2);
     }
   }
 }
 
 // ───────────────────────── Legal notices
+@mixin doc-columns {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 15rem minmax(0, 46rem);
+  gap: clamp(1rem, 3vw, 2.5rem);
+  justify-content: center;
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding: clamp(1.5rem, 4vw, 3rem) var(--gutter) clamp(4rem, 8vw, 7rem);
+
+  @media (max-width: 880px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@mixin doc-plate {
+  @include glass.paper;
+
+  min-width: 0;
+  padding: clamp(1rem, 3.5vw, 3rem);
+  overflow-wrap: anywhere;
+}
+
+@mixin doc-index {
+  .legal-sidebar {
+    @include glass.paper;
+
+    align-self: start;
+    position: sticky;
+    top: 1.5rem;
+    padding: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .legal-toc-heading {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--fg-2);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .legal-toc-link {
+    @include glass.hover-tint;
+
+    display: block;
+    padding: 0.4rem 0.5rem;
+    margin-inline: -0.5rem;
+    border-radius: 4px;
+    color: var(--fg-2);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    text-decoration: none;
+
+    // The section being read.
+    &[aria-current='location'] {
+      color: var(--fg);
+      text-decoration: underline;
+      text-decoration-color: var(--accent);
+      text-decoration-thickness: 2px;
+      text-underline-offset: 0.3rem;
+    }
+  }
+
+  @media (max-width: 880px) {
+    .legal-sidebar {
+      position: static;
+    }
+  }
+}
+
 @mixin legal {
   @include doc-base;
 
@@ -195,70 +263,20 @@
   }
 
   .legal-body {
-    display: grid;
-    flex: 1;
-    grid-template-columns: 15rem minmax(0, 46rem);
-    gap: clamp(2rem, 6vw, 6rem);
-    justify-content: center;
-    width: 100%;
-    max-width: var(--max);
-    margin-inline: auto;
-    padding: clamp(1.5rem, 4vw, 3rem) var(--gutter) clamp(4rem, 8vw, 7rem);
+    @include doc-columns;
   }
 
-  .legal-sidebar {
-    align-self: start;
-    position: sticky;
-    top: 1.5rem;
+  .legal-content {
+    @include doc-plate;
   }
 
-  .legal-toc-heading {
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.6rem;
-    border-bottom: 1px solid var(--line-d);
-    color: var(--muted-d);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-  }
-
-  .legal-toc-link {
-    display: block;
-    padding: 0.4rem 0.5rem;
-    margin-inline: -0.5rem;
-    border-radius: 4px;
-    color: var(--muted-d);
-    font-size: 0.9375rem;
-    line-height: 1.4;
-    text-decoration: none;
-    transition:
-      background-color 0.2s,
-      color 0.2s;
-
-    &:hover {
-      background: var(--gold);
-      color: var(--ink);
-    }
-
-    // The section being read.
-    &[aria-current='location'] {
-      color: var(--text-d);
-      text-decoration: underline;
-      text-decoration-color: var(--gold);
-      text-decoration-thickness: 2px;
-      text-underline-offset: 0.3rem;
-
-      &:hover {
-        text-decoration: none;
-      }
-    }
-  }
+  @include doc-index;
 
   .legal-doc-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 0.875rem;
   }
 
@@ -270,20 +288,20 @@
 
   .legal-intro {
     margin-top: 1.5rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 1.1875rem;
     text-wrap: pretty;
   }
 
   .legal-updated {
     margin-top: 1rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 0.875rem;
   }
 
   .legal-doc-header {
     padding-bottom: 2rem;
-    border-bottom: 1px solid var(--line-d);
+    border-bottom: 1px solid var(--line);
   }
 
   .legal-section {
@@ -317,25 +335,25 @@
   }
 
   .legal-section-num {
-    color: var(--gold);
+    color: var(--accent);
     font-size: 1rem;
-    font-style: italic;
+    font-style: normal;
   }
 
   .legal-dl {
     display: grid;
     grid-template-columns: 11rem 1fr;
-    border-top: 1px solid var(--line-d);
+    border-top: 1px solid var(--line);
 
     dt,
     dd {
       padding-block: 0.8rem;
-      border-bottom: 1px solid var(--line-d);
+      border-bottom: 1px solid var(--line);
     }
 
     dt {
       padding-right: 1rem;
-      color: var(--text-d);
+      color: var(--fg);
       font-size: 0.9375rem;
       font-weight: 600;
     }
@@ -344,56 +362,49 @@
   .legal-doc-footer {
     margin-top: 3.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid var(--line-d);
-    color: var(--muted-d);
+    border-top: 1px solid var(--line);
+    color: var(--fg-2);
     font-size: 0.9375rem;
   }
 
   // Text injected through [innerHTML] carries no component attribute.
   .legal-section ::ng-deep {
     strong {
-      color: var(--text-d);
+      color: var(--fg);
       font-weight: 600;
     }
 
     a {
-      color: var(--text-d);
+      color: var(--fg);
       text-decoration: underline;
-      text-decoration-color: var(--gold);
+      text-decoration-color: var(--accent);
       text-decoration-thickness: 2px;
       text-underline-offset: 0.25rem;
+      transition: color 180ms ease;
 
       &:hover {
-        color: var(--gold);
+        color: var(--accent);
       }
     }
 
     code {
       padding: 0.1rem 0.4rem;
-      border: 1px solid var(--line-d);
+      border: 1px solid var(--line);
       border-radius: 4px;
       font-family: var(--font-mono);
       font-size: 0.875em;
-      color: var(--text-d);
+      color: var(--fg);
     }
   }
 
   .legal-intro ::ng-deep a,
   .legal-doc-footer ::ng-deep a {
-    color: var(--text-d);
-    text-decoration-color: var(--gold);
+    color: var(--fg);
+    text-decoration-color: var(--accent);
     text-underline-offset: 0.25rem;
   }
 
   @media (max-width: 880px) {
-    .legal-body {
-      grid-template-columns: 1fr;
-    }
-
-    .legal-sidebar {
-      position: static;
-    }
-
     .legal-dl {
       grid-template-columns: 1fr;
 
@@ -448,11 +459,21 @@
   }
 
   .info__main {
-    flex: 1;
-    width: 100%;
-    max-width: 52rem;
-    margin-inline: auto;
-    padding: clamp(1.5rem, 4vw, 3rem) var(--gutter) clamp(4rem, 8vw, 7rem);
+    @include doc-columns;
+  }
+
+  .info__document {
+    @include doc-plate;
+  }
+
+  @include doc-index;
+
+  .info__document section[id] {
+    scroll-margin-top: 1.5rem;
+  }
+
+  .info__storage > div + div {
+    margin-top: 1rem;
   }
 
   .info__title {
@@ -462,21 +483,21 @@
 
   .info__intro {
     margin-top: 1.5rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 1.1875rem;
     text-wrap: pretty;
   }
 
   .info__updated {
     margin-top: 1rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 0.875rem;
   }
 
   article > section {
     margin-top: 3rem;
     padding-top: 1.75rem;
-    border-top: 1px solid var(--line-d);
+    border-top: 1px solid var(--line);
 
     h2 {
       margin-bottom: 1rem;
@@ -508,7 +529,7 @@
     margin-bottom: 0.5rem;
     padding-bottom: 0.6rem;
     border-bottom: 1px solid var(--line-strong);
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-family: var(--sans);
     font-size: 0.8125rem;
     font-weight: 600;
@@ -519,7 +540,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    color: var(--gold);
+    color: var(--accent);
     font-weight: 600;
   }
 
@@ -530,7 +551,7 @@
   }
 
   .map__item {
-    border-bottom: 1px solid var(--line-d);
+    border-bottom: 1px solid var(--line);
   }
 
   .map__link {
@@ -541,32 +562,24 @@
     padding: 1rem 0.6rem;
     margin-inline: -0.6rem;
     border-radius: 4px;
-    color: var(--text-d);
+    color: var(--fg);
     text-decoration: none;
-    transition:
-      background-color 0.2s,
-      color 0.2s;
   }
 
-  a.map__link:hover {
-    background: var(--gold);
-    color: var(--ink);
-
-    .map__desc {
-      color: var(--ink);
-    }
+  a.map__link {
+    @include glass.hover-tint;
   }
 
   .map__name {
-    font-family: var(--serif);
+    font-family: var(--display);
     font-size: 1.5rem;
-    font-weight: 300;
+    font-weight: 800;
     line-height: 1.2;
   }
 
   .map__desc {
     grid-column: 1;
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 0.9375rem;
   }
 
@@ -587,25 +600,17 @@
   }
 
   .map__chip {
+    @include glass.hover-tint;
+
     display: inline-flex;
     align-items: center;
     min-height: 36px;
     padding: 0 1rem;
     border: 1px solid var(--line-strong);
-    border-radius: 999px;
-    color: var(--text-d);
+    border-radius: 2px;
+    color: var(--fg);
     font-size: 0.875rem;
     text-decoration: none;
-    transition:
-      background-color 0.2s,
-      color 0.2s,
-      border-color 0.2s;
-
-    &:hover {
-      border-color: var(--gold);
-      background: var(--gold);
-      color: var(--ink);
-    }
   }
 
   @media (max-width: 720px) {

@@ -1,29 +1,23 @@
-// Landing: quiet and dark. One statement per screen, a light serif for the voice,
-// a clean sans for the rest, midnight blue, moonlight white and one lemon accent. Hairlines instead of boxes.
-// Targets WCAG 2.2 AAA for text: contrast >= 7:1, targets >= 44px, motion opt-out.
+// Landing: polar-white paper (60%), glacier tints and one deep glacier section (30%), racing red only
+// for keyboard focus (10%). Line: refracted glass, applied to the whole page. A fixed canvas behind
+// every section bends that section's scene (the verdicts and product counts) through
+// ribbed glass that clears where the pointer is. Content is concrete and real: the steps, the
+// connectors and the measured results of the feasibility test.
+@use '../../shared/styles/ledger' as m;
+@use '../../shared/styles/ledger-glass' as glass;
 
 :host {
-  --ink: #070b16; // midnight
-  --ink-2: #0d1424;
-  --paper: #eef1f7;
-  --text-d: #e9edf6; // moonlight, 16:1 on ink
-  --muted-d: #aeb6c8; // 9:1 on ink
-  --muted-l: #414a5e; // 8:1 on paper
-  --line-d: rgba(170, 190, 255, 0.18);
-  --line-l: rgba(7, 11, 22, 0.2);
-  --gold: #e3f27e; // lemon, 15:1 on ink
-  --gold-l: #4a5400; // 7.4:1 on paper
-  --ok-d: #8fe0b0;
-  --warn-d: #f2b66b;
-  --gutter: clamp(1.5rem, 5vw, 4rem);
-  --max: 72rem;
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --serif: 'Newsreader Variable', 'Newsreader', Georgia, serif;
-  --sans: 'Manrope Variable', 'Manrope', system-ui, sans-serif;
+  @include m.tokens;
+
+  // Wider side margins than the other public pages: the content sits in from the edges.
+  --gutter: clamp(1.5rem, 8vw, 8rem);
+
+  --header-h: 4.75rem;
+  --snow: #f5f8fb;
+  --snow-2: #e3edf5; // 7.3:1 on the deep section
 
   display: block;
-  background: var(--ink);
-  color: var(--text-d);
+  color: var(--fg);
   font-family: var(--sans);
   font-size: 1rem;
   line-height: 1.65;
@@ -31,76 +25,71 @@
 }
 
 .landing {
-  min-height: 100vh;
+  position: relative;
+  background: var(--bg);
+  min-height: 100dvh;
+}
+
+// Everything sits above the fixed glass. Once the glass has painted, the sections drop their own
+// backgrounds and let their scene show through the ribs; before that (SSR, no canvas) they keep them.
+main,
+app-site-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.glass-on .hero,
+.glass-on .proc,
+.glass-on .research {
+  background: transparent;
 }
 
 .mono {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  letter-spacing: 0.02em;
 }
 
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
+  @include m.sr-only;
 }
 
 ::selection {
-  background: var(--gold);
-  color: var(--ink);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.research ::selection {
+  background: var(--snow-2);
+  color: var(--fg);
 }
 
 a:focus-visible,
 button:focus-visible,
 [tabindex='-1']:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 4px;
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
 }
 
-p,
-dl,
-dd,
-ul,
-ol {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.research a:focus-visible,
+.research button:focus-visible {
+  outline-color: #fff;
 }
 
 h1,
 h2,
-h3 {
+h3,
+p,
+ul,
+ol,
+dl,
+dd {
   margin: 0;
-  font-family: var(--serif);
-  font-weight: 300;
-  letter-spacing: -0.015em;
-  text-wrap: balance;
+  padding: 0;
 }
 
-.wrap {
-  max-width: var(--max);
-  margin-inline: auto;
-  padding-inline: var(--gutter);
-}
-
-.h2 {
-  font-size: clamp(1.875rem, 3.4vw, 2.875rem);
-  line-height: 1.1;
-  max-width: 18ch;
-}
-
-.lead {
-  max-width: 42ch;
-  font-size: 1rem;
-  color: var(--muted-l);
-  text-wrap: pretty;
+ul,
+ol {
+  list-style: none;
 }
 
 .skip-link {
@@ -109,9 +98,9 @@ h3 {
   top: -4rem;
   z-index: 100;
   padding: 0.75rem 1.25rem;
-  background: var(--gold);
-  color: var(--ink);
-  font-weight: 600;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 700;
   transition: top 0.15s var(--ease);
 
   &:focus {
@@ -119,86 +108,40 @@ h3 {
   }
 }
 
-@mixin topo($img, $opacity) {
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -4% -2%;
-    background: url($img) center / cover no-repeat;
-    opacity: $opacity;
-    mask-image: radial-gradient(ellipse 80% 90% at 50% 50%, transparent 30%, #000 85%);
-    animation: topo-drift 120s ease-in-out infinite alternate;
-    pointer-events: none;
-  }
-
-  > * {
-    position: relative;
-  }
-}
-
-// ───────────────────────── Buttons
+// ───────────────────────── Buttons: rectangular, never a pill
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
   min-height: 44px;
-  padding: 0 1.4rem;
+  padding: 0 1.25rem;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 2px;
   font-family: inherit;
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1;
   text-decoration: none;
   cursor: pointer;
-  transition:
-    background-color 0.25s,
-    color 0.25s,
-    border-color 0.25s;
 
-  &--lg {
-    min-height: 52px;
-    padding: 0 1.9rem;
-    font-size: 1rem;
-  }
-
-  // The one colour that asks to be pressed.
   &--solid {
-    background: var(--gold);
-    color: var(--ink);
+    @include glass.hover-tint(var(--fg), 0.28);
 
-    &:hover {
-      background: var(--text-d);
-    }
+    background: var(--accent);
+    color: var(--accent-fg);
   }
 
   &--ghost {
-    color: var(--text-d);
+    @include glass.hover-tint;
 
-    &:hover {
-      color: var(--gold);
-    }
+    border-color: var(--fg);
+    color: var(--fg);
   }
 
-  &--link {
-    padding-inline: 0.5rem;
-    color: var(--text-d);
-
-    &:hover {
-      color: var(--gold);
-    }
-  }
-
-  &__arrow {
-    transition: transform 0.3s var(--ease);
-  }
-
-  &:hover &__arrow {
-    transform: translateX(3px);
+  &--lg {
+    min-height: 52px;
+    padding: 0 1.75rem;
+    font-size: 1rem;
   }
 }
 
@@ -206,37 +149,39 @@ h3 {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 50;
-  background: var(--ink);
-  border-bottom: 1px solid var(--line-d);
+  z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+
+  &__progress {
+    position: absolute;
+    inset-block-start: 100%;
+    inset-inline: 0;
+    height: 3px;
+    background: var(--bg-2);
+    pointer-events: none;
+  }
+
+  &__progress-fill {
+    height: 100%;
+    transform: scaleX(0);
+    transform-origin: left;
+    background: var(--accent);
+  }
 
   &__inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    max-width: var(--max);
-    margin-inline: auto;
-    padding: 0.5rem var(--gutter);
-    min-height: 68px;
+    gap: 2rem;
+    min-height: var(--header-h);
+    padding: 0.75rem var(--gutter);
   }
 
   &__actions {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-  }
-
-  &__divider {
-    width: 1px;
-    height: 20px;
-    margin-inline: 0.25rem;
-    background: var(--line-d);
-  }
-
-  .btn {
-    min-height: 40px;
-    padding-inline: 1.1rem;
+    gap: 0.75rem;
   }
 }
 
@@ -253,733 +198,495 @@ h3 {
 }
 
 .site-nav {
-  position: relative;
-  --pill-x: 0px;
-  --pill-w: 0px;
-  --pill-o: 0;
+  margin-right: auto;
 
   &__list {
     display: flex;
-    gap: 0;
+    gap: 0.25rem;
   }
 
   &__link {
-    position: relative;
-    z-index: 1;
+    @include glass.hover-tint;
+
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-    padding: 0 0.85rem;
-    color: var(--muted-d);
+    padding: 0 0.75rem;
+    color: var(--fg-2);
     font-size: 0.9375rem;
     font-weight: 500;
-    white-space: nowrap;
     text-decoration: none;
-    transition: color 0.2s;
-
-    &:hover,
-    &[aria-current='true'] {
-      color: var(--text-d);
-    }
-  }
-
-  // A thin gold rule slides under the section that is being read.
-  &__pill {
-    position: absolute;
-    left: 0;
-    bottom: 6px;
-    width: var(--pill-w);
-    height: 1px;
-    background: var(--gold);
-    opacity: var(--pill-o);
-    transform: translateX(var(--pill-x));
-    transition:
-      transform 0.5s var(--ease),
-      width 0.5s var(--ease),
-      opacity 0.2s;
-    pointer-events: none;
+    border-radius: 4px;
   }
 }
 
 .menu-toggle {
   display: none;
+  place-items: center;
   width: 44px;
   height: 44px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line-d);
-  border-radius: 999px;
+  padding: 0;
+  border: 1px solid var(--fg);
+  border-radius: 2px;
   background: transparent;
-  color: var(--text-d);
+  color: var(--fg);
   cursor: pointer;
 }
 
 .mobile-menu {
-  display: none;
-}
+  padding: 0.5rem var(--gutter) 1.5rem;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
 
-@media (max-width: 1100px) {
-  .site-nav,
-  .site-header__login,
-  .site-header__divider {
+  &[hidden] {
     display: none;
   }
 
-  .menu-toggle {
-    display: inline-flex;
-  }
-
-  .mobile-menu:not([hidden]) {
-    display: block;
-    padding: 1rem var(--gutter) 2rem;
-    border-top: 1px solid var(--line-d);
-  }
-
-  .mobile-menu__link {
-    display: block;
-    padding: 0.9rem 0;
-    border-bottom: 1px solid var(--line-d);
-    color: var(--text-d);
-    font-family: var(--serif);
-    font-size: 1.75rem;
-    font-weight: 300;
+  &__link {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    border-bottom: 1px solid var(--line);
+    color: var(--fg);
+    font-size: 1.125rem;
+    font-weight: 600;
     text-decoration: none;
   }
 
-  .mobile-menu__actions {
+  &__actions {
     display: flex;
-    flex-wrap: wrap;
     gap: 0.75rem;
-    margin-top: 1.5rem;
+    margin-top: 1.25rem;
   }
 }
 
-@media (max-width: 1200px) {
-  .site-header__login,
-  .site-header__divider {
-    display: none;
-  }
+.h2 {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 
-@media (max-width: 640px) {
-  .site-header__cta {
-    display: none;
-  }
+.lead {
+  max-width: 46ch;
+  color: var(--fg-2);
+  font-size: 1.125rem;
+  text-wrap: pretty;
 }
 
-// ───────────────────────── Hero
+// ───────────────────────── Hero: the statement, and a ribbed pane over the four verdicts
 .hero {
-  position: relative;
-  // Heights follow the viewport so the top of the record always peeks above the fold on short
-  // screens (laptops): that glimpse tells the visitor there is more to scroll.
-  padding: clamp(2.25rem, 9vh, 8rem) var(--gutter) clamp(4rem, 9vw, 8rem);
-  overflow: hidden;
-  background:
-    radial-gradient(60rem 28rem at 50% -8%, rgba(70, 100, 230, 0.2), transparent 70%),
-    var(--ink);
-
-  // Topographic contours: levels of a verification, drifting very slowly.
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -4% -2%;
-    background: url('/images/topo.svg') center / cover no-repeat;
-    opacity: 0.17;
-    mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, transparent 22%, #000 78%);
-    animation: topo-drift 90s ease-in-out infinite alternate;
-    pointer-events: none;
-  }
-
-  &__inner {
-    position: relative;
-    max-width: var(--max);
-    margin-inline: auto;
-  }
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 6fr);
+  align-items: center;
+  // The whole landing fits in one screen on a laptop: as tall as the viewport minus the header
+  // (capped on very tall monitors), with vertical padding that shrinks on short screens.
+  min-height: min(52rem, calc(100dvh - var(--header-h)));
+  padding: clamp(1.25rem, 6vh, 4.5rem) var(--gutter);
 
   &__copy {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+    display: grid;
+    gap: clamp(0.875rem, 2.4vh, 1.5rem);
+    justify-items: start;
   }
 
   &__title {
-    max-width: 22ch;
-    font-size: clamp(2.25rem, min(5vw, 8.5vh), 4rem);
-    line-height: 1.02;
-    letter-spacing: -0.025em;
-  }
-
-  // Entrance in pure CSS: it starts at first paint, so the headline (the LCP element) never
-  // waits for JavaScript. Opacity and transform only.
-  .w {
-    display: inline-block;
-    margin-inline: 0.12em;
-    animation: hero-rise 1.1s var(--ease) both;
-
-    &:nth-child(2) {
-      animation-delay: 0.12s;
-    }
-
-    &:nth-child(3) {
-      animation-delay: 0.24s;
-    }
-
-    &:nth-child(2) {
-      font-style: italic;
-      color: var(--gold);
-    }
+    font-size: clamp(2rem, min(4.6vw, 7vh), 3.75rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+    animation: hero-rise 0.7s var(--ease) both;
   }
 
   &__lead {
-    max-width: 46ch;
-    margin-top: clamp(1rem, 2.6vh, 1.75rem);
-    font-size: 1.0625rem;
-    color: var(--muted-d);
+    max-width: 52ch;
+    color: var(--fg-2);
+    font-size: clamp(1rem, min(1.5vw, 2.6vh), 1.1875rem);
     text-wrap: pretty;
-    animation: hero-rise 1s var(--ease) 0.4s both;
+    animation: hero-rise 0.7s var(--ease) 0.1s both;
   }
 
   &__actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem 1rem;
-    margin-top: clamp(1.25rem, 3.5vh, 2.5rem);
-    animation: hero-rise 1s var(--ease) 0.55s both;
+    align-items: center;
+    gap: 0.5rem 1.5rem;
+    animation: hero-rise 0.7s var(--ease) 0.2s both;
+  }
+
+  &__more {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--fg);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 0.35rem;
+    transition:
+      color 180ms ease,
+      text-decoration-color 180ms ease;
+
+    &:hover {
+      color: var(--accent);
+      text-decoration-color: var(--accent);
+    }
   }
 }
 
 @keyframes hero-rise {
   from {
     opacity: 0;
-    transform: translateY(22px);
+    transform: translateY(12px);
   }
 }
 
-// The record waits invisible (it sits below the fold) until the motion module takes over.
-:host-context(html.js-motion:not(.motion-done)) .acta {
-  opacity: 0;
+// Reading plates. Text never sits straight on the ribs: once the glass is on, every text block
+// gets a frosted plate (the paper colour at 70%, the glass blurred under it, so the ribs show through a little), so the flutes soften
+// behind the words and contrast stays well above AAA. The deep section gets a deep plate.
+.glass-on {
+  .hero__copy,
+  .proc__head,
+  .steps,
+  .conn__head,
+  .connectors {
+    padding: clamp(1rem, 2vw, 1.75rem);
+    background: rgba(245, 248, 251, 0.74);
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .research__head,
+  .research-flow {
+    background: rgba(29, 78, 118, 0.84);
+    background: color-mix(in srgb, var(--accent) 80%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(10px);
+  }
 }
 
-// ───────────────────────── Verification record
-.acta {
-  max-width: 52rem;
-  margin: clamp(1.75rem, 6vh, 6rem) auto 0;
-  border: 1px solid var(--line-d);
-  border-radius: 14px;
-  background: var(--ink-2);
+// The four verdicts as text. On narrow screens this is how they are shown; from 64rem the glass
+// draws them big and the list stays only for assistive technology.
+.hero__verdicts {
+  display: grid;
+  gap: 0.75rem;
+  padding: clamp(1rem, 2vw, 1.75rem);
+  background: rgba(245, 248, 251, 0.74);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  color: var(--fg-2);
 
-  &__bar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 0.25rem 1rem;
-    padding: 1.1rem 1.5rem;
-    border-bottom: 1px solid var(--line-d);
-    border-top: 3px solid var(--gold);
-    border-radius: 14px 14px 0 0;
-  }
-
-  &__title {
-    font-family: var(--serif);
-    font-size: 1.25rem;
-    font-weight: 400;
-  }
-
-  &__meta {
-    align-self: center;
-    font-size: 0.875rem;
-    color: var(--muted-d);
-  }
-
-  &__table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9375rem;
-
-    th,
-    td {
-      padding: 0.8rem 1.5rem;
-      text-align: left;
-      vertical-align: middle;
-    }
-
-    thead th {
-      font-size: 0.8125rem;
-      font-weight: 600;
-      color: var(--muted-d);
-      border-bottom: 1px solid var(--line-d);
-    }
-
-    tbody tr + tr > * {
-      border-top: 1px solid rgba(255, 255, 255, 0.07);
-    }
-
-    tbody th {
-      font-weight: 500;
-    }
-  }
-
-  &__rule-name {
+  strong {
     display: block;
-    color: var(--muted-d);
-    font-size: 0.875rem;
-    font-weight: 400;
+    font-weight: 800;
   }
 
-  &__foot {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
-    justify-content: space-between;
-    gap: 1rem 2rem;
-    padding: 1.4rem 1.5rem 1.6rem;
-    border-top: 1px solid var(--line-d);
+  .v-valid {
+    color: var(--ok);
   }
 
-  &__summary {
-    max-width: 30ch;
-    color: var(--muted-d);
+  .v-warning {
+    color: var(--warn);
   }
 
-  &__verdict {
-    display: flex;
-    flex-direction: column;
-    text-align: right;
+  .v-invalid {
+    color: var(--bad);
   }
 
-  &__verdict-label {
-    font-size: 0.8125rem;
-    color: var(--muted-d);
+  .v-neutral {
+    color: var(--fg-2);
   }
 
-  &__verdict-value {
-    font-family: var(--serif);
-    font-size: 1.625rem;
-    font-weight: 300;
-    line-height: 1.15;
-    color: var(--gold);
+  @media (min-width: 64rem) {
+    @include m.sr-only;
   }
 }
 
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+// ───────────────────────── What it does
+.proc {
+  border-top: 1px solid var(--line);
 
-  &--valid {
-    color: var(--ok-d);
+  // Two parts on one sheet: what SVAES does, then which tools it reads.
+  &__top {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 3rem 2rem;
+    padding: clamp(4rem, 8vw, 7rem) var(--gutter) clamp(2rem, 4vw, 3.5rem);
   }
 
-  &--warning {
-    color: var(--warn-d);
-  }
-}
-
-@media (max-width: 720px) {
-  .acta__col-sev {
-    display: none;
+  &__head {
+    grid-column: 1 / span 5;
+    display: grid;
+    align-content: start;
+    gap: 1.25rem;
   }
 
-  .acta__verdict {
-    text-align: left;
-  }
-}
-
-// ───────────────────────── Light sections
-.proc,
-.conn {
-  padding-block: clamp(5rem, 11vw, 9rem);
-  background: var(--paper);
-  color: var(--ink);
-}
-
-.conn {
-  @include topo('/images/topo-ink.svg', 0.1);
-}
-
-.proc__head,
-.rules__head,
-.conn__head {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 1.5rem 4rem;
-  align-items: end;
-  margin-bottom: clamp(3rem, 6vw, 5rem);
-}
-
-.proc__list {
-  border-top: 1px solid var(--line-l);
-}
-
-.proc__row {
-  margin-inline: -1rem;
-  padding-inline: 1rem;
-  transition: background-color 0.3s;
-
-  &:hover {
-    background: var(--gold);
-  }
-
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 0.75rem 4rem;
-  align-items: baseline;
-  padding-block: clamp(1.75rem, 3vw, 2.5rem);
-  border-bottom: 1px solid var(--line-l);
-}
-
-.proc__word {
-  font-size: clamp(1.75rem, 3vw, 2.5rem);
-  line-height: 1.15;
-}
-
-.proc__desc {
-  max-width: 40ch;
-  color: var(--muted-l);
-  text-wrap: pretty;
-}
-
-// ───────────────────────── Rules (dark)
-.rules {
-  padding-block: clamp(5rem, 11vw, 9rem);
-  background: var(--ink-2);
-  @include topo('/images/topo.svg', 0.12);
-
-  .lead {
-    color: var(--muted-d);
-  }
-
-  &__sub {
-    margin-bottom: 1.5rem;
-    font-family: var(--sans);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: var(--muted-d);
+  &__problem {
+    color: var(--fg-2);
+    text-wrap: pretty;
   }
 }
 
-.verdicts {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--line-d);
+.steps {
+  grid-column: 7 / -1;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: 0;
-    width: 4rem;
-    height: 3px;
-    background: var(--gold);
-  }
+  .step {
+    display: grid;
+    grid-template-columns: 8rem 1fr;
+    gap: 0.25rem 1.5rem;
+    padding-block: 1.1rem;
+    border-top: 1px solid var(--line);
 
-  &__item {
-    padding: 2rem 2rem 0.5rem 0;
-
-    & + & {
-      padding-left: 2rem;
-      border-left: 1px solid var(--line-d);
+    &__title {
+      font-size: 1.125rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
 
-    dt {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-family: var(--serif);
-      font-size: 1.5rem;
-      font-weight: 300;
-      line-height: 1.2;
-    }
-
-    dd {
-      max-width: 30ch;
-      margin-top: 0.75rem;
-      color: var(--muted-d);
-    }
-
-    &--valid dt {
-      color: var(--ok-d);
-    }
-
-    &--warning dt {
-      color: var(--warn-d);
-    }
-
-    &--invalid dt {
-      color: #f4b3a6;
+    &__text {
+      color: var(--fg-2);
+      text-wrap: pretty;
     }
   }
 }
 
 // ───────────────────────── Connectors
+.conn {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 2rem;
+  padding: clamp(2rem, 4vw, 3.5rem) var(--gutter) clamp(4rem, 8vw, 7rem);
+
+  &__head {
+    grid-column: 1 / span 5;
+    display: grid;
+    align-content: start;
+    gap: 1rem;
+  }
+}
+
 .connectors {
-  border-top: 1px solid var(--line-l);
+  grid-column: 7 / -1;
 
   &__row {
     display: grid;
-    grid-template-columns: 14rem 1fr;
-    gap: 0.5rem 2rem;
-    align-items: baseline;
-    padding-block: 1.6rem;
-    border-bottom: 1px solid var(--line-l);
+    grid-template-columns: 11rem 1fr;
+    gap: 0.25rem 1.5rem;
+    padding-block: 0.9rem;
+    border-top: 1px solid var(--line);
 
     dt {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--muted-l);
+      font-weight: 800;
     }
 
     dd {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem 2.25rem;
-    }
-  }
-
-  &__item {
-    font-family: var(--serif);
-    font-size: clamp(1.25rem, 2vw, 1.625rem);
-    font-weight: 300;
-    line-height: 1.25;
-    padding-inline: 0.4rem;
-    margin-inline: -0.4rem;
-    transition:
-      background-color 0.25s,
-      color 0.25s;
-
-    &:hover {
-      background: var(--gold);
-      color: var(--ink);
+      color: var(--fg-2);
     }
   }
 }
 
-// ───────────────────────── Research (TFM)
+// ───────────────────────── Research
 .research {
-  padding-block: clamp(5rem, 11vw, 9rem);
-  background: var(--ink);
-  border-top: 1px solid var(--line-d);
-  @include topo('/images/topo.svg', 0.12);
-
-  &__inner {
-    display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-    gap: clamp(3rem, 7vw, 7rem);
-    max-width: var(--max);
-    margin-inline: auto;
-    padding-inline: var(--gutter);
-  }
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 3vw, 3rem);
+  padding: clamp(3rem, 6vw, 5.5rem) var(--gutter);
+  background: var(--accent);
+  color: #fff;
 
   &__head {
     display: grid;
-    gap: 1.5rem;
-    justify-items: start;
-  }
-
-  &__status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.45rem 1rem;
-    border: 1px solid var(--gold);
-    border-radius: 999px;
-    color: var(--gold);
-    font-size: 0.9375rem;
-    font-weight: 600;
-  }
-
-  &__text {
-    display: grid;
-    gap: 1rem;
-    max-width: 50ch;
-    margin-top: 2rem;
-    color: var(--muted-d);
-    text-wrap: pretty;
-  }
-
-  &__subtitle {
-    font-family: var(--sans);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: var(--muted-d);
-  }
-}
-
-.pipe {
-  position: relative;
-  margin-top: 1.5rem;
-  padding: 2.5rem clamp(1rem, 3vw, 2rem) 2rem;
-  border: 1px solid var(--line-d);
-  border-radius: 14px;
-  background: rgba(13, 20, 36, 0.6);
-
-  &__boundary {
-    position: absolute;
-    top: -0.85rem;
-    left: 1.25rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.1rem 0.7rem;
-    border: 1px solid var(--line-strong);
-    border-radius: 999px;
-    background: var(--ink);
-    color: var(--gold);
-    font-size: 0.8125rem;
-    font-weight: 600;
-  }
-
-  &__flow {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__stage {
-    display: flex;
-    justify-content: center;
     gap: 0.75rem;
   }
 
-  &__stage--inputs {
-    > .pipe__node {
-      flex: 1 1 0;
-      min-width: 0;
-    }
-  }
-
-  &__node {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    padding: 0.6rem 0.8rem 0.6rem 0.6rem;
-    border: 1px solid var(--line-strong);
-    border-radius: 10px;
-    background: var(--ink);
-    font-size: 0.9375rem;
-    line-height: 1.3;
-
-    &--model {
-      width: 100%;
-      border-color: var(--gold);
-      background: rgba(227, 242, 126, 0.06);
-      color: var(--text-d);
-    }
-
-    &--out {
-      width: 100%;
-      border-color: var(--text-d);
-      background: var(--text-d);
-      color: var(--ink);
-      font-weight: 600;
-    }
-  }
-
-  &__icon {
+  &__copy {
     display: grid;
-    flex: none;
-    place-items: center;
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid var(--line-strong);
-    border-radius: 8px;
-    color: var(--muted-d);
+    gap: 0.75rem;
+    max-width: 54ch;
+    color: var(--snow-2);
+    text-wrap: pretty;
   }
 
-  &__node--model &__icon {
-    border-color: var(--gold);
-    color: var(--gold);
-  }
-
-  &__node--out &__icon {
-    border-color: rgba(7, 11, 22, 0.35);
-    color: var(--ink);
-  }
-
-  // Connectors
-  &__link {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 3rem;
-    color: var(--gold);
-  }
-
-  &__merge {
-    width: 100%;
-    height: 2.4rem;
-
-    path {
-      stroke: currentColor;
-      stroke-width: 1.5;
-      stroke-dasharray: 4 5;
-      vector-effect: non-scaling-stroke;
-      opacity: 0.75;
-      animation: pipe-flow 1.2s linear infinite;
-    }
-  }
-
-  &__line {
-    width: 0;
-    height: 2.4rem;
-    border-left: 1.5px dashed currentColor;
-    opacity: 0.75;
-  }
-
-  &__head {
-    margin-top: -0.2rem;
+  &__status {
+    color: var(--snow-2);
+    font-weight: 700;
   }
 }
 
-@keyframes pipe-flow {
-  to {
-    stroke-dashoffset: -9;
+.research__head,
+.research-flow {
+  align-content: start;
+  min-width: 0;
+  padding: clamp(1rem, 2.8vw, 2.5rem);
+  border: 1px solid rgb(255 255 255 / 22%);
+  background: rgb(11 22 32 / 13%);
+}
+
+.poc {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(255 255 255 / 25%);
+
+  &__headline {
+    font-size: clamp(1.125rem, 2vw, 1.5rem);
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  &__caveat {
+    color: var(--snow-2);
+    font-size: 0.9375rem;
+  }
+}
+
+.research-flow {
+  display: grid;
+  gap: 1rem;
+
+  &__header {
+    h3 {
+      font-size: clamp(1.125rem, 2vw, 1.5rem);
+      line-height: 1.2;
+    }
+
+    p {
+      color: var(--snow-2);
+      font-size: 0.875rem;
+    }
+  }
+
+  &__steps {
+    display: grid;
+    gap: 0.625rem;
+  }
+
+  &__step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    align-items: start;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid rgb(255 255 255 / 28%);
+    border-radius: 2px;
+
+    &:not(:last-child)::after {
+      position: absolute;
+      top: calc(100% + 1px);
+      left: 1.5rem;
+      width: 2px;
+      height: 0.625rem;
+      background: rgb(255 255 255 / 35%);
+      content: '';
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        border-color: var(--snow-2);
+        background: rgb(255 255 255 / 14%);
+      }
+
+      &:hover .research-flow__number {
+        background: var(--snow-2);
+        color: var(--fg);
+      }
+    }
+  }
+
+  &__number {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid rgb(255 255 255 / 45%);
+    border-radius: 50%;
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  &__label {
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+
+  &__detail {
+    color: var(--snow-2);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    text-wrap: pretty;
   }
 }
 
 // ───────────────────────── Responsive
-@media (max-width: 960px) {
+@media (max-width: 63.99rem) {
+  .site-nav,
+  .site-header__login,
+  .site-header__cta {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: grid;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    padding-block: clamp(2rem, 6vw, 3.5rem);
+  }
+}
+
+@media (max-width: 56rem) {
+  .proc__top,
+  .conn,
+  .research {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .proc__head,
-  .rules__head,
+  .steps,
   .conn__head,
-  .proc__row,
-  .research__inner,
+  .connectors {
+    grid-column: 1 / -1;
+  }
+
+  .steps .step,
   .connectors__row {
     grid-template-columns: 1fr;
   }
 
-  .verdicts {
-    grid-template-columns: 1fr;
-
-    &__item,
-    &__item + &__item {
-      padding: 1.5rem 0;
-      border-left: 0;
-    }
-
-    &__item + &__item {
-      border-top: 1px solid var(--line-d);
-    }
-  }
 }
 
-@keyframes topo-drift {
-  from {
-    transform: translate3d(-1.5%, 0, 0) scale(1);
+
+// Two sheets: the landing (hero) and the rest. On wide screens the hero sticks under the header
+// while the rest slides over it (landing.component.ts sets `top` and `--cover`). The hero is pushed
+// back, darkened and its content fades as it is covered; the rest's edge casts a shadow on it.
+// Without the `stack` class (narrow screens, reduced motion, keyboard use, no JS) both are plain blocks.
+.rest {
+  position: relative;
+}
+
+.stack {
+  .hero {
+    position: sticky;
+    top: var(--header-h);
   }
-  to {
-    transform: translate3d(1.5%, -2%, 0) scale(1.05);
+
+  .rest {
+    box-shadow: 0 -1.25rem 2.5rem -0.5rem rgba(11, 22, 32, 0.28);
+  }
+
+  // The sheet being covered: its content recedes and fades (the glass behind it darkens too: see
+  // the scenes in fluted-glass.component.ts).
+  .hero > * {
+    transform-origin: 50% 0;
+    opacity: calc(1 - var(--cover, 0) * 1.3);
+    transform: translateY(calc(var(--cover, 0) * -3rem)) scale(calc(1 - var(--cover, 0) * 0.07));
   }
 }
 

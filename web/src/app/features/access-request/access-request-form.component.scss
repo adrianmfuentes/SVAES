@@ -1,4 +1,4 @@
-@use '../../shared/styles/midnight' as m;
+@use '../../shared/styles/ledger' as m;
 
 :host {
   @include m.tokens;
@@ -17,35 +17,35 @@
   li {
     padding-top: 0.6rem;
     border-top: 2px solid var(--line-strong);
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 0.8125rem;
     font-weight: 600;
   }
 
   .is-done {
-    border-top-color: var(--gold);
+    border-top-color: var(--accent);
   }
 
   .is-active {
-    border-top-color: var(--gold);
-    color: var(--text-d);
+    border-top-color: var(--accent);
+    color: var(--fg);
   }
 }
 
 .review {
   margin-top: 1.5rem;
-  border-top: 1px solid var(--line-d);
+  border-top: 1px solid var(--line);
 
   > div {
     display: grid;
     grid-template-columns: 9rem 1fr;
     gap: 0.25rem 1rem;
     padding-block: 0.85rem;
-    border-bottom: 1px solid var(--line-d);
+    border-bottom: 1px solid var(--line);
   }
 
   dt {
-    color: var(--muted-d);
+    color: var(--fg-2);
     font-size: 0.875rem;
   }
 
@@ -81,6 +81,6 @@
 
   svg {
     margin-bottom: 1rem;
-    color: var(--ok-d);
+    color: var(--ok);
   }
 }

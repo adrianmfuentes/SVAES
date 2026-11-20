@@ -1,5 +1,5 @@
-@use '../../shared/styles/midnight' as m;
-@use '../../shared/styles/midnight-doc' as d;
+@use '../../shared/styles/ledger' as m;
+@use '../../shared/styles/ledger-doc' as d;
 
 :host {
   @include m.tokens;

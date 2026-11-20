@@ -1,14 +1,8 @@
-@use '../../../shared/styles/midnight' as m;
+@use '../../../shared/styles/ledger' as m;
+@use '../../../shared/styles/ledger-glass' as glass;
 
 :host {
   @include m.tokens;
-
-  // Light footer: closes the dark research section instead of blending into it.
-  --ink-2: #eef1f7;
-  --text-d: #070b16; // 17:1 on the footer ground
-  --muted-d: #414a5e; // 8:1
-  --line-d: rgba(7, 11, 22, 0.2);
-  --gold: #4a5400; // olive-lemon for hover and focus, 7.4:1
 
   display: block;
   font-family: var(--sans);
@@ -30,37 +24,44 @@ ul {
 }
 
 ::selection {
-  background: #e3f27e;
-  color: #070b16;
+  background: var(--accent);
+  color: var(--accent-fg);
 }
 
 a:focus-visible,
 button:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--signal);
   outline-offset: 3px;
 }
 
 .site-footer {
-  @include m.topo-bg(0.1);
-  background: var(--ink-2);
-  color: var(--text-d);
-  border-top: 1px solid var(--line-d);
-  padding-inline: var(--gutter);
+  @include glass.flutes(
+    var(--accent),
+    radial-gradient(ellipse 32rem 17rem at 92% 0, #779fbe 98%, transparent),
+    radial-gradient(ellipse 26rem 14rem at 10% 100%, #153954 98%, transparent)
+  );
 
-  &::before {
-    background-image: url('/images/topo-ink.svg');
-  }
+  color: var(--fg);
+  border-top: 1px solid var(--line);
+  padding: clamp(1rem, 3vw, 2.5rem) var(--gutter);
 
-  > * {
-    position: relative;
+  &__panel {
+    @include glass.paper;
+
+    max-width: 82rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 3vw, 2.5rem);
+
+    @supports (backdrop-filter: blur(12px)) {
+      background-color: rgb(245 248 251 / 90%);
+      backdrop-filter: blur(12px);
+    }
   }
 
   &__inner {
     display: grid;
     gap: 3rem;
-    max-width: var(--max);
-    margin: 0 auto;
     padding-block: clamp(3rem, 5vw, 4.5rem) 2rem;
   }
 
@@ -73,47 +74,49 @@ summary:focus-visible {
   &__tagline {
     max-width: 22ch;
     margin-top: 1.25rem;
-    font-family: var(--serif);
-    font-weight: 300;
+    font-family: var(--display);
+    font-weight: 800;
     font-size: 1.5rem;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
   }
 
   &__academic {
     max-width: 40ch;
     margin-top: 0.75rem;
     font-size: 0.9375rem;
-    color: var(--muted-d);
+    color: var(--fg-2);
   }
 
   &__nav {
     display: grid;
     gap: 2rem;
-    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(8.25rem, 100%), 1fr));
   }
 
   &__heading {
     margin: 0 0 0.5rem;
     padding-bottom: 0.6rem;
-    border-bottom: 1px solid var(--line-d);
+    border-bottom: 1px solid var(--line);
     font-family: var(--sans);
     font-size: 0.8125rem;
     font-weight: 600;
     letter-spacing: 0.04em;
-    color: var(--muted-d);
+    color: var(--fg-2);
   }
 
   &__col a,
   &__linkbtn,
   &__top {
+    @include glass.hover-tint;
+
     display: inline-flex;
     align-items: center;
     min-height: 44px;
     padding: 0;
     border: 0;
     background: none;
-    color: var(--text-d);
+    color: var(--fg);
     font-family: var(--sans);
     font-size: 0.9375rem;
     text-decoration: none;
@@ -121,15 +124,7 @@ summary:focus-visible {
     padding-inline: 0.4rem;
     margin-inline: -0.4rem;
     border-radius: 4px;
-    transition:
-      background-color 0.2s,
-      color 0.2s;
-
-    // Lemon marker: the one colour that answers the pointer.
-    &:hover {
-      background: #e3f27e;
-      color: #070b16;
-    }
+    text-align: start;
   }
 
   &__bar {
@@ -138,16 +133,14 @@ summary:focus-visible {
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem 1.5rem;
-    max-width: var(--max);
-    margin: 0 auto;
     padding-block: 1rem 1.5rem;
-    border-top: 1px solid var(--line-d);
-    color: var(--muted-d);
+    border-top: 1px solid var(--line);
+    color: var(--fg-2);
     font-size: 0.875rem;
   }
 
   &__bar &__top {
-    color: var(--muted-d);
+    color: var(--fg-2);
   }
 }
 
@@ -157,29 +150,19 @@ summary:focus-visible {
   width: min(34rem, calc(100% - 2rem));
   max-height: calc(100vh - 2rem);
   padding: 0;
-  border: 1px solid var(--line-d);
-  border-radius: 16px;
-  background: var(--ink-2);
-  color: var(--text-d);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg-2);
+  color: var(--fg);
   font-family: var(--sans);
 
   &::backdrop {
-    background: rgba(4, 6, 12, 0.78);
+    background: rgba(14, 18, 20, 0.6);
   }
 
   &__panel {
     position: relative;
     padding: clamp(1.5rem, 4vw, 2rem);
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: -1px;
-      left: 2rem;
-      width: 4rem;
-      height: 3px;
-      background: var(--gold);
-    }
   }
 
   &__close {
@@ -191,53 +174,53 @@ summary:focus-visible {
     width: 44px;
     height: 44px;
     border: 1px solid transparent;
-    border-radius: 999px;
+    border-radius: 2px;
     background: transparent;
-    color: var(--muted-d);
+    color: var(--fg-2);
     cursor: pointer;
     transition:
       color 0.2s,
       border-color 0.2s;
 
     &:hover {
-      border-color: var(--gold);
-      color: var(--gold);
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     &:focus-visible {
-      outline: 2px solid var(--gold);
+      outline: 2px solid var(--accent);
       outline-offset: 3px;
     }
   }
 
   &__title {
     margin: 0 3rem 1.25rem 0;
-    font-family: var(--serif);
+    font-family: var(--display);
     font-size: 1.625rem;
-    font-weight: 300;
+    font-weight: 800;
     line-height: 1.15;
     letter-spacing: -0.015em;
   }
 
   &__list {
-    border-top: 1px solid var(--line-d);
+    border-top: 1px solid var(--line);
 
     > div {
       display: grid;
       grid-template-columns: 4.5rem 1fr;
       gap: 0.25rem 1rem;
       padding-block: 0.7rem;
-      border-bottom: 1px solid var(--line-d);
+      border-bottom: 1px solid var(--line);
     }
 
     dt {
       font-family: var(--font-mono);
       font-weight: 500;
-      color: var(--gold);
+      color: var(--accent);
     }
 
     dd {
-      color: var(--muted-d);
+      color: var(--fg-2);
       font-size: 0.9375rem;
     }
   }

@@ -1,0 +1,52 @@
+// Static counterpart to the landing's 18px flutes for navigation and long-form reading.
+@mixin flutes($base, $scene...) {
+  background-color: $base;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgb(255 255 255 / 55%) 0,
+      rgb(255 255 255 / 18%) 2px,
+      transparent 7px,
+      rgb(11 22 32 / 10%) 15px,
+      rgb(11 22 32 / 23%) 17px,
+      rgb(11 22 32 / 23%) 18px
+    ),
+    $scene;
+}
+
+@mixin light-scene {
+  @include flutes(
+    var(--bg),
+    radial-gradient(ellipse 34rem 24rem at 100% 11rem, #b7cfe3 98%, transparent),
+    radial-gradient(ellipse 24rem 27rem at 0 45rem, #d4e4f0 98%, transparent)
+  );
+}
+
+@mixin paper {
+  background-color: rgb(245 248 251 / 96%);
+  border: 1px solid rgb(255 255 255 / 80%);
+  box-shadow: 0 1px 0 rgb(11 22 32 / 12%);
+}
+
+@mixin hover-tint($color: var(--accent), $opacity: 0.12) {
+  position: relative;
+  isolation: isolate;
+
+  &::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border-radius: inherit;
+    background-color: $color;
+    opacity: 0;
+    pointer-events: none;
+    content: '';
+    transition: opacity 180ms ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled)::before {
+      opacity: $opacity;
+    }
+  }
+}
