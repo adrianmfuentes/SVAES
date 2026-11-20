@@ -9,6 +9,7 @@
           </svg>
           {{ 'login.back_home' | t }}
         </a>
+        <app-lang-toggle theme="light" />
       </header>
 
       <main class="auth__main">
@@ -188,7 +189,6 @@
       <footer class="auth__foot">
         <span>&copy; 2026 SVAES</span>
         <nav>
-          <app-lang-toggle theme="light" />
           <a routerLink="/legal/privacidad">{{ 'login.footer_privacy' | t }}</a>
           <a routerLink="/legal/aviso-legal">{{ 'login.footer_legal' | t }}</a>
         </nav>
