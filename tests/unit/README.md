@@ -1,6 +1,6 @@
 # Unit Tests — Plan de Pruebas
 
-> **TFG terminado** (30/06/2026) — 1,238 unit tests across 12 files, all passing.
+> **TFG terminado** (30/06/2026) · **TFM en curso** (Máster en Ingeniería Web, Universidad de Oviedo) — 1,238 unit tests across 12 files, all passing.
 
 Isolated component tests. All dependencies (repos, HTTP, task queue) are mocked via `unittest.mock.AsyncMock`. No database or external services needed.
 

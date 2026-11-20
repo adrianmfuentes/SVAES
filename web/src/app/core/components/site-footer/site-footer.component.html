@@ -1,0 +1,85 @@
+<footer class="site-footer">
+  <div class="site-footer__panel">
+    <div class="site-footer__inner">
+      <div class="site-footer__brand">
+        <img class="site-footer__logo" src="/images/logo/svaes-logo-ink.svg" alt="SVAES" width="140" height="51" />
+        <p class="site-footer__tagline">{{ 'landing.footer_tagline' | t }}</p>
+        <p class="site-footer__academic">{{ 'landing.footer_academic' | t }}</p>
+      </div>
+
+      <nav class="site-footer__nav" [attr.aria-label]="'landing.footer_sitemap' | t">
+        <section class="site-footer__col" aria-labelledby="footer-page">
+          <h2 id="footer-page" class="site-footer__heading">{{ 'landing.footer_col_page' | t }}</h2>
+          <ul>
+            @for (section of sections; track section.id) {
+              <li><a routerLink="/" [fragment]="section.id" (click)="goToSection(section.id, $event)">{{ section.labelKey | t }}</a></li>
+            }
+          </ul>
+        </section>
+
+        <section class="site-footer__col" aria-labelledby="footer-account">
+          <h2 id="footer-account" class="site-footer__heading">{{ 'landing.footer_col_account' | t }}</h2>
+          <ul>
+            <li><a routerLink="/auth/login">{{ 'landing.login_button' | t }}</a></li>
+            <li><a routerLink="/request-access">{{ 'landing.register_button' | t }}</a></li>
+          </ul>
+        </section>
+
+        <section class="site-footer__col" aria-labelledby="footer-project">
+          <h2 id="footer-project" class="site-footer__heading">{{ 'landing.footer_col_project' | t }}</h2>
+          <ul>
+            <li>
+              <a href="https://github.com/adrianmfuentes/SVAES" target="_blank" rel="noopener noreferrer">
+                {{ 'landing.footer_repo' | t }} <span class="sr-only">{{ 'landing.footer_new_tab' | t }}</span>
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/adrianmfuentes/SVAES/tree/main/docs" target="_blank" rel="noopener noreferrer">
+                {{ 'landing.footer_docs' | t }} <span class="sr-only">{{ 'landing.footer_new_tab' | t }}</span>
+              </a>
+            </li>
+            <li><button type="button" class="site-footer__linkbtn" (click)="openFeedback()">{{ 'landing.feedback_button' | t }}</button></li>
+            <li><button type="button" class="site-footer__linkbtn" (click)="openGlossary()">{{ 'landing.glossary_title' | t }}</button></li>
+          </ul>
+        </section>
+
+        <section class="site-footer__col" aria-labelledby="footer-legal">
+          <h2 id="footer-legal" class="site-footer__heading">{{ 'landing.footer_col_legal' | t }}</h2>
+          <ul>
+            <li><a routerLink="/legal/privacidad">{{ 'landing.footer_privacy' | t }}</a></li>
+            <li><a routerLink="/legal/cookies">{{ 'landing.footer_cookies' | t }}</a></li>
+            <li><a routerLink="/legal/aviso-legal">{{ 'landing.footer_legal' | t }}</a></li>
+            <li><a routerLink="/accesibilidad">{{ 'landing.footer_accessibility' | t }}</a></li>
+            <li><a routerLink="/mapa-del-sitio">{{ 'landing.footer_sitemap_page' | t }}</a></li>
+          </ul>
+        </section>
+      </nav>
+    </div>
+
+    <div class="site-footer__bar">
+      <span>{{ 'landing.footer_copy' | t }}</span>
+      <a href="#" class="site-footer__top" (click)="scrollToTop($event)">{{ 'landing.footer_back_top' | t }}</a>
+    </div>
+  </div>
+</footer>
+
+@if (showFeedback()) {
+  <app-feedback-modal (closed)="closeFeedback()" />
+}
+
+<dialog #glossaryEl class="glossary-dialog" aria-labelledby="glossary-title" (click)="onGlossaryClick($event)" (keydown)="onGlossaryKeydown($event)">
+  <div class="glossary-dialog__panel">
+    <button type="button" class="glossary-dialog__close" (click)="closeGlossary()" [attr.aria-label]="'common.close' | t">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg>
+    </button>
+    <h2 id="glossary-title" class="glossary-dialog__title">{{ 'landing.glossary_title' | t }}</h2>
+    <dl class="glossary-dialog__list">
+      @for (term of glossary; track term) {
+        <div>
+          <dt>{{ 'landing.gl_' + term + '_term' | t }}</dt>
+          <dd>{{ 'landing.gl_' + term + '_def' | t }}</dd>
+        </div>
+      }
+    </dl>
+  </div>
+</dialog>

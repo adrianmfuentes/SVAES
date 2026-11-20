@@ -16,6 +16,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'login',
+        data: { preload: true },
         loadComponent: () =>
           import('./features/auth/login/login.component').then(
             (m) => m.LoginComponent,
@@ -182,10 +183,29 @@ export const routes: Routes = [
   },
   {
     path: 'request-access',
+    data: { preload: true },
     loadComponent: () =>
       import('./features/access-request/access-request-form.component').then(
         (m) => m.AccessRequestFormComponent,
       ),
+  },
+  {
+    path: 'accesibilidad',
+    data: { page: 'accessibility' },
+    loadComponent: () =>
+      import('./features/info/info-page.component').then((m) => m.InfoPageComponent),
+  },
+  {
+    path: 'mapa-del-sitio',
+    data: { page: 'sitemap' },
+    loadComponent: () =>
+      import('./features/info/info-page.component').then((m) => m.InfoPageComponent),
+  },
+  {
+    path: 'legal/cookies',
+    data: { page: 'cookies' },
+    loadComponent: () =>
+      import('./features/info/info-page.component').then((m) => m.InfoPageComponent),
   },
   {
     path: 'legal/aviso-legal',

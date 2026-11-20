@@ -91,6 +91,20 @@ describe('FeedbackModalComponent', () => {
       component.payload.comments = 'Great app!';
       expect(component.isValid).toBeTruthy();
     });
+
+    it('should validate email format properly', () => {
+      component.payload.name = 'Test User';
+      component.payload.rating = 5;
+      component.payload.comments = 'Great app!';
+
+      component.payload.email = 'invalid-email';
+      expect(component.emailInvalid).toBe(true);
+      expect(component.isValid).toBe(false);
+
+      component.payload.email = 'valid.user@sub.domain.com';
+      expect(component.emailInvalid).toBe(false);
+      expect(component.isValid).toBe(true);
+    });
   });
 
   describe('ratingLabel getter', () => {
@@ -230,6 +244,28 @@ describe('FeedbackModalComponent', () => {
       expect(component.payload.rating >= 3).toBeTruthy();
       expect(component.payload.rating >= 4).toBeFalsy();
       expect(component.payload.rating >= 5).toBeFalsy();
+    });
+
+    it('should handle keyboard navigation across stars', () => {
+      const eventRight = new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true });
+      component.onStarKeydown(eventRight, 2);
+      expect(component.payload.rating).toBe(3);
+
+      const eventLeft = new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true });
+      component.onStarKeydown(eventLeft, 3);
+      expect(component.payload.rating).toBe(2);
+
+      const eventEnd = new KeyboardEvent('keydown', { key: 'End', cancelable: true });
+      component.onStarKeydown(eventEnd, 2);
+      expect(component.payload.rating).toBe(5);
+
+      const eventHome = new KeyboardEvent('keydown', { key: 'Home', cancelable: true });
+      component.onStarKeydown(eventHome, 5);
+      expect(component.payload.rating).toBe(1);
+
+      const eventIgnored = new KeyboardEvent('keydown', { key: 'Tab', cancelable: true });
+      component.onStarKeydown(eventIgnored, 1);
+      expect(component.payload.rating).toBe(1);
     });
   });
 });

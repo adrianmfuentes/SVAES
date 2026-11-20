@@ -1,50 +1,37 @@
+    <div class="auth">
+      <header class="auth__top">
+        <a routerLink="/" class="auth__home">
+          <img class="auth__logo" src="/images/logo/svaes-logo-ink.svg" alt="SVAES" width="98" height="36" />
+        </a>
+        <a routerLink="/" class="auth__back">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
+            <path d="M12 7H2M6 3L2 7l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" />
+          </svg>
+          {{ 'login.back_home' | t }}
+        </a>
+      </header>
 
-    <div class="login-page">
-      <a routerLink="/" class="login-back">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" focusable="false">
-          <path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        {{ 'login.back_home' | t }}
-      </a>
+      <main class="auth__main">
+        <div class="auth__intro">
+          <h1>{{ 'login.context_title' | t }}</h1>
+          <p>{{ 'login.context_desc' | t }}</p>
+        </div>
 
-      <main class="login-main">
-        <div class="login-panel">
-          <div class="login-context">
-            <div class="context-brand">
-              SVAES
-            </div>
-            <h1 class="context-title">
-              {{ 'login.context_title_line1' | t }}<br />{{ 'login.context_title_line2' | t }}<br />{{ 'login.context_title_line3' | t }}
-            </h1>
-            <p class="context-desc">
-              {{ 'login.context_desc' | t }}
-            </p>
-            <div class="context-features">
-              <div class="context-feature">
-                <span class="feature-num">10</span>
-                <span class="feature-label">{{ 'login.feature_rules' | t }}</span>
-              </div>
-              <div class="context-feature">
-                <span class="feature-num">5+</span>
-                <span class="feature-label">{{ 'login.feature_connectors' | t }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="login-form" *ngIf="!totpRequired && !forgotMode">
+        <div class="auth__panel">
+          <div *ngIf="!totpRequired && !forgotMode">
             <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
-              <h2 class="form-title">{{ 'login.title' | t }}</h2>
+              <h2 class="auth__title">{{ 'login.title' | t }}</h2>
 
-              <div class="alert-error" *ngIf="errorKey" role="alert">
-                <svg class="alert-error-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
+              <div class="alert" *ngIf="errorKey" role="alert">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
                   <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                   <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
                 <span>{{ errorKey | t: errorParams }}</span>
               </div>
 
-              <div class="form-group">
-                <label for="email">{{ 'login.email_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+              <div class="field">
+                <label for="email">{{ 'login.email_label' | t }}<span class="sr-only"> *</span></label>
                 <input
                   id="email"
                   type="email"
@@ -62,8 +49,8 @@
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="password">{{ 'login.password_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+              <div class="field">
+                <label for="password">{{ 'login.password_label' | t }}<span class="sr-only"> *</span></label>
                 <input
                   id="password"
                   type="password"
@@ -80,42 +67,40 @@
 
               <button
                 type="submit"
-                class="btn-primary full-width btn-submit"
+                class="btn btn--primary btn--block"
                 [disabled]="loginForm.invalid || loading || cooldownSeconds > 0"
                 [title]="loginForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
-                [class.btn-loading]="loading"
               >
                 <span *ngIf="!loading && cooldownSeconds === 0">{{ 'login.submit' | t }}</span>
                 <span *ngIf="loading">{{ 'login.verifying' | t }}</span>
                 <span *ngIf="!loading && cooldownSeconds > 0">{{ 'login.error.too_many_short' | t: errorParams }}</span>
               </button>
             </form>
-            <p class="form-footer-link">
-              {{ 'login.no_account' | t }}
-              <a routerLink="/request-access">{{ 'login.request_access' | t }}</a>
-            </p>
-            <p class="form-footer-link" style="margin-top:0.5rem;">
-              <button type="button" class="btn-link" (click)="goToForgot()">
-                {{ 'login.forgot_password' | t }}
-              </button>
+
+            <p class="auth__links">
+              <span>
+                {{ 'login.no_account' | t }}
+                <a routerLink="/request-access" class="link">{{ 'login.request_access' | t }}</a>
+              </span>
+              <button type="button" class="link" (click)="goToForgot()">{{ 'login.forgot_password' | t }}</button>
             </p>
           </div>
 
-          <div class="login-form" *ngIf="totpRequired && !forgotMode">
+          <div *ngIf="totpRequired && !forgotMode">
             <form [formGroup]="totpForm" (ngSubmit)="onSubmitTotp()" novalidate>
-              <h2 class="form-title">{{ 'login.2fa_title' | t }}</h2>
-              <p class="totp-hint">{{ 'login.2fa_hint' | t }}</p>
+              <h2 class="auth__title">{{ 'login.2fa_title' | t }}</h2>
+              <p class="auth__hint">{{ 'login.2fa_hint' | t }}</p>
 
-              <div class="alert-error" *ngIf="errorKey" role="alert">
-                <svg class="alert-error-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
+              <div class="alert" *ngIf="errorKey" role="alert">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" focusable="false">
                   <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
                   <path d="M7 4v3.5M7 10v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
                 <span>{{ errorKey | t: errorParams }}</span>
               </div>
 
-              <div class="form-group">
-                <label for="totp-code">{{ 'login.2fa_code_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+              <div class="field">
+                <label for="totp-code">{{ 'login.2fa_code_label' | t }}<span class="sr-only"> *</span></label>
                 <input
                   id="totp-code"
                   type="text"
@@ -137,30 +122,27 @@
 
               <button
                 type="submit"
-                class="btn-primary full-width btn-submit"
+                class="btn btn--primary btn--block"
                 [disabled]="totpForm.invalid || loading || cooldownSeconds > 0"
                 [title]="totpForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
-                [class.btn-loading]="loading"
               >
                 <span *ngIf="!loading && cooldownSeconds === 0">{{ 'login.2fa_verify' | t }}</span>
                 <span *ngIf="loading">{{ 'login.verifying' | t }}</span>
                 <span *ngIf="!loading && cooldownSeconds > 0">{{ 'login.error.too_many_short' | t: errorParams }}</span>
               </button>
             </form>
-            <p class="form-footer-link">
-              <button type="button" class="btn-link" (click)="backToLogin()">
-                {{ 'login.2fa_back' | t }}
-              </button>
+            <p class="auth__links">
+              <button type="button" class="link" (click)="backToLogin()">{{ 'login.2fa_back' | t }}</button>
             </p>
           </div>
 
-          <div class="login-form" *ngIf="forgotMode && !forgotSent">
-            <h2 class="form-title">{{ 'forgot_password.title' | t }}</h2>
-            <p class="totp-hint">{{ 'forgot_password.desc' | t }}</p>
+          <div *ngIf="forgotMode && !forgotSent">
+            <h2 class="auth__title">{{ 'forgot_password.title' | t }}</h2>
+            <p class="auth__hint">{{ 'forgot_password.desc' | t }}</p>
 
             <form [formGroup]="forgotForm" (ngSubmit)="onSubmitForgot()" novalidate>
-              <div class="form-group">
-                <label for="forgot-email">{{ 'forgot_password.email_label' | t }}<span class="required-star" aria-hidden="true">*</span></label>
+              <div class="field">
+                <label for="forgot-email">{{ 'forgot_password.email_label' | t }}<span class="sr-only"> *</span></label>
                 <input
                   id="forgot-email"
                   type="email"
@@ -180,43 +162,35 @@
 
               <button
                 type="submit"
-                class="btn-primary full-width btn-submit"
+                class="btn btn--primary btn--block"
                 [disabled]="forgotForm.invalid || loading"
                 [title]="forgotForm.invalid ? ('common.disabled_tooltip.form_invalid' | t) : ('common.disabled_tooltip.operation_in_progress' | t)"
-                [class.btn-loading]="loading"
               >
                 <span *ngIf="!loading">{{ 'forgot_password.submit' | t }}</span>
                 <span *ngIf="loading">{{ 'forgot_password.sending' | t }}</span>
               </button>
             </form>
-            <p class="form-footer-link">
-              <button type="button" class="btn-link" (click)="backFromForgot()">
-                {{ 'forgot_password.back' | t }}
-              </button>
+            <p class="auth__links">
+              <button type="button" class="link" (click)="backFromForgot()">{{ 'forgot_password.back' | t }}</button>
             </p>
           </div>
 
-                    <div class="login-form" *ngIf="forgotMode && forgotSent">
-            <h2 class="form-title">{{ 'forgot_password.sent_title' | t }}</h2>
-            <p class="totp-hint">{{ 'forgot_password.sent_desc' | t }}</p>
-            <p class="form-footer-link">
-              <button type="button" class="btn-link" (click)="backFromForgot()">
-                {{ 'forgot_password.back' | t }}
-              </button>
+          <div *ngIf="forgotMode && forgotSent">
+            <h2 class="auth__title">{{ 'forgot_password.sent_title' | t }}</h2>
+            <p class="auth__hint">{{ 'forgot_password.sent_desc' | t }}</p>
+            <p class="auth__links">
+              <button type="button" class="link" (click)="backFromForgot()">{{ 'forgot_password.back' | t }}</button>
             </p>
           </div>
         </div>
       </main>
 
-      <footer class="login-footer">
+      <footer class="auth__foot">
         <span>&copy; 2026 SVAES</span>
-        <nav class="footer-links">
+        <nav>
           <app-lang-toggle theme="light" />
-          <span aria-hidden="true">&middot;</span>
           <a routerLink="/legal/privacidad">{{ 'login.footer_privacy' | t }}</a>
-          <span aria-hidden="true">&middot;</span>
           <a routerLink="/legal/aviso-legal">{{ 'login.footer_legal' | t }}</a>
         </nav>
       </footer>
     </div>
-  

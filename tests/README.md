@@ -1,6 +1,6 @@
 # Tests — Plan de Pruebas (ISO 29119-4)
 
-> **TFG terminado** (30/06/2026) — All test suites passing as of final delivery.
+> **TFG terminado** (30/06/2026) · **TFM en curso** (Máster en Ingeniería Web, Universidad de Oviedo) — All test suites passing as of final delivery.
 
 All tests follow a structured **Plan de Pruebas** with unique test case identifiers.
 

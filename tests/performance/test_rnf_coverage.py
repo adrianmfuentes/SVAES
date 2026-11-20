@@ -19,6 +19,7 @@ import ast
 import inspect
 import logging
 import os
+import re
 import sys
 import time
 from contextlib import asynccontextmanager
@@ -443,7 +444,7 @@ def test_tc_usa_rnf22_01_responsive_viewport_4_browsers():
 
     Verifica que el frontend Angular declare:
     - Meta viewport estándar en index.html
-    - Al menos un @media breakpoint para móvil, tablet, escritorio y pantalla grande
+    - Consultas de ancho en al menos dos puntos de quiebre habituales
     """
     index_html = _WEB_SRC / "index.html"
     assert index_html.exists(), f"web/src/index.html no encontrado en {_WEB_SRC}"
@@ -459,16 +460,17 @@ def test_tc_usa_rnf22_01_responsive_viewport_4_browsers():
 
     all_scss = "\n".join(f.read_text(encoding="utf-8", errors="ignore") for f in scss_files)
 
-    # Expect @media queries for the 4 standard breakpoints
-    # Mobile ≤768px, Tablet ≤1024px, Desktop >1024px, Large >1200px
-    breakpoints = ["@media", "max-width", "min-width"]
-    assert any(bp in all_scss for bp in breakpoints), (
-        "No se encontraron reglas @media en los archivos SCSS (RNF-22)"
-    )
-
-    # At least two numeric breakpoints among the common values
-    numeric_bps = ["320", "375", "768", "1024", "1200", "1440"]
-    found = [bp for bp in numeric_bps if bp in all_scss]
+    active_scss = re.sub(r"/\*.*?\*/|^\s*//[^\n]*", "", all_scss, flags=re.DOTALL | re.MULTILINE)
+    media_queries = re.findall(r"@media\s+([^{]+)\{", active_scss)
+    # In media queries, relative lengths use the default font size (16px).
+    width_units = re.compile(r"\(\s*(?:min|max)-width\s*:\s*(\d+(?:\.\d+)?)\s*(px|rem|em)\s*\)")
+    widths_px = {
+        float(value) * (1 if unit == "px" else 16)
+        for query in media_queries
+        for value, unit in width_units.findall(query)
+    }
+    common_widths = {320, 375, 768, 1024, 1200, 1440}
+    found = sorted(common_widths.intersection(widths_px))
     assert len(found) >= 2, (
         f"Se esperaban ≥2 puntos de quiebre numéricos en SCSS, "
         f"se encontraron: {found} (RNF-22)"

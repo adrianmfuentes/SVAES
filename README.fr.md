@@ -1,5 +1,5 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adrianmfuentes_SVAES&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adrianmfuentes_SVAES)
-[![Status](https://img.shields.io/badge/Mémoire-Terminé-success)](https://github.com/adrianmfuentes/SVAES)
+[![Status](https://img.shields.io/badge/Mémoire-Terminé-success)](https://github.com/adrianmfuentes/SVAES) [![TFM](https://img.shields.io/badge/TFM-En%20cours-orange)](https://github.com/adrianmfuentes/SVAES)
 [![Deploy](https://img.shields.io/badge/Déploiement-Production-blue)](https://github.com/adrianmfuentes/SVAES)
 
 **[English](README.en.md)** · **[Español](README.md)**
@@ -8,8 +8,10 @@
 
 ## Système de Vérification Automatique des Livraisons de Logiciel
 
-Mémoire de Fin de Licence — Terminé
-Licence en Ingénierie Informatique du Logiciel, Université d'Oviedo · Année académique 2025/2026 · Note : 10/10
+Mémoire de fin de licence (TFG) — Licence en Ingénierie Informatique du Logiciel, Université d'Oviedo · 2025/2026 · Note : 10/10
+Mémoire de Master (TFM, en cours) — Master en Ingénierie Web, spécialité Cybersécurité, Université d'Oviedo
+
+> **TFM :** _Vérification sémantique des livraisons logicielles via des modèles de langage locaux : extension de SVAES._ Prolongement du TFG ajoutant une vérification sémantique par LLM exécutés en local. La documentation du TFG est conservée comme historique. Voir [docs/tfm](docs/tfm/README.md).
 
 Auteur : Adrián Martínez Fuentes
 

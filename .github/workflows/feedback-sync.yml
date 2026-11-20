@@ -8,15 +8,20 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: feedback-sync
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: production
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: '3.11'
 
@@ -35,5 +40,6 @@ jobs:
             echo "No hay feedback nuevo que sincronizar."
           else
             git commit -m "chore: sync user feedback into README [skip ci]"
+            git pull --rebase --autostash
             git push
           fi

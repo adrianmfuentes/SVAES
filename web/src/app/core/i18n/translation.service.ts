@@ -60,7 +60,14 @@ export class TranslationService {
         this.translations = new Map(Object.entries(cached));
         this.http.get<Record<string, string>>(`/assets/i18n/${lang}.json`).pipe(
           tap(fresh => {
+            const changed = JSON.stringify(fresh) !== raw;
             try { localStorage.setItem(`${I18N_CACHE_PREFIX}${lang}`, JSON.stringify(fresh)); } catch { /* ignore */ }
+            // A deploy that adds strings must show up now, not on the next visit: swap in the
+            // fresh texts and re-emit so every open pipe re-translates.
+            if (changed && lang === this.currentLang$.value && Object.keys(fresh).length > 0) {
+              this.translations = new Map(Object.entries(fresh));
+              this.currentLang$.next(lang);
+            }
           }),
           catchError(() => of({})),
         ).subscribe();

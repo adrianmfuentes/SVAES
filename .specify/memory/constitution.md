@@ -1,6 +1,6 @@
 # SVAES Constitution
 
-> SVAES continúa como proyecto vivo hacia el TFM. La documentación del TFG se conserva
+> SVAES continúa como proyecto vivo: TFM «Verificación semántica de entregas software mediante modelos de lenguaje locales» (Máster en Ingeniería Web, Univ. Oviedo). La documentación del TFG se conserva
 > como histórico. Este texto no define requisitos del TFM ni políticas académicas.
 
 ## Core Principles

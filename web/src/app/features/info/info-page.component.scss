@@ -1,0 +1,9 @@
+@use '../../shared/styles/ledger' as m;
+@use '../../shared/styles/ledger-doc' as d;
+
+:host {
+  @include m.tokens;
+  display: block;
+}
+
+@include d.info;

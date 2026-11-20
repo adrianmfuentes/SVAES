@@ -1,165 +1,185 @@
-<div class="landing">
-  <a class="skip-link" href="#main-content">{{ 'a11y.skip_to_main' | t }}</a>
+<div class="landing" [class.glass-on]="glass()" [class.stack]="stack()">
+  <app-fluted-glass
+    (ready)="glass.set(true)"
+    [scenes]="[
+      {
+        selector: '.hero',
+        ground: '#f5f8fb',
+        squeeze: 1.45,
+        pull: 0.3,
+        rest: 0.2,
+        scrollClear: true,
+        blobs: [
+          { x: 0.9, y: 0.05, r: 0.3, color: '#9cc0dc', alpha: 0.7 },
+          { x: 0.04, y: 1.02, r: 0.18, color: '#6c9bc2', alpha: 0.4 },
+          { x: 0.5, y: 1.25, r: 0.1, color: '#9cc0dc', alpha: 0.5 }
+        ],
+        words: [
+          { text: 'verdict.VALID' | t, color: '#14602f', mark: 'check' },
+          { text: 'verdict.VALID_WITH_WARNINGS' | t, color: '#7a5200', mark: 'warn' },
+          { text: 'verdict.INVALID' | t, color: '#8b1a1a', mark: 'cross' },
+          { text: 'verdict.NOT_EVALUATED' | t, color: '#334a5e', mark: 'dash' }
+        ]
+      },
+      { selector: '.proc__top', ground: '#f5f8fb', art: '4', artColor: '#cfe0ee', blobs: [{ x: 0.95, y: 0.3, r: 0.22, color: '#9cc0dc', alpha: 0.45 }, { x: 0.02, y: 0.9, r: 0.14, color: '#9cc0dc', alpha: 0.35 }] },
+      { selector: '.conn', ground: '#f5f8fb', art: '20', artColor: '#cfe0ee', blobs: [{ x: 0.08, y: 0.7, r: 0.24, color: '#9cc0dc', alpha: 0.45 }, { x: 0.98, y: 0.1, r: 0.12, color: '#1d4e76', alpha: 0.25 }] },
+      { selector: '.research', ground: '#1d4e76', blobs: [{ x: 0.12, y: 0.15, r: 0.3, color: '#2b628f', alpha: 0.7 }, { x: 0.96, y: 1, r: 0.22, color: '#0e3a5f', alpha: 0.6 }] }
+    ]"
+  />
 
-  <header class="landing-header">
-    <div class="landing-logo">SVAES</div>
-    <nav class="landing-nav" aria-label="{{ 'landing.aria_nav_main' | t }}">
-      <span class="landing-nav-tagline">{{ 'landing.tagline' | t }}</span>
-      <app-lang-toggle theme="light" />
-      <a routerLink="/auth/login" class="btn-primary">{{ 'landing.login_button' | t }}</a>
-    </nav>
+  <a class="skip-link" href="#main-content" (click)="goTo('main-content', $event)">{{ 'a11y.skip_to_main' | t }}</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a routerLink="/" class="brand" (click)="goTop($event)">
+        <img class="brand__logo" src="/images/logo/svaes-logo-ink.svg" alt="SVAES" width="140" height="51" />
+      </a>
+
+      <nav class="site-nav" [attr.aria-label]="'landing.aria_nav_main' | t">
+        <ul class="site-nav__list">
+          @for (section of sections; track section.id) {
+            <li>
+              <a class="site-nav__link" [href]="'#' + section.id" (click)="goTo(section.id, $event)">{{ section.labelKey | t }}</a>
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <div class="site-header__actions">
+        <app-lang-toggle theme="light" />
+        <a routerLink="/auth/login" class="btn btn--ghost site-header__login">{{ 'landing.login_button' | t }}</a>
+        <a routerLink="/request-access" class="btn btn--solid site-header__cta">{{ 'landing.register_button' | t }}</a>
+        <button
+          type="button"
+          class="menu-toggle"
+          aria-controls="mobile-menu"
+          [attr.aria-expanded]="menuOpen()"
+          [attr.aria-label]="(menuOpen() ? 'landing.menu_close' : 'landing.menu_open') | t"
+          (click)="toggleMenu()"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+            @if (menuOpen()) {
+              <path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="square" />
+            } @else {
+              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="square" />
+            }
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="mobile-menu" [hidden]="!menuOpen()">
+      <nav [attr.aria-label]="'landing.aria_nav_main' | t">
+        <ul class="mobile-menu__list">
+          @for (section of sections; track section.id) {
+            <li>
+              <a class="mobile-menu__link" [href]="'#' + section.id" (click)="goTo(section.id, $event)">{{ section.labelKey | t }}</a>
+            </li>
+          }
+        </ul>
+      </nav>
+      <div class="mobile-menu__actions">
+        <a routerLink="/auth/login" class="btn btn--ghost">{{ 'landing.login_button' | t }}</a>
+        <a routerLink="/request-access" class="btn btn--solid">{{ 'landing.register_button' | t }}</a>
+      </div>
+    </div>
+    <div class="site-header__progress" aria-hidden="true">
+      <div #scrollProgress class="site-header__progress-fill"></div>
+    </div>
   </header>
 
-  <section class="landing-hero" id="main-content">
-    <div class="landing-hero-inner">
-
-      <div class="landing-left">
-        <span class="landing-eyebrow">{{ 'landing.eyebrow_hero' | t }}</span>
-        <h1 class="landing-heading">
-          {{ 'landing.heading_line1' | t }}<br>
-          {{ 'landing.heading_line2' | t }}<br>
-          {{ 'landing.heading_line3' | t }}
-        </h1>
-        <p class="landing-subtitle">{{ 'landing.subtitle' | t }}</p>
-        <div class="landing-actions">
-          <a class="btn-accent" (click)="navigateToRequestAccess()">{{ 'landing.register_button' | t }}</a>
-          <a routerLink="/auth/login" class="btn-secondary">{{ 'landing.login_system_button' | t }}</a>
-        </div>
-        <div class="landing-stats">
-          <div class="landing-stat">
-            <span class="landing-stat-value">10</span>
-            <span class="landing-stat-label">{{ 'landing.stat_rules' | t }}</span>
-          </div>
-          <span class="landing-stat-sep"></span>
-          <div class="landing-stat">
-            <span class="landing-stat-value">5+</span>
-            <span class="landing-stat-label">{{ 'landing.stat_connectors' | t }}</span>
-          </div>
-          <span class="landing-stat-sep"></span>
-          <div class="landing-stat">
-            <span class="landing-stat-value">100%</span>
-            <span class="landing-stat-label">{{ 'landing.stat_traceability' | t }}</span>
-          </div>
+  <main id="main-content" tabindex="-1">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero__copy">
+        <h1 id="hero-title" class="hero__title">{{ 'landing.hero_title' | t }}</h1>
+        <p class="hero__lead">{{ 'landing.hero_lead' | t }}</p>
+        <div class="hero__actions">
+          <a routerLink="/request-access" class="btn btn--solid btn--lg">{{ 'landing.register_button' | t }}</a>
+          <a href="#que-hace" class="hero__more" (click)="goTo('que-hace', $event)">{{ 'landing.hero_secondary' | t }}</a>
         </div>
       </div>
 
-      <div class="landing-right" aria-hidden="true">
-        <div class="mock-window">
-          <div class="mock-window-bar">
-            <span class="mock-window-title">{{ 'landing.mock_verification' | t }} · release/2024-Q3-hotfix</span>
-          </div>
+      <!-- The four verdicts as real text: shown on narrow screens, read aloud everywhere. On wide
+           screens the glass draws them big, so this list is visually hidden there. -->
+      <ul class="hero__verdicts">
+        <li><strong class="v-valid">{{ 'verdict.VALID' | t }}</strong> {{ 'landing.verdict_valid_desc' | t }}</li>
+        <li><strong class="v-warning">{{ 'verdict.VALID_WITH_WARNINGS' | t }}</strong> {{ 'landing.verdict_warning_desc' | t }}</li>
+        <li><strong class="v-invalid">{{ 'verdict.INVALID' | t }}</strong> {{ 'landing.verdict_invalid_desc' | t }}</li>
+        <li><strong class="v-neutral">{{ 'verdict.NOT_EVALUATED' | t }}</strong> {{ 'landing.verdict_unevaluated_desc' | t }}</li>
+      </ul>
 
-          <div class="mock-verdict">
-            <span class="mock-verdict-icon">✕</span>
-            <span class="mock-verdict-badge">INVALID</span>
-            <span class="mock-verdict-release">release/2024-Q3-hotfix</span>
-            <span class="mock-verdict-sep" aria-hidden="true">·</span>
-            <span class="mock-verdict-meta">2 min ago</span>
-            <span class="mock-verdict-hash">a3f2c1d9</span>
-          </div>
+    </section>
 
-          <div class="mock-scan-area">
-            <div class="mock-table">
-              <div class="mock-row mock-row-1">
-                <span class="mock-id">RV-01</span>
-                <span class="mock-name">Artifact count</span>
-                <span class="mock-connector">GitLab</span>
-                <span class="mock-result"><span class="mock-badge mock-valid">✓ VALID</span></span>
-                <span class="mock-evidence"></span>
-              </div>
-              <div class="mock-row mock-row-2">
-                <span class="mock-id">RV-02</span>
-                <span class="mock-name">Build status</span>
-                <span class="mock-connector">Jenkins</span>
-                <span class="mock-result"><span class="mock-badge mock-valid">✓ VALID</span></span>
-                <span class="mock-evidence"></span>
-              </div>
-              <div class="mock-row mock-row-3">
-                <span class="mock-id">RV-03</span>
-                <span class="mock-name">Code coverage</span>
-                <span class="mock-connector">SonarQube</span>
-                <span class="mock-result"><span class="mock-badge mock-invalid">✕ INVALID</span></span>
-                <span class="mock-evidence"></span>
-              </div>
-              <div class="mock-row mock-row-4">
-                <span class="mock-id">RV-04</span>
-                <span class="mock-name">Security scan</span>
-                <span class="mock-connector">Trivy</span>
-                <span class="mock-result"><span class="mock-badge mock-warning">⚠ WARNING</span></span>
-                <span class="mock-evidence"></span>
-              </div>
-              <div class="mock-row mock-row-5">
-                <span class="mock-id">RV-05</span>
-                <span class="mock-name">Approval gate</span>
-                <span class="mock-connector">GitHub</span>
-                <span class="mock-result"><span class="mock-badge mock-unevaluated">— NOT_EVALUATED</span></span>
-                <span class="mock-evidence"></span>
-              </div>
+    <!-- Second sheet: everything after the hero. -->
+    <div class="rest">
+    <section class="proc" aria-labelledby="que-hace">
+      <div class="proc__top">
+        <div class="proc__head">
+          <h2 id="que-hace" class="h2" tabindex="-1">{{ 'landing.product_title' | t }}</h2>
+          <p class="proc__problem">{{ 'landing.problem_p1' | t }}</p>
+          <p class="proc__problem">{{ 'landing.problem_p2' | t }}</p>
+        </div>
+        <ol class="steps">
+          @for (station of stations; track station) {
+            <li class="step">
+              <h3 class="step__title">{{ 'landing.step_' + station + '_title' | t }}</h3>
+              <p class="step__text">{{ 'landing.step_' + station + '_desc' | t }}</p>
+            </li>
+          }
+        </ol>
+      </div>
+
+      <div class="conn" role="group" aria-labelledby="conectores">
+        <div class="conn__head">
+          <h2 id="conectores" class="h2" tabindex="-1">{{ 'landing.connectors_title' | t }}</h2>
+          <p class="lead">{{ 'landing.connectors_lead' | t }}</p>
+        </div>
+        <dl class="connectors">
+          @for (group of connectorGroups; track group.labelKey) {
+            <div class="connectors__row">
+              <dt>{{ group.labelKey | t }}</dt>
+              <dd>{{ group.items.join(', ') }}</dd>
             </div>
-          </div>
+          }
+        </dl>
+      </div>
+    </section>
 
-          <div class="mock-footer">
-            <span>{{ 'landing.mock_footer' | t }}</span>
-            <span>{{ 'landing.mock_footer_date' | t }}</span>
-          </div>
-
+    <section class="research" aria-labelledby="investigacion">
+      <div class="research__head">
+        <h2 id="investigacion" class="h2" tabindex="-1">{{ 'landing.research_title' | t }}</h2>
+        <p class="research__status" role="note">{{ 'landing.research_status' | t }}</p>
+        <div class="research__copy">
+          <p>{{ 'landing.research_p1' | t }}</p>
+          <p>{{ 'landing.research_p2' | t }}</p>
+        </div>
+        <div class="poc">
+          <h3 class="poc__headline">{{ 'landing.poc_title' | t }}</h3>
+          <p class="poc__caveat">{{ 'landing.research_validation_note' | t }}</p>
         </div>
       </div>
 
+      <div class="research-flow">
+        <div class="research-flow__header">
+          <h3 id="research-flow-title">{{ 'landing.research_example_title' | t }}</h3>
+          <p>{{ 'landing.research_example_note' | t }}</p>
+        </div>
+
+        <ol class="research-flow__steps" aria-labelledby="research-flow-title">
+          @for (step of researchSteps; track step; let i = $index) {
+            <li class="research-flow__step">
+              <span class="research-flow__number" aria-hidden="true">{{ i + 1 }}</span>
+              <div>
+                <p class="research-flow__label">{{ 'landing.research_step_' + step | t }}</p>
+                <p class="research-flow__detail">{{ 'landing.research_step_' + step + '_detail' | t }}</p>
+              </div>
+            </li>
+          }
+        </ol>
+      </div>
+    </section>
     </div>
-  </section>
+  </main>
 
-  <section class="landing-access">
-    <div class="landing-access-inner" #accessInner>
-
-      <div class="landing-access-text">
-        <span class="landing-eyebrow">{{ 'landing.eyebrow_register' | t }}</span>
-        <h2 class="landing-access-title">{{ 'landing.register_title' | t }}</h2>
-        <p class="landing-access-desc">{{ 'landing.register_desc' | t }}</p>
-        <a routerLink="/request-access" class="btn-primary">{{ 'landing.register_button' | t }}</a>
-      </div>
-
-      <div class="landing-access-steps">
-        <div class="access-step">
-          <span class="access-step-num">01</span>
-          <div class="access-step-body">
-            <strong class="access-step-title">{{ 'landing.step1_title' | t }}</strong>
-            <span class="access-step-desc">{{ 'landing.step1_desc' | t }}</span>
-          </div>
-        </div>
-        <div class="access-step">
-          <span class="access-step-num">02</span>
-          <div class="access-step-body">
-            <strong class="access-step-title">{{ 'landing.step2_title' | t }}</strong>
-            <span class="access-step-desc">{{ 'landing.step2_desc' | t }}</span>
-          </div>
-        </div>
-        <div class="access-step">
-          <span class="access-step-num">03</span>
-          <div class="access-step-body">
-            <strong class="access-step-title">{{ 'landing.step3_title' | t }}</strong>
-            <span class="access-step-desc">{{ 'landing.step3_desc' | t }}</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <footer class="landing-footer">
-    <span class="landing-footer-copy">{{ 'landing.footer_copy' | t }}</span>
-    <nav class="landing-footer-nav" aria-label="{{ 'landing.aria_nav_footer' | t }}">
-      <button class="feedback-btn" (click)="openFeedback()">{{ 'landing.feedback_button' | t }}</button>
-      <span aria-hidden="true">·</span>
-      <a href="https://github.com/adrianmfuentes/SVAES" target="_blank" rel="noopener noreferrer">Github</a>
-      <span aria-hidden="true">·</span>
-      <a routerLink="/legal/privacidad">{{ 'landing.footer_privacy' | t }}</a>
-      <span aria-hidden="true">·</span>
-      <a routerLink="/legal/aviso-legal">{{ 'landing.footer_legal' | t }}</a>
-    </nav>
-  </footer>
-
-  @if (showFeedback) {
-    <app-feedback-modal (closed)="closeFeedback()" />
-  }
+  <app-site-footer />
 </div>

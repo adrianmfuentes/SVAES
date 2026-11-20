@@ -1,11 +1,11 @@
-<a href="#contenido-principal" class="skip-link">{{ 'legal.common.skip_link' | t }}</a>
+<a href="/legal/privacidad#contenido-principal" class="skip-link">{{ 'legal.common.skip_link' | t }}</a>
 
 <div class="legal-page">
   <header class="legal-header" role="banner">
-    <a routerLink="/" class="legal-logo">SVAES</a>
+    <a routerLink="/" class="legal-logo" aria-label="SVAES"><img class="brand-logo" src="/images/logo/svaes-logo-ink.svg" alt="" width="98" height="36" /></a>
     <div class="legal-header-nav">
       <app-lang-toggle theme="light" />
-      <a routerLink="/" class="btn-secondary">{{ 'legal.common.back_start' | t }}</a>
+      <a routerLink="/" class="legal-back">{{ 'legal.common.back_start' | t }}</a>
     </div>
   </header>
 
@@ -14,15 +14,15 @@
       <nav [attr.aria-label]="'legal.privacy.nav_label' | t">
         <p class="legal-toc-heading" aria-hidden="true">{{ 'legal.common.toc_heading' | t }}</p>
         <ol class="legal-toc-list">
-          <li class="legal-toc-item"><a href="/legal/privacidad#responsable" class="legal-toc-link">{{ 'legal.privacy.toc.1' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/privacidad#datos-finalidades" class="legal-toc-link">{{ 'legal.privacy.toc.2' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/privacidad#base-juridica" class="legal-toc-link">{{ 'legal.privacy.toc.3' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/privacidad#plazo-conservacion" class="legal-toc-link">{{ 'legal.privacy.toc.4' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/privacidad#destinatarios" class="legal-toc-link">{{ 'legal.privacy.toc.5' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/privacidad#transferencias" class="legal-toc-link">{{ 'legal.privacy.toc.6' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/privacidad#derechos" class="legal-toc-link">{{ 'legal.privacy.toc.7' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/privacidad#almacenamiento-local" class="legal-toc-link">{{ 'legal.privacy.toc.8' | t }}</a></li>
-          <li class="legal-toc-item"><a href="/legal/privacidad#cambios" class="legal-toc-link">{{ 'legal.privacy.toc.9' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#responsable" class="legal-toc-link" [attr.aria-current]="active() === 'responsable' ? 'location' : null" (click)="goTo('responsable', $event)">{{ 'legal.privacy.toc.1' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#datos-finalidades" class="legal-toc-link" [attr.aria-current]="active() === 'datos-finalidades' ? 'location' : null" (click)="goTo('datos-finalidades', $event)">{{ 'legal.privacy.toc.2' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#base-juridica" class="legal-toc-link" [attr.aria-current]="active() === 'base-juridica' ? 'location' : null" (click)="goTo('base-juridica', $event)">{{ 'legal.privacy.toc.3' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#plazo-conservacion" class="legal-toc-link" [attr.aria-current]="active() === 'plazo-conservacion' ? 'location' : null" (click)="goTo('plazo-conservacion', $event)">{{ 'legal.privacy.toc.4' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#destinatarios" class="legal-toc-link" [attr.aria-current]="active() === 'destinatarios' ? 'location' : null" (click)="goTo('destinatarios', $event)">{{ 'legal.privacy.toc.5' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#transferencias" class="legal-toc-link" [attr.aria-current]="active() === 'transferencias' ? 'location' : null" (click)="goTo('transferencias', $event)">{{ 'legal.privacy.toc.6' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#derechos" class="legal-toc-link" [attr.aria-current]="active() === 'derechos' ? 'location' : null" (click)="goTo('derechos', $event)">{{ 'legal.privacy.toc.7' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#almacenamiento-local" class="legal-toc-link" [attr.aria-current]="active() === 'almacenamiento-local' ? 'location' : null" (click)="goTo('almacenamiento-local', $event)">{{ 'legal.privacy.toc.8' | t }}</a></li>
+          <li class="legal-toc-item"><a href="#cambios" class="legal-toc-link" [attr.aria-current]="active() === 'cambios' ? 'location' : null" (click)="goTo('cambios', $event)">{{ 'legal.privacy.toc.9' | t }}</a></li>
         </ol>
       </nav>
     </aside>
@@ -134,6 +134,7 @@
             <li [innerHTML]="'legal.privacy.s8.item3' | t"></li>
           </ul>
           <p>{{ 'legal.privacy.s8.footer' | t }}</p>
+          <p><a routerLink="/legal/cookies">{{ 'info.cookies.title' | t }}</a></p>
         </section>
 
         <section id="cambios" class="legal-section" aria-labelledby="h-cambios">
@@ -150,4 +151,5 @@
       </article>
     </main>
   </div>
+  <app-site-footer />
 </div>
