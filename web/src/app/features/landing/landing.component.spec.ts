@@ -1,5 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { frameQueue, mockResizeObserver } from '../../../../test-support/browser-effects';
 import { LandingComponent } from './landing.component';
 
 describe('LandingComponent', () => {
@@ -58,5 +59,110 @@ describe('LandingComponent', () => {
 
   it('lists the four steps', () => {
     expect(host.querySelectorAll('.steps .step')).toHaveLength(4);
+  });
+});
+
+describe('Landing scroll behavior', () => {
+  const originalScrollingElement = Object.getOwnPropertyDescriptor(document, 'scrollingElement');
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    if (originalScrollingElement) {
+      Object.defineProperty(document, 'scrollingElement', originalScrollingElement);
+    } else {
+      Reflect.deleteProperty(document, 'scrollingElement');
+    }
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  async function setup(matches: boolean) {
+    const media = Object.assign(new EventTarget(), { matches });
+    vi.stubGlobal('matchMedia', () => media);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    const observer = mockResizeObserver();
+    const frames = frameQueue();
+    const root = { scrollTop: 0, scrollHeight: 1800, clientHeight: 800 };
+    Object.defineProperty(document, 'scrollingElement', { configurable: true, value: root });
+    await TestBed.configureTestingModule({
+      imports: [LandingComponent],
+      providers: [provideRouter([])],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(LandingComponent);
+    const host = fixture.nativeElement as HTMLElement;
+    const header = host.querySelector('.site-header')!;
+    const rest = host.querySelector('.rest')!;
+    vi.spyOn(header, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 1024, 72));
+    const bounds = vi.spyOn(rest, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 900, 1024, 750));
+    fixture.detectChanges();
+    await Promise.resolve();
+    return { fixture, host, root, frames, observer, media, bounds };
+  }
+
+  it('tracks scroll and layout changes, clamps overscroll, and cancels pending frames', async () => {
+    const { fixture, host, root, frames, observer } = await setup(false);
+    const progress = host.querySelector<HTMLElement>('.site-header__progress-fill')!;
+    expect(progress.style.transform).toBe('scaleX(0)');
+    root.scrollTop = 500;
+    window.dispatchEvent(new Event('scroll'));
+    window.dispatchEvent(new Event('scroll'));
+    expect(frames.size).toBe(1);
+    frames.paint();
+    expect(progress.style.transform).toBe('scaleX(0.5)');
+
+    root.scrollTop = 1200;
+    window.dispatchEvent(new Event('resize'));
+    frames.paint();
+    expect(progress.style.transform).toBe('scaleX(1)');
+    root.scrollTop = -1200;
+    window.dispatchEvent(new Event('scroll'));
+    frames.paint();
+    expect(progress.style.transform).toBe('scaleX(0)');
+    root.scrollHeight = root.clientHeight;
+    observer.resize();
+    frames.paint();
+    expect(progress.style.transform).toBe('scaleX(0)');
+    window.dispatchEvent(new Event('scroll'));
+    fixture.destroy();
+    expect(frames.size).toBe(0);
+    expect(observer.disconnect).toHaveBeenCalledOnce();
+    window.dispatchEvent(new Event('scroll'));
+    expect(frames.size).toBe(0);
+  });
+
+  it('follows the covering sheet on scroll and restores ordinary layout for keyboard use', async () => {
+    const { fixture, host, frames, media, bounds } = await setup(true);
+    const hero = host.querySelector<HTMLElement>('.hero')!;
+    expect(fixture.componentInstance.stack()).toBe(true);
+    expect(hero.style.top).toBe('72px');
+
+    bounds.mockReturnValue(new DOMRect(0, 72, 1024, 750));
+    window.dispatchEvent(new Event('scroll'));
+    frames.paint();
+    expect(Number(hero.style.getPropertyValue('--cover'))).toBeGreaterThan(0);
+    for (let i = 0; i < 50 && frames.size; i++) frames.paint();
+    expect(hero.style.getPropertyValue('--cover')).toBe('1.000');
+    expect(frames.size).toBe(0);
+
+    media.matches = false;
+    media.dispatchEvent(new Event('change'));
+    expect(hero.style.top).toBe('');
+    media.matches = true;
+    media.dispatchEvent(new Event('change'));
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }));
+    expect(fixture.componentInstance.stack()).toBe(true);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+    expect(fixture.componentInstance.stack()).toBe(false);
+    expect(hero.style.getPropertyValue('--cover')).toBe('');
+    media.dispatchEvent(new Event('change'));
+    expect(fixture.componentInstance.stack()).toBe(false);
+
+    const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+    fixture.componentInstance.goTop(new Event('click', { cancelable: true }));
+    expect(scroll).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+    expect(document.activeElement).toBe(host.querySelector('main'));
+    expect(location.pathname).toBe('/');
+    fixture.destroy();
   });
 });
