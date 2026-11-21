@@ -47,18 +47,15 @@ h2 {
 }
 
 .modal {
-  @include glass.flutes(
-    var(--accent),
-    radial-gradient(ellipse 30rem 20rem at 100% 0, #779fbe 98%, transparent)
-  );
+  @include glass.paper;
 
   width: 100%;
   max-width: 39rem;
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
-  padding: clamp(0.5rem, 1.5vw, 0.875rem);
   color: var(--fg);
   border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
   box-shadow: 0 1rem 3rem rgb(11 22 32 / 32%);
   font-family: var(--sans);
   font-size: 1rem;
@@ -70,8 +67,6 @@ h2 {
 }
 
 .modal__surface {
-  @include glass.paper;
-
   position: relative;
   padding: clamp(0.875rem, 3vw, 1.75rem);
 }
