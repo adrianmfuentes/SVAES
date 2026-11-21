@@ -29,7 +29,7 @@ describe('SiteFooterComponent', () => {
     main.id = 'footer-test-main';
     main.tabIndex = -1;
     const target = document.createElement('h2');
-    target.id = 'conectores';
+    target.id = 'que-hace';
     target.tabIndex = -1;
     target.scrollIntoView = vi.fn();
     main.append(target);
@@ -41,7 +41,7 @@ describe('SiteFooterComponent', () => {
     expect(event.defaultPrevented).toBe(true);
     expect(target.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
     expect(document.activeElement).toBe(target);
-    expect(location.hash).toBe('#conectores');
+    expect(location.hash).toBe('#que-hace');
 
     const fallback = new MouseEvent('click', { cancelable: true });
     footer.goToSection('missing', fallback);

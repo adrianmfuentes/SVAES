@@ -76,7 +76,6 @@ export class InfoPageComponent extends TocNavigation implements OnInit {
       link: '/',
       children: [
         { key: 'info.map.home_what', fragment: 'que-hace' },
-        { key: 'info.map.home_connectors', fragment: 'conectores' },
         { key: 'info.map.home_research', fragment: 'investigacion' },
       ],
     },

@@ -46,11 +46,11 @@ describe('LandingComponent', () => {
 
   it('moves focus to the target heading when navigating to a section', () => {
     const scrollSpy = vi.fn();
-    const target = host.querySelector<HTMLElement>('#conectores')!;
+    const target = host.querySelector<HTMLElement>('#investigacion')!;
     target.scrollIntoView = scrollSpy;
     const event = new Event('click', { cancelable: true });
 
-    component.goTo('conectores', event);
+    component.goTo('investigacion', event);
 
     expect(event.defaultPrevented).toBe(true);
     expect(scrollSpy).toHaveBeenCalled();
@@ -59,6 +59,20 @@ describe('LandingComponent', () => {
 
   it('lists the four steps', () => {
     expect(host.querySelectorAll('.steps .step')).toHaveLength(4);
+  });
+
+  it('shows the selected step and announces its evidence after activation', () => {
+    const steps = [...host.querySelectorAll<HTMLButtonElement>('.step__button')];
+    expect(steps.map((step) => step.getAttribute('aria-pressed'))).toEqual(['true', 'false', 'false', 'false']);
+
+    steps[3].click();
+    fixture.detectChanges();
+
+    expect(steps.map((step) => step.getAttribute('aria-pressed'))).toEqual(['false', 'false', 'false', 'true']);
+    const verdict = host.querySelector('.step__record .demo-record__value')?.textContent?.trim();
+    expect(verdict).toBeTruthy();
+    expect(host.querySelector('.demo__preview .demo-record__value')?.textContent?.trim()).toBe(verdict);
+    expect(host.querySelector('.demo [role="status"]')?.textContent).toContain(verdict);
   });
 });
 

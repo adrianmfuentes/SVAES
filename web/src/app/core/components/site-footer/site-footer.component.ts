@@ -22,7 +22,6 @@ export class SiteFooterComponent {
 
   readonly sections: readonly FooterSection[] = [
     { id: 'que-hace', labelKey: 'landing.nav_product' },
-    { id: 'conectores', labelKey: 'landing.nav_connectors' },
     { id: 'investigacion', labelKey: 'landing.nav_research' },
   ];
 

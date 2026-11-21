@@ -1,4 +1,4 @@
-<div class="landing" [class.glass-on]="glass()" [class.stack]="stack()">
+<div class="landing" [class.glass-on]="glass()" [class.stack]="stack()" [class.cinema]="cinema()">
   @if (interactiveGlass()) {
     <app-fluted-glass
       (ready)="glass.set(true)"
@@ -116,32 +116,81 @@
       <div class="proc__top">
         <div class="proc__head">
           <h2 id="que-hace" class="h2" tabindex="-1">{{ 'landing.product_title' | t }}</h2>
-          <p class="proc__problem">{{ 'landing.problem_p1' | t }}</p>
-          <p class="proc__problem">{{ 'landing.problem_p2' | t }}</p>
+          <div class="proc__problem">
+            <p>{{ 'landing.problem_p1' | t }}</p>
+            <p>{{ 'landing.problem_p2' | t }}</p>
+          </div>
         </div>
-        <ol class="steps">
-          @for (station of stations; track station) {
-            <li class="step">
-              <h3 class="step__title">{{ 'landing.step_' + station + '_title' | t }}</h3>
-              <p class="step__text">{{ 'landing.step_' + station + '_desc' | t }}</p>
-            </li>
-          }
-        </ol>
-      </div>
-
-      <div class="conn" role="group" aria-labelledby="conectores">
-        <div class="conn__head">
-          <h2 id="conectores" class="h2" tabindex="-1">{{ 'landing.connectors_title' | t }}</h2>
-          <p class="lead">{{ 'landing.connectors_lead' | t }}</p>
-        </div>
-        <dl class="connectors">
-          @for (group of connectorGroups; track group.labelKey) {
-            <div class="connectors__row">
-              <dt>{{ group.labelKey | t }}</dt>
-              <dd>{{ group.items.join(', ') }}</dd>
+        <div #demoRoot class="demo" role="group" aria-labelledby="verification-demo-title">
+          <ng-template #demoRecord let-station>
+            <div class="demo-record" [class.demo-record--verdict]="station === 'decide'">
+              <p class="demo-record__value" [class.mono]="station !== 'decide'">{{ 'landing.demo_' + station + '_value' | t }}</p>
+              <p class="demo-record__detail">{{ 'landing.demo_' + station + '_detail' | t }}</p>
             </div>
-          }
-        </dl>
+          </ng-template>
+
+          <div class="demo__pin">
+            <div class="demo__intro">
+              <h3 id="verification-demo-title" class="demo__title">{{ 'landing.demo_title' | t }}</h3>
+              <p>{{ 'landing.demo_intro' | t }}</p>
+            </div>
+
+            <!-- Live 3D stage: the release as a stack of plates. Scroll moves the camera down the stack
+                 (--s = 0..3 on .demo); the pointer tilts it. Decorative: the text is in the steps. -->
+            <div class="stage" aria-hidden="true">
+              <div class="stage__scene">
+                <div class="stage__floor"></div>
+                <i class="stage__pillar" style="--x: -13rem; --y: -8rem"></i>
+                <i class="stage__pillar" style="--x: 13rem; --y: -8rem"></i>
+                <i class="stage__pillar" style="--x: 13rem; --y: 8rem"></i>
+                <i class="stage__pillar" style="--x: -13rem; --y: 8rem"></i>
+                @for (station of stations; track station; let i = $index) {
+                  <div #plate class="plate" [attr.data-station]="station" [style.--i]="i">
+                    <span class="plate__tag">{{ 'landing.step_' + station + '_title' | t }}</span>
+                    <span class="plate__value">{{ 'landing.demo_' + station + '_value' | t }}</span>
+                    <span class="plate__chips">
+                      @switch (station) {
+                        @case ('link') { <b>PAY-184</b><b>a41f9c2</b><b>ADR-12</b> }
+                        @case ('read') { <b>Jira</b><b>GitHub</b><b>Confluence</b> }
+                        @case ('eval') { <b>RV-01 ✓</b><b>RV-02 ✓</b><b class="x">RV-03 ✕</b> }
+                        @case ('decide') { <b class="x">PDF</b><b>CSV</b><b>API</b> }
+                      }
+                    </span>
+                    <span class="plate__bars"><i></i><i></i><i></i></span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="demo__preview">
+              <ng-container [ngTemplateOutlet]="demoRecord" [ngTemplateOutletContext]="{ $implicit: stations[demoStepIndex()] }" />
+            </div>
+
+            <ol class="steps" role="list">
+              @for (station of stations; track station; let i = $index) {
+                <li class="step" #demoStep [style.--i]="i">
+                  <h4 class="step__title">
+                    <button type="button" class="step__button" [attr.aria-pressed]="demoStepIndex() === i" (click)="selectDemoStep(i)">
+                      <span class="step__number mono" aria-hidden="true">0{{ i + 1 }}</span>
+                      {{ 'landing.step_' + station + '_title' | t }}
+                    </button>
+                  </h4>
+                  <p class="step__text">{{ 'landing.step_' + station + '_desc' | t }}</p>
+                  @if (demoStepIndex() === i) {
+                    <div class="step__record">
+                      <ng-container [ngTemplateOutlet]="demoRecord" [ngTemplateOutletContext]="{ $implicit: station }" />
+                    </div>
+                  }
+                </li>
+              }
+            </ol>
+            <p class="sr-only" role="status">
+              @if (announcedDemoStep(); as station) {
+                {{ 'landing.demo_' + station + '_value' | t }}. {{ 'landing.demo_' + station + '_detail' | t }}
+              }
+            </p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -176,6 +225,17 @@
             </li>
           }
         </ol>
+
+        <div class="diff">
+          <div class="diff__col">
+            <p class="diff__label">{{ 'landing.diff_requirement_label' | t }}</p>
+            <p class="diff__body">{{ 'landing.diff_requirement' | t }}</p>
+          </div>
+          <div class="diff__col diff__col--bad">
+            <p class="diff__label">{{ 'landing.diff_code_label' | t }}</p>
+            <p class="diff__body mono">{{ 'landing.diff_code' | t }}</p>
+          </div>
+        </div>
       </div>
     </section>
     </div>
