@@ -139,9 +139,12 @@ describe('Landing scroll behavior', () => {
     bounds.mockReturnValue(new DOMRect(0, 72, 1024, 750));
     window.dispatchEvent(new Event('scroll'));
     frames.paint();
-    expect(Number(hero.style.getPropertyValue('--cover'))).toBeGreaterThan(0);
-    for (let i = 0; i < 50 && frames.size; i++) frames.paint();
     expect(hero.style.getPropertyValue('--cover')).toBe('1.000');
+    expect(frames.size).toBe(0);
+    bounds.mockReturnValue(new DOMRect(0, 900, 1024, 750));
+    window.dispatchEvent(new Event('scroll'));
+    frames.paint();
+    expect(hero.style.getPropertyValue('--cover')).toBe('0.000');
     expect(frames.size).toBe(0);
 
     media.matches = false;

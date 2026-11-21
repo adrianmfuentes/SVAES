@@ -28,6 +28,7 @@ export class LandingComponent implements OnInit {
 
   readonly menuOpen = signal(false);
   /** True once the glass backdrop is painted; sections then let it show through. */
+  readonly interactiveGlass = signal(false);
   readonly glass = signal(false);
   /** True when the sections stack as sheets (wide screens, motion allowed). */
   readonly stack = signal(false);
@@ -57,6 +58,16 @@ export class LandingComponent implements OnInit {
   constructor() {
     // Browser only: sheets stack on wide screens when motion is allowed.
     afterNextRender(() => {
+      if (typeof window.matchMedia === 'function') {
+        const media = window.matchMedia('(min-width: 64rem) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)');
+        const sync = (): void => {
+          this.interactiveGlass.set(media.matches);
+          if (!media.matches) this.glass.set(false);
+        };
+        sync();
+        media.addEventListener('change', sync);
+        this.destroyRef.onDestroy(() => media.removeEventListener('change', sync));
+      }
       this.initSheets();
       this.initScrollProgress();
     });
@@ -73,36 +84,34 @@ export class LandingComponent implements OnInit {
     const media = window.matchMedia(
       '(min-width: 64rem) and (min-height: 35rem) and (prefers-reduced-motion: no-preference)',
     );
-    const sheets = ['.hero'];
-    const nextOf = ['.rest'];
     let frame = 0;
-    // Eased copy of each sheet's cover: the page follows the scroll with a little inertia, so the
-    // sheets glide instead of tracking every wheel notch.
-    const shown = sheets.map(() => 0);
-    const smooth = (t: number): number => t * t * (3 - 2 * t);
 
     const update = (): void => {
       frame = 0;
-      const vh = window.innerHeight;
-      const header = document.querySelector('.site-header')?.getBoundingClientRect().height ?? 72;
-      let settling = false;
-      sheets.forEach((sel, i) => {
-        const el = document.querySelector<HTMLElement>(sel);
-        if (!el) return;
-        el.style.top = `${Math.min(header, vh - el.offsetHeight)}px`;
-        const nextTop = document.querySelector(nextOf[i])?.getBoundingClientRect().top ?? vh;
-        // The next sheet has to climb a sixth of the way before the one below starts to recede;
-        // then an S-curve takes it from 0 to 1.
-        const raw = (vh - nextTop) / (vh - header);
-        const target = smooth(Math.min(1, Math.max(0, (raw - 0.15) / 0.85)));
-        shown[i] += (target - shown[i]) * 0.14;
-        if (Math.abs(target - shown[i]) > 0.002) settling = true;
-        else shown[i] = target;
-        el.style.setProperty('--cover', shown[i].toFixed(3));
-      });
-      // The glass behind paints the dimming from --cover, so tell it to repaint.
+      const hero = document.querySelector<HTMLElement>('.hero');
+      const rest = document.querySelector<HTMLElement>('.rest');
+      const header = document.querySelector<HTMLElement>('.site-header');
+      if (!hero || !rest) return;
+      const height = window.innerHeight;
+      const headerHeight = header?.getBoundingClientRect().height ?? 72;
+      const nextTop = rest.getBoundingClientRect().top;
+      const top = Math.min(headerHeight, height - hero.offsetHeight);
+      const progress = (height - nextTop) / Math.max(1, height - headerHeight);
+      const t = Math.min(1, Math.max(0, (progress - 0.15) / 0.85));
+      hero.style.top = `${top}px`;
+      const overlap = Math.max(0, hero.getBoundingClientRect().bottom - nextTop);
+      hero.style.clipPath = `inset(0 0 ${overlap}px)`;
+      hero.style.setProperty('--cover', (t * t * (3 - 2 * t)).toFixed(3));
+    };
+    const reset = (): void => {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      const hero = document.querySelector<HTMLElement>('.hero');
+      if (!hero) return;
+      hero.style.removeProperty('top');
+      hero.style.removeProperty('clip-path');
+      hero.style.removeProperty('--cover');
       window.dispatchEvent(new Event('sheet-cover'));
-      if (settling) frame = requestAnimationFrame(update);
     };
     const schedule = (): void => {
       if (!frame) frame = requestAnimationFrame(update);
@@ -110,17 +119,13 @@ export class LandingComponent implements OnInit {
     const apply = (): void => {
       this.stack.set(media.matches);
       if (media.matches) {
-        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('scroll', schedule, { passive: true, capture: true });
         window.addEventListener('resize', schedule, { passive: true });
         update();
       } else {
-        window.removeEventListener('scroll', schedule);
+        window.removeEventListener('scroll', schedule, true);
         window.removeEventListener('resize', schedule);
-        for (const sel of sheets) {
-          const el = document.querySelector<HTMLElement>(sel);
-          el?.style.removeProperty('top');
-          el?.style.removeProperty('--cover');
-        }
+        reset();
       }
     };
     // Keyboard users: a sheet that is covered would hide the focus ring (WCAG 2.4.11), so the first
@@ -130,14 +135,10 @@ export class LandingComponent implements OnInit {
       if (e.key !== 'Tab' || keyboard) return;
       keyboard = true;
       media.removeEventListener('change', apply);
-      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('scroll', schedule, true);
       window.removeEventListener('resize', schedule);
       this.stack.set(false);
-      for (const sel of sheets) {
-        const el = document.querySelector<HTMLElement>(sel);
-        el?.style.removeProperty('top');
-        el?.style.removeProperty('--cover');
-      }
+      reset();
     };
     window.addEventListener('keydown', onKey);
     media.addEventListener('change', apply);
@@ -145,7 +146,7 @@ export class LandingComponent implements OnInit {
     this.destroyRef.onDestroy(() => {
       window.removeEventListener('keydown', onKey);
       media.removeEventListener('change', apply);
-      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('scroll', schedule, true);
       window.removeEventListener('resize', schedule);
       if (frame) cancelAnimationFrame(frame);
     });

@@ -36,6 +36,7 @@ export interface GlassBlob {
  */
 export interface GlassScene {
   readonly selector: string;
+  readonly coveredBy?: string;
   readonly ground: string;
   /** A huge, low-contrast figure (a real count from the product), set on the right. */
   readonly art?: string;
@@ -245,8 +246,6 @@ export class FlutedGlassComponent {
 
     /** Paints what stands behind the glass at the current scroll position. */
     const drawScene = (): void => {
-      scene.width = Math.round(width * dpr);
-      scene.height = Math.round(height * dpr);
       sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       sctx.fillStyle = '#f5f8fb';
       sctx.fillRect(0, 0, width, height);
@@ -255,7 +254,15 @@ export class FlutedGlassComponent {
         const el = document.querySelector(s.selector);
         if (!el) continue;
         const r = el.getBoundingClientRect();
-        if (r.bottom < 0 || r.top > height) continue;
+        const edge = s.coveredBy ? document.querySelector(s.coveredBy)?.getBoundingClientRect().top : undefined;
+        const bottom = Math.min(r.bottom, edge ?? r.bottom);
+        if (bottom <= Math.max(0, r.top) || r.top >= height) continue;
+        if (edge !== undefined) {
+          sctx.save();
+          sctx.beginPath();
+          sctx.rect(0, r.top, width, bottom - r.top);
+          sctx.clip();
+        }
         sctx.fillStyle = s.ground;
         sctx.fillRect(0, r.top, width, r.height);
         if (s.blobs) {
@@ -277,7 +284,7 @@ export class FlutedGlassComponent {
         const rest = s.rest ?? 0;
         laid.push({
           top: r.top,
-          bottom: r.bottom,
+          bottom,
           squeeze: s.squeeze ?? SQUEEZE,
           pull: s.pull ?? PULL,
           floor: rest + (1 - rest) * through,
@@ -309,6 +316,7 @@ export class FlutedGlassComponent {
           sctx.fillStyle = `rgba(11, 22, 32, ${(0.5 * cover).toFixed(3)})`;
           sctx.fillRect(0, r.top, width, r.height);
         }
+        if (edge !== undefined) sctx.restore();
       }
       bands = laid;
     };
@@ -320,14 +328,17 @@ export class FlutedGlassComponent {
       for (let row = 0; row < rows; row++) {
         const y = row * TILE;
         const h = Math.min(TILE, height - y);
+        const cy = y + h / 2;
+        const band = bands.find((b) => cy >= b.top && cy < b.bottom);
         for (let col = 0; col < cols; col++) {
           const x = col * FLUTE;
           const w = Math.min(FLUTE, width - x);
-          const cy = y + h / 2;
-          const band = bands.find((b) => cy >= b.top && cy < b.bottom);
           const c = Math.max(clarity[row * cols + col], band?.floor ?? 0);
           const f = fluteAt(x, w, c, band?.squeeze ?? SQUEEZE, band?.pull ?? PULL);
-          ctx.drawImage(scene, f.sx * dpr, y * dpr, f.sw * dpr, h * dpr, x, y, w, h);
+          // An out-of-bounds source would also clip the destination at the last flute.
+          const sampleWidth = Math.min(f.sw * dpr, scene.width);
+          const sampleX = Math.max(0, Math.min(f.sx * dpr, scene.width - sampleWidth));
+          ctx.drawImage(scene, sampleX, y * dpr, sampleWidth, h * dpr, x, y, w, h);
         }
       }
       // Cylinder shading on every flute, varying a little from one to the next.
@@ -356,6 +367,8 @@ export class FlutedGlassComponent {
       height = window.innerHeight;
       canvas.width = Math.max(1, Math.round(width * dpr));
       canvas.height = Math.max(1, Math.round(height * dpr));
+      scene.width = canvas.width;
+      scene.height = canvas.height;
       cols = Math.ceil(width / FLUTE);
       rows = Math.ceil(height / TILE);
       clarity = new Float32Array(cols * rows).fill(reduce ? 0.45 : 0);
@@ -379,7 +392,7 @@ export class FlutedGlassComponent {
         }
       }
       paint();
-      if (moving || pointer) frame = requestAnimationFrame(step);
+      if (moving) frame = requestAnimationFrame(step);
     };
 
     const kick = (): void => {

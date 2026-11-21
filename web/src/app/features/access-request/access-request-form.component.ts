@@ -1,3 +1,4 @@
+import { LangToggleComponent } from '../../core/components/lang-toggle/lang-toggle.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import {
   FormBuilder,
@@ -30,7 +31,7 @@ function generateSlug(name: string): string {
 @Component({
   selector: 'app-access-request-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, TranslatePipe, LangToggleComponent],
   templateUrl: './access-request-form.component.html',
   styleUrl: './access-request-form.component.scss',
 })

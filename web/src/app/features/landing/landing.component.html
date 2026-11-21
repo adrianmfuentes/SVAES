@@ -1,31 +1,31 @@
 <div class="landing" [class.glass-on]="glass()" [class.stack]="stack()">
-  <app-fluted-glass
-    (ready)="glass.set(true)"
-    [scenes]="[
-      {
-        selector: '.hero',
-        ground: '#f5f8fb',
-        squeeze: 1.45,
-        pull: 0.3,
-        rest: 0.2,
-        scrollClear: true,
-        blobs: [
-          { x: 0.9, y: 0.05, r: 0.3, color: '#9cc0dc', alpha: 0.7 },
-          { x: 0.04, y: 1.02, r: 0.18, color: '#6c9bc2', alpha: 0.4 },
-          { x: 0.5, y: 1.25, r: 0.1, color: '#9cc0dc', alpha: 0.5 }
-        ],
-        words: [
-          { text: 'verdict.VALID' | t, color: '#14602f', mark: 'check' },
-          { text: 'verdict.VALID_WITH_WARNINGS' | t, color: '#7a5200', mark: 'warn' },
-          { text: 'verdict.INVALID' | t, color: '#8b1a1a', mark: 'cross' },
-          { text: 'verdict.NOT_EVALUATED' | t, color: '#334a5e', mark: 'dash' }
-        ]
-      },
-      { selector: '.proc__top', ground: '#f5f8fb', art: '4', artColor: '#cfe0ee', blobs: [{ x: 0.95, y: 0.3, r: 0.22, color: '#9cc0dc', alpha: 0.45 }, { x: 0.02, y: 0.9, r: 0.14, color: '#9cc0dc', alpha: 0.35 }] },
-      { selector: '.conn', ground: '#f5f8fb', art: '20', artColor: '#cfe0ee', blobs: [{ x: 0.08, y: 0.7, r: 0.24, color: '#9cc0dc', alpha: 0.45 }, { x: 0.98, y: 0.1, r: 0.12, color: '#1d4e76', alpha: 0.25 }] },
-      { selector: '.research', ground: '#1d4e76', blobs: [{ x: 0.12, y: 0.15, r: 0.3, color: '#2b628f', alpha: 0.7 }, { x: 0.96, y: 1, r: 0.22, color: '#0e3a5f', alpha: 0.6 }] }
-    ]"
-  />
+  @if (interactiveGlass()) {
+    <app-fluted-glass
+      (ready)="glass.set(true)"
+      [scenes]="[
+        {
+          selector: '.hero',
+          coveredBy: '.rest',
+          ground: '#f5f8fb',
+          squeeze: 1.45,
+          pull: 0.3,
+          rest: 0.2,
+          scrollClear: true,
+          blobs: [
+            { x: 0.9, y: 0.05, r: 0.3, color: '#9cc0dc', alpha: 0.7 },
+            { x: 0.04, y: 1.02, r: 0.18, color: '#6c9bc2', alpha: 0.4 },
+            { x: 0.5, y: 1.25, r: 0.1, color: '#9cc0dc', alpha: 0.5 }
+          ],
+          words: [
+            { text: 'verdict.VALID' | t, color: '#14602f', mark: 'check' },
+            { text: 'verdict.VALID_WITH_WARNINGS' | t, color: '#7a5200', mark: 'warn' },
+            { text: 'verdict.INVALID' | t, color: '#8b1a1a', mark: 'cross' },
+            { text: 'verdict.NOT_EVALUATED' | t, color: '#334a5e', mark: 'dash' }
+          ]
+        }
+      ]"
+    />
+  }
 
   <a class="skip-link" href="#main-content" (click)="goTo('main-content', $event)">{{ 'a11y.skip_to_main' | t }}</a>
 
