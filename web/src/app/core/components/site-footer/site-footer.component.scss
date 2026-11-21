@@ -226,6 +226,58 @@ summary:focus-visible {
   }
 }
 
+@media (max-width: 40rem) {
+  .site-footer {
+    padding: 0.5rem 0.75rem;
+
+    &__panel { padding-inline: 0.875rem; }
+
+    &__inner {
+      gap: 0.625rem;
+      padding-block: 0.75rem 0.5rem;
+    }
+
+    &__logo { height: 1.75rem; }
+
+    &__tagline {
+      max-width: 30ch;
+      margin-top: 0.375rem;
+      font-size: 1.125rem;
+    }
+
+    &__academic {
+      margin-top: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    &__nav {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.25rem 0.75rem;
+    }
+
+    &__heading {
+      margin-bottom: 0;
+      padding-bottom: 0.2rem;
+    }
+
+    &__col a,
+    &__linkbtn,
+    &__top {
+      min-height: 26px;
+      vertical-align: top;
+      font-size: 0.875rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    &__bar {
+      gap: 0 0.75rem;
+      padding-block: 0.25rem;
+      font-size: 0.8125rem;
+    }
+  }
+}
+
 @media (min-width: 64.01rem) {
   .site-footer__inner {
     grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);

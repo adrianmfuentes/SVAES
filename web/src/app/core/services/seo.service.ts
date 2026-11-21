@@ -10,6 +10,8 @@ export interface PageSeo {
   title: string;
   description: string;
   path: string;
+  /** Use `title` as the whole <title> instead of appending the site name. */
+  fullTitle?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -18,8 +20,8 @@ export class SeoService {
   private readonly meta = inject(Meta);
   private readonly document = inject(DOCUMENT);
 
-  setPage({ title, description, path }: PageSeo): void {
-    const fullTitle = `${title} · ${SITE_NAME}`;
+  setPage({ title, description, path, fullTitle: verbatim }: PageSeo): void {
+    const fullTitle = verbatim ? title : `${title} · ${SITE_NAME}`;
     const url = `${BASE_URL}${path}`;
 
     this.titleService.setTitle(fullTitle);
