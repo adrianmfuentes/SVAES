@@ -26,6 +26,7 @@ describe('FlutedGlassComponent', () => {
     { selector: '#glass-missing', ground: '#fff' },
     {
       selector: '#glass-test',
+      coveredBy: '#glass-offscreen',
       ground: '#f5f8fb',
       squeeze: 1.6,
       pull: 0.4,
@@ -101,6 +102,18 @@ describe('FlutedGlassComponent', () => {
     window.dispatchEvent(new Event('sheet-cover'));
     expect(frames.size).toBe(1);
     frames.paint();
+
+    const edge = vi.mocked(document.querySelector('#glass-offscreen')!.getBoundingClientRect);
+    edge.mockReturnValue(new DOMRect(0, 100, 1080, 300));
+    window.dispatchEvent(new Event('scroll'));
+    frames.paint();
+    expect(world.rect).toHaveBeenCalledWith(0, -40, 1080, 140);
+    edge.mockReturnValue(new DOMRect(0, -40, 1080, 300));
+    world.fillText.mockClear();
+    window.dispatchEvent(new Event('scroll'));
+    frames.paint();
+    expect(world.fillText.mock.calls.map(([label]) => label)).toEqual(['hidden']);
+    edge.mockReturnValue(new DOMRect(0, 600, 1080, 300));
 
     vi.stubGlobal('innerWidth', 410);
     world.fillText.mockClear();

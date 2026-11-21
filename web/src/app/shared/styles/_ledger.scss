@@ -99,6 +99,7 @@
 
   .auth__top {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
@@ -113,6 +114,7 @@
   }
 
   .auth__home {
+    margin-inline-end: auto;
     display: inline-flex;
     align-items: center;
     min-height: 44px;
