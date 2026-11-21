@@ -524,6 +524,7 @@ ol {
 
     // Full-bleed, as tall as four screens of scrolling.
     height: 560vh;
+    height: round(down, 560vh, 3rem);
     margin-inline: calc(-1 * var(--gutter));
     border-block-start: 0;
     color: var(--d-fg);
@@ -536,8 +537,15 @@ ol {
     grid-template-rows: auto minmax(0, 1fr) auto auto;
     justify-items: center;
     height: calc(100dvh - var(--header-h));
+    height: round(down, calc(100dvh - var(--header-h)), 3rem);
     overflow: clip;
     text-align: center;
+    // Own copy of the grid: the pinned frame must not show the page grid sliding underneath on phones.
+    // Heights are multiples of 3rem so the grids line up where the pin docks and undocks.
+    background:
+      linear-gradient(rgb(156 192 220 / 22%) 1px, transparent 1px) 0 0 / 3rem 3rem,
+      linear-gradient(90deg, rgb(156 192 220 / 22%) 1px, transparent 1px) 0 0 / 3rem 3rem,
+      #0b1620;
   }
 
   .cinema .demo__intro {
@@ -1013,27 +1021,11 @@ ol {
 
 @media (width < 64rem), (hover: none), (pointer: coarse) {
   .hero__verdicts {
-    @include glass.flutes(
-      var(--bg-2),
-      linear-gradient(135deg, #d4e4f0, #8cb1ce)
-    );
-
-    position: relative;
-    isolation: isolate;
-    padding: 1.75rem 1rem 1rem;
+    padding: 1.25rem 1rem;
     border: 1px solid var(--line);
     border-image: none;
-    border-radius: 0.75rem;
-
-    // Leave the ribbed frame visible around a solid, high-contrast reading surface.
-    &::before {
-      position: absolute;
-      z-index: -1;
-      inset: 1.125rem 0.375rem 0.375rem;
-      border-radius: 0.375rem;
-      background-color: var(--bg);
-      content: '';
-    }
+    border-radius: 0.5rem;
+    background-color: var(--bg);
 
     .v-valid { color: #14602f; }
     .v-warning { color: #6a4700; }
