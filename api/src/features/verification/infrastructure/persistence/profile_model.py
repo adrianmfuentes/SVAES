@@ -1,0 +1,21 @@
+from datetime import datetime, timezone
+import uuid
+from sqlalchemy import ForeignKey, UniqueConstraint, Column, String, DateTime, Boolean, JSON
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from shared.infrastructure.database_base import Base
+
+
+class VerificationProfileModel(Base):
+    __tablename__ = "verification_profile"
+    __table_args__ = (UniqueConstraint("organization_id", "name"),)
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(PG_UUID(as_uuid=True), ForeignKey("organization.id", ondelete="CASCADE"), nullable=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(500), nullable=True, default="")
+    is_default = Column(Boolean, nullable=False, default=False)
+    is_system = Column(Boolean, nullable=False, default=False)
+    rules = Column(JSON, nullable=True, default=list)
+    schedule = Column(String(120), nullable=True)
+    schedule_last_run_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

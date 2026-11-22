@@ -1,0 +1,13 @@
+from typing import Protocol
+
+
+class IMailer(Protocol):
+    async def send_activation_email(self, to_email: str, to_name: str, token: str) -> None: ...
+
+    async def send_verification_result_email(
+        self, to_email: str, to_name: str, release_name: str, verdict: str, release_id: str,
+    ) -> None: ...
+
+    async def send_feedback_email(self, payload: dict) -> None: ...
+
+    async def send_password_reset_email(self, to_email: str, to_name: str, token: str) -> None: ...

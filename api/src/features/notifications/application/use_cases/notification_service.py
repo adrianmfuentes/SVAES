@@ -1,0 +1,254 @@
+import logging
+from typing import Optional, List, Dict, Any
+from uuid import UUID, uuid4
+from features.notifications.application.ports.i_notification_service import INotificationService
+from features.notifications.application.ports.i_notification_sender import INotificationSender
+from features.notifications.application.ports.i_notification_repository import INotificationRepository
+from features.notifications.domain.notification_channel import NotificationChannel
+from features.notifications.domain.notification_subscription import NotificationSubscription
+from shared.domain.exceptions import EntityNotFoundError, ValidationError
+from shared.application.i_audit_logger import IAuditLogger
+from shared.domain.audit import AuditEntry, AuditEvent
+
+_log = logging.getLogger(__name__)
+
+OUTBOUND_CHANNEL_TYPES = {"SLACK", "MS_TEAMS", "GENERIC"}
+SUPPORTED_CHANNEL_TYPES = {"EMAIL", *OUTBOUND_CHANNEL_TYPES}
+SUPPORTED_EVENT_TYPES = {"RELEASE_VALIDATED", "RELEASE_INVALIDATED", "RELEASE_PENDING", "WEEKLY_DIGEST", "DRIFT_DETECTED"}
+PREFERENCE_EVENT_MAP = {
+    "release_validated": "RELEASE_VALIDATED",
+    "release_invalidated": "RELEASE_INVALIDATED",
+    "release_pending_reminder": "RELEASE_PENDING",
+    "weekly_digest": "WEEKLY_DIGEST",
+}
+EVENT_PREFERENCE_MAP = {v: k for k, v in PREFERENCE_EVENT_MAP.items()}
+
+
+class NotificationService(INotificationService):
+    def __init__(
+        self,
+        notification_repository: INotificationRepository,
+        *,
+        audit_logger: IAuditLogger,
+        send_notification: INotificationSender,
+    ) -> None:
+        self._repo = notification_repository
+        self._audit_logger = audit_logger
+        self._send_notification = send_notification
+
+    async def list_channels(self, organization_id: UUID) -> List[Dict[str, Any]]:
+        channels = await self._repo.list_channels(organization_id)
+        configured = {c.channel_type: c for c in channels}
+
+        result = []
+        for channel_type in SUPPORTED_CHANNEL_TYPES:
+            if channel_type in configured:
+                c = configured[channel_type]
+                result.append({
+                    "id": str(c.id),
+                    "organization_id": str(c.organization_id),
+                    "channel_type": c.channel_type,
+                    "enabled": c.enabled,
+                    "config_data": c.config_data,
+                    "configured": True,
+                    "created_at": c.created_at.isoformat(),
+                    "updated_at": c.updated_at.isoformat(),
+                })
+            else:
+                result.append({
+                    "id": None,
+                    "organization_id": str(organization_id),
+                    "channel_type": channel_type,
+                    "enabled": False,
+                    "config_data": {},
+                    "configured": False,
+                    "created_at": None,
+                    "updated_at": None,
+                })
+        return result
+
+    async def configure_channel(
+        self,
+        organization_id: UUID,
+        channel_type: str,
+        enabled: bool,
+        config_data: Dict[str, Any],
+    ):
+        if channel_type not in SUPPORTED_CHANNEL_TYPES:
+            raise ValidationError(f"Tipo de canal no soportado: {channel_type}")
+
+        channel = NotificationChannel(
+            organization_id=organization_id,
+            channel_type=channel_type,
+            enabled=enabled,
+            config_data=config_data,
+        )
+        created = await self._repo.create_channel(channel)
+
+        self._audit_logger.log(AuditEntry(
+            event=AuditEvent.NOTIFICATION_CHANNEL_CREATED,
+            user_id=UUID(int=0),
+            organization_id=organization_id,
+            resource_type="notification_channel",
+            resource_id=created.id,
+            details={"channel_type": channel_type, "enabled": enabled},
+        ))
+        _log.info("Notification channel configured: org=%s type=%s enabled=%s", organization_id, channel_type, enabled)
+
+        return created
+
+    async def update_channel(
+        self,
+        channel_id: UUID,
+        enabled: Optional[bool] = None,
+        config_data: Optional[Dict[str, Any]] = None,
+    ):
+        channel = await self._repo.get_channel_by_id(channel_id)
+        if not channel:
+            raise EntityNotFoundError(f"Canal de notificación no encontrado: {channel_id}")
+
+        if enabled is not None:
+            channel.enabled = enabled
+        if config_data is not None:
+            channel.config_data = config_data
+
+        updated = await self._repo.update_channel(channel)
+
+        self._audit_logger.log(AuditEntry(
+            event=AuditEvent.NOTIFICATION_CHANNEL_UPDATED,
+            user_id=UUID(int=0),
+            organization_id=channel.organization_id,
+            resource_type="notification_channel",
+            resource_id=channel_id,
+            details={"channel_type": channel.channel_type, "enabled": channel.enabled},
+        ))
+        _log.info("Notification channel updated: id=%s type=%s", channel_id, channel.channel_type)
+
+        return updated
+
+    async def delete_channel(self, channel_id: UUID):
+        channel = await self._repo.get_channel_by_id(channel_id)
+        if not channel:
+            raise EntityNotFoundError(f"Canal de notificación no encontrado: {channel_id}")
+
+        await self._repo.delete_channel(channel_id)
+
+        self._audit_logger.log(AuditEntry(
+            event=AuditEvent.NOTIFICATION_CHANNEL_DELETED,
+            user_id=UUID(int=0),
+            organization_id=channel.organization_id,
+            resource_type="notification_channel",
+            resource_id=channel_id,
+            details={"channel_type": channel.channel_type},
+        ))
+        _log.info("Notification channel deleted: id=%s type=%s", channel_id, channel.channel_type)
+
+    async def get_user_preferences(self, user_id: UUID) -> Dict[str, Any]:
+        subscriptions = await self._repo.list_subscriptions(user_id)
+
+        prefs: Dict[str, Any] = {
+            "release_validated": True,
+            "release_invalidated": True,
+            "release_pending_reminder": False,
+            "weekly_digest": True,
+        }
+
+        for sub in subscriptions:
+            pref_key = EVENT_PREFERENCE_MAP.get(sub.event_type)
+            if pref_key:
+                prefs[pref_key] = sub.enabled
+
+        return prefs
+
+    async def update_user_preferences(
+        self,
+        user_id: UUID,
+        release_validated: Optional[bool] = None,
+        release_invalidated: Optional[bool] = None,
+        release_pending_reminder: Optional[bool] = None,
+        weekly_digest: Optional[bool] = None,
+    ):
+        updates = {
+            "RELEASE_VALIDATED": release_validated,
+            "RELEASE_INVALIDATED": release_invalidated,
+            "RELEASE_PENDING": release_pending_reminder,
+            "WEEKLY_DIGEST": weekly_digest,
+        }
+
+        for event_type, enabled in updates.items():
+            if enabled is not None:
+                sub = NotificationSubscription(
+                    user_id=user_id,
+                    event_type=event_type,
+                    enabled=enabled,
+                )
+                await self._repo.upsert_subscription(sub)
+
+        return await self.get_user_preferences(user_id)
+
+    async def subscribe(
+        self,
+        user_id: UUID,
+        event_type: str,
+        enabled: bool = True,
+    ) -> Dict[str, Any]:
+        if event_type not in SUPPORTED_EVENT_TYPES:
+            raise ValidationError(f"Tipo de evento no soportado: {event_type}")
+
+        sub = NotificationSubscription(
+            user_id=user_id,
+            event_type=event_type,
+            enabled=enabled,
+        )
+        created = await self._repo.upsert_subscription(sub)
+
+        self._audit_logger.log(AuditEntry(
+            event=AuditEvent.NOTIFICATION_SUBSCRIBED,
+            user_id=user_id,
+            organization_id=None,
+            resource_type="notification_subscription",
+            resource_id=created.id,
+            details={"event_type": event_type, "enabled": enabled},
+        ))
+        _log.info("Notification subscription created: user=%s", user_id)
+
+        return {
+            "id": str(created.id),
+            "user_id": str(created.user_id),
+            "event_type": created.event_type,
+            "enabled": created.enabled,
+            "created_at": created.created_at.isoformat(),
+        }
+
+    async def unsubscribe(self, user_id: UUID, event_type: str):
+        await self._repo.delete_subscription(user_id, event_type)
+
+        self._audit_logger.log(AuditEntry(
+            event=AuditEvent.NOTIFICATION_UNSUBSCRIBED,
+            user_id=user_id,
+            organization_id=None,
+            resource_type="notification_subscription",
+            resource_id=None,
+            details={"event_type": event_type},
+        ))
+        _log.info("Notification unsubscription: user=%s", user_id)
+
+    async def send_test_notification(self, channel_id: UUID) -> bool:
+        channel = await self._repo.get_channel_by_id(channel_id)
+        if not channel:
+            raise EntityNotFoundError(f"Canal de notificación no encontrado: {channel_id}")
+        if channel.channel_type not in OUTBOUND_CHANNEL_TYPES:
+            raise ValidationError(
+                f"El canal '{channel.channel_type}' no soporta mensajes de prueba salientes."
+            )
+
+        ctx = {
+            "release_name": "Release de ejemplo",
+            "version": "1.0.0",
+            "verdict": "VALID",
+            "project_name": "Proyecto de prueba",
+            "release_url": None,
+        }
+        delivered = await self._send_notification(channel, "RELEASE_VALIDATED", ctx)
+        _log.info("Test notification sent: channel=%s delivered=%s", channel_id, delivered)
+        return delivered

@@ -72,8 +72,8 @@ TARGET_HOST = os.getenv("PERF_API_BASE_URL", "http://localhost:8000")
 
 def _make_fake_current_user():
     """Return a CurrentUser with admin role for dependency override."""
-    from core.dependencies import CurrentUser
-    from domain.enums import UserRole
+    from bootstrap.dependencies import CurrentUser
+    from shared.domain.enums import UserRole
 
     return CurrentUser(
         user_id=uuid4(),
@@ -110,7 +110,7 @@ _LOCUSTFILE = Path(__file__).resolve().parent / "locustfile.py"
 async def test_tc_per_rnf01_01_verification_10_rules_under_30s():
     """TC-PER-RNF01-01: Procesamiento ≤30s con 10 reglas (RNF-01).
 
-    Llama a _call_verification_engine con respx mockeando el motor Rust
+    Llama al adaptador HTTP del motor con respx mockeando el motor Rust
     (<1s por llamada) y verifica que el tiempo total sea ≤30s.
     """
     try:
@@ -118,7 +118,7 @@ async def test_tc_per_rnf01_01_verification_10_rules_under_30s():
     except ImportError:
         pytest.skip("respx not installed — add it to pyproject.toml dev deps")
 
-    from infrastructure.workers.verification_worker import _call_verification_engine
+    from features.verification.infrastructure.gateways.http_rule_engine_client import HttpRuleEngineClient
 
     engine_url = os.environ["ENGINE_URL"]
     engine_key = os.environ["ENGINE_API_KEY"]
@@ -154,7 +154,7 @@ async def test_tc_per_rnf01_01_verification_10_rules_under_30s():
         ]
 
         start = time.perf_counter()
-        result = await _call_verification_engine(artifacts_data, rules_data)
+        result = await HttpRuleEngineClient(engine_url, engine_key).verify(artifacts_data, rules_data)
         elapsed = time.perf_counter() - start
 
     assert elapsed < 30.0, f"Engine call took {elapsed:.2f}s — expected ≤ 30s (RNF-01)"
@@ -210,8 +210,8 @@ def test_tc_per_rnf02_01_locust_web_load_20_users_class_defined():
 async def test_tc_per_rnf04_01_dashboard_1000_verifications_under_3s():
     """TC-PER-RNF04-01: /dashboard/metrics responde 200 en ≤3s con 1000 resultados (RNF-04)."""
     from main import app
-    from core.dependencies import get_current_user, get_release_repository, get_verification_result_repository
-    from domain.enums import ReleaseStatus, VerdictType
+    from bootstrap.dependencies import get_current_user, get_release_repository, get_verification_result_repository
+    from shared.domain.enums import ReleaseStatus, VerdictType
     from httpx import AsyncClient, ASGITransport
 
     org_id = uuid4()
@@ -261,7 +261,7 @@ async def test_tc_per_rnf04_01_dashboard_1000_verifications_under_3s():
 async def test_tc_per_rnf05_01_simple_api_queries_under_500ms():
     """TC-PER-RNF05-01: Consultas simples a API REST responden en <500ms (RNF-05)."""
     from main import app
-    from core.dependencies import get_current_user
+    from bootstrap.dependencies import get_current_user
     from httpx import AsyncClient, ASGITransport
 
     fake_user = _make_fake_current_user()
@@ -303,7 +303,7 @@ async def test_tc_fia_rnf09_01_connector_failure_continues_verification():
     Un conector que lanza excepción es omitido; los demás artefactos
     continúan procesándose.
     """
-    from infrastructure.workers.verification_worker import _fetch_artifacts
+    from features.verification.application.connector_artifacts import fetch_artifacts
 
     failing_artifact = MagicMock()
     failing_artifact.id = uuid4()
@@ -339,24 +339,17 @@ async def test_tc_fia_rnf09_01_connector_failure_continues_verification():
     mock_repo = AsyncMock()
     mock_repo.get_by_id.return_value = mock_instance
 
-    mock_celery = MagicMock()
+    mock_encryptor = MagicMock()
+    mock_encryptor.decrypt.return_value = "{'token': 'abc123', 'url': 'https://jira.example.com'}"
 
-    encrypted_config = b"{'token': 'abc123', 'url': 'https://jira.example.com'}"
-
-    with (
-        patch("infrastructure.workers.verification_worker.SqlConnectorRepository", return_value=mock_repo),
-        # Fernet is imported lazily inside _fetch_artifacts (from cryptography.fernet
-        # import Fernet), so it must be patched at its source module, not on the worker.
-        patch("cryptography.fernet.Fernet") as mock_fernet,
-    ):
-        mock_fernet.return_value.decrypt.return_value = encrypted_config
-
-        result = await _fetch_artifacts(
-            artifacts=[failing_artifact, ok_artifact],
-            connector_registry=mock_registry,
-            celery_task=mock_celery,
-            total_stages=5,
-        )
+    result = await fetch_artifacts(
+        connector_repo=mock_repo,
+        credential_encryptor=mock_encryptor,
+        artifacts=[failing_artifact, ok_artifact],
+        connector_registry=mock_registry,
+        report_progress=MagicMock(),
+        total_stages=5,
+    )
 
     # Only the successful artifact should be in results
     artifacts_data, fetch_errors = result
@@ -372,7 +365,7 @@ async def test_tc_fia_rnf09_01_connector_failure_continues_verification():
 
 def test_tc_fia_rnf10_01_critical_errors_logged_within_5s(caplog):
     """TC-FIA-RNF10-01: Errores críticos llegan al log en ≤5s (RNF-10)."""
-    from core.audit import AuditEntry, AuditEvent, AuditLogger
+    from shared.infrastructure.audit import AuditEntry, AuditEvent, AuditLogger
 
     entry = AuditEntry(
         event=AuditEvent.SECURITY_BREACH_DETECTED,
@@ -402,8 +395,8 @@ def test_tc_fia_rnf10_01_critical_errors_logged_within_5s(caplog):
 @pytest.mark.asyncio
 async def test_tc_fia_rnf11_01_failure_rate_under_0_1_percent():
     """TC-FIA-RNF11-01: Tasa de fallos <0.1% tras 1000 verificaciones nominales (RNF-11)."""
-    from domain.entities.verification_result import VerificationResult
-    from domain.enums import VerdictType
+    from features.verification.domain.verification_result import VerificationResult
+    from shared.domain.enums import VerdictType
 
     async def nominal_verification(release_id: UUID) -> VerificationResult:
         return VerificationResult(
@@ -488,13 +481,11 @@ def test_tc_mnt_rnf25_01_domain_layer_no_infrastructure_imports():
     Escanea todos los .py en api/src/domain/ con ast y verifica que no
     haya ningún import de 'infrastructure', 'adapters', 'primary' o 'secondary'.
     """
-    domain_dir = _API_SRC / "domain"
-    assert domain_dir.exists(), f"domain/ no encontrado en {_API_SRC}"
-
-    forbidden = frozenset({"adapters", "infrastructure", "primary", "secondary", "connectors"})
+    domain_dirs = [*_API_SRC.glob("features/*/domain"), _API_SRC / "shared" / "domain"]
+    forbidden = {"adapters", "infrastructure", "primary", "secondary", "bootstrap"}
     violations: list[str] = []
 
-    for py_file in domain_dir.rglob("*.py"):
+    for py_file in (path for directory in domain_dirs for path in directory.rglob("*.py")):
         try:
             tree = ast.parse(py_file.read_text(encoding="utf-8"))
         except SyntaxError as exc:
@@ -507,7 +498,7 @@ def test_tc_mnt_rnf25_01_domain_layer_no_infrastructure_imports():
             elif isinstance(node, ast.Import):
                 module_str = " ".join(alias.name for alias in node.names)
 
-            if module_str and any(banned in module_str for banned in forbidden):
+            if module_str and forbidden.intersection(module_str.replace(" ", ".").split(".")):
                 rel = py_file.relative_to(_API_SRC)
                 violations.append(f"  {rel}: import '{module_str}'")
 
@@ -523,8 +514,8 @@ def test_tc_mnt_rnf26_01_new_connector_no_engine_changes():
     Registra un conector ficticio en ConnectorRegistry y verifica que la
     interfaz IVerificationEngine no cambia ni precisa conocer el nuevo conector.
     """
-    from infrastructure.secondary.connectors.connector_registry import ConnectorRegistry
-    from application.ports.output.i_verification_engine import IVerificationEngine
+    from features.connectors.infrastructure.gateways.connector_registry import ConnectorRegistry
+    from features.verification.application.ports.i_verification_engine import IVerificationEngine
 
     # Define a new connector without touching engine or UI code
     class CustomAnalyticsConnector:
@@ -569,13 +560,10 @@ def test_tc_mnt_rnf28_01_router_endpoints_have_docstrings():
     Escanea api/src/infrastructure/primary/routers/api/v1/ con ast y
     comprueba la cobertura de docstrings en funciones públicas.
     """
-    router_dir = _API_SRC / "infrastructure" / "primary" / "routers" / "api" / "v1"
-    assert router_dir.exists(), f"Router dir not found: {router_dir}"
-
     total = 0
     missing: list[str] = []
 
-    for py_file in router_dir.rglob("*.py"):
+    for py_file in _API_SRC.glob("features/*/infrastructure/api/*.py"):
         if py_file.name.startswith("_"):
             continue
         try:
@@ -681,9 +669,9 @@ def test_tc_ext_rnf33_01_rules_as_plugins_no_engine_change():
     Verifica que VerificationRule puede construirse con cualquier rule_template
     sin modificar la firma del motor.
     """
-    from domain.entities.verification_rule import VerificationRule
-    from domain.enums import SeverityType
-    from application.ports.output.i_verification_engine import IVerificationEngine
+    from features.verification.domain.verification_rule import VerificationRule
+    from shared.domain.enums import SeverityType
+    from features.verification.application.ports.i_verification_engine import IVerificationEngine
 
     # New rule added dynamically — engine interface must not change
     new_rule = VerificationRule(
@@ -705,7 +693,7 @@ def test_tc_ext_rnf33_01_rules_as_plugins_no_engine_change():
     )
 
     # rule_names.py is data-driven — verifiable without engine changes
-    from core.rule_names import RULE_NAMES
+    from features.verification.domain.rule_names import RULE_NAMES
     assert isinstance(RULE_NAMES, dict), "RULE_NAMES must be a dict (data-driven, no engine recompile)"
     assert len(RULE_NAMES) >= 1, "RULE_NAMES must define at least one rule"
 
@@ -716,7 +704,7 @@ def test_tc_ext_rnf34_01_new_notification_channel_no_core_change():
     Verifica que NotificationChannel acepta channel_type arbitrario y que
     el modelo no restringe los tipos en tiempo de compilación.
     """
-    from domain.entities.notification_channel import NotificationChannel
+    from features.notifications.domain.notification_channel import NotificationChannel
 
     # Add a new channel type without touching existing code
     custom_channel = NotificationChannel(
@@ -749,8 +737,8 @@ def test_tc_ext_rnf34_01_new_notification_channel_no_core_change():
 
 def test_tc_trz_rnf35_01_verification_log_required_fields():
     """TC-TRZ-RNF35-01: Log de verificación contiene fuente, recurso, resultado e instante (RNF-35)."""
-    from domain.entities.verification_result import VerificationResult
-    from domain.enums import VerdictType
+    from features.verification.domain.verification_result import VerificationResult
+    from shared.domain.enums import VerdictType
 
     result = VerificationResult(
         release_id=uuid4(),
@@ -795,7 +783,7 @@ def test_tc_trz_rnf37_01_all_rf_trace_to_use_case_or_rule():
         "RF-02 (Login)": "auth_service.py",
         "RF-03 (Gestionar organización)": "organization_service.py",
         "RF-04 (Lanzar verificación)": "verification_service.py",
-        "RF-05 (Consultar historial)": "get_verification_history.py",
+        "RF-05 (Consultar historial)": "verification_service.py",
         "RF-06 (Dashboard)": "get_dashboard_metrics.py",
         "RF-07 (Conectores)": "connector_service.py",
         "RF-08 (Perfiles)": "profile_service.py",
@@ -803,6 +791,9 @@ def test_tc_trz_rnf37_01_all_rf_trace_to_use_case_or_rule():
     }
 
     all_uc_files = {f.name for f in use_cases_dir.rglob("*.py")}
+    all_uc_files.update(
+        f.name for f in (_API_SRC / "features").glob("*/application/use_cases/*.py")
+    )
     missing_traces: list[str] = []
 
     for rf, uc_file in rf_to_uc_map.items():
@@ -815,7 +806,7 @@ def test_tc_trz_rnf37_01_all_rf_trace_to_use_case_or_rule():
     )
 
     # Verification rules (RV-*) must map to RULE_NAMES
-    from core.rule_names import RULE_NAMES
+    from features.verification.domain.rule_names import RULE_NAMES
 
     expected_rules = {f"RV-{i + 1:02d}" for i in range(10)}
     missing_rules = expected_rules - set(RULE_NAMES.keys())
@@ -833,7 +824,7 @@ def test_tc_trz_rnf37_01_all_rf_trace_to_use_case_or_rule():
 async def test_tc_org_rnf38_01_gdpr_endpoints_functional():
     """TC-ORG-RNF38-01: Endpoints RGPD de exportación y borrado de datos son funcionales (RNF-38)."""
     from main import app
-    from core.dependencies import get_current_user, get_user_service
+    from bootstrap.dependencies import get_current_user, get_user_service
     from httpx import AsyncClient, ASGITransport
 
     org_id = uuid4()
@@ -869,7 +860,7 @@ async def test_tc_org_rnf38_01_gdpr_endpoints_functional():
     app.dependency_overrides[get_user_service] = lambda: mock_user_svc
 
     # Also override jwt handler to avoid Redis calls during account deletion
-    from core.dependencies import get_jwt_handler
+    from bootstrap.dependencies import get_jwt_handler
     app.dependency_overrides[get_jwt_handler] = lambda: mock_jwt_handler
 
     try:

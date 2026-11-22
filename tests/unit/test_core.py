@@ -44,7 +44,7 @@ class TestSeedAdminUser:
 
     @pytest.fixture
     def settings(self):
-        from core.config import Settings
+        from shared.infrastructure.config import Settings
         return Settings.model_construct(
             admin_email="admin@test.local",
             admin_password="admin-pass",
@@ -52,9 +52,9 @@ class TestSeedAdminUser:
 
     async def test_existing_admin_no_org_id_skips_and_logs(self, settings):
         """Branch: admin already exists, org_id is None → skip seed"""
-        from core.bootstrap import seed_admin_user
-        from infrastructure.secondary.database.models.user_model import UserModel
-        from domain.enums import UserRole
+        from bootstrap.seed import seed_admin_user
+        from shared.infrastructure.database.models.user_model import UserModel
+        from shared.domain.enums import UserRole
 
         existing = UserModel(
             id=uuid4(),
@@ -71,16 +71,16 @@ class TestSeedAdminUser:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock()
 
-        with patch("core.bootstrap.AsyncSessionLocal", return_value=mock_session):
+        with patch("bootstrap.seed.AsyncSessionLocal", return_value=mock_session):
             await seed_admin_user(settings)
 
         mock_session.commit.assert_not_awaited()
 
     async def test_existing_admin_with_org_id_strips_it(self, settings):
         """Branch: admin exists but has organization_id → strip it"""
-        from core.bootstrap import seed_admin_user
-        from infrastructure.secondary.database.models.user_model import UserModel
-        from domain.enums import UserRole
+        from bootstrap.seed import seed_admin_user
+        from shared.infrastructure.database.models.user_model import UserModel
+        from shared.domain.enums import UserRole
 
         existing = UserModel(
             id=uuid4(),
@@ -98,7 +98,7 @@ class TestSeedAdminUser:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock()
 
-        with patch("core.bootstrap.AsyncSessionLocal", return_value=mock_session):
+        with patch("bootstrap.seed.AsyncSessionLocal", return_value=mock_session):
             await seed_admin_user(settings)
 
         assert existing.organization_id is None
@@ -106,9 +106,9 @@ class TestSeedAdminUser:
 
     async def test_email_already_taken_by_other_user_skips(self, settings):
         """Branch: no admin role user, but email taken by another → skip"""
-        from core.bootstrap import seed_admin_user
-        from infrastructure.secondary.database.models.user_model import UserModel
-        from domain.enums import UserRole
+        from bootstrap.seed import seed_admin_user
+        from shared.infrastructure.database.models.user_model import UserModel
+        from shared.domain.enums import UserRole
 
         other_user = UserModel(
             id=uuid4(),
@@ -134,14 +134,14 @@ class TestSeedAdminUser:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock()
 
-        with patch("core.bootstrap.AsyncSessionLocal", return_value=mock_session):
+        with patch("bootstrap.seed.AsyncSessionLocal", return_value=mock_session):
             await seed_admin_user(settings)
 
         mock_session.add.assert_not_called()
 
     async def test_no_admin_creates_successfully(self, settings):
         """Branch: no existing admin, email free → seed new admin"""
-        from core.bootstrap import seed_admin_user
+        from bootstrap.seed import seed_admin_user
 
         call_count = 0
         async def side_effect(stmt):
@@ -157,7 +157,7 @@ class TestSeedAdminUser:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock()
 
-        with patch("core.bootstrap.AsyncSessionLocal", return_value=mock_session):
+        with patch("bootstrap.seed.AsyncSessionLocal", return_value=mock_session):
             await seed_admin_user(settings)
 
         mock_session.add.assert_called_once()
@@ -173,64 +173,64 @@ class TestRepositoryFactories:
 
     def test_get_profile_repository(self):
         """Cover get_profile_repository → returns SqlProfileRepository"""
-        from core.dependencies import get_profile_repository
-        from infrastructure.secondary.database.repositories.profile_repository import SqlProfileRepository
+        from bootstrap.dependencies import get_profile_repository
+        from features.verification.infrastructure.persistence.profile_repository import SqlProfileRepository
         repo = get_profile_repository()
         assert isinstance(repo, SqlProfileRepository)
 
     def test_get_rule_repository(self):
         """Cover get_rule_repository → returns SqlVerificationRuleRepository"""
-        from core.dependencies import get_rule_repository
-        from infrastructure.secondary.database.repositories.rule_repository import SqlVerificationRuleRepository
+        from bootstrap.dependencies import get_rule_repository
+        from features.verification.infrastructure.persistence.rule_repository import SqlVerificationRuleRepository
         repo = get_rule_repository()
         assert isinstance(repo, SqlVerificationRuleRepository)
 
     def test_get_verification_result_repository(self):
         """Cover get_verification_result_repository → returns SqlVerificationResultRepository"""
-        from core.dependencies import get_verification_result_repository
-        from infrastructure.secondary.database.repositories.verification_result_repository import SqlVerificationResultRepository
+        from bootstrap.dependencies import get_verification_result_repository
+        from features.verification.infrastructure.persistence.verification_result_repository import SqlVerificationResultRepository
         repo = get_verification_result_repository()
         assert isinstance(repo, SqlVerificationResultRepository)
 
     def test_get_custom_role_repository(self):
         """Cover get_custom_role_repository → returns SqlCustomRoleRepository"""
-        from core.dependencies import get_custom_role_repository
-        from infrastructure.secondary.database.repositories.custom_role_repository import SqlCustomRoleRepository
+        from bootstrap.dependencies import get_custom_role_repository
+        from features.identity.infrastructure.persistence.custom_role_repository import SqlCustomRoleRepository
         repo = get_custom_role_repository()
         assert isinstance(repo, SqlCustomRoleRepository)
 
     def test_get_api_key_repository(self):
         """Cover get_api_key_repository → returns SqlAPIKeyRepository"""
-        from core.dependencies import get_api_key_repository
-        from infrastructure.secondary.database.repositories.api_key_repository import SqlAPIKeyRepository
+        from bootstrap.dependencies import get_api_key_repository
+        from features.identity.infrastructure.persistence.api_key_repository import SqlAPIKeyRepository
         repo = get_api_key_repository()
         assert isinstance(repo, SqlAPIKeyRepository)
 
     def test_get_artifact_repository(self):
         """Cover get_artifact_repository → returns SqlArtifactRepository"""
-        from core.dependencies import get_artifact_repository
-        from infrastructure.secondary.database.repositories.artifact_repository import SqlArtifactRepository
+        from bootstrap.dependencies import get_artifact_repository
+        from features.projects_releases.infrastructure.persistence.artifact_repository import SqlArtifactRepository
         repo = get_artifact_repository()
         assert isinstance(repo, SqlArtifactRepository)
 
     def test_get_task_queue(self):
         """Cover get_task_queue → returns CeleryTaskQueue"""
-        from core.dependencies import get_task_queue
-        from infrastructure.secondary.queue.celery_task_queue import CeleryTaskQueue
+        from bootstrap.dependencies import get_task_queue
+        from shared.infrastructure.queue.celery_task_queue import CeleryTaskQueue
         queue = get_task_queue()
         assert isinstance(queue, CeleryTaskQueue)
 
     def test_get_template_repository(self):
         """Cover get_template_repository → returns SqlTemplateRepository"""
-        from core.dependencies import get_template_repository
-        from infrastructure.secondary.database.repositories.template_repository import SqlTemplateRepository
+        from bootstrap.dependencies import get_template_repository
+        from features.verification.infrastructure.persistence.template_repository import SqlTemplateRepository
         repo = get_template_repository()
         assert isinstance(repo, SqlTemplateRepository)
 
     def test_get_notification_repository(self):
         """Cover get_notification_repository → returns SqlNotificationRepository"""
-        from core.dependencies import get_notification_repository
-        from infrastructure.secondary.database.repositories.notification_repository import SqlNotificationRepository
+        from bootstrap.dependencies import get_notification_repository
+        from features.notifications.infrastructure.persistence.notification_repository import SqlNotificationRepository
         repo = get_notification_repository()
         assert isinstance(repo, SqlNotificationRepository)
 
@@ -243,92 +243,92 @@ class TestServiceFactories:
 
     def test_get_connector_registry(self):
         """Cover get_connector_registry → returns ConnectorRegistry"""
-        from core.dependencies import get_connector_registry
-        from infrastructure.secondary.connectors.connector_registry import ConnectorRegistry
+        from bootstrap.dependencies import get_connector_registry
+        from features.connectors.infrastructure.gateways.connector_registry import ConnectorRegistry
         registry = get_connector_registry()
         assert isinstance(registry, ConnectorRegistry)
 
     def test_get_connector_service(self):
         """Cover get_connector_service → returns ConnectorService"""
-        from core.dependencies import get_connector_service
-        from application.use_cases.main.connector_service import ConnectorService
+        from bootstrap.dependencies import get_connector_service
+        from features.connectors.application.use_cases.connector_service import ConnectorService
         svc = get_connector_service()
         assert isinstance(svc, ConnectorService)
 
     def test_get_profile_service(self):
         """Cover get_profile_service → returns ProfileService"""
-        from core.dependencies import get_profile_service
-        from application.use_cases.main.profile_service import ProfileService
+        from bootstrap.dependencies import get_profile_service
+        from features.verification.application.use_cases.profile_service import ProfileService
         svc = get_profile_service()
         assert isinstance(svc, ProfileService)
 
     def test_get_task_service(self):
         """Cover get_task_service → returns TaskService"""
-        from core.dependencies import get_task_service
-        from application.use_cases.main.task_service import TaskService
+        from bootstrap.dependencies import get_task_service
+        from features.verification.application.use_cases.task_service import TaskService
         svc = get_task_service()
         assert isinstance(svc, TaskService)
 
     def test_get_user_service(self):
         """Cover get_user_service → returns UserService"""
-        from core.dependencies import get_user_service
-        from application.use_cases.main.user_service import UserService
+        from bootstrap.dependencies import get_user_service
+        from features.identity.application.use_cases.user_service import UserService
         svc = get_user_service()
         assert isinstance(svc, UserService)
 
     def test_get_custom_role_service(self):
         """Cover get_custom_role_service → returns CustomRoleService"""
-        from core.dependencies import get_custom_role_service
-        from application.use_cases.main.custom_role_service import CustomRoleService
+        from bootstrap.dependencies import get_custom_role_service
+        from features.identity.application.use_cases.custom_role_service import CustomRoleService
         svc = get_custom_role_service()
         assert isinstance(svc, CustomRoleService)
 
     def test_get_template_service(self):
         """Cover get_template_service → returns TemplateService"""
-        from core.dependencies import get_template_service
-        from application.use_cases.main.template_service import TemplateService
+        from bootstrap.dependencies import get_template_service
+        from features.verification.application.use_cases.template_service import TemplateService
         svc = get_template_service()
         assert isinstance(svc, TemplateService)
 
     def test_get_notification_service(self):
         """Cover get_notification_service → returns NotificationService"""
-        from core.dependencies import get_notification_service
-        from application.use_cases.main.notification_service import NotificationService
+        from bootstrap.dependencies import get_notification_service
+        from features.notifications.application.use_cases.notification_service import NotificationService
         svc = get_notification_service()
         assert isinstance(svc, NotificationService)
 
     def test_get_rules_service(self):
         """Cover get_rules_service → returns RulesService"""
-        from core.dependencies import get_rules_service
-        from application.use_cases.main.rules_service import RulesService
+        from bootstrap.dependencies import get_rules_service
+        from features.admin.application.use_cases.rules_service import RulesService
         svc = get_rules_service()
         assert isinstance(svc, RulesService)
 
     def test_get_export_service(self):
         """Cover get_export_service → returns ExportService"""
-        from core.dependencies import get_export_service
-        from application.use_cases.main.export_service import ExportService
+        from bootstrap.dependencies import get_export_service
+        from features.reporting.application.use_cases.export_service import ExportService
         svc = get_export_service()
         assert isinstance(svc, ExportService)
 
     def test_get_release_service(self):
         """Cover get_release_service → returns CreateReleaseUseCase"""
-        from core.dependencies import get_release_service
-        from application.use_cases.main.release_service import CreateReleaseUseCase
+        from bootstrap.dependencies import get_release_service
+        from features.projects_releases.application.use_cases.release_service import CreateReleaseUseCase
         svc = get_release_service()
         assert isinstance(svc, CreateReleaseUseCase)
 
     def test_get_artifact_service(self):
         """Cover get_artifact_service → returns ArtifactService"""
-        from core.dependencies import get_artifact_service
-        from application.use_cases.main.artifact_service import ArtifactService
+        from bootstrap.dependencies import get_artifact_service
+        from features.projects_releases.application.use_cases.artifact_service import ArtifactService
         svc = get_artifact_service()
         assert isinstance(svc, ArtifactService)
 
     def test_get_verification_service(self):
         """Cover get_verification_service → returns VerificationService"""
-        from core.dependencies import get_verification_service
-        from application.use_cases.main.verification_service import VerificationService
+        from bootstrap.dependencies import get_verification_service
+        from features.verification.application.use_cases.verification_service import VerificationService
         svc = get_verification_service()
         assert isinstance(svc, VerificationService)
 
@@ -341,27 +341,27 @@ class TestAccessGuards:
 
     @pytest.fixture
     def cu_admin(self):
-        from core.dependencies import CurrentUser
-        from domain.enums import UserRole
+        from bootstrap.dependencies import CurrentUser
+        from shared.domain.enums import UserRole
         return CurrentUser(user_id=uuid4(), role=UserRole.U3, email="admin@test.com")
 
     @pytest.fixture
     def cu_operator(self):
-        from core.dependencies import CurrentUser
-        from domain.enums import UserRole
+        from bootstrap.dependencies import CurrentUser
+        from shared.domain.enums import UserRole
         org_id = uuid4()
         return CurrentUser(user_id=uuid4(), role=UserRole.U2, email="op@test.com", organization_id=org_id)
 
     async def test_require_org_access_admin_bypasses(self, cu_admin):
         """Branch: admin bypasses require_org_access"""
-        from core.dependencies import require_org_access
+        from bootstrap.dependencies import require_org_access
         dep = require_org_access()
         result = await dep(org_id=uuid4(), current_user=cu_admin)
         assert result.role.value == "ADMIN"
 
     async def test_require_org_access_wrong_owner_raises_403(self, cu_operator):
         """Branch: operator with wrong organization owner → 403"""
-        from core.dependencies import require_org_access
+        from bootstrap.dependencies import require_org_access
         org = MagicMock()
         org.owner_id = uuid4()
         org_repo = AsyncMock()
@@ -377,14 +377,14 @@ class TestAccessGuards:
 
     async def test_require_project_access_admin_bypasses(self, cu_admin):
         """Branch: admin bypasses require_project_access"""
-        from core.dependencies import require_project_access
+        from bootstrap.dependencies import require_project_access
         dep = require_project_access()
         result = await dep(project_id=uuid4(), current_user=cu_admin)
         assert result.user.role.value == "ADMIN"
 
     async def test_require_project_access_not_found_404(self, cu_operator):
         """Branch: project not found → 404"""
-        from core.dependencies import require_project_access
+        from bootstrap.dependencies import require_project_access
         proj_repo = AsyncMock()
         proj_repo.get_by_id = AsyncMock(return_value=None)
 
@@ -396,8 +396,8 @@ class TestAccessGuards:
 
     def test_require_role_u4_required_u2_fails(self, cu_operator):
         """Branch: U2 user blocked from U4 endpoint → 403"""
-        from core.dependencies import require_role
-        from domain.enums import UserRole
+        from bootstrap.dependencies import require_role
+        from shared.domain.enums import UserRole
         dep = require_role(UserRole.U4)
         with pytest.raises(HTTPException) as exc:
             dep(current_user=cu_operator)
@@ -405,23 +405,23 @@ class TestAccessGuards:
 
     def test_require_role_u2_required_u2_passes(self, cu_operator):
         """Branch: U2 user permitted on U2 endpoint"""
-        from core.dependencies import require_role
-        from domain.enums import UserRole
+        from bootstrap.dependencies import require_role
+        from shared.domain.enums import UserRole
         dep = require_role(UserRole.U2)
         result = dep(current_user=cu_operator)
         assert result.role.value == "OPERATOR"
 
     def test_require_role_u2_required_passes_for_operator(self, cu_operator):
         """Branch: OPERATOR role is sufficient"""
-        from core.dependencies import require_role
-        from domain.enums import UserRole
+        from bootstrap.dependencies import require_role
+        from shared.domain.enums import UserRole
         dep = require_role(UserRole.U2)
         result = dep(current_user=cu_operator)
         assert result.role == UserRole.U2
 
     async def test_require_connector_access_not_found_404(self, cu_operator):
         """Branch: connector not found → 404"""
-        from core.dependencies import require_connector_access
+        from bootstrap.dependencies import require_connector_access
         conn_repo = AsyncMock()
         conn_repo.get_by_id = AsyncMock(return_value=None)
 
@@ -433,14 +433,14 @@ class TestAccessGuards:
 
     async def test_require_connector_access_admin_bypasses(self, cu_admin):
         """Branch: admin bypasses require_connector_access"""
-        from core.dependencies import require_connector_access
+        from bootstrap.dependencies import require_connector_access
         dep = require_connector_access()
         result = await dep(connector_id=uuid4(), current_user=cu_admin)
         assert result.role.value == "ADMIN"
 
     async def test_require_profile_access_not_found_404(self, cu_operator):
         """Branch: profile not found → 404"""
-        from core.dependencies import require_profile_access
+        from bootstrap.dependencies import require_profile_access
         profile_repo = AsyncMock()
         profile_repo.get_by_id = AsyncMock(return_value=None)
 
@@ -452,7 +452,7 @@ class TestAccessGuards:
 
     async def test_require_rule_access_not_found_404(self, cu_operator):
         """Branch: rule not found → 404"""
-        from core.dependencies import require_rule_access
+        from bootstrap.dependencies import require_rule_access
         rule_repo = AsyncMock()
         rule_repo.get_by_id = AsyncMock(return_value=None)
 
@@ -464,7 +464,7 @@ class TestAccessGuards:
 
     async def test_require_custom_role_access_not_found_404(self, cu_operator):
         """Branch: custom role not found → 404"""
-        from core.dependencies import require_custom_role_access
+        from bootstrap.dependencies import require_custom_role_access
         role_repo = AsyncMock()
         role_repo.get_by_id = AsyncMock(return_value=None)
 
@@ -476,14 +476,14 @@ class TestAccessGuards:
 
     async def test_require_custom_role_access_admin_bypasses(self, cu_admin):
         """Branch: admin bypasses require_custom_role_access"""
-        from core.dependencies import require_custom_role_access
+        from bootstrap.dependencies import require_custom_role_access
         dep = require_custom_role_access()
         result = await dep(role_id=uuid4(), current_user=cu_admin)
         assert result.role.value == "ADMIN"
 
     async def test_require_api_key_access_not_found_404(self, cu_operator):
         """Branch: API key not found → 404"""
-        from core.dependencies import require_api_key_access
+        from bootstrap.dependencies import require_api_key_access
         api_key_repo = AsyncMock()
         api_key_repo.get_by_id = AsyncMock(return_value=None)
 
@@ -495,8 +495,8 @@ class TestAccessGuards:
 
     def test_require_permission_denied_403(self, cu_operator):
         """Branch: OPERATOR lacks MANAGE_ORGANIZATIONS → 403"""
-        from core.dependencies import require_permission
-        from domain.enums import Permission
+        from bootstrap.dependencies import require_permission
+        from shared.domain.enums import Permission
         dep = require_permission(Permission.MANAGE_ORGANIZATIONS)
         with pytest.raises(HTTPException) as exc:
             dep(current_user=cu_operator)
@@ -504,15 +504,15 @@ class TestAccessGuards:
 
     def test_require_permission_granted(self, cu_operator):
         """Branch: OPERATOR granted VIEW_DASHBOARD"""
-        from core.dependencies import require_permission
-        from domain.enums import Permission
+        from bootstrap.dependencies import require_permission
+        from shared.domain.enums import Permission
         dep = require_permission(Permission.VIEW_DASHBOARD)
         result = dep(current_user=cu_operator)
         assert result.role.value == "OPERATOR"
 
     def test_get_current_user_id_invalid_token_401(self):
         """Branch: invalid JWT token → 401"""
-        from core.dependencies import get_current_user_id
+        from bootstrap.dependencies import get_current_user_id
         creds = MagicMock()
         creds.credentials = "bad-token"
         settings = MagicMock()
@@ -526,7 +526,7 @@ class TestAccessGuards:
 
     def test_get_current_user_role_invalid_token_401(self):
         """Branch: invalid JWT token for role extraction → 401"""
-        from core.dependencies import get_current_user_role
+        from bootstrap.dependencies import get_current_user_role
         creds = MagicMock()
         creds.credentials = "bad-token"
         settings = MagicMock()
@@ -546,17 +546,17 @@ class TestRateLimitMiddleware:
     """Verify rate_limit limiter instantiation and configuration."""
 
     def test_limiter_is_instantiated(self):
-        """Branch: rate_limit limiter is a Limiter instance with get_remote_address"""
+        """Branch: rate_limit limiter is a Limiter instance with get_ipaddr"""
         from slowapi import Limiter
-        from slowapi.util import get_remote_address
-        from infrastructure.primary.middleware.rate_limit import limiter
+        from slowapi.util import get_ipaddr
+        from shared.infrastructure.rate_limit import limiter
 
         assert isinstance(limiter, Limiter)
-        assert limiter._key_func is get_remote_address  # type: ignore[attr-defined]
+        assert limiter._key_func is get_ipaddr  # type: ignore[attr-defined]
 
     def test_limiter_key_func_uses_client_ip(self):
-        """Branch: key_func resolves to get_remote_address"""
-        from infrastructure.primary.middleware.rate_limit import limiter
+        """Branch: key_func resolves to get_ipaddr"""
+        from shared.infrastructure.rate_limit import limiter
 
         assert limiter._key_func is not None  # type: ignore[attr-defined]
         assert callable(limiter._key_func)  # type: ignore[attr-defined]
@@ -570,13 +570,13 @@ class TestRateLimitFunctions:
 
     def test_rate_limit_default(self):
         """Branch: rate_limit_default returns limiter.limit(DEFAULT_RATE)"""
-        from core.rate_limit import rate_limit_default
+        from shared.infrastructure.rate_limit import rate_limit_default
         result = rate_limit_default()
         assert result is not None
 
     def test_rate_limit_search(self):
         """Branch: rate_limit_search returns limiter.limit(SEARCH_RATE)"""
-        from core.rate_limit import rate_limit_search
+        from shared.infrastructure.rate_limit import rate_limit_search
         result = rate_limit_search()
         assert result is not None
 
@@ -589,21 +589,21 @@ class TestPasswordHasherNeedsRehash:
 
     def test_needs_rehash_prefix_matches(self):
         """Branch: needs_rehash with matching prefix returns False"""
-        from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+        from features.identity.infrastructure.gateways.password_hasher import BcryptPasswordHasher
         hasher = BcryptPasswordHasher()
         hashed = "$2b$12$" + "x" * 53
         assert hasher.needs_rehash(hashed, 12) is False
 
     def test_needs_rehash_prefix_does_not_match(self):
         """Branch: needs_rehash with non-matching prefix returns True"""
-        from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+        from features.identity.infrastructure.gateways.password_hasher import BcryptPasswordHasher
         hasher = BcryptPasswordHasher()
         hashed = "$2a$10$" + "x" * 53
         assert hasher.needs_rehash(hashed, 12) is True
 
     def test_needs_rehash_different_rounds(self):
         """Branch: needs_rehash with different rounds returns True"""
-        from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+        from features.identity.infrastructure.gateways.password_hasher import BcryptPasswordHasher
         hasher = BcryptPasswordHasher()
         hashed = "$2b$14$" + "x" * 53
         assert hasher.needs_rehash(hashed, 12) is True
@@ -617,7 +617,7 @@ class TestAuditLoggerGap:
 
     def test_log_with_running_loop_dispatches(self):
         """Branch: log with running asyncio loop dispatches to task"""
-        from core.audit import AuditLogger, AuditEntry, AuditEvent
+        from shared.infrastructure.audit import AuditLogger, AuditEntry, AuditEvent
 
         logger = AuditLogger()
         entry = AuditEntry(
@@ -641,18 +641,18 @@ class TestFernetCredentialEncryptor:
 
     @pytest.fixture
     def encryptor(self):
-        from core.credential_encryptor import FernetCredentialEncryptor
+        from shared.infrastructure.fernet_encryptor import FernetCredentialEncryptor
         return FernetCredentialEncryptor(VALID_FERNET_KEY)
 
     def test_init_with_string_key_encodes_to_bytes(self):
         """Branch: key is str → encoded to bytes before Fernet init"""
-        from core.credential_encryptor import FernetCredentialEncryptor
+        from shared.infrastructure.fernet_encryptor import FernetCredentialEncryptor
         enc = FernetCredentialEncryptor(VALID_FERNET_KEY)
         assert enc._fernet is not None
 
     def test_init_with_bytes_key_uses_directly(self):
         """Branch: key is bytes → used directly without encoding"""
-        from core.credential_encryptor import FernetCredentialEncryptor
+        from shared.infrastructure.fernet_encryptor import FernetCredentialEncryptor
         key_bytes = VALID_FERNET_KEY.encode()
         # cast to satisfy type checkers while passing bytes at runtime
         enc = FernetCredentialEncryptor(cast(str, key_bytes))
@@ -711,34 +711,34 @@ class TestPseudonymize:
 
     def test_scalar_passthrough_int(self):
         """Branch: input is int → returned as-is"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         assert pseudonymize(42) == 42
 
     def test_scalar_passthrough_string(self):
         """Branch: input is str → returned as-is"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         assert pseudonymize("plain text") == "plain text"
 
     def test_scalar_passthrough_none(self):
         """Branch: input is None → returned as-is"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         assert pseudonymize(None) is None
 
     def test_empty_dict_returns_empty_dict(self):
         """Branch: input is empty dict → returned empty dict"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         assert pseudonymize({}) == {}
 
     def test_dict_non_pii_keys_passthrough(self):
         """Branch: dict with non-PII keys → values passed through"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"task_id": "T-123", "status": "open", "priority": "high"}
         result = pseudonymize(data)
         assert result == data
 
     def test_dict_pii_email_is_hashed(self):
         """Branch: dict key 'email' with non-empty str → hashed"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"email": "user@example.com"}
         result = pseudonymize(data)
         assert result["email"].startswith("sha256:")
@@ -746,63 +746,63 @@ class TestPseudonymize:
 
     def test_dict_pii_name_is_hashed(self):
         """Branch: dict key 'name' (PII) → hashed"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"name": "John Doe"}
         result = pseudonymize(data)
         assert result["name"].startswith("sha256:")
 
     def test_dict_pii_displayname_is_hashed(self):
         """Branch: dict key 'displayName' (case-insensitive PII) → hashed"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"displayName": "Jane"}
         result = pseudonymize(data)
         assert result["displayName"].startswith("sha256:")
 
     def test_dict_pii_username_is_hashed(self):
         """Branch: dict key 'username' (PII) → hashed"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"username": "jdoe"}
         result = pseudonymize(data)
         assert result["username"].startswith("sha256:")
 
     def test_dict_pii_assignee_is_hashed(self):
         """Branch: dict key 'assignee' (PII) → hashed"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"assignee": "worker@corp.com"}
         result = pseudonymize(data)
         assert result["assignee"].startswith("sha256:")
 
     def test_dict_pii_author_is_hashed(self):
         """Branch: dict key 'author' (PII) → hashed"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"author": "writer"}
         result = pseudonymize(data)
         assert result["author"].startswith("sha256:")
 
     def test_dict_pii_fullname_is_hashed(self):
         """Branch: dict key 'fullName' (case-insensitive PII) → hashed"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"fullName": "Full Name Here"}
         result = pseudonymize(data)
         assert result["fullName"].startswith("sha256:")
 
     def test_dict_pii_empty_string_not_hashed(self):
         """Branch: PII key but value is empty str → not hashed (remains empty)"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"email": ""}
         result = pseudonymize(data)
         assert result["email"] == ""
 
     def test_dict_pii_non_string_value_not_hashed(self):
         """Branch: PII key but value is not str (e.g. list) → not hashed"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"email": ["a", "b"]}
         result = pseudonymize(data)
         assert result["email"] == ["a", "b"]
 
     def test_list_of_dicts_each_processed(self):
         """Branch: input is list of dicts → each item pseudonymized"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = [{"email": "a@b.com"}, {"email": "c@d.com"}]
         result = pseudonymize(data)
         assert result[0]["email"].startswith("sha256:")
@@ -810,7 +810,7 @@ class TestPseudonymize:
 
     def test_nested_dict_pii_inner_hashed(self):
         """Branch: nested dict → inner PII keys hashed"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"ticket": {"author": "dev1", "title": "fix bug"}}
         result = pseudonymize(data)
         assert result["ticket"]["author"].startswith("sha256:")
@@ -818,7 +818,7 @@ class TestPseudonymize:
 
     def test_list_inside_dict_processed(self):
         """Branch: dict value is a list → each item in list pseudonymized"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"comments": [{"author": "u1"}, {"author": "u2"}]}
         result = pseudonymize(data)
         assert result["comments"][0]["author"].startswith("sha256:")
@@ -826,14 +826,14 @@ class TestPseudonymize:
 
     def test_mixed_types_passthrough(self):
         """Branch: float and bool values passed through unchanged"""
-        from core.pseudonymizer import pseudonymize
+        from features.verification.application.pseudonymizer import pseudonymize
         data = {"count": 5, "active": True, "rating": 4.5}
         result = pseudonymize(data)
         assert result == data
 
     def test_is_pii_key_case_insensitive(self):
         """Branch: _is_pii_key uses key.lower() → case insensitive"""
-        from core.pseudonymizer import _is_pii_key
+        from features.verification.application.pseudonymizer import _is_pii_key
         assert _is_pii_key("EMAIL") is True
         assert _is_pii_key("Email") is True
         assert _is_pii_key("eMaIl") is True
@@ -841,7 +841,7 @@ class TestPseudonymize:
 
     def test_hash_value_returns_prefixed_sha256(self):
         """Branch: _hash_value returns 'sha256:' + hex digest"""
-        from core.pseudonymizer import _hash_value
+        from features.verification.application.pseudonymizer import _hash_value
         value = "test@example.com"
         expected = "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
         assert _hash_value(value) == expected
@@ -855,7 +855,7 @@ class TestGetAsyncSession:
 
     async def test_get_async_session_yields_session(self):
         """Covers get_async_session.py lines 39-40: async generator context manager."""
-        from infrastructure.secondary.database.get_async_session import get_async_session
+        from shared.infrastructure.database.get_async_session import get_async_session
         gen = get_async_session()
         session = await gen.__anext__()
         assert session is not None
@@ -868,52 +868,52 @@ class TestWebhookSignature:
     """Cover core/webhook_signature.py: per-provider HMAC/token verification."""
 
     def test_signature_header_name_known_providers(self):
-        from core.webhook_signature import signature_header_name
+        from features.connectors.domain.webhook_signature import signature_header_name
         assert signature_header_name("github") == "X-Hub-Signature-256"
         assert signature_header_name("GITEA") == "X-Gitea-Signature"
         assert signature_header_name("Bitbucket") == "X-Hub-Signature-256"
         assert signature_header_name("gitlab") == "X-Gitlab-Token"
 
     def test_signature_header_name_unknown_provider_returns_none(self):
-        from core.webhook_signature import signature_header_name
+        from features.connectors.domain.webhook_signature import signature_header_name
         assert signature_header_name("JIRA") is None
 
     def test_github_style_valid_signature(self):
         import hashlib, hmac
-        from core.webhook_signature import verify_github_style_signature
+        from features.connectors.domain.webhook_signature import verify_github_style_signature
         secret, body = "s3cr3t", b'{"ref":"refs/tags/v1.0.0"}'
         digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
         assert verify_github_style_signature(secret, body, f"sha256={digest}") is True
 
     def test_github_style_invalid_signature(self):
-        from core.webhook_signature import verify_github_style_signature
+        from features.connectors.domain.webhook_signature import verify_github_style_signature
         assert verify_github_style_signature("s3cr3t", b"body", "sha256=deadbeef") is False
 
     def test_github_style_missing_or_malformed_header(self):
-        from core.webhook_signature import verify_github_style_signature
+        from features.connectors.domain.webhook_signature import verify_github_style_signature
         assert verify_github_style_signature("s3cr3t", b"body", None) is False
         assert verify_github_style_signature("s3cr3t", b"body", "not-prefixed") is False
 
     def test_gitea_valid_signature(self):
         import hashlib, hmac
-        from core.webhook_signature import verify_gitea_signature
+        from features.connectors.domain.webhook_signature import verify_gitea_signature
         secret, body = "s3cr3t", b"payload"
         digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
         assert verify_gitea_signature(secret, body, digest) is True
 
     def test_gitea_missing_header(self):
-        from core.webhook_signature import verify_gitea_signature
+        from features.connectors.domain.webhook_signature import verify_gitea_signature
         assert verify_gitea_signature("s3cr3t", b"body", None) is False
 
     def test_gitlab_token_match(self):
-        from core.webhook_signature import verify_gitlab_token
+        from features.connectors.domain.webhook_signature import verify_gitlab_token
         assert verify_gitlab_token("s3cr3t", "s3cr3t") is True
         assert verify_gitlab_token("s3cr3t", "wrong") is False
         assert verify_gitlab_token("s3cr3t", None) is False
 
     def test_verify_webhook_signature_dispatch_per_provider(self):
         import hashlib, hmac
-        from core.webhook_signature import verify_webhook_signature
+        from features.connectors.domain.webhook_signature import verify_webhook_signature
         secret, body = "s3cr3t", b"payload"
         digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
         assert verify_webhook_signature("GITHUB", secret, body, f"sha256={digest}") is True
@@ -922,7 +922,7 @@ class TestWebhookSignature:
         assert verify_webhook_signature("GITLAB", secret, body, secret) is True
 
     def test_verify_webhook_signature_unsupported_provider_returns_false(self):
-        from core.webhook_signature import verify_webhook_signature
+        from features.connectors.domain.webhook_signature import verify_webhook_signature
         assert verify_webhook_signature("JIRA", "s3cr3t", b"body", "anything") is False
 
 
@@ -933,7 +933,7 @@ class TestWebhookPayloadParser:
     """Cover application/use_cases/main/webhook_payload_parser.py."""
 
     def test_event_header_name_known_and_unknown_providers(self):
-        from application.use_cases.main.webhook_payload_parser import event_header_name
+        from features.connectors.application.use_cases.webhook_payload_parser import event_header_name
         assert event_header_name("github") == "X-GitHub-Event"
         assert event_header_name("GITLAB") == "X-Gitlab-Event"
         assert event_header_name("Gitea") == "X-Gitea-Event"
@@ -941,84 +941,84 @@ class TestWebhookPayloadParser:
         assert event_header_name("JIRA") is None
 
     def test_github_create_tag_event_parsed(self):
-        from application.use_cases.main.webhook_payload_parser import parse_github_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_github_event
         event = parse_github_event("create", {"ref_type": "tag", "ref": "v1.2.3"})
         assert event is not None
         assert event.tag_name == "v1.2.3"
         assert event.external_ref == "v1.2.3"
 
     def test_github_create_branch_event_ignored(self):
-        from application.use_cases.main.webhook_payload_parser import parse_github_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_github_event
         assert parse_github_event("create", {"ref_type": "branch", "ref": "main"}) is None
 
     def test_github_release_published_event_parsed(self):
-        from application.use_cases.main.webhook_payload_parser import parse_github_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_github_event
         event = parse_github_event("release", {"action": "published", "release": {"tag_name": "v2.0.0"}})
         assert event is not None
         assert event.tag_name == "v2.0.0"
 
     def test_github_release_draft_event_ignored(self):
-        from application.use_cases.main.webhook_payload_parser import parse_github_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_github_event
         assert parse_github_event("release", {"action": "created", "release": {"tag_name": "v2.0.0"}}) is None
 
     def test_github_unrelated_event_ignored(self):
-        from application.use_cases.main.webhook_payload_parser import parse_github_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_github_event
         assert parse_github_event("push", {"ref": "refs/heads/main"}) is None
 
     def test_gitlab_tag_push_event_parsed(self):
-        from application.use_cases.main.webhook_payload_parser import parse_gitlab_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_gitlab_event
         event = parse_gitlab_event("Tag Push Hook", {"ref": "refs/tags/v1.0.0", "checkout_sha": "abc123"})
         assert event is not None
         assert event.tag_name == "v1.0.0"
 
     def test_gitlab_tag_deletion_ignored(self):
         """checkout_sha is null when the event is a tag deletion, not a creation."""
-        from application.use_cases.main.webhook_payload_parser import parse_gitlab_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_gitlab_event
         assert parse_gitlab_event("Tag Push Hook", {"ref": "refs/tags/v1.0.0", "checkout_sha": None}) is None
 
     def test_gitlab_other_event_ignored(self):
-        from application.use_cases.main.webhook_payload_parser import parse_gitlab_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_gitlab_event
         assert parse_gitlab_event("Push Hook", {"ref": "refs/heads/main"}) is None
 
     def test_gitea_create_tag_event_parsed(self):
-        from application.use_cases.main.webhook_payload_parser import parse_gitea_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_gitea_event
         event = parse_gitea_event("create", {"ref_type": "tag", "ref": "v3.0.0"})
         assert event is not None
         assert event.tag_name == "v3.0.0"
 
     def test_gitea_create_branch_event_ignored(self):
-        from application.use_cases.main.webhook_payload_parser import parse_gitea_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_gitea_event
         assert parse_gitea_event("create", {"ref_type": "branch", "ref": "dev"}) is None
 
     def test_bitbucket_tag_push_parsed(self):
-        from application.use_cases.main.webhook_payload_parser import parse_bitbucket_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_bitbucket_event
         payload = {"push": {"changes": [{"new": {"type": "tag", "name": "v1.5.0"}}]}}
         event = parse_bitbucket_event("repo:push", payload)
         assert event is not None
         assert event.tag_name == "v1.5.0"
 
     def test_bitbucket_branch_push_ignored(self):
-        from application.use_cases.main.webhook_payload_parser import parse_bitbucket_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_bitbucket_event
         payload = {"push": {"changes": [{"new": {"type": "branch", "name": "main"}}]}}
         assert parse_bitbucket_event("repo:push", payload) is None
 
     def test_parse_tag_push_event_dispatches_per_provider(self):
-        from application.use_cases.main.webhook_payload_parser import parse_tag_push_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_tag_push_event
         event = parse_tag_push_event("GITHUB", "create", {"ref_type": "tag", "ref": "v1.0.0"})
         assert event is not None
         assert event.tag_name == "v1.0.0"
 
     def test_parse_tag_push_event_unknown_provider_returns_none(self):
-        from application.use_cases.main.webhook_payload_parser import parse_tag_push_event
+        from features.connectors.application.use_cases.webhook_payload_parser import parse_tag_push_event
         assert parse_tag_push_event("JIRA", "create", {"ref_type": "tag", "ref": "v1.0.0"}) is None
 
     def test_version_from_tag_name_strips_v_prefix(self):
-        from application.use_cases.main.webhook_payload_parser import version_from_tag_name
+        from features.connectors.application.use_cases.webhook_payload_parser import version_from_tag_name
         assert version_from_tag_name("v1.2.3") == "1.2.3"
         assert version_from_tag_name("V2.0.0") == "2.0.0"
 
     def test_version_from_tag_name_keeps_non_semver_tags_unchanged(self):
-        from application.use_cases.main.webhook_payload_parser import version_from_tag_name
+        from features.connectors.application.use_cases.webhook_payload_parser import version_from_tag_name
         assert version_from_tag_name("1.2.3") == "1.2.3"
         assert version_from_tag_name("release-candidate") == "release-candidate"
         assert version_from_tag_name("vNext") == "vNext"

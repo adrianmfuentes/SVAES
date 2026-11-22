@@ -131,7 +131,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: svaes-dev-celery
     restart: unless-stopped
-    command: celery -A src.infrastructure.secondary.queue.celery_app worker --loglevel=warning
+    command: celery -A shared.infrastructure.queue.celery_app worker --loglevel=warning
     env_file:
       - .env.dev
     environment:
@@ -170,7 +170,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: svaes-dev-celery-beat
     restart: unless-stopped
-    command: celery -A src.infrastructure.secondary.queue.celery_app beat --loglevel=warning
+    command: celery -A shared.infrastructure.queue.celery_app beat --loglevel=warning
     env_file:
       - .env.dev
     environment:

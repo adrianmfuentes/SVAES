@@ -29,7 +29,7 @@ class TestSendFeedbackEmail:
         os.environ.setdefault("ADMIN_EMAIL", "admin@test.local")
         os.environ.setdefault("ADMIN_PASSWORD", "admin-pass")
 
-        from core.email import EmailService
+        from shared.infrastructure.smtp_mailer import EmailService
         return EmailService()
 
     @pytest.mark.asyncio
@@ -42,7 +42,7 @@ class TestSendFeedbackEmail:
             "comments": "Great app!"
         }
 
-        with patch("core.email._send_smtp") as mock_smtp:
+        with patch("shared.infrastructure.smtp_mailer._send_smtp") as mock_smtp:
             await email_service.send_feedback_email(feedback)
 
             mock_smtp.assert_called_once()
@@ -61,7 +61,7 @@ class TestSendFeedbackEmail:
             "comments": "It's okay"
         }
 
-        with patch("core.email._send_smtp") as mock_smtp:
+        with patch("shared.infrastructure.smtp_mailer._send_smtp") as mock_smtp:
             await email_service.send_feedback_email(feedback)
 
             call_args = mock_smtp.call_args
@@ -81,7 +81,7 @@ class TestSendFeedbackEmail:
             "comments": "Nice app"
         }
 
-        with patch("core.email._send_smtp") as mock_smtp:
+        with patch("shared.infrastructure.smtp_mailer._send_smtp") as mock_smtp:
             await email_service.send_feedback_email(feedback)
 
             call_args = mock_smtp.call_args
@@ -99,7 +99,7 @@ class TestSendFeedbackEmail:
             "comments": "Bad"
         }
 
-        with patch("core.email._send_smtp", side_effect=Exception("SMTP error")):
+        with patch("shared.infrastructure.smtp_mailer._send_smtp", side_effect=Exception("SMTP error")):
             with pytest.raises(Exception, match="SMTP error"):
                 await email_service.send_feedback_email(feedback)
 
@@ -125,13 +125,13 @@ class TestSendActivationEmail:
         os.environ.setdefault("ADMIN_EMAIL", "admin@test.local")
         os.environ.setdefault("ADMIN_PASSWORD", "admin-pass")
 
-        from core.email import EmailService
+        from shared.infrastructure.smtp_mailer import EmailService
         return EmailService()
 
     @pytest.mark.asyncio
     async def test_send_activation_email_success(self, email_service):
         """Test successful activation email"""
-        with patch("core.email._send_smtp") as mock_smtp:
+        with patch("shared.infrastructure.smtp_mailer._send_smtp") as mock_smtp:
             await email_service.send_activation_email(
                 to_email="user@test.com",
                 to_name="Test User",
@@ -146,7 +146,7 @@ class TestSendActivationEmail:
     @pytest.mark.asyncio
     async def test_send_activation_email_smtp_failure(self, email_service):
         """Test activation email handles SMTP failure"""
-        with patch("core.email._send_smtp", side_effect=Exception("Connection refused")):
+        with patch("shared.infrastructure.smtp_mailer._send_smtp", side_effect=Exception("Connection refused")):
             with pytest.raises(Exception, match="Connection refused"):
                 await email_service.send_activation_email(
                     to_email="user@test.com",
@@ -176,13 +176,13 @@ class TestSendVerificationResultEmail:
         os.environ.setdefault("ADMIN_EMAIL", "admin@test.local")
         os.environ.setdefault("ADMIN_PASSWORD", "admin-pass")
 
-        from core.email import EmailService
+        from shared.infrastructure.smtp_mailer import EmailService
         return EmailService()
 
     @pytest.mark.asyncio
     async def test_send_verification_result_valid(self, email_service):
         """Test verification result email with VALID verdict"""
-        with patch("core.email._send_smtp") as mock_smtp:
+        with patch("shared.infrastructure.smtp_mailer._send_smtp") as mock_smtp:
             await email_service.send_verification_result_email(
                 to_email="user@test.com",
                 to_name="Test User",
@@ -198,7 +198,7 @@ class TestSendVerificationResultEmail:
     @pytest.mark.asyncio
     async def test_send_verification_result_invalid(self, email_service):
         """Test verification result email with INVALID verdict"""
-        with patch("core.email._send_smtp") as mock_smtp:
+        with patch("shared.infrastructure.smtp_mailer._send_smtp") as mock_smtp:
             await email_service.send_verification_result_email(
                 to_email="user@test.com",
                 to_name="Test User",
@@ -212,7 +212,7 @@ class TestSendVerificationResultEmail:
     @pytest.mark.asyncio
     async def test_send_verification_result_unknown_verdict(self, email_service):
         """Test verification result email with unknown verdict uses default"""
-        with patch("core.email._send_smtp") as mock_smtp:
+        with patch("shared.infrastructure.smtp_mailer._send_smtp") as mock_smtp:
             await email_service.send_verification_result_email(
                 to_email="user@test.com",
                 to_name="Test User",
@@ -226,7 +226,7 @@ class TestSendVerificationResultEmail:
     @pytest.mark.asyncio
     async def test_send_verification_result_smtp_failure_logs_error(self, email_service):
         """Test verification result email logs error on SMTP failure but does not raise"""
-        with patch("core.email._send_smtp", side_effect=Exception("SMTP error")):
+        with patch("shared.infrastructure.smtp_mailer._send_smtp", side_effect=Exception("SMTP error")):
             # Should not raise, just log
             await email_service.send_verification_result_email(
                 to_email="user@test.com",
@@ -258,13 +258,13 @@ class TestSendPasswordResetEmail:
         os.environ.setdefault("ADMIN_EMAIL", "admin@test.local")
         os.environ.setdefault("ADMIN_PASSWORD", "admin-pass")
 
-        from core.email import EmailService
+        from shared.infrastructure.smtp_mailer import EmailService
         return EmailService()
 
     @pytest.mark.asyncio
     async def test_send_password_reset_success(self, email_service):
         """Test successful password reset email"""
-        with patch("core.email._send_smtp") as mock_smtp:
+        with patch("shared.infrastructure.smtp_mailer._send_smtp") as mock_smtp:
             await email_service.send_password_reset_email(
                 to_email="user@test.com",
                 to_name="Test User",
@@ -279,7 +279,7 @@ class TestSendPasswordResetEmail:
     @pytest.mark.asyncio
     async def test_send_password_reset_smtp_failure(self, email_service):
         """Test password reset email raises on SMTP failure"""
-        with patch("core.email._send_smtp", side_effect=Exception("Connection refused")):
+        with patch("shared.infrastructure.smtp_mailer._send_smtp", side_effect=Exception("Connection refused")):
             with pytest.raises(Exception, match="Connection refused"):
                 await email_service.send_password_reset_email(
                     to_email="user@test.com",

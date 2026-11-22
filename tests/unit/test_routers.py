@@ -47,8 +47,8 @@ def anyio_backend():
 
 
 def _token(user_id, org_id, role_str="OPERATOR"):
-    from domain.enums import UserRole
-    from infrastructure.primary.middleware.jwt_handler import JwtHandler
+    from shared.domain.enums import UserRole
+    from features.identity.infrastructure.gateways.jwt_handler import JwtHandler
     role_map = {
         "OPERATOR": UserRole.U2,
         "ADMIN": UserRole.U3,
@@ -127,7 +127,7 @@ class TestCreateReleaseEndpoint:
     def _setup_app(self):
         from fastapi.testclient import TestClient
         from main import app
-        from core.dependencies import (
+        from bootstrap.dependencies import (
             get_release_service,
             get_project_repository,
             get_organization_repository,
@@ -262,7 +262,7 @@ class TestReleasesCoverage:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import (
+        from bootstrap.dependencies import (
             get_release_service, get_artifact_service, get_connector_service,
             get_verification_service,
             get_export_service, get_project_repository, get_organization_repository,
@@ -380,7 +380,7 @@ class TestReleasesCoverage:
 
     def test_update_release_validation_error_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.rel_svc.update_release = AsyncMock(side_effect=ValidationError("bad"))
         client = TestClient(self.app)
         resp = client.patch(f"/api/v1/releases/{self.r_id}", json={"name": "bad"}, headers=self._headers())
@@ -409,7 +409,7 @@ class TestReleasesCoverage:
 
     def test_restore_release_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.rel_svc.restore_release = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/releases/{self.r_id}/restore", headers=self._headers("ADMIN"))
@@ -417,7 +417,7 @@ class TestReleasesCoverage:
 
     def test_restore_release_validation_error_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.rel_svc.restore_release = AsyncMock(side_effect=ValidationError("state"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/releases/{self.r_id}/restore", headers=self._headers("ADMIN"))
@@ -446,7 +446,7 @@ class TestReleasesCoverage:
 
     def test_add_artifact_validation_error_422(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.art_svc.add_artifact = AsyncMock(side_effect=ValidationError("bad"))
         client = TestClient(self.app)
         resp = client.post(
@@ -473,7 +473,7 @@ class TestReleasesCoverage:
 
     def test_verify_release_validation_error_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.ver_svc.launch_verification = AsyncMock(side_effect=ValidationError("state"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/releases/{self.r_id}/verify", headers=self._headers())
@@ -539,7 +539,7 @@ class TestReleasesCoverage:
 
     def test_import_artifacts_validation_error_422(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.art_svc.add_artifact = AsyncMock(side_effect=ValidationError("bad"))
         client = TestClient(self.app)
         payload = {"artifacts": [{"artifact_type": "TAREA", "connector_instance_id": str(uuid4()),
@@ -556,7 +556,7 @@ class TestOrganizationsCoverage:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_organization_service, get_project_repository
+        from bootstrap.dependencies import get_organization_service, get_project_repository
         self.app = app
         self.svc = AsyncMock()
         self.user_id = uuid4()
@@ -686,7 +686,7 @@ class TestOrganizationsCoverage:
 
     def test_archive_project_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         # require_project_access finds the project (so the request reaches the
         # service); archive_project itself then reports it gone (e.g. deleted
         # concurrently) - that's the 404 this test exercises.
@@ -707,7 +707,7 @@ class TestOrganizationsCoverage:
 
     def test_restore_organization_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.restore_organization = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/restore", headers=self._headers("ADMIN"))
@@ -724,7 +724,7 @@ class TestOrganizationsCoverage:
 
     def test_transfer_ownership_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.transfer_ownership = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/transfer-ownership",
@@ -740,10 +740,12 @@ class TestOrganizationsRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_organization_service, get_current_user_api_key_only, get_current_user
+        from bootstrap.dependencies import get_organization_service, get_current_user_api_key_only, get_current_user
+        from bootstrap.dependencies import get_create_organization
         self.app = app
         self.org_svc = AsyncMock()
         app.dependency_overrides[get_organization_service] = lambda: self.org_svc
+        app.dependency_overrides[get_create_organization] = lambda: self.org_svc
         app.dependency_overrides[get_current_user_api_key_only] = get_current_user
 
         self.user_id = uuid4()
@@ -783,7 +785,7 @@ class TestOrganizationsRouter:
     def test_create_org_success(self):
         from fastapi.testclient import TestClient
         org = _make_org(uuid4(), self.user_id)
-        self.org_svc.create_organization = AsyncMock(return_value=org)
+        self.org_svc.execute = AsyncMock(return_value=org)
         client = TestClient(self.app)
         resp = client.post(
             "/api/v1/organizations",
@@ -794,8 +796,8 @@ class TestOrganizationsRouter:
 
     def test_create_org_duplicate_slug_returns_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import DuplicateEntityError
-        self.org_svc.create_organization = AsyncMock(side_effect=DuplicateEntityError("dup"))
+        from shared.domain.exceptions import DuplicateEntityError
+        self.org_svc.execute = AsyncMock(side_effect=DuplicateEntityError("dup"))
         client = TestClient(self.app)
         resp = client.post(
             "/api/v1/organizations",
@@ -806,8 +808,8 @@ class TestOrganizationsRouter:
 
     def test_create_org_validation_error_returns_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
-        self.org_svc.create_organization = AsyncMock(side_effect=ValidationError("bad"))
+        from shared.domain.exceptions import ValidationError
+        self.org_svc.execute = AsyncMock(side_effect=ValidationError("bad"))
         client = TestClient(self.app)
         resp = client.post(
             "/api/v1/organizations",
@@ -818,7 +820,7 @@ class TestOrganizationsRouter:
 
     def test_create_org_server_error_returns_500(self):
         from fastapi.testclient import TestClient
-        self.org_svc.create_organization = AsyncMock(side_effect=RuntimeError("DB down"))
+        self.org_svc.execute = AsyncMock(side_effect=RuntimeError("DB down"))
         client = TestClient(self.app)
         resp = client.post(
             "/api/v1/organizations",
@@ -868,7 +870,7 @@ class TestAuthCoverage:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_auth_service, get_user_service
+        from bootstrap.dependencies import get_auth_service, get_user_service
         self.app = app
         self.auth_svc = AsyncMock()
         self.user_svc = AsyncMock()
@@ -910,7 +912,7 @@ class TestAuthCoverage:
 
     def test_login_invalid_credentials_401(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.auth_svc.authenticate = AsyncMock(side_effect=ValidationError("wrong"))
         client = TestClient(self.app)
         resp = client.post("/api/v1/auth/login", json={"email": "test@test.com", "password": "wrong"}) # NOSONAR
@@ -969,7 +971,7 @@ class TestAuthCoverage:
 
     def test_register_duplicate_400(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         self.user_svc.create_user = AsyncMock(side_effect=DuplicateEntityError("dup"))
         client = TestClient(self.app)
         resp = client.post("/api/v1/auth/register", json={
@@ -1021,7 +1023,7 @@ class TestAuthRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_auth_service, get_user_service
+        from bootstrap.dependencies import get_auth_service, get_user_service
         self.app = app
         self.auth_svc = AsyncMock()
         self.user_svc = AsyncMock()
@@ -1032,7 +1034,7 @@ class TestAuthRouter:
 
     def test_login_success_returns_tokens(self):
         from fastapi.testclient import TestClient
-        from application.ports.input.i_auth_service import LoginResult, AuthTokens
+        from features.identity.application.ports.i_auth_service import LoginResult, AuthTokens
         tokens = AuthTokens(access_token="acc", refresh_token="ref")
         self.auth_svc.authenticate = AsyncMock(
             return_value=LoginResult(tokens=tokens, user_id=uuid4(), role="U2")
@@ -1044,7 +1046,7 @@ class TestAuthRouter:
 
     def test_login_requires_2fa(self):
         from fastapi.testclient import TestClient
-        from application.ports.input.i_auth_service import LoginResult
+        from features.identity.application.ports.i_auth_service import LoginResult
         self.auth_svc.authenticate = AsyncMock(
             return_value=LoginResult(requires_2fa=True, totp_token="pending")
         )
@@ -1055,7 +1057,7 @@ class TestAuthRouter:
 
     def test_login_validation_error_returns_401(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.auth_svc.authenticate = AsyncMock(side_effect=ValidationError("bad creds"))
         client = TestClient(self.app)
         resp = client.post("/api/v1/auth/login", json={"email": "x@x.com", "password": "p"})
@@ -1070,7 +1072,7 @@ class TestAuthRouter:
 
     def test_verify_2fa_success(self):
         from fastapi.testclient import TestClient
-        from application.ports.input.i_auth_service import LoginResult, AuthTokens
+        from features.identity.application.ports.i_auth_service import LoginResult, AuthTokens
         tokens = AuthTokens(access_token="acc", refresh_token="ref")
         self.auth_svc.verify_totp = AsyncMock(
             return_value=LoginResult(tokens=tokens, user_id=uuid4(), role="U2")
@@ -1081,7 +1083,7 @@ class TestAuthRouter:
 
     def test_verify_2fa_validation_error_returns_401(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.auth_svc.verify_totp = AsyncMock(side_effect=ValidationError("bad code"))
         client = TestClient(self.app)
         resp = client.post("/api/v1/auth/2fa/verify", json={"totp_token": "tok", "code": "000000"})
@@ -1164,7 +1166,7 @@ class TestAuthRouter:
 
     def test_register_duplicate_raises_400(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         self.user_svc.create_user = AsyncMock(side_effect=DuplicateEntityError("dup"))
         client = TestClient(self.app)
         resp = client.post("/api/v1/auth/register", json={
@@ -1178,7 +1180,7 @@ class TestAuthRouter:
 
     def test_setup_2fa_success(self):
         from fastapi.testclient import TestClient
-        from application.ports.input.i_auth_service import TotpSetupResult
+        from features.identity.application.ports.i_auth_service import TotpSetupResult
         user_id = uuid4()
         org_id = uuid4()
         token = _token(user_id, org_id, "OPERATOR")
@@ -1226,7 +1228,7 @@ class TestAccessRequestsCoverage:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_organization_service, get_user_service
+        from bootstrap.dependencies import get_organization_service, get_user_service
         self.app = app
         self.svc = AsyncMock()
         self.user_svc = AsyncMock()
@@ -1242,9 +1244,9 @@ class TestAccessRequestsCoverage:
 
     def test_create_access_request_exists_409(self):
         from fastapi.testclient import TestClient
-        from domain.entities.access_request import AccessRequest
+        from features.identity.domain.access_request import AccessRequest
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.SqlAccessRequestRepository.get_by_email",
+            "features.identity.infrastructure.persistence.access_request_repository.SqlAccessRequestRepository.get_by_email",
             new_callable=AsyncMock,
         ) as mock_get_email:
             mock_get_email.return_value = AccessRequest(
@@ -1261,7 +1263,7 @@ class TestAccessRequestsCoverage:
     def test_list_access_requests_success(self):
         from fastapi.testclient import TestClient
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.SqlAccessRequestRepository.list_by_status",
+            "features.identity.infrastructure.persistence.access_request_repository.SqlAccessRequestRepository.list_by_status",
             new_callable=AsyncMock,
         ) as mock_list:
             mock_list.return_value = []
@@ -1278,7 +1280,7 @@ class TestAccessRequestsCoverage:
     def test_patch_access_request_not_found_404(self):
         from fastapi.testclient import TestClient
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.SqlAccessRequestRepository.get_by_id",
+            "features.identity.infrastructure.persistence.access_request_repository.SqlAccessRequestRepository.get_by_id",
             new_callable=AsyncMock,
         ) as mock_get:
             mock_get.return_value = None
@@ -1289,18 +1291,18 @@ class TestAccessRequestsCoverage:
 
     def test_patch_access_request_approve(self):
         from fastapi.testclient import TestClient
-        from domain.entities.access_request import AccessRequest
-        from domain.enums import AccessRequestStatus
+        from features.identity.domain.access_request import AccessRequest
+        from shared.domain.enums import AccessRequestStatus
         ar = AccessRequest(
             requester_name="Bob", requester_email="bob@test.com",
             organization_name="Bob Org", status=AccessRequestStatus.PENDING,
         )
         ar.id = uuid4()
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.SqlAccessRequestRepository.get_by_id",
+            "features.identity.infrastructure.persistence.access_request_repository.SqlAccessRequestRepository.get_by_id",
             new_callable=AsyncMock,
         ) as mock_get, patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.SqlAccessRequestRepository.update",
+            "features.identity.infrastructure.persistence.access_request_repository.SqlAccessRequestRepository.update",
             new_callable=AsyncMock,
         ) as mock_update:
             mock_get.return_value = ar
@@ -1312,18 +1314,18 @@ class TestAccessRequestsCoverage:
 
     def test_patch_access_request_reject(self):
         from fastapi.testclient import TestClient
-        from domain.entities.access_request import AccessRequest
-        from domain.enums import AccessRequestStatus
+        from features.identity.domain.access_request import AccessRequest
+        from shared.domain.enums import AccessRequestStatus
         ar = AccessRequest(
             requester_name="Bob", requester_email="bob@test.com",
             organization_name="Bob Org", status=AccessRequestStatus.PENDING,
         )
         ar.id = uuid4()
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.SqlAccessRequestRepository.get_by_id",
+            "features.identity.infrastructure.persistence.access_request_repository.SqlAccessRequestRepository.get_by_id",
             new_callable=AsyncMock,
         ) as mock_get, patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.SqlAccessRequestRepository.update",
+            "features.identity.infrastructure.persistence.access_request_repository.SqlAccessRequestRepository.update",
             new_callable=AsyncMock,
         ) as mock_update:
             mock_get.return_value = ar
@@ -1336,15 +1338,15 @@ class TestAccessRequestsCoverage:
 
     def test_patch_access_request_invalid_action_400(self):
         from fastapi.testclient import TestClient
-        from domain.entities.access_request import AccessRequest
-        from domain.enums import AccessRequestStatus
+        from features.identity.domain.access_request import AccessRequest
+        from shared.domain.enums import AccessRequestStatus
         ar = AccessRequest(
             requester_name="Bob", requester_email="bob@test.com",
             organization_name="Bob Org", status=AccessRequestStatus.PENDING,
         )
         ar.id = uuid4()
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.SqlAccessRequestRepository.get_by_id",
+            "features.identity.infrastructure.persistence.access_request_repository.SqlAccessRequestRepository.get_by_id",
             new_callable=AsyncMock,
         ) as mock_get:
             mock_get.return_value = ar
@@ -1371,10 +1373,10 @@ class TestFeedbackRouter:
         from main import app
         mock_session = self._mock_session()
         with patch(
-            "infrastructure.primary.routers.api.v1.feedback.AsyncSessionLocal",
+            "features.feedback.infrastructure.feedback_repository.AsyncSessionLocal",
             return_value=mock_session,
         ), patch(
-            "infrastructure.primary.routers.api.v1.feedback.email_service.send_feedback_email",
+            "features.feedback.container.email_service.send_feedback_email",
             new_callable=AsyncMock,
         ) as mock_email:
             client = TestClient(app)
@@ -1392,10 +1394,10 @@ class TestFeedbackRouter:
         from main import app
         mock_session = self._mock_session()
         with patch(
-            "infrastructure.primary.routers.api.v1.feedback.AsyncSessionLocal",
+            "features.feedback.infrastructure.feedback_repository.AsyncSessionLocal",
             return_value=mock_session,
         ), patch(
-            "infrastructure.primary.routers.api.v1.feedback.email_service.send_feedback_email",
+            "features.feedback.container.email_service.send_feedback_email",
             new_callable=AsyncMock,
         ):
             client = TestClient(app)
@@ -1409,10 +1411,10 @@ class TestFeedbackRouter:
         from main import app
         mock_session = self._mock_session()
         with patch(
-            "infrastructure.primary.routers.api.v1.feedback.AsyncSessionLocal",
+            "features.feedback.infrastructure.feedback_repository.AsyncSessionLocal",
             return_value=mock_session,
         ), patch(
-            "infrastructure.primary.routers.api.v1.feedback.email_service.send_feedback_email",
+            "features.feedback.container.email_service.send_feedback_email",
             new_callable=AsyncMock,
             side_effect=RuntimeError("smtp down"),
         ):
@@ -1429,7 +1431,7 @@ class TestFeedbackRouter:
         mock_session = self._mock_session()
         mock_session.commit = AsyncMock(side_effect=RuntimeError("db down"))
         with patch(
-            "infrastructure.primary.routers.api.v1.feedback.AsyncSessionLocal",
+            "features.feedback.infrastructure.feedback_repository.AsyncSessionLocal",
             return_value=mock_session,
         ):
             client = TestClient(app)
@@ -1448,7 +1450,7 @@ class TestFeedbackRouter:
     def test_public_feedback_wrong_sync_key_403(self):
         from fastapi.testclient import TestClient
         from main import app
-        with patch("infrastructure.primary.routers.api.v1.feedback.settings.feedback_sync_key", "right-key"):
+        with patch("features.feedback.infrastructure.api.feedback.settings.feedback_sync_key", "right-key"):
             client = TestClient(app)
             resp = client.get("/api/v1/feedback/public", headers={"X-Feedback-Sync-Key": "wrong-key"})
             assert resp.status_code == 403
@@ -1462,8 +1464,8 @@ class TestFeedbackRouter:
         mock_session.execute = AsyncMock(
             return_value=MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[row]))))
         )
-        with patch("infrastructure.primary.routers.api.v1.feedback.settings.feedback_sync_key", "right-key"), patch(
-            "infrastructure.primary.routers.api.v1.feedback.AsyncSessionLocal",
+        with patch("features.feedback.infrastructure.api.feedback.settings.feedback_sync_key", "right-key"), patch(
+            "features.feedback.infrastructure.feedback_repository.AsyncSessionLocal",
             return_value=mock_session,
         ):
             client = TestClient(app)
@@ -1485,7 +1487,7 @@ class TestNotificationsCoverage:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_notification_service, get_user_repository, get_notification_repository
+        from bootstrap.dependencies import get_notification_service, get_user_repository, get_notification_repository
         self.app = app
         self.svc = AsyncMock()
         self.user_repo = AsyncMock()
@@ -1522,7 +1524,7 @@ class TestNotificationsCoverage:
 
     def test_update_channel_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.update_channel = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.patch(f"/api/v1/notifications/channels/{uuid4()}",
@@ -1532,7 +1534,7 @@ class TestNotificationsCoverage:
 
     def test_delete_channel_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.delete_channel = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.delete(f"/api/v1/notifications/channels/{uuid4()}", headers=self._headers("MANAGER"))
@@ -1557,7 +1559,7 @@ class TestNotificationsCoverage:
 
     def test_subscribe_validation_error_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.subscribe = AsyncMock(side_effect=ValidationError("bad event"))
         client = TestClient(self.app)
         resp = client.post("/api/v1/notifications/subscriptions",
@@ -1581,7 +1583,7 @@ class TestNotificationsRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_notification_service, get_user_repository
+        from bootstrap.dependencies import get_notification_service, get_user_repository
         self.app = app
         self.svc = AsyncMock()
         self.user_repo = AsyncMock()
@@ -1637,7 +1639,7 @@ class TestUsersCoverage:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_user_service, get_jwt_handler
+        from bootstrap.dependencies import get_user_service, get_jwt_handler
         self.app = app
         self.svc = AsyncMock()
         self.token_svc = MagicMock()
@@ -1652,7 +1654,7 @@ class TestUsersCoverage:
         return {"Authorization": f"Bearer {_token(self.user_id, self.org_id, role)}"}
 
     def _make_user(self):
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         user = MagicMock()
         user.id = self.user_id
         user.email = "test@test.com"
@@ -1671,7 +1673,7 @@ class TestUsersCoverage:
     def test_delete_account_validation_error_403(self):
         from fastapi.testclient import TestClient
         import json
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         user = self._make_user()
         self.svc.get_user_by_id = AsyncMock(return_value=user)
         self.svc.delete_user_account = AsyncMock(side_effect=ValidationError("block"))
@@ -1719,7 +1721,7 @@ class TestUsersCoverage:
 
     def test_update_user_role_validation_403(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.update_user_role = AsyncMock(side_effect=ValidationError("block"))
         client = TestClient(self.app)
         resp = client.patch(f"/api/v1/organizations/{self.org_id}/users/{uuid4()}/role",
@@ -1728,7 +1730,7 @@ class TestUsersCoverage:
 
     def test_remove_user_from_org_validation_403(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.remove_user_from_organization = AsyncMock(side_effect=ValidationError("owner"))
         client = TestClient(self.app)
         resp = client.delete(f"/api/v1/organizations/{self.org_id}/users/{uuid4()}", headers=self._headers("MANAGER"))
@@ -1745,7 +1747,7 @@ class TestUsersCoverage:
 
     def test_admin_create_user_validation_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.create_user = AsyncMock(side_effect=ValidationError("dup email"))
         client = TestClient(self.app)
         resp = client.post("/api/v1/admin/users", json={
@@ -1773,7 +1775,7 @@ class TestUsersCoverage:
 
     def test_admin_deactivate_user_validation_403(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.deactivate_user = AsyncMock(side_effect=ValidationError("self"))
         client = TestClient(self.app)
         resp = client.patch(f"/api/v1/admin/users/{self.user_id}/deactivate", headers=self._headers("ADMIN"))
@@ -1790,7 +1792,7 @@ class TestUsersCoverage:
 
     def test_admin_update_global_role_validation_403(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.update_global_role = AsyncMock(side_effect=ValidationError("self"))
         client = TestClient(self.app)
         resp = client.patch(f"/api/v1/admin/users/{self.user_id}/role", json={"role": "MANAGER"},
@@ -1821,7 +1823,7 @@ class TestUsersRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_user_service
+        from bootstrap.dependencies import get_user_service
         self.app = app
         self.user_svc = AsyncMock()
         app.dependency_overrides[get_user_service] = lambda: self.user_svc
@@ -1837,7 +1839,7 @@ class TestUsersRouter:
         user.id = self.user_id
         user.email = "x@x.com"
         user.display_name = "Test"
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         user.role = UserRole.U2
         user.organization_id = self.org_id
         self.user_svc.get_user_by_id = AsyncMock(return_value=user)
@@ -1865,7 +1867,7 @@ class TestUsersRouter:
         user.id = self.user_id
         user.email = "x@x.com"
         user.display_name = "Updated"
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         user.role = UserRole.U2
         user.organization_id = self.org_id
         self.user_svc.update_profile = AsyncMock(return_value=user)
@@ -1921,7 +1923,7 @@ class TestUsersRouter:
 
     def test_invite_user_success(self):
         from fastapi.testclient import TestClient
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         user = MagicMock()
         user.id = uuid4()
         user.email = "new@x.com"
@@ -1946,7 +1948,7 @@ class TestDashboardRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_release_repository, get_verification_result_repository
+        from bootstrap.dependencies import get_release_repository, get_verification_result_repository
         self.app = app
         self.release_repo = AsyncMock()
         self.release_repo.list_by_organization = AsyncMock(return_value=[])
@@ -1987,7 +1989,7 @@ class TestDashboardMetrics:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_release_repository, get_verification_result_repository
+        from bootstrap.dependencies import get_release_repository, get_verification_result_repository
         self.app = app
         self.release_repo = AsyncMock()
         self.verif_repo = AsyncMock()
@@ -2027,7 +2029,7 @@ class TestApiKeysRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_api_key_repository, get_user_repository
+        from bootstrap.dependencies import get_api_key_repository, get_user_repository
         self.app = app
         self.api_key_repo = AsyncMock()
         self.user_repo = AsyncMock()
@@ -2105,7 +2107,7 @@ class TestConnectorsRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_connector_service, get_connector_repository, get_organization_repository
+        from bootstrap.dependencies import get_connector_service, get_connector_repository, get_organization_repository
         self.app = app
         self.svc = AsyncMock()
         self.conn_repo = AsyncMock()
@@ -2117,8 +2119,8 @@ class TestConnectorsRouter:
         self.user_id = uuid4()
         self.org_id = uuid4()
 
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         self.mock_conn = ConnectorInstance(
             id=uuid4(), organization_id=self.org_id,
             connector_type="GESTOR_TAREAS", connector_implementation="JIRA",
@@ -2127,7 +2129,7 @@ class TestConnectorsRouter:
         )
         self.conn_repo.get_by_id = AsyncMock(return_value=self.mock_conn)
 
-        from domain.entities.organization import Organization
+        from features.organizations.domain.organization import Organization
         self.mock_org = Organization(id=self.org_id, name="org", slug="org", owner_id=self.user_id)
         self.org_repo.get_by_id = AsyncMock(return_value=self.mock_org)
 
@@ -2138,8 +2140,8 @@ class TestConnectorsRouter:
         return {"Authorization": f"Bearer {_token(self.user_id, self.org_id, role)}"}
 
     def _make_connector(self):
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         return ConnectorInstance(
             id=uuid4(), organization_id=self.org_id,
             connector_type="GESTOR_TAREAS", connector_implementation="JIRA",
@@ -2208,7 +2210,7 @@ class TestConnectorsRouter:
 
     def test_register_connector_duplicate_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         self.svc.register_connector = AsyncMock(side_effect=DuplicateEntityError("dup"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/connectors", json={
@@ -2219,7 +2221,7 @@ class TestConnectorsRouter:
 
     def test_register_connector_validation_error_422(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.register_connector = AsyncMock(side_effect=ValidationError("bad"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/connectors", json={
@@ -2249,7 +2251,7 @@ class TestConnectorsRouter:
 
     def test_update_connector_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.update_connector = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.patch(f"/api/v1/organizations/{self.org_id}/connectors/{uuid4()}",
@@ -2258,7 +2260,7 @@ class TestConnectorsRouter:
 
     def test_update_connector_validation_error_422(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.update_connector = AsyncMock(side_effect=ValidationError("bad"))
         client = TestClient(self.app)
         resp = client.patch(f"/api/v1/organizations/{self.org_id}/connectors/{uuid4()}",
@@ -2283,7 +2285,7 @@ class TestConnectorsRouter:
 
     def test_delete_connector_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.delete_connector = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.delete(f"/api/v1/organizations/{self.org_id}/connectors/{uuid4()}",
@@ -2309,7 +2311,7 @@ class TestConnectorsRouter:
         assert resp.json()["status"] == "ACTIVO"
 
     def test_test_connector_failure(self):
-        from domain.enums import ConnectorStatus
+        from shared.domain.enums import ConnectorStatus
         from fastapi.testclient import TestClient
         conn = self._make_connector()
         conn.status = ConnectorStatus.ERROR
@@ -2322,7 +2324,7 @@ class TestConnectorsRouter:
 
     def test_test_connector_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.test_connector_connection = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/connectors/{uuid4()}/test",
@@ -2331,7 +2333,7 @@ class TestConnectorsRouter:
 
     def test_test_connector_connection_failed_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ConnectorConnectionFailedError
+        from shared.domain.exceptions import ConnectorConnectionFailedError
         self.svc.test_connector_connection = AsyncMock(side_effect=ConnectorConnectionFailedError("fail"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/connectors/{uuid4()}/test",
@@ -2380,7 +2382,7 @@ class TestConnectorsRouter:
 
     def test_configure_webhook_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.configure_webhook = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.post(
@@ -2391,7 +2393,7 @@ class TestConnectorsRouter:
 
     def test_configure_webhook_wrong_type_422(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.configure_webhook = AsyncMock(side_effect=ValidationError("not REPO_CODIGO"))
         client = TestClient(self.app)
         resp = client.post(
@@ -2409,7 +2411,7 @@ class TestTemplatesRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_template_service
+        from bootstrap.dependencies import get_template_service
         self.app = app
         self.svc = AsyncMock()
         app.dependency_overrides[get_template_service] = lambda: self.svc
@@ -2484,7 +2486,7 @@ class TestTemplatesRouter:
 
     def test_create_template_validation_error_returns_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.create_template = AsyncMock(side_effect=ValidationError("Template already exists"))
         client = TestClient(self.app)
         resp = client.post(
@@ -2527,7 +2529,7 @@ class TestTemplatesRouter:
 
     def test_get_template_not_found_returns_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.get_template = AsyncMock(side_effect=EntityNotFoundError("Template not found"))
         client = TestClient(self.app)
         resp = client.get(
@@ -2559,7 +2561,7 @@ class TestTemplatesRouter:
 
     def test_update_template_not_found_returns_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.update_template = AsyncMock(side_effect=EntityNotFoundError("Template not found"))
         client = TestClient(self.app)
         resp = client.patch(
@@ -2582,7 +2584,7 @@ class TestTemplatesRouter:
 
     def test_archive_template_not_found_returns_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.archive_template = AsyncMock(side_effect=EntityNotFoundError("Template not found"))
         client = TestClient(self.app)
         resp = client.post(
@@ -2603,7 +2605,7 @@ class TestTemplatesRouter:
 
     def test_clone_template_not_found_returns_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.clone_template = AsyncMock(side_effect=EntityNotFoundError("Template not found"))
         client = TestClient(self.app)
         resp = client.post(
@@ -2615,7 +2617,7 @@ class TestTemplatesRouter:
 
     def test_clone_template_validation_error_returns_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.clone_template = AsyncMock(side_effect=ValidationError("Cannot clone to same organization"))
         client = TestClient(self.app)
         resp = client.post(
@@ -2645,7 +2647,7 @@ class TestProfilesRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_profile_service
+        from bootstrap.dependencies import get_profile_service
         self.app = app
         self.svc = AsyncMock()
         app.dependency_overrides[get_profile_service] = lambda: self.svc
@@ -2666,7 +2668,7 @@ class TestProfilesRouter:
 
     def test_create_profile_success(self):
         from fastapi.testclient import TestClient
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=self.org_id, name="P1")
         self.svc.create_profile = AsyncMock(return_value=p)
         client = TestClient(self.app)
@@ -2699,7 +2701,7 @@ class TestProfilesRouter:
 
     def test_create_profile_validation_error_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.create_profile = AsyncMock(side_effect=ValidationError("bad"))
         client = TestClient(self.app)
         resp = client.post(
@@ -2722,7 +2724,7 @@ class TestProfilesRouter:
 
     def test_get_profile_success(self):
         from fastapi.testclient import TestClient
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         pid = uuid4()
         p = VerificationProfile(id=pid, organization_id=self.org_id, name="P1")
         rule = MagicMock()
@@ -2759,7 +2761,7 @@ class TestProfilesRouter:
 
     def test_update_profile_success(self):
         from fastapi.testclient import TestClient
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         pid = uuid4()
         p = VerificationProfile(id=pid, organization_id=self.org_id, name="Updated")
         self.svc.update_profile = AsyncMock(return_value=p)
@@ -2775,7 +2777,7 @@ class TestProfilesRouter:
 
     def test_update_profile_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.update_profile = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.patch(
@@ -2787,7 +2789,7 @@ class TestProfilesRouter:
 
     def test_update_profile_validation_error_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.svc.update_profile = AsyncMock(side_effect=ValidationError("bad"))
         client = TestClient(self.app)
         resp = client.patch(
@@ -2820,7 +2822,7 @@ class TestProfilesRouter:
 
     def test_delete_profile_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.delete_profile = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.delete(
@@ -2858,7 +2860,7 @@ class TestProfilesRouter:
 
     def test_add_rule_profile_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.add_rule = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.post(
@@ -2897,7 +2899,7 @@ class TestProfilesRouter:
 
     def test_update_rule_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.update_rule = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.patch(
@@ -2930,7 +2932,7 @@ class TestProfilesRouter:
 
     def test_delete_rule_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.delete_rule = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.delete(
@@ -2988,7 +2990,7 @@ class TestCustomRolesRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_custom_role_service
+        from bootstrap.dependencies import get_custom_role_service
         self.app = app
         self.svc = AsyncMock()
         app.dependency_overrides[get_custom_role_service] = lambda: self.svc
@@ -3001,8 +3003,8 @@ class TestCustomRolesRouter:
         return {"Authorization": f"Bearer {_token(self.user_id, self.org_id, role)}"}
 
     def _make_role(self):
-        from domain.entities.custom_role import CustomRole
-        from domain.enums import Permission
+        from features.identity.domain.custom_role import CustomRole
+        from shared.domain.enums import Permission
         return CustomRole(
             organization_id=self.org_id, name="viewer",
             permissions=[Permission.VIEW_DASHBOARD],
@@ -3044,7 +3046,7 @@ class TestCustomRolesRouter:
 
     def test_create_custom_role_duplicate_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         self.svc.create_role = AsyncMock(side_effect=DuplicateEntityError("dup"))
         client = TestClient(self.app)
         resp = client.post(f"/api/v1/organizations/{self.org_id}/roles", json={
@@ -3082,7 +3084,7 @@ class TestCustomRolesRouter:
 
     def test_update_custom_role_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.update_role = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.patch(f"/api/v1/roles/{uuid4()}", json={
@@ -3092,7 +3094,7 @@ class TestCustomRolesRouter:
 
     def test_update_custom_role_duplicate_409(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         self.svc.update_role = AsyncMock(side_effect=DuplicateEntityError("dup"))
         client = TestClient(self.app)
         resp = client.patch(f"/api/v1/roles/{uuid4()}", json={
@@ -3127,7 +3129,7 @@ class TestCustomRolesRouter:
 
     def test_delete_custom_role_not_found_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.svc.delete_role = AsyncMock(side_effect=EntityNotFoundError("gone"))
         client = TestClient(self.app)
         resp = client.delete(f"/api/v1/roles/{uuid4()}", headers=self._headers("MANAGER"))
@@ -3162,7 +3164,7 @@ class TestAdminReloadRules:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_rules_service
+        from bootstrap.dependencies import get_rules_service
         self.app = app
         self.svc = AsyncMock()
         app.dependency_overrides[get_rules_service] = lambda: self.svc
@@ -3202,7 +3204,7 @@ class TestTaskStatus:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_task_service
+        from bootstrap.dependencies import get_task_service
         self.app = app
         self.svc = AsyncMock()
         app.dependency_overrides[get_task_service] = lambda: self.svc
@@ -3216,10 +3218,10 @@ class TestTaskStatus:
 
     def test_get_task_status_success(self):
         from fastapi.testclient import TestClient
-        from domain.enums import TaskStatus
+        from shared.domain.enums import TaskStatus
         self.svc.get_task_status = AsyncMock(return_value=TaskStatus.SUCCESS)
 
-        with patch("infrastructure.secondary.queue.celery_app.celery_app.AsyncResult") as mock_async_result:
+        with patch("shared.infrastructure.queue.celery_app.celery_app.AsyncResult") as mock_async_result:
             mock_result = MagicMock()
             mock_result.ready.return_value = True
             mock_result.result = {"result": "ok"}
@@ -3248,7 +3250,7 @@ class TestReleasesRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import (
+        from bootstrap.dependencies import (
             get_release_service, get_project_repository,
             get_organization_repository, get_artifact_service,
             get_verification_service,
@@ -3298,7 +3300,7 @@ class TestReleasesRouter:
 
     def test_create_release_validation_error_returns_422(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.release_svc.create_release = AsyncMock(side_effect=ValidationError("bad"))
         client = TestClient(self.app)
         resp = client.post(
@@ -3354,7 +3356,7 @@ class TestWebhooksRouter:
     @pytest.fixture(autouse=True)
     def _setup(self):
         from main import app
-        from core.dependencies import get_webhook_use_case
+        from bootstrap.dependencies import get_webhook_use_case
         self.app = app
         self.project_id = uuid4()
         self.connector_id = uuid4()
@@ -3389,7 +3391,7 @@ class TestWebhooksRouter:
 
     def test_webhook_invalid_signature_returns_401(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import InvalidWebhookSignatureError
+        from shared.domain.exceptions import InvalidWebhookSignatureError
         self.use_case.handle_source_control_event = AsyncMock(side_effect=InvalidWebhookSignatureError("bad sig"))
         client = TestClient(self.app)
         resp = client.post(self._url(), content=b"{}")
@@ -3397,7 +3399,7 @@ class TestWebhooksRouter:
 
     def test_webhook_connector_or_project_not_found_returns_404(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         self.use_case.handle_source_control_event = AsyncMock(side_effect=EntityNotFoundError("not found"))
         client = TestClient(self.app)
         resp = client.post(self._url(), content=b"{}")
@@ -3405,7 +3407,7 @@ class TestWebhooksRouter:
 
     def test_webhook_disabled_returns_422(self):
         from fastapi.testclient import TestClient
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         self.use_case.handle_source_control_event = AsyncMock(side_effect=ValidationError("not enabled"))
         client = TestClient(self.app)
         resp = client.post(self._url(), content=b"{}")

@@ -71,7 +71,7 @@ class TestPasswordHashing:
 
     def test_tc_sec_rnf12_01_hash_is_bcrypt_not_plaintext(self):
         """Hash producido por BcryptPasswordHasher comienza con $2b$ (bcrypt)."""
-        from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+        from features.identity.infrastructure.gateways.password_hasher import BcryptPasswordHasher
 
         hasher = BcryptPasswordHasher()
         plain = "SecurePassword_$1!"
@@ -88,7 +88,7 @@ class TestPasswordHashing:
 
     def test_tc_sec_rnf12_01_hash_includes_salt(self):
         """Dos hashes del mismo password deben ser distintos (sal aleatoria)."""
-        from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+        from features.identity.infrastructure.gateways.password_hasher import BcryptPasswordHasher
 
         hasher = BcryptPasswordHasher()
         plain = "SamePassword_42!"
@@ -102,7 +102,7 @@ class TestPasswordHashing:
 
     def test_tc_sec_rnf12_01_verify_correct_password_succeeds(self):
         """verify_password retorna True para la contraseña correcta."""
-        from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+        from features.identity.infrastructure.gateways.password_hasher import BcryptPasswordHasher
 
         hasher = BcryptPasswordHasher()
         plain = "VerifyMe!2026"
@@ -114,7 +114,7 @@ class TestPasswordHashing:
 
     def test_tc_sec_rnf12_01_verify_wrong_password_fails(self):
         """verify_password retorna False para contraseña incorrecta."""
-        from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+        from features.identity.infrastructure.gateways.password_hasher import BcryptPasswordHasher
 
         hasher = BcryptPasswordHasher()
         hashed = hasher.hash_password("CorrectPassword1!")
@@ -125,7 +125,7 @@ class TestPasswordHashing:
 
     def test_tc_sec_rnf12_01_hash_not_reversible(self):
         """El hash no contiene información reversible al plaintext."""
-        from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+        from features.identity.infrastructure.gateways.password_hasher import BcryptPasswordHasher
         import base64
 
         hasher = BcryptPasswordHasher()
@@ -143,7 +143,7 @@ class TestPasswordHashing:
 
     def test_tc_sec_rnf12_01_password_hasher_uses_bcrypt_module(self):
         """El módulo password_hasher importa bcrypt (no MD5, SHA1 no-sal, etc.)."""
-        hasher_path = _API_SRC / "infrastructure" / "primary" / "middleware" / "password_hasher.py"
+        hasher_path = _API_SRC / "features" / "identity" / "infrastructure" / "gateways" / "password_hasher.py"
         assert hasher_path.exists(), f"password_hasher.py not found at {hasher_path}"
 
         source = hasher_path.read_text(encoding="utf-8")
@@ -178,7 +178,7 @@ class TestHttpsEnforcement:
 
     def test_tc_sec_rnf15_01_https_redirect_middleware_exists(self):
         """main.py o un middleware define redirección HTTP→HTTPS."""
-        main_path = _API_SRC / "main.py"
+        main_path = _API_SRC / "bootstrap" / "application.py"
         assert main_path.exists(), f"main.py not found at {main_path}"
 
         source = main_path.read_text(encoding="utf-8")
@@ -200,7 +200,7 @@ class TestHttpsEnforcement:
     def test_tc_sec_rnf15_01_hsts_header_present_in_middleware(self):
         """Middleware o nginx config incluye la cabecera Strict-Transport-Security."""
         # Check main.py middleware
-        main_source = (_API_SRC / "main.py").read_text(encoding="utf-8")
+        main_source = (_API_SRC / "bootstrap" / "application.py").read_text(encoding="utf-8")
         nginx_conf = _PROJECT_ROOT / "nginx.conf"
 
         hsts_indicators = ["Strict-Transport-Security", "HSTS", "hsts"]
@@ -223,7 +223,7 @@ class TestHttpsEnforcement:
         En entorno de test (ENVIRONMENT=test) el HTTPSRedirectMiddleware puede estar
         desactivado. Se verifica que el middleware esté declarado en el código fuente.
         """
-        main_source = (_API_SRC / "main.py").read_text(encoding="utf-8")
+        main_source = (_API_SRC / "bootstrap" / "application.py").read_text(encoding="utf-8")
 
         # The test validates CODE PRESENCE — actual redirect tested in integration/E2E
         https_middleware_patterns = [
@@ -249,7 +249,7 @@ class TestApiKeyStorage:
 
     def test_tc_sec_rnf16_01_api_key_model_uses_hash_column(self):
         """APIKeyModel almacena key_hash (no key ni secret en texto claro)."""
-        from infrastructure.secondary.database.models.api_key_model import APIKeyModel
+        from shared.infrastructure.database.models.api_key_model import APIKeyModel
         import sqlalchemy
 
         columns = {col.key: col for col in APIKeyModel.__table__.columns}
@@ -267,7 +267,7 @@ class TestApiKeyStorage:
 
     def test_tc_sec_rnf16_01_api_key_model_has_prefix_not_full_key(self):
         """APIKeyModel tiene prefix (para búsqueda parcial) pero no la clave completa."""
-        from infrastructure.secondary.database.models.api_key_model import APIKeyModel
+        from shared.infrastructure.database.models.api_key_model import APIKeyModel
 
         columns = {col.key for col in APIKeyModel.__table__.columns}
         assert "prefix" in columns, (
@@ -276,7 +276,7 @@ class TestApiKeyStorage:
 
     def test_tc_sec_rnf16_01_manage_api_keys_hashes_before_store(self):
         """manage_api_keys.py aplica hashing antes de persistir la clave."""
-        manage_keys_path = _API_SRC / "application" / "use_cases" / "others" / "manage_api_keys.py"
+        manage_keys_path = _API_SRC / "features" / "identity" / "application" / "use_cases" / "manage_api_keys.py"
         assert manage_keys_path.exists(), f"manage_api_keys.py not found at {manage_keys_path}"
 
         source = manage_keys_path.read_text(encoding="utf-8")
@@ -292,8 +292,8 @@ class TestApiKeyStorage:
         """Credenciales de conectores se almacenan cifradas (encrypted_credentials)."""
         connector_model_path = (
             _API_SRC
+            / "shared"
             / "infrastructure"
-            / "secondary"
             / "database"
             / "models"
             / "connector_model.py"
@@ -317,7 +317,7 @@ class TestAuditLogging:
 
     def test_tc_sec_rnf17_01_audit_event_enum_covers_auth_events(self):
         """AuditEvent contiene eventos de autenticación (RNF-17)."""
-        from core.audit import AuditEvent
+        from shared.infrastructure.audit import AuditEvent
 
         auth_events = {
             AuditEvent.LOGIN_SUCCESS,
@@ -333,7 +333,7 @@ class TestAuditLogging:
 
     def test_tc_sec_rnf17_01_audit_event_enum_covers_config_events(self):
         """AuditEvent contiene eventos de cambio de configuración (RNF-17)."""
-        from core.audit import AuditEvent
+        from shared.infrastructure.audit import AuditEvent
 
         config_events = {
             AuditEvent.CONNECTOR_CREATED,
@@ -353,7 +353,7 @@ class TestAuditLogging:
 
     def test_tc_sec_rnf17_01_audit_event_enum_covers_verification_events(self):
         """AuditEvent contiene eventos de verificación (RNF-17)."""
-        from core.audit import AuditEvent
+        from shared.infrastructure.audit import AuditEvent
 
         verification_events = {
             AuditEvent.RELEASE_CREATED,
@@ -367,7 +367,7 @@ class TestAuditLogging:
 
     def test_tc_sec_rnf17_01_audit_logger_writes_to_named_logger(self, caplog):
         """AuditLogger escribe en el logger 'audit' con nivel INFO (RNF-17)."""
-        from core.audit import AuditEntry, AuditEvent, AuditLogger
+        from shared.infrastructure.audit import AuditEntry, AuditEvent, AuditLogger
 
         entry = AuditEntry(
             event=AuditEvent.LOGIN_SUCCESS,
@@ -392,7 +392,7 @@ class TestAuditLogging:
 
     def test_tc_sec_rnf17_01_audit_entry_includes_user_and_resource(self):
         """AuditEntry captura user_id, organization_id, resource_type, resource_id (RNF-17)."""
-        from core.audit import AuditEntry, AuditEvent
+        from shared.infrastructure.audit import AuditEntry, AuditEvent
         import dataclasses
 
         fields = {f.name for f in dataclasses.fields(AuditEntry)}
@@ -406,8 +406,8 @@ class TestAuditLogging:
         """AuditLogModel define columnas para todos los campos del AuditEntry (RNF-17)."""
         audit_model_path = (
             _API_SRC
+            / "shared"
             / "infrastructure"
-            / "secondary"
             / "database"
             / "models"
             / "audit_log_model.py"
@@ -433,7 +433,7 @@ class TestNotificationSecurity:
 
     def test_tc_sec_rnf18_01_notification_channel_config_not_logged(self):
         """NotificationChannel no expone config_data en repr/str por defecto."""
-        from domain.entities.notification_channel import NotificationChannel
+        from features.notifications.domain.notification_channel import NotificationChannel
 
         sensitive_config = {
             "webhook_url": "https://hooks.slack.com/services/T0/B0/XXXXXXXXXXX",
@@ -461,7 +461,7 @@ class TestNotificationSecurity:
     def test_tc_sec_rnf18_01_notification_service_sanitizes_payload(self):
         """NotificationService no incluye api_key, password ni token en el payload enviado."""
         notification_svc_path = (
-            _API_SRC / "application" / "use_cases" / "main" / "notification_service.py"
+            _API_SRC / "features" / "notifications" / "application" / "use_cases" / "notification_service.py"
         )
         assert notification_svc_path.exists(), "notification_service.py not found"
 
@@ -489,7 +489,7 @@ class TestNotificationSecurity:
 
     def test_tc_sec_rnf18_01_notification_channel_model_no_plaintext_secrets(self):
         """NotificationChannelModel no tiene columnas de contraseña en texto claro."""
-        from infrastructure.secondary.database.models.notification_channel_model import (
+        from shared.infrastructure.database.models.notification_channel_model import (
             NotificationChannelModel,
         )
 
@@ -504,7 +504,7 @@ class TestNotificationSecurity:
 
     def test_tc_sec_rnf18_01_audit_event_notification_changes_tracked(self):
         """Cambios en canales de notificación están trackeados en AuditEvent (RNF-18)."""
-        from core.audit import AuditEvent
+        from shared.infrastructure.audit import AuditEvent
 
         notification_audit_events = {
             AuditEvent.NOTIFICATION_CHANNEL_CREATED,

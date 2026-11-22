@@ -51,16 +51,16 @@ def _mock_sql_user_active(request):
 
     get_current_user instantiates SqlUserRepository directly and checks is_active.
     Without this patch every JWT-authenticated test gets 401 because no real DB row exists.
-    Skipped for test_repositories.py which tests the method itself.
+    Repository and transaction tests exercise the real method.
     """
-    if request.node.fspath.basename == "test_repositories.py":
+    if request.node.fspath.basename in {"test_repositories.py", "test_access_request_transaction.py"}:
         yield
         return
     mock_user = MagicMock()
     mock_user.is_active = True
     mock_user.token_version = 0
     with patch(
-        "infrastructure.secondary.database.repositories.user_repository.SqlUserRepository.get_by_id",
+        "features.identity.infrastructure.persistence.user_repository.SqlUserRepository.get_by_id",
         new=AsyncMock(return_value=mock_user),
     ):
         yield

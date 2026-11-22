@@ -2,13 +2,13 @@ import os
 import sys
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import engine_from_config, make_url
 from sqlalchemy import pool
 from alembic import context
 from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-from infrastructure.secondary.database.models import Base
+from shared.infrastructure.database.models import Base
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 config = context.config
@@ -18,7 +18,10 @@ if config.config_file_name is not None:
 database_url = os.environ.get("DATABASE_URL")
 if not database_url:
     raise ValueError("La variable DATABASE_URL no está definida en el entorno.")
-config.set_main_option("sqlalchemy.url", database_url)
+url = make_url(database_url)
+if url.drivername == "postgresql+asyncpg":
+    url = url.set(drivername="postgresql+psycopg")
+config.set_main_option("sqlalchemy.url", url.render_as_string(hide_password=False).replace("%", "%%"))
 
 target_metadata = Base.metadata
 

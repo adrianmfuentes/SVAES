@@ -1,0 +1,301 @@
+import asyncio
+import logging
+from typing import Optional
+from datetime import datetime, timedelta, timezone
+from uuid import UUID
+from features.identity.application.ports.i_auth_service import IAuthService, AuthTokens, LoginResult, TotpSetupResult
+from features.identity.application.ports.i_totp_service import IQrRenderer, ITotpService
+from features.identity.application.ports.i_user_repository import IUserRepository
+from features.identity.application.ports.i_token_service import ITokenService
+from features.identity.application.ports.i_password_hasher import IPasswordHasher
+from features.identity.domain.user import User
+from shared.domain.enums import UserRole
+from shared.domain.exceptions import ValidationError
+from shared.application.i_audit_logger import IAuditLogger
+from shared.domain.audit import AuditEntry, AuditEvent
+
+_log = logging.getLogger(__name__)
+
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_WINDOW_MINUTES = 10
+LOCKOUT_DURATION_MINUTES = 15
+
+
+class AuthService(IAuthService):
+    def __init__(
+        self,
+        user_repository: IUserRepository,
+        token_service: ITokenService,
+        password_hasher: IPasswordHasher,
+        *,
+        audit_logger: IAuditLogger,
+        totp_service: ITotpService,
+        qr_renderer: IQrRenderer,
+    ) -> None:
+        self._user_repo = user_repository
+        self._token_service = token_service
+        self._password_hasher = password_hasher
+        self._audit_logger = audit_logger
+        self._totp = totp_service
+        self._qr = qr_renderer
+
+    async def authenticate(
+        self,
+        email: str,
+        password: str,
+    ) -> LoginResult:
+        user = await self._user_repo.get_by_email(email)
+        if not user:
+            raise ValidationError("Credenciales inválidas")
+
+        if not user.is_active:
+            raise ValidationError("Usuario inactivo")
+
+        now = datetime.now(timezone.utc)
+        if user.locked_until and user.locked_until > now:
+            remaining = (user.locked_until - now).seconds // 60
+            raise ValidationError(f"Cuenta bloqueada. Intenta en {remaining} minutos.")
+
+        if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
+            user.locked_until = now + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+            user.failed_login_attempts = 0
+            await self._user_repo.update(user)
+            self._audit_logger.log(AuditEntry(
+                event=AuditEvent.LOGIN_FAILED,
+                user_id=user.id,
+                organization_id=user.organization_id,
+                resource_type="user",
+                resource_id=user.id,
+                details={"reason": "max_attempts_exceeded"},
+            ))
+            self._audit_logger.log(AuditEntry(
+                event=AuditEvent.SECURITY_BREACH_DETECTED,
+                user_id=user.id,
+                organization_id=user.organization_id,
+                resource_type="user",
+                resource_id=user.id,
+                details={
+                    "reason": "account_lockout",
+                    "lockout_duration_minutes": LOCKOUT_DURATION_MINUTES,
+                    "alert": "GDPR Art.33 — review if personal data breach occurred",
+                },
+            ))
+            _log.warning("SECURITY ALERT: account locked out after max failed attempts — user_id=%s", user.id)
+            raise ValidationError(f"Demasiados intentos fallidos. Cuenta bloqueada por {LOCKOUT_DURATION_MINUTES} minutos.")
+
+        password_ok = await asyncio.to_thread(
+            self._password_hasher.verify_password, password, user.hashed_password
+        )
+        if not password_ok:
+            user.failed_login_attempts = user.failed_login_attempts + 1
+            await self._user_repo.update(user)
+            self._audit_logger.log(AuditEntry(
+                event=AuditEvent.LOGIN_FAILED,
+                user_id=user.id,
+                organization_id=user.organization_id,
+                resource_type="user",
+                resource_id=user.id,
+                details={"reason": "invalid_password"},
+            ))
+            # Same generic message as the "user not found" branch above: the remaining-attempts
+            # count used to be appended here, which made the login error inconsistent and also
+            # leaked brute-force calibration info to an attacker.
+            raise ValidationError("Credenciales inválidas")
+
+        needs_update = user.failed_login_attempts > 0 or user.locked_until is not None
+        if self._password_hasher.needs_rehash(user.hashed_password):
+            user.hashed_password = await asyncio.to_thread(
+                self._password_hasher.hash_password, password
+            )
+            needs_update = True
+        if needs_update:
+            user.failed_login_attempts = 0
+            user.locked_until = None
+            await self._user_repo.update(user)
+
+        if user.totp_enabled:
+            totp_token = self._token_service.create_totp_pending_token(user.id)
+            return LoginResult(requires_2fa=True, totp_token=totp_token)
+
+        return self._issue_tokens(user)
+
+    async def verify_totp(self, totp_token: str, code: str) -> LoginResult:
+
+        user_id = self._token_service.verify_totp_pending_token(totp_token)
+        if not user_id:
+            raise ValidationError("Token 2FA inválido o expirado")
+
+        user = await self._user_repo.get_by_id(user_id)
+        if not user or not user.totp_enabled or not user.totp_secret:
+            raise ValidationError("Autenticación 2FA fallida")
+
+        now = datetime.now(timezone.utc)
+        if user.locked_until and user.locked_until > now:
+            remaining = (user.locked_until - now).seconds // 60
+            raise ValidationError(f"Cuenta bloqueada. Intenta en {remaining} minutos.")
+
+        if not self._totp.verify(user.totp_secret, code):
+            user.failed_login_attempts = user.failed_login_attempts + 1
+            if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
+                user.locked_until = now + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+                user.failed_login_attempts = 0
+            await self._user_repo.update(user)
+            self._audit_logger.log(AuditEntry(
+                event=AuditEvent.LOGIN_FAILED,
+                user_id=user.id,
+                organization_id=user.organization_id,
+                resource_type="user",
+                resource_id=user.id,
+                details={"reason": "invalid_totp_code"},
+            ))
+            raise ValidationError("Código 2FA inválido")
+
+        if user.failed_login_attempts > 0 or user.locked_until is not None:
+            user.failed_login_attempts = 0
+            user.locked_until = None
+            await self._user_repo.update(user)
+
+        return self._issue_tokens(user)
+
+    async def setup_totp(self, user_id: UUID) -> TotpSetupResult:
+
+        user = await self._user_repo.get_by_id(user_id)
+        if not user:
+            raise ValidationError("Usuario no encontrado")
+
+        if user.totp_enabled:
+            # El 2FA ya está activo: regenerar el secreto aquí lo invalidaría
+            # silenciosamente sin exigir ningún código de confirmación, dejando
+            # a un atacante con acceso breve al token plantar un secreto propio
+            # (ver disable_totp, que sí exige un código válido para desactivar).
+            raise ValidationError("El 2FA ya está activado. Desactívalo primero para reconfigurarlo.")
+
+        secret = user.totp_secret or self._totp.generate_secret()
+        uri = self._totp.provisioning_uri(secret, user.email)
+        qr_data_url = self._qr.render_data_url(uri)
+
+        user.totp_secret = secret
+        await self._user_repo.update(user)
+
+        return TotpSetupResult(totp_uri=uri, secret=secret, qr_data_url=qr_data_url)
+
+    async def enable_totp(self, user_id: UUID, code: str) -> None:
+
+        user = await self._user_repo.get_by_id(user_id)
+        if not user or not user.totp_secret:
+            raise ValidationError("Inicia la configuración 2FA primero")
+
+        if user.totp_enabled:
+            raise ValidationError("El 2FA ya está activado")
+
+        if not self._totp.verify(user.totp_secret, code):
+            raise ValidationError("Código inválido. Verifica que tu aplicación esté sincronizada.")
+
+        user.totp_enabled = True
+        await self._user_repo.update(user)
+
+        self._audit_logger.log(AuditEntry(
+            event=AuditEvent.TOTP_ENABLED,
+            user_id=user.id,
+            organization_id=user.organization_id,
+            resource_type="user",
+            resource_id=user.id,
+        ))
+
+    async def disable_totp(self, user_id: UUID, code: str) -> None:
+
+        user = await self._user_repo.get_by_id(user_id)
+        if not user or not user.totp_enabled or not user.totp_secret:
+            raise ValidationError("El 2FA no está activado")
+
+        if not self._totp.verify(user.totp_secret, code):
+            raise ValidationError("Código inválido")
+
+        user.totp_enabled = False
+        user.totp_secret = None
+        await self._user_repo.update(user)
+
+        self._audit_logger.log(AuditEntry(
+            event=AuditEvent.TOTP_DISABLED,
+            user_id=user.id,
+            organization_id=user.organization_id,
+            resource_type="user",
+            resource_id=user.id,
+        ))
+
+    async def refresh_access_token(self, refresh_token: str) -> Optional[AuthTokens]:
+        if not self._token_service.is_refresh_token(refresh_token):
+            return None
+        try:
+            payload = self._token_service.decode_refresh_token(refresh_token)
+        except ValueError:
+            return None
+
+        user = await self._user_repo.get_by_id(payload.user_id)
+        if not user or not user.is_active:
+            return None
+
+        # `token_version` se incrementa en logout/cambio de contraseña: un
+        # refresh token emitido antes de eso lleva un `tv` desfasado y no debe
+        # poder seguir generando accesos nuevos aunque no haya expirado.
+        if (payload.token_version or 0) != user.token_version:
+            return None
+
+        access_token = self._token_service.create_access_token(
+            user_id=user.id,
+            role=user.role.value,
+            email=user.email,
+            organization_id=user.organization_id,
+            expires_in=3600,
+            token_version=user.token_version,
+        )
+        new_refresh_token = self._token_service.create_refresh_token(
+            user_id=user.id,
+            role=user.role.value,
+            email=user.email,
+            organization_id=user.organization_id,
+            token_version=user.token_version,
+        )
+
+        return AuthTokens(access_token=access_token, refresh_token=new_refresh_token)
+
+    async def logout(self, user_id: UUID, token: str) -> None:
+        self._token_service.blacklist_token(token, 0)
+        user = await self._user_repo.get_by_id(user_id)
+        if user:
+            user.token_version += 1
+            await self._user_repo.update(user)
+        self._audit_logger.log(AuditEntry(
+            event=AuditEvent.USER_LOGGED_OUT,
+            user_id=user_id,
+            organization_id=None,
+            resource_type="user",
+            resource_id=user_id,
+        ))
+        _log.info("User logged out: user=%s", user_id)
+
+    def _issue_tokens(self, user: User) -> LoginResult:
+        access_token = self._token_service.create_access_token(
+            user_id=user.id,
+            role=user.role.value,
+            email=user.email,
+            organization_id=user.organization_id,
+            expires_in=3600,
+            token_version=user.token_version,
+        )
+        refresh_token = self._token_service.create_refresh_token(
+            user_id=user.id,
+            role=user.role.value,
+            email=user.email,
+            organization_id=user.organization_id,
+            token_version=user.token_version,
+        )
+        tokens = AuthTokens(access_token=access_token, refresh_token=refresh_token)
+        self._audit_logger.log(AuditEntry(
+            event=AuditEvent.LOGIN_SUCCESS,
+            user_id=user.id,
+            organization_id=user.organization_id,
+            resource_type="user",
+            resource_id=user.id,
+        ))
+        return LoginResult(tokens=tokens, user_id=user.id, role=user.role.value)

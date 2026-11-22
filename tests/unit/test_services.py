@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch, call
 from uuid import UUID, uuid4
-from domain.entities.user import User
+from features.identity.domain.user import User
 
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("ENVIRONMENT", "test")
@@ -30,7 +30,21 @@ os.environ.setdefault("ADMIN_PASSWORD", "admin-test-pass")
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "api", "src"))
 
+from croniter import croniter
+from features.connectors.infrastructure.gateways import create_registered_connector_registry
+from features.connectors.infrastructure.gateways.artifact_probe import HttpConnectorArtifactProbe
+from features.identity.infrastructure.gateways.totp import PyotpTotpService, SvgQrRenderer
+from features.notifications.infrastructure.gateways.outbound_webhook_sender import send_outbound_notification
+from shared.infrastructure.audit_db import get_audit_logger
+from shared.infrastructure.fernet_encryptor import FernetCredentialEncryptor
+from shared.infrastructure.config import settings
+
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture
+def credential_encryptor():
+    return FernetCredentialEncryptor(settings.encryption_key)
 
 _VALID_FERNET_KEY = "g7vylajG0IOM0hvMbCNcVWN7G9l1oIF_pHFIj5uO5m8=" # NOSONAR
 
@@ -47,7 +61,7 @@ def _make_user(
     role=None,
     organization_id: UUID | None = None,
 ) -> User:
-    from domain.enums import UserRole
+    from shared.domain.enums import UserRole
     return User(
         id=uuid4(),
         email="test@example.com",
@@ -64,8 +78,8 @@ def _make_user(
 
 
 def _make_release(status=None):
-    from domain.entities.release import Release
-    from domain.enums import ReleaseStatus
+    from features.projects_releases.domain.release import Release
+    from shared.domain.enums import ReleaseStatus
     return Release(
         id=uuid4(),
         name="v1.0.0",
@@ -87,15 +101,15 @@ class TestAuthService:
 
     @pytest.fixture
     def svc(self, repos):
-        from application.use_cases.main.auth_service import AuthService
+        from features.identity.application.use_cases.auth_service import AuthService
         user_repo, token_svc, pw_hasher = repos
-        return AuthService(user_repo, token_svc, pw_hasher), user_repo, token_svc, pw_hasher
+        return AuthService(user_repo, token_svc, pw_hasher, audit_logger=get_audit_logger(), totp_service=PyotpTotpService(), qr_renderer=SvgQrRenderer()), user_repo, token_svc, pw_hasher
 
     async def test_authenticate_user_not_found_raises(self, svc):
         """Branch: user_repo returns None → ValidationError"""
         service, user_repo, *_ = svc
         user_repo.get_by_email = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="Credenciales inválidas"):
             await service.authenticate("bad@x.com", "pw")
 
@@ -104,7 +118,7 @@ class TestAuthService:
         service, user_repo, *_ = svc
         user = _make_user(is_active=False)
         user_repo.get_by_email = AsyncMock(return_value=user)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="inactivo"):
             await service.authenticate("x@x.com", "pw")
 
@@ -113,7 +127,7 @@ class TestAuthService:
         service, user_repo, *_ = svc
         user = _make_user(locked_until=datetime.now(timezone.utc) + timedelta(minutes=10))
         user_repo.get_by_email = AsyncMock(return_value=user)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="bloqueada"):
             await service.authenticate("x@x.com", "pw")
 
@@ -123,7 +137,7 @@ class TestAuthService:
         user = _make_user(failed_attempts=5)
         user_repo.get_by_email = AsyncMock(return_value=user)
         user_repo.update = AsyncMock(return_value=user)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="bloqueada"):
             await service.authenticate("x@x.com", "pw")
         user_repo.update.assert_awaited()
@@ -137,7 +151,7 @@ class TestAuthService:
         user_repo.get_by_email = AsyncMock(return_value=user)
         user_repo.update = AsyncMock(return_value=user)
         pw_hasher.verify_password = MagicMock(return_value=False)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="inválidas"):
             await service.authenticate("x@x.com", "wrong")
         assert user.failed_login_attempts == 1
@@ -186,7 +200,7 @@ class TestAuthService:
         """Branch: verify_totp_pending_token returns None → ValidationError"""
         service, _, token_svc, _ = svc
         token_svc.verify_totp_pending_token = MagicMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="inválido"):
             await service.verify_totp("bad-token", "000000")
 
@@ -195,7 +209,7 @@ class TestAuthService:
         service, user_repo, token_svc, _ = svc
         token_svc.verify_totp_pending_token = MagicMock(return_value=uuid4())
         user_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="fallida"):
             await service.verify_totp("tok", "000000")
 
@@ -208,7 +222,7 @@ class TestAuthService:
         user_repo.get_by_id = AsyncMock(return_value=user)
         user_repo.update = AsyncMock(return_value=user)
         token_svc.verify_totp_pending_token = MagicMock(return_value=user.id)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="Código 2FA inválido"):
             await service.verify_totp("tok", "000000")
         assert user.failed_login_attempts == 1
@@ -233,7 +247,7 @@ class TestAuthService:
         """Branch: user not found → ValidationError"""
         service, user_repo, *_ = svc
         user_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_0 = uuid4()
         with pytest.raises(ValidationError, match="no encontrado"):
             await service.setup_totp(uid_0)
@@ -269,7 +283,7 @@ class TestAuthService:
         """Branch: user not found → ValidationError"""
         service, user_repo, *_ = svc
         user_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_1 = uuid4()
         with pytest.raises(ValidationError):
             await service.enable_totp(uid_1, "000000")
@@ -280,7 +294,7 @@ class TestAuthService:
         service, user_repo, *_ = svc
         user = _make_user(totp_enabled=True, totp_secret=pyotp.random_base32())
         user_repo.get_by_id = AsyncMock(return_value=user)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="ya está activado"):
             await service.enable_totp(user.id, "000000")
 
@@ -290,7 +304,7 @@ class TestAuthService:
         service, user_repo, *_ = svc
         user = _make_user(totp_enabled=False, totp_secret=pyotp.random_base32())
         user_repo.get_by_id = AsyncMock(return_value=user)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="Código inválido"):
             await service.enable_totp(user.id, "000000")
 
@@ -311,7 +325,7 @@ class TestAuthService:
         service, user_repo, *_ = svc
         user = _make_user(totp_enabled=False)
         user_repo.get_by_id = AsyncMock(return_value=user)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError):
             await service.disable_totp(user.id, "000000")
 
@@ -404,11 +418,11 @@ class TestAuthService:
 class TestUserService:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.user_service import UserService
+        from features.identity.application.use_cases.user_service import UserService
         user_repo = AsyncMock()
         org_repo = AsyncMock()
         pw_hasher = MagicMock()
-        return UserService(user_repo, org_repo, pw_hasher), user_repo, org_repo, pw_hasher
+        return UserService(user_repo, org_repo, pw_hasher, audit_logger=get_audit_logger()), user_repo, org_repo, pw_hasher
 
     async def test_get_user_by_id_returns_user(self, svc):
         """Branch: get_by_id returns user"""
@@ -422,7 +436,7 @@ class TestUserService:
         """Branch: get_by_id returns None → EntityNotFoundError"""
         service, user_repo, *_ = svc
         user_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_2 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.update_profile(uid_2, "new name")
@@ -450,7 +464,7 @@ class TestUserService:
         """Branch: user not found → EntityNotFoundError"""
         service, user_repo, *_ = svc
         user_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_3 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.change_password(uid_3, "old", "new")
@@ -479,8 +493,8 @@ class TestUserService:
         """Branch: org not found → EntityNotFoundError"""
         service, _, org_repo, _ = svc
         org_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
-        from domain.enums import UserRole
+        from shared.domain.exceptions import EntityNotFoundError
+        from shared.domain.enums import UserRole
         uid_4 = uuid4()
         uid_5 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -494,8 +508,8 @@ class TestUserService:
         org_repo.get_by_id = AsyncMock(return_value=org)
         existing = _make_user(organization_id=org_id)
         user_repo.get_by_email = AsyncMock(return_value=existing)
-        from domain.exceptions import DuplicateEntityError
-        from domain.enums import UserRole
+        from shared.domain.exceptions import DuplicateEntityError
+        from shared.domain.enums import UserRole
         uid_6 = uuid4()
         with pytest.raises(DuplicateEntityError):
             await service.invite_user(org_id, existing.email, UserRole.U2, uid_6)
@@ -508,7 +522,7 @@ class TestUserService:
         existing = _make_user()
         user_repo.get_by_email = AsyncMock(return_value=existing)
         user_repo.update = AsyncMock(return_value=existing)
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         result = await service.invite_user(uuid4(), existing.email, UserRole.U2, uuid4())
         assert result == existing
 
@@ -521,7 +535,7 @@ class TestUserService:
         new_user = _make_user()
         user_repo.create = AsyncMock(return_value=new_user)
         pw_hasher.hash_password = MagicMock(return_value="hashed")
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         result = await service.invite_user(uuid4(), "new@x.com", UserRole.U2, uuid4())
         assert result is not None
 
@@ -534,8 +548,8 @@ class TestUserService:
         org.owner_id = user.id
         user_repo.get_by_id = AsyncMock(return_value=user)
         org_repo.get_by_id = AsyncMock(return_value=org)
-        from domain.exceptions import ValidationError
-        from domain.enums import UserRole
+        from shared.domain.exceptions import ValidationError
+        from shared.domain.enums import UserRole
         uid_7 = uuid4()
         with pytest.raises(ValidationError, match="Owner"):
             await service.update_user_role(user.id, org_id, UserRole.U2, uid_7)
@@ -550,7 +564,7 @@ class TestUserService:
         user_repo.get_by_id = AsyncMock(return_value=user)
         org_repo.get_by_id = AsyncMock(return_value=org)
         user_repo.update = AsyncMock(return_value=user)
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         result = await service.update_user_role(user.id, org_id, UserRole.U2, uuid4())
         assert result == user
 
@@ -559,7 +573,7 @@ class TestUserService:
         service, user_repo, *_ = svc
         user = _make_user()
         user_repo.get_by_id = AsyncMock(return_value=user)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_8 = uuid4()
         uid_9 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -574,7 +588,7 @@ class TestUserService:
         org.owner_id = user.id
         user_repo.get_by_id = AsyncMock(return_value=user)
         org_repo.get_by_id = AsyncMock(return_value=org)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_10 = uuid4()
         with pytest.raises(ValidationError, match="Owner"):
             await service.remove_user_from_organization(user.id, org_id, uid_10)
@@ -596,8 +610,8 @@ class TestUserService:
         """Branch: email already exists → DuplicateEntityError"""
         service, user_repo, *_ = svc
         user_repo.get_by_email = AsyncMock(return_value=_make_user())
-        from domain.exceptions import DuplicateEntityError
-        from domain.enums import UserRole
+        from shared.domain.exceptions import DuplicateEntityError
+        from shared.domain.enums import UserRole
         with pytest.raises(DuplicateEntityError):
             await service.create_user("dup@x.com", "n", "p", UserRole.U2)
 
@@ -608,7 +622,7 @@ class TestUserService:
         new_user = _make_user()
         user_repo.create = AsyncMock(return_value=new_user)
         pw_hasher.hash_password = MagicMock(return_value="h")
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         result = await service.create_user("new@x.com", "name", "pass", UserRole.U2)
         assert result is not None
 
@@ -616,7 +630,7 @@ class TestUserService:
         """Branch: user not found → EntityNotFoundError"""
         service, user_repo, *_ = svc
         user_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_11 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.activate_user(uid_11)
@@ -642,7 +656,7 @@ class TestUserService:
     async def test_list_all_users_with_role_filter(self, svc):
         """Branch: role is not None → filter by role"""
         service, user_repo, *_ = svc
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         users = [_make_user(role=UserRole.U2), _make_user(role=UserRole.U4)]
         user_repo.list_all = AsyncMock(return_value=users)
         result = await service.list_all_users(role=UserRole.U2)
@@ -651,7 +665,7 @@ class TestUserService:
     async def test_list_all_users_no_filter_returns_all(self, svc):
         """Branch: role is None → return all users"""
         service, user_repo, *_ = svc
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         users = [_make_user(role=UserRole.U2), _make_user(role=UserRole.U4)]
         user_repo.list_all = AsyncMock(return_value=users)
         result = await service.list_all_users()
@@ -663,13 +677,13 @@ class TestUserService:
         user = _make_user()
         user_repo.get_by_id = AsyncMock(return_value=user)
         pw_hasher.verify_password = MagicMock(return_value=False)
-        from domain.exceptions import AuthenticationError
+        from shared.domain.exceptions import AuthenticationError
         with pytest.raises(AuthenticationError):
             await service.delete_user_account(user.id, user.id, "wrong")
 
     async def test_delete_user_account_owner_transfers_ownership(self, svc):
         """Branch: user owns org with other members → ValidationError (manual transfer required)"""
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         service, user_repo, org_repo, pw_hasher = svc
         org_id = uuid4()
         user = _make_user(organization_id=org_id)
@@ -716,16 +730,16 @@ class TestUserService:
 class TestReleaseServiceUnit:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.release_service import CreateReleaseUseCase
+        from features.projects_releases.application.use_cases.release_service import CreateReleaseUseCase
         rel_repo = AsyncMock()
         proj_repo = AsyncMock()
         prof_repo = AsyncMock()
-        return CreateReleaseUseCase(rel_repo, proj_repo, prof_repo), rel_repo, proj_repo, prof_repo
+        return CreateReleaseUseCase(rel_repo, proj_repo, prof_repo, audit_logger=get_audit_logger()), rel_repo, proj_repo, prof_repo
 
     async def test_create_release_invalid_semver_raises(self, svc):
         """Branch: invalid semver → ValidationError"""
         service, *_ = svc
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_12 = uuid4()
         uid_13 = uuid4()
         with pytest.raises(ValidationError, match="SemVer"):
@@ -735,7 +749,7 @@ class TestReleaseServiceUnit:
         """Branch: project not found → ValidationError"""
         service, _, proj_repo, _ = svc
         proj_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_14 = uuid4()
         uid_15 = uuid4()
         with pytest.raises(ValidationError, match="proyecto"):
@@ -750,7 +764,7 @@ class TestReleaseServiceUnit:
         project.is_archived = False
         proj_repo.get_by_id = AsyncMock(return_value=project)
         prof_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_16 = uuid4()
         uid_17 = uuid4()
         with pytest.raises(ValidationError, match="perfil"):
@@ -789,7 +803,7 @@ class TestReleaseServiceUnit:
         project.organization_id = uuid4()
         project.is_archived = True
         proj_repo.get_by_id = AsyncMock(return_value=project)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_18 = uuid4()
         uid_19 = uuid4()
         with pytest.raises(ValidationError, match="archivado"):
@@ -806,7 +820,7 @@ class TestReleaseServiceUnit:
         """Branch: release not found → ValidationError"""
         service, rel_repo, *_ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_20 = uuid4()
         with pytest.raises(ValidationError):
             await service.update_release(uid_20, name="new")
@@ -816,7 +830,7 @@ class TestReleaseServiceUnit:
         service, rel_repo, *_ = svc
         rel = _make_release()
         rel_repo.get_by_id = AsyncMock(return_value=rel)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="SemVer"):
             await service.update_release(rel.id, version="bad-ver")
 
@@ -833,7 +847,7 @@ class TestReleaseServiceUnit:
         """Branch: release not found → ValidationError"""
         service, rel_repo, *_ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_21 = uuid4()
         uid_22 = uuid4()
         with pytest.raises(ValidationError):
@@ -853,7 +867,7 @@ class TestReleaseServiceUnit:
         """Branch: artifact not found → ValidationError"""
         service, rel_repo, *_ = svc
         rel_repo.get_artifact_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_23 = uuid4()
         with pytest.raises(ValidationError):
             await service.remove_artifact(uid_23)
@@ -862,7 +876,7 @@ class TestReleaseServiceUnit:
         """Branch: release not found → ValidationError"""
         service, rel_repo, *_ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_24 = uuid4()
         with pytest.raises(ValidationError):
             await service.delete_release(uid_24)
@@ -880,7 +894,7 @@ class TestReleaseServiceUnit:
         """Branch: release not found → ValidationError"""
         service, rel_repo, *_ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_25 = uuid4()
         with pytest.raises(ValidationError):
             await service.restore_release(uid_25)
@@ -888,17 +902,17 @@ class TestReleaseServiceUnit:
     async def test_restore_release_not_archived_raises(self, svc):
         """Branch: release not ARCHIVADA → ValidationError"""
         service, rel_repo, *_ = svc
-        from domain.enums import ReleaseStatus
+        from shared.domain.enums import ReleaseStatus
         rel = _make_release(status=ReleaseStatus.BORRADOR)
         rel_repo.get_by_id = AsyncMock(return_value=rel)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="archivadas"):
             await service.restore_release(rel.id)
 
     async def test_restore_release_archived_succeeds(self, svc):
         """Branch: ARCHIVADA → status set to BORRADOR"""
         service, rel_repo, *_ = svc
-        from domain.enums import ReleaseStatus
+        from shared.domain.enums import ReleaseStatus
         rel = _make_release(status=ReleaseStatus.ARCHIVADA)
         rel_repo.get_by_id = AsyncMock(return_value=rel)
         rel_repo.update = AsyncMock(return_value=rel)
@@ -909,8 +923,8 @@ class TestReleaseServiceUnit:
         """Branch: update_status returns None → ValidationError"""
         service, rel_repo, *_ = svc
         rel_repo.update_status = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
-        from domain.enums import ReleaseStatus
+        from shared.domain.exceptions import ValidationError
+        from shared.domain.enums import ReleaseStatus
         uid_26 = uuid4()
         with pytest.raises(ValidationError):
             await service.update_status(uid_26, ReleaseStatus.VALIDA)
@@ -919,7 +933,7 @@ class TestReleaseServiceUnit:
         """Branch: release not found → ValidationError"""
         service, rel_repo, *_ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_27 = uuid4()
         with pytest.raises(ValidationError):
             await service.list_artifacts(uid_27)
@@ -943,17 +957,17 @@ class TestReleaseServiceUnit:
 class TestOrganizationService:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.organization_service import OrganizationService
+        from features.organizations.application.use_cases.organization_service import OrganizationService
         org_repo = AsyncMock()
         proj_repo = AsyncMock()
         user_repo = AsyncMock()
-        return OrganizationService(org_repo, proj_repo, user_repo), org_repo, proj_repo, user_repo
+        return OrganizationService(org_repo, proj_repo, user_repo, audit_logger=get_audit_logger()), org_repo, proj_repo, user_repo
 
     async def test_create_org_duplicate_slug_raises(self, svc):
         """Branch: existing org with same slug → DuplicateEntityError"""
         service, org_repo, *_ = svc
         org_repo.get_by_slug = AsyncMock(return_value=MagicMock())
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         with pytest.raises(DuplicateEntityError):
             await service.create_organization("name", "existing-slug")
 
@@ -961,10 +975,10 @@ class TestOrganizationService:
         """Branch: owner has U3 role → ValidationError"""
         service, org_repo, _, user_repo = svc
         org_repo.get_by_slug = AsyncMock(return_value=None)
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         admin = _make_user(role=UserRole.U3)
         user_repo.get_by_id = AsyncMock(return_value=admin)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError, match="administrador"):
             await service.create_organization("name", "slug", owner_id=admin.id)
 
@@ -972,7 +986,7 @@ class TestOrganizationService:
         """Branch: no slug conflict, valid owner → org created"""
         service, org_repo, _, user_repo = svc
         org_repo.get_by_slug = AsyncMock(return_value=None)
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         owner = _make_user(role=UserRole.U2)
         user_repo.get_by_id = AsyncMock(return_value=owner)
         created_org = MagicMock()
@@ -986,7 +1000,7 @@ class TestOrganizationService:
         """Branch: org not found → EntityNotFoundError"""
         service, org_repo, *_ = svc
         org_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_28 = uuid4()
         uid_29 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -1005,7 +1019,7 @@ class TestOrganizationService:
         """Branch: project not found → EntityNotFoundError"""
         service, _, proj_repo, _ = svc
         proj_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_30 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.archive_project(uid_30)
@@ -1025,7 +1039,7 @@ class TestOrganizationService:
         """Branch: project not found → EntityNotFoundError"""
         service, _, proj_repo, _ = svc
         proj_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_31 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.update_project(uid_31, name="new-name")
@@ -1046,14 +1060,14 @@ class TestOrganizationService:
 
     async def test_update_project_profile_not_found_raises(self):
         """Branch: profile_id provided but does not exist → ValidationError"""
-        from application.use_cases.main.organization_service import OrganizationService
+        from features.organizations.application.use_cases.organization_service import OrganizationService
         org_repo, proj_repo, user_repo, profile_repo = AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock()
-        service = OrganizationService(org_repo, proj_repo, user_repo, profile_repo)
+        service = OrganizationService(org_repo, proj_repo, user_repo, profile_repo, audit_logger=get_audit_logger())
         project = MagicMock()
         project.organization_id = uuid4()
         proj_repo.get_by_id = AsyncMock(return_value=project)
         profile_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_32 = uuid4()
         uid_33 = uuid4()
         with pytest.raises(ValidationError, match="perfil"):
@@ -1061,9 +1075,9 @@ class TestOrganizationService:
 
     async def test_update_project_with_valid_profile_success(self):
         """Branch: profile_id provided and exists → profile_id updated"""
-        from application.use_cases.main.organization_service import OrganizationService
+        from features.organizations.application.use_cases.organization_service import OrganizationService
         org_repo, proj_repo, user_repo, profile_repo = AsyncMock(), AsyncMock(), AsyncMock(), AsyncMock()
-        service = OrganizationService(org_repo, proj_repo, user_repo, profile_repo)
+        service = OrganizationService(org_repo, proj_repo, user_repo, profile_repo, audit_logger=get_audit_logger())
         project = MagicMock()
         project.organization_id = uuid4()
         proj_repo.get_by_id = AsyncMock(return_value=project)
@@ -1077,7 +1091,7 @@ class TestOrganizationService:
         """Branch: org not found → EntityNotFoundError"""
         service, org_repo, *_ = svc
         org_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_34 = uuid4()
         uid_35 = uuid4()
         uid_36 = uuid4()
@@ -1090,10 +1104,10 @@ class TestOrganizationService:
         org = MagicMock()
         org.owner_id = uuid4()
         org_repo.get_by_id = AsyncMock(return_value=org)
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         admin = _make_user(role=UserRole.U3)
         user_repo.get_by_id = AsyncMock(return_value=admin)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_37 = uuid4()
         uid_38 = uuid4()
         with pytest.raises(ValidationError):
@@ -1105,7 +1119,7 @@ class TestOrganizationService:
         org = MagicMock()
         org.owner_id = uuid4()
         org_repo.get_by_id = AsyncMock(return_value=org)
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         new_owner = _make_user(role=UserRole.U2)
         user_repo.get_by_id = AsyncMock(return_value=new_owner)
         org_repo.update = AsyncMock(return_value=org)
@@ -1116,7 +1130,7 @@ class TestOrganizationService:
         """Branch: org not found → EntityNotFoundError"""
         service, org_repo, *_ = svc
         org_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_39 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.restore_organization(uid_39)
@@ -1134,7 +1148,7 @@ class TestOrganizationService:
         """Branch: org not found → EntityNotFoundError"""
         service, org_repo, *_ = svc
         org_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_40 = uuid4()
         with pytest.raises(EntityNotFoundError, match="Organizaci"):
             await service.delete_organization(uid_40)
@@ -1156,14 +1170,14 @@ class TestOrganizationService:
 class TestNotificationService:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.notification_service import NotificationService
+        from features.notifications.application.use_cases.notification_service import NotificationService
         repo = AsyncMock()
-        return NotificationService(repo), repo
+        return NotificationService(repo, audit_logger=get_audit_logger(), send_notification=send_outbound_notification), repo
 
     async def test_list_channels_returns_all_types(self, svc):
         """Branch: some channels configured, some not → result has all 3 types"""
         service, repo = svc
-        from domain.entities.notification_channel import NotificationChannel
+        from features.notifications.domain.notification_channel import NotificationChannel
         ch = NotificationChannel(
             organization_id=uuid4(),
             channel_type="EMAIL",
@@ -1179,7 +1193,7 @@ class TestNotificationService:
     async def test_configure_channel_unsupported_type_raises(self, svc):
         """Branch: channel_type not in SUPPORTED_CHANNEL_TYPES → ValidationError"""
         service, _ = svc
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_41 = uuid4()
         with pytest.raises(ValidationError, match="no soportado"):
             await service.configure_channel(uid_41, "WEBHOOK", True, {})
@@ -1187,7 +1201,7 @@ class TestNotificationService:
     async def test_configure_channel_success(self, svc):
         """Branch: valid channel_type → channel created"""
         service, repo = svc
-        from domain.entities.notification_channel import NotificationChannel
+        from features.notifications.domain.notification_channel import NotificationChannel
         ch = NotificationChannel(organization_id=uuid4(), channel_type="EMAIL", enabled=True)
         repo.create_channel = AsyncMock(return_value=ch)
         result = await service.configure_channel(uuid4(), "EMAIL", True, {"x": 1})
@@ -1197,7 +1211,7 @@ class TestNotificationService:
         """Branch: channel not found → EntityNotFoundError"""
         service, repo = svc
         repo.get_channel_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_42 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.update_channel(uid_42, enabled=True)
@@ -1205,7 +1219,7 @@ class TestNotificationService:
     async def test_update_channel_updates_fields(self, svc):
         """Branch: both enabled and config_data provided → both updated"""
         service, repo = svc
-        from domain.entities.notification_channel import NotificationChannel
+        from features.notifications.domain.notification_channel import NotificationChannel
         ch = NotificationChannel(organization_id=uuid4(), channel_type="SLACK", enabled=False)
         repo.get_channel_by_id = AsyncMock(return_value=ch)
         repo.update_channel = AsyncMock(return_value=ch)
@@ -1217,7 +1231,7 @@ class TestNotificationService:
         """Branch: channel not found → EntityNotFoundError"""
         service, repo = svc
         repo.get_channel_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_43 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.delete_channel(uid_43)
@@ -1225,7 +1239,7 @@ class TestNotificationService:
     async def test_delete_channel_success(self, svc):
         """Branch: channel found → deleted"""
         service, repo = svc
-        from domain.entities.notification_channel import NotificationChannel
+        from features.notifications.domain.notification_channel import NotificationChannel
         ch = NotificationChannel(organization_id=uuid4(), channel_type="EMAIL", enabled=True)
         repo.get_channel_by_id = AsyncMock(return_value=ch)
         repo.delete_channel = AsyncMock()
@@ -1253,7 +1267,7 @@ class TestNotificationService:
     async def test_subscribe_invalid_event_raises(self, svc):
         """Branch: event_type not supported → ValidationError"""
         service, _ = svc
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_44 = uuid4()
         with pytest.raises(ValidationError, match="no soportado"):
             await service.subscribe(uid_44, "INVALID_EVENT")
@@ -1261,7 +1275,7 @@ class TestNotificationService:
     async def test_subscribe_valid_event_returns_dict(self, svc):
         """Branch: valid event → subscription created"""
         service, repo = svc
-        from domain.entities.notification_subscription import NotificationSubscription
+        from features.notifications.domain.notification_subscription import NotificationSubscription
         sub = NotificationSubscription(user_id=uuid4(), event_type="RELEASE_VALIDATED", enabled=True)
         repo.upsert_subscription = AsyncMock(return_value=sub)
         result = await service.subscribe(uuid4(), "RELEASE_VALIDATED")
@@ -1288,14 +1302,14 @@ class TestNotificationService:
 class TestManageApiKeys:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.others.manage_api_keys import ManageApiKeysUseCase
+        from features.identity.application.use_cases.manage_api_keys import ManageApiKeysUseCase
         repo = AsyncMock()
-        return ManageApiKeysUseCase(repo), repo
+        return ManageApiKeysUseCase(repo, audit_logger=get_audit_logger(), api_key_pepper=settings.api_key_pepper), repo
 
     async def test_create_empty_name_raises(self, svc):
         """Branch: name is empty → ValidationError"""
         service, _ = svc
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_45 = uuid4()
         uid_46 = uuid4()
         with pytest.raises(ValidationError, match="requerido"):
@@ -1306,7 +1320,7 @@ class TestManageApiKeys:
         service, repo = svc
         keys = [MagicMock(is_active=True) for _ in range(5)]
         repo.list_by_user = AsyncMock(return_value=keys)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_47 = uuid4()
         uid_48 = uuid4()
         with pytest.raises(ValidationError, match="límite"):
@@ -1316,7 +1330,7 @@ class TestManageApiKeys:
         """Branch: expires_in_days provided → expires_at set"""
         service, repo = svc
         repo.list_by_user = AsyncMock(return_value=[])
-        from domain.entities.api_key import APIKey
+        from features.identity.domain.api_key import APIKey
         saved = MagicMock()
         saved.id = uuid4()
         saved.user_id = uuid4()
@@ -1366,7 +1380,7 @@ class TestManageApiKeys:
         """Branch: key not found → EntityNotFoundError"""
         service, repo = svc
         repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_49 = uuid4()
         uid_50 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -1378,7 +1392,7 @@ class TestManageApiKeys:
         k = MagicMock()
         k.user_id = uuid4()
         repo.get_by_id = AsyncMock(return_value=k)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_51 = uuid4()
         uid_52 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -1441,15 +1455,15 @@ class TestManageApiKeys:
 class TestConnectorService:
     @pytest.fixture(autouse=True)
     def patch_settings_key(self, monkeypatch):
-        from core import config as cfg
+        from shared.infrastructure import config as cfg
         monkeypatch.setattr(cfg.settings, "encryption_key", _VALID_FERNET_KEY)
 
     @pytest.fixture
-    def svc(self):
-        from application.use_cases.main.connector_service import ConnectorService
+    def svc(self, credential_encryptor):
+        from features.connectors.application.use_cases.connector_service import ConnectorService
         conn_repo = AsyncMock()
         registry = MagicMock()
-        return ConnectorService(conn_repo, registry), conn_repo, registry
+        return ConnectorService(conn_repo, registry, credential_encryptor=credential_encryptor, audit_logger=get_audit_logger(), artifact_probe=HttpConnectorArtifactProbe()), conn_repo, registry
 
     async def test_register_duplicate_raises(self, svc):
         """Branch: same implementation already registered → DuplicateEntityError"""
@@ -1457,7 +1471,7 @@ class TestConnectorService:
         existing = MagicMock()
         existing.connector_implementation = "JIRA"
         conn_repo.list_by_organization = AsyncMock(return_value=[existing])
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         uid_53 = uuid4()
         uid_54 = uuid4()
         with pytest.raises(DuplicateEntityError):
@@ -1520,7 +1534,7 @@ class TestConnectorService:
         (rule gating by category depends on it) - an arbitrary string is rejected."""
         service, conn_repo, _ = svc
         conn_repo.list_by_organization = AsyncMock(return_value=[])
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_55 = uuid4()
         uid_56 = uuid4()
         with pytest.raises(ValidationError):
@@ -1555,7 +1569,7 @@ class TestConnectorService:
         service, conn_repo, registry = svc
         conn_repo.list_by_organization = AsyncMock(return_value=[])
         registry.get_by_implementation = MagicMock(side_effect=KeyError("NOPE"))
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_57 = uuid4()
         uid_58 = uuid4()
         with pytest.raises(ValidationError):
@@ -1567,7 +1581,7 @@ class TestConnectorService:
         """Branch: connector not found → EntityNotFoundError"""
         service, conn_repo, _ = svc
         conn_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_59 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.update_connector(uid_59, name="new")
@@ -1602,7 +1616,7 @@ class TestConnectorService:
         """Branch: connector not found → EntityNotFoundError"""
         service, conn_repo, _ = svc
         conn_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_60 = uuid4()
         uid_61 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -1623,8 +1637,8 @@ class TestConnectorService:
         """Branch: connector not found → EntityNotFoundError"""
         service, conn_repo, _ = svc
         conn_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
-        from domain.enums import ConnectorStatus
+        from shared.domain.exceptions import EntityNotFoundError
+        from shared.domain.enums import ConnectorStatus
         uid_62 = uuid4()
         uid_63 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -1637,7 +1651,7 @@ class TestConnectorService:
         updated = MagicMock()
         conn_repo.get_by_id = AsyncMock(return_value=conn)
         conn_repo.update = AsyncMock(return_value=updated)
-        from domain.enums import ConnectorStatus
+        from shared.domain.enums import ConnectorStatus
         result = await service.toggle_connector_status(uuid4(), ConnectorStatus.INACTIVO, uuid4())
         assert conn.status == ConnectorStatus.INACTIVO
 
@@ -1647,10 +1661,10 @@ class TestConnectorService:
 class TestTemplateService:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.template_service import TemplateService
+        from features.verification.application.use_cases.template_service import TemplateService
         tmpl_repo = AsyncMock()
         prof_repo = AsyncMock()
-        return TemplateService(tmpl_repo, prof_repo), tmpl_repo, prof_repo
+        return TemplateService(tmpl_repo, prof_repo, audit_logger=get_audit_logger()), tmpl_repo, prof_repo
 
     async def test_create_duplicate_name_raises(self, svc):
         """Branch: same name (not archived) exists → DuplicateEntityError"""
@@ -1659,7 +1673,7 @@ class TestTemplateService:
         existing.name = "My Template"
         existing.is_archived = False
         tmpl_repo.list_by_organization = AsyncMock(return_value=[existing])
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         uid_64 = uuid4()
         uid_65 = uuid4()
         uid_66 = uuid4()
@@ -1671,7 +1685,7 @@ class TestTemplateService:
         service, tmpl_repo, prof_repo = svc
         tmpl_repo.list_by_organization = AsyncMock(return_value=[])
         prof_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_67 = uuid4()
         uid_68 = uuid4()
         uid_69 = uuid4()
@@ -1683,7 +1697,7 @@ class TestTemplateService:
         service, tmpl_repo, prof_repo = svc
         tmpl_repo.list_by_organization = AsyncMock(return_value=[])
         prof_repo.get_by_id = AsyncMock(return_value=MagicMock())
-        from domain.entities.template import Template
+        from features.verification.domain.template import Template
         t = Template(organization_id=uuid4(), name="n", description="d", profile_id=uuid4(), created_by=uuid4())
         tmpl_repo.create = AsyncMock(return_value=t)
         result = await service.create_template("n", "d", uuid4(), uuid4(), uuid4())
@@ -1693,7 +1707,7 @@ class TestTemplateService:
         """Branch: template not found → EntityNotFoundError"""
         service, tmpl_repo, _ = svc
         tmpl_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_70 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.update_template(uid_70, name="new")
@@ -1701,7 +1715,7 @@ class TestTemplateService:
     async def test_update_partial_fields(self, svc):
         """Branch: name, description, is_archived provided → all updated"""
         service, tmpl_repo, _ = svc
-        from domain.entities.template import Template
+        from features.verification.domain.template import Template
         t = Template(organization_id=uuid4(), name="old", description="old", profile_id=uuid4(), created_by=uuid4())
         tmpl_repo.get_by_id = AsyncMock(return_value=t)
         tmpl_repo.update = AsyncMock(return_value=t)
@@ -1713,7 +1727,7 @@ class TestTemplateService:
         """Branch: template not found → EntityNotFoundError"""
         service, tmpl_repo, _ = svc
         tmpl_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_71 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.archive_template(uid_71)
@@ -1721,7 +1735,7 @@ class TestTemplateService:
     async def test_archive_success(self, svc):
         """Branch: template found → is_archived=True"""
         service, tmpl_repo, _ = svc
-        from domain.entities.template import Template
+        from features.verification.domain.template import Template
         t = Template(organization_id=uuid4(), name="n", description="d", profile_id=uuid4(), created_by=uuid4())
         tmpl_repo.get_by_id = AsyncMock(return_value=t)
         tmpl_repo.update = AsyncMock(return_value=t)
@@ -1732,7 +1746,7 @@ class TestTemplateService:
         """Branch: original not found → EntityNotFoundError"""
         service, tmpl_repo, _ = svc
         tmpl_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_72 = uuid4()
         uid_73 = uuid4()
         uid_74 = uuid4()
@@ -1742,12 +1756,12 @@ class TestTemplateService:
     async def test_clone_duplicate_target_name_raises(self, svc):
         """Branch: target org already has same name → DuplicateEntityError"""
         service, tmpl_repo, _ = svc
-        from domain.entities.template import Template
+        from features.verification.domain.template import Template
         original = Template(organization_id=uuid4(), name="n", description="d", profile_id=uuid4(), created_by=uuid4())
         duplicate = Template(organization_id=uuid4(), name="new", description="d", profile_id=uuid4(), created_by=uuid4())
         tmpl_repo.get_by_id = AsyncMock(return_value=original)
         tmpl_repo.list_by_organization = AsyncMock(return_value=[duplicate])
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         uid_75 = uuid4()
         uid_76 = uuid4()
         with pytest.raises(DuplicateEntityError):
@@ -1756,7 +1770,7 @@ class TestTemplateService:
     async def test_clone_success(self, svc):
         """Branch: valid clone → new template created"""
         service, tmpl_repo, _ = svc
-        from domain.entities.template import Template
+        from features.verification.domain.template import Template
         original = Template(organization_id=uuid4(), name="n", description="d", profile_id=uuid4(), created_by=uuid4())
         cloned = Template(organization_id=uuid4(), name="new", description="d", profile_id=uuid4(), created_by=uuid4())
         tmpl_repo.get_by_id = AsyncMock(return_value=original)
@@ -1771,7 +1785,7 @@ class TestTemplateService:
 class TestDashboardMetrics:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.others.get_dashboard_metrics import GetDashboardMetricsUseCase
+        from features.reporting.application.use_cases.get_dashboard_metrics import GetDashboardMetricsUseCase
         rel_repo = AsyncMock()
         ver_repo = AsyncMock()
         return GetDashboardMetricsUseCase(rel_repo, ver_repo), rel_repo, ver_repo
@@ -1787,7 +1801,7 @@ class TestDashboardMetrics:
     async def test_mixed_statuses_counted_correctly(self, svc):
         """Branch: VALIDA, NO_VALIDA, PENDIENTE, BORRADOR statuses"""
         service, rel_repo, ver_repo = svc
-        from domain.enums import ReleaseStatus, VerdictType
+        from shared.domain.enums import ReleaseStatus, VerdictType
         r1 = _make_release(status=ReleaseStatus.VALIDA)
         r2 = _make_release(status=ReleaseStatus.NO_VALIDA)
         r3 = _make_release(status=ReleaseStatus.PENDIENTE)
@@ -1806,7 +1820,7 @@ class TestDashboardMetrics:
     async def test_pass_rate_calculated_correctly(self, svc):
         """Branch: mixed verdicts → pass_rate < 100"""
         service, rel_repo, ver_repo = svc
-        from domain.enums import ReleaseStatus, VerdictType
+        from shared.domain.enums import ReleaseStatus, VerdictType
         rel = _make_release(status=ReleaseStatus.VALIDA)
         rel_repo.list_by_organization = AsyncMock(return_value=[rel])
         from datetime import datetime
@@ -1822,7 +1836,7 @@ class TestDashboardMetrics:
 class TestRulesService:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.rules_service import RulesService
+        from features.admin.application.use_cases.rules_service import RulesService
         repo = AsyncMock()
         return RulesService(repo), repo
 
@@ -1848,7 +1862,7 @@ class TestRulesService:
 class TestManageProfile:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.manage_profile import ManageProfileUseCase
+        from features.verification.application.use_cases.manage_profile import ManageProfileUseCase
         profile_repo = AsyncMock()
         rule_repo = AsyncMock()
         return ManageProfileUseCase(profile_repo, rule_repo), profile_repo, rule_repo
@@ -1856,7 +1870,7 @@ class TestManageProfile:
     async def test_create_profile_not_default(self, svc):
         """Branch: is_default=False → no default check"""
         service, profile_repo, _ = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         profile_repo.create = AsyncMock(return_value=p)
         result = await service.create_profile(uuid4(), "name")
@@ -1865,7 +1879,7 @@ class TestManageProfile:
     async def test_create_profile_default_unsets_existing(self, svc):
         """Branch: is_default=True + existing default → existing unset"""
         service, profile_repo, _ = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         existing = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="old", is_default=True)
         new_p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="new", is_default=True)
         profile_repo.get_default_for_organization = AsyncMock(return_value=existing)
@@ -1878,7 +1892,7 @@ class TestManageProfile:
         """Branch: profile not found → EntityNotFoundError"""
         service, profile_repo, _ = svc
         profile_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_77 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.update_profile(uid_77, name="new")
@@ -1886,7 +1900,7 @@ class TestManageProfile:
     async def test_update_profile_set_default_unsets_existing(self, svc):
         """Branch: is_default=True, current not default → unset existing"""
         service, profile_repo, _ = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p", is_default=False)
         existing_default = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="old", is_default=True)
         profile_repo.get_by_id = AsyncMock(return_value=p)
@@ -1899,7 +1913,7 @@ class TestManageProfile:
         """Branch: original not found → EntityNotFoundError"""
         service, profile_repo, _ = svc
         profile_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_78 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.duplicate_profile(uid_78, "copy")
@@ -1907,9 +1921,9 @@ class TestManageProfile:
     async def test_duplicate_profile_copies_rules(self, svc):
         """Branch: original has rules → rules copied to new profile"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_profile import VerificationProfile
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
         rule = VerificationRule(profile_id=uuid4(), rule_template="RV01", severity=SeverityType.HIGH)
         original = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="orig", rules=[rule])
         copy = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="copy")
@@ -1923,7 +1937,7 @@ class TestManageProfile:
         """Branch: profile not found → EntityNotFoundError"""
         service, profile_repo, _ = svc
         profile_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_79 = uuid4()
         uid_80 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -1932,7 +1946,7 @@ class TestManageProfile:
     async def test_delete_profile_success(self, svc):
         """Branch: profile found → delete called"""
         service, profile_repo, _ = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         profile_repo.get_by_id = AsyncMock(return_value=p)
         profile_repo.delete = AsyncMock()
@@ -1943,7 +1957,7 @@ class TestManageProfile:
         """Branch: profile not found → EntityNotFoundError"""
         service, profile_repo, _ = svc
         profile_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_81 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.add_rule(uid_81, "RV01")
@@ -1951,9 +1965,9 @@ class TestManageProfile:
     async def test_add_rule_success(self, svc):
         """Branch: profile found → rule created"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_profile import VerificationProfile
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         rule = VerificationRule(profile_id=p.id, rule_template="RV01", severity=SeverityType.HIGH)
         profile_repo.get_by_id = AsyncMock(return_value=p)
@@ -1965,7 +1979,7 @@ class TestManageProfile:
         """Branch: rule not found → EntityNotFoundError"""
         service, _, rule_repo = svc
         rule_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_82 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.update_rule(uid_82)
@@ -1973,8 +1987,8 @@ class TestManageProfile:
     async def test_update_rule_all_fields(self, svc):
         """Branch: all optional fields provided → all updated"""
         service, _, rule_repo = svc
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
         rule = VerificationRule(profile_id=uuid4(), rule_template="RV01", severity=SeverityType.HIGH)
         rule_repo.get_by_id = AsyncMock(return_value=rule)
         rule_repo.update = AsyncMock(return_value=rule)
@@ -1995,7 +2009,7 @@ class TestManageProfile:
         """Branch: rule not found → EntityNotFoundError"""
         service, _, rule_repo = svc
         rule_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_83 = uuid4()
         uid_84 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -2005,7 +2019,7 @@ class TestManageProfile:
         """Branch: profile not found → EntityNotFoundError"""
         service, profile_repo, _ = svc
         profile_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_85 = uuid4()
         uid_86 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -2014,9 +2028,9 @@ class TestManageProfile:
     async def test_reorder_rules_success(self, svc):
         """Branch: profile found, rules match → display_order updated"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_profile import VerificationProfile
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         rule_id = uuid4()
         rule = VerificationRule(profile_id=p.id, rule_template="RV01", severity=SeverityType.HIGH)
@@ -2032,7 +2046,7 @@ class TestManageProfile:
 class TestAuditLogger:
     def test_log_no_running_loop_does_not_raise(self):
         """Branch: no running asyncio loop (RuntimeError caught) → silent"""
-        from core.audit import AuditLogger, AuditEntry, AuditEvent
+        from shared.infrastructure.audit import AuditLogger, AuditEntry, AuditEvent
         logger = AuditLogger()
         entry = AuditEntry(
             event=AuditEvent.LOGIN_SUCCESS,
@@ -2045,7 +2059,7 @@ class TestAuditLogger:
 
     async def test_log_with_running_loop_schedules_task(self):
         """Branch: running loop → create_task called"""
-        from core.audit import AuditLogger, AuditEntry, AuditEvent
+        from shared.infrastructure.audit import AuditLogger, AuditEntry, AuditEvent
         logger = AuditLogger()
         entry = AuditEntry(
             event=AuditEvent.LOGIN_SUCCESS,
@@ -2059,7 +2073,7 @@ class TestAuditLogger:
 
     def test_get_instance_singleton(self):
         """Branch: second call returns same instance"""
-        from core.audit import AuditLogger
+        from shared.infrastructure.audit import AuditLogger
         a = AuditLogger.get_instance()
         b = AuditLogger.get_instance()
         assert a is b
@@ -2070,9 +2084,9 @@ class TestAuditLogger:
 class TestEmailService:
     async def test_send_activation_email_success(self):
         """Branch: smtp send succeeds → no exception"""
-        from core.email import EmailService
+        from shared.infrastructure.smtp_mailer import EmailService
         svc = EmailService()
-        with patch("core.email._send_smtp") as mock_send:
+        with patch("shared.infrastructure.smtp_mailer._send_smtp") as mock_send:
             mock_send.return_value = None
             with patch("asyncio.to_thread", new_callable=AsyncMock) as mock_thread:
                 mock_thread.return_value = None
@@ -2081,7 +2095,7 @@ class TestEmailService:
 
     async def test_send_activation_email_failure_raises(self):
         """Branch: smtp raises → exception propagated"""
-        from core.email import EmailService
+        from shared.infrastructure.smtp_mailer import EmailService
         svc = EmailService()
         with patch("asyncio.to_thread", new_callable=AsyncMock) as mock_thread:
             mock_thread.side_effect = Exception("SMTP failure")
@@ -2090,7 +2104,7 @@ class TestEmailService:
 
     def test_send_smtp_without_auth(self):
         """Branch: smtp_user empty → no starttls/login"""
-        from core.email import _send_smtp
+        from shared.infrastructure.smtp_mailer import _send_smtp
         from unittest.mock import patch as p
         with p("smtplib.SMTP") as mock_smtp_cls:
             mock_ctx = MagicMock()
@@ -2101,8 +2115,8 @@ class TestEmailService:
 
     def test_send_smtp_with_auth(self):
         """Branch: smtp_user and smtp_password set → starttls + login"""
-        from core.email import _send_smtp
-        from core import email as email_mod
+        from shared.infrastructure.smtp_mailer import _send_smtp
+        from shared.infrastructure import smtp_mailer as email_mod
         with patch.object(email_mod.settings, "smtp_user", "user"), \
              patch.object(email_mod.settings, "smtp_password", "pass"), \
              patch("smtplib.SMTP") as mock_smtp_cls:
@@ -2119,7 +2133,7 @@ class TestEmailService:
 class TestLogger:
     def test_configure_root_logger_adds_handler_when_none(self):
         """Branch: root has no handlers → handler added"""
-        from core.logger import _configure_root_logger
+        from shared.infrastructure.logger import _configure_root_logger
         root = logging.getLogger()
         original_handlers = root.handlers[:]
         root.handlers.clear()
@@ -2129,7 +2143,7 @@ class TestLogger:
 
     def test_configure_root_logger_skips_when_handler_exists(self):
         """Branch: root already has handlers → no duplicate added"""
-        from core.logger import _configure_root_logger
+        from shared.infrastructure.logger import _configure_root_logger
         root = logging.getLogger()
         if not root.handlers:
             root.addHandler(logging.NullHandler())
@@ -2139,7 +2153,7 @@ class TestLogger:
 
     def test_get_logger_returns_same_instance(self):
         """Branch: same name → cached instance returned"""
-        from core.logger import get_logger
+        from shared.infrastructure.logger import get_logger
         a = get_logger("test.module")
         b = get_logger("test.module")
         assert a is b
@@ -2150,18 +2164,18 @@ class TestLogger:
 class TestCustomRoleService:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.custom_role_service import CustomRoleService
+        from features.identity.application.use_cases.custom_role_service import CustomRoleService
         repo = AsyncMock()
-        return CustomRoleService(repo), repo
+        return CustomRoleService(repo, audit_logger=get_audit_logger()), repo
 
     async def test_create_duplicate_name_raises(self, svc):
         """Branch: role with same name exists → DuplicateEntityError"""
         service, repo = svc
-        from domain.enums import Permission
+        from shared.domain.enums import Permission
         existing = MagicMock()
         existing.name = "Admin"
         repo.list_by_organization = AsyncMock(return_value=[existing])
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         uid_87 = uuid4()
         uid_88 = uuid4()
         with pytest.raises(DuplicateEntityError):
@@ -2171,7 +2185,7 @@ class TestCustomRoleService:
         """Branch: permissions list is empty → ValidationError"""
         service, repo = svc
         repo.list_by_organization = AsyncMock(return_value=[])
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_89 = uuid4()
         uid_90 = uuid4()
         with pytest.raises(ValidationError, match="permiso"):
@@ -2180,8 +2194,8 @@ class TestCustomRoleService:
     async def test_create_success(self, svc):
         """Branch: no duplicate, has permissions → role created"""
         service, repo = svc
-        from domain.enums import Permission
-        from domain.entities.custom_role import CustomRole
+        from shared.domain.enums import Permission
+        from features.identity.domain.custom_role import CustomRole
         role = CustomRole(id=uuid4(), organization_id=uuid4(), name="NewRole", permissions=[Permission.VIEW_DASHBOARD])
         repo.list_by_organization = AsyncMock(return_value=[])
         repo.create = AsyncMock(return_value=role)
@@ -2205,7 +2219,7 @@ class TestCustomRoleService:
         """Branch: role not found → EntityNotFoundError"""
         service, repo = svc
         repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_91 = uuid4()
         with pytest.raises(EntityNotFoundError):
             await service.update_role(uid_91, name="new")
@@ -2215,7 +2229,7 @@ class TestCustomRoleService:
         service, repo = svc
         role = MagicMock()
         repo.get_by_id = AsyncMock(return_value=role)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_92 = uuid4()
         with pytest.raises(ValidationError):
             await service.update_role(uid_92, permissions=[])
@@ -2223,7 +2237,7 @@ class TestCustomRoleService:
     async def test_update_all_fields(self, svc):
         """Branch: name, permissions, is_active all provided → all updated"""
         service, repo = svc
-        from domain.enums import Permission
+        from shared.domain.enums import Permission
         role = MagicMock()
         role.name = "old"
         role.is_active = True
@@ -2237,7 +2251,7 @@ class TestCustomRoleService:
         """Branch: role not found → EntityNotFoundError"""
         service, repo = svc
         repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_93 = uuid4()
         uid_94 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -2257,19 +2271,19 @@ class TestCustomRoleService:
 
 class TestVerificationService:
     @pytest.fixture
-    def svc(self):
-        from application.use_cases.main.verification_service import VerificationService
+    def svc(self, credential_encryptor):
+        from features.verification.application.use_cases.verification_service import VerificationService
         rel_repo = AsyncMock()
         ver_repo = AsyncMock()
         task_queue = AsyncMock()
         registry = MagicMock()
-        return VerificationService(rel_repo, ver_repo, task_queue, registry), rel_repo, ver_repo, task_queue, registry
+        return VerificationService(rel_repo, ver_repo, task_queue, registry, credential_encryptor=credential_encryptor, audit_logger=get_audit_logger()), rel_repo, ver_repo, task_queue, registry
 
     async def test_launch_release_not_found_raises(self, svc):
         """Branch: release not found → ValidationError"""
         service, rel_repo, *_ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_95 = uuid4()
         uid_96 = uuid4()
         with pytest.raises(ValidationError):
@@ -2278,12 +2292,12 @@ class TestVerificationService:
     async def test_launch_invalid_status_raises(self, svc):
         """Branch: release in EN_VERIFICACION → ValidationError"""
         service, rel_repo, *_ = svc
-        from domain.enums import ReleaseStatus
+        from shared.domain.enums import ReleaseStatus
         release = MagicMock()
         release.status = ReleaseStatus.EN_VERIFICACION
         release.artifacts = [MagicMock()]
         rel_repo.get_by_id = AsyncMock(return_value=release)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_97 = uuid4()
         uid_98 = uuid4()
         with pytest.raises(ValidationError):
@@ -2292,12 +2306,12 @@ class TestVerificationService:
     async def test_launch_no_artifacts_raises(self, svc):
         """Branch: no artifacts → ValidationError"""
         service, rel_repo, *_ = svc
-        from domain.enums import ReleaseStatus
+        from shared.domain.enums import ReleaseStatus
         release = MagicMock()
         release.status = ReleaseStatus.BORRADOR
         release.artifacts = []
         rel_repo.get_by_id = AsyncMock(return_value=release)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_99 = uuid4()
         uid_100 = uuid4()
         with pytest.raises(ValidationError, match="artefactos"):
@@ -2306,7 +2320,7 @@ class TestVerificationService:
     async def test_launch_success_returns_task_id(self, svc):
         """Branch: valid release with artifacts → task enqueued"""
         service, rel_repo, _, task_queue, _ = svc
-        from domain.enums import ReleaseStatus
+        from shared.domain.enums import ReleaseStatus
         release = MagicMock()
         release.status = ReleaseStatus.BORRADOR
         release.artifacts = [MagicMock()]
@@ -2350,7 +2364,7 @@ class TestVerificationService:
         """Branch: release not found → ValidationError"""
         service, rel_repo, *_ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_101 = uuid4()
         uid_102 = uuid4()
         with pytest.raises(ValidationError):
@@ -2365,7 +2379,7 @@ class TestVerificationService:
         result = MagicMock()
         result.release_id = uuid4()  # different
         ver_repo.find_by_id = AsyncMock(return_value=result)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_103 = uuid4()
         with pytest.raises(ValidationError, match="pertenece"):
             await service.get_verification_result(release_id, uid_103)
@@ -2386,7 +2400,7 @@ class TestVerificationService:
         """Branch: release not found → ValidationError"""
         service, rel_repo, *_ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_104 = uuid4()
         with pytest.raises(ValidationError):
             await service.get_verification_history(uid_104)
@@ -2412,17 +2426,17 @@ class TestVerificationService:
 class TestArtifactService:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.artifact_service import ArtifactService
+        from features.projects_releases.application.use_cases.artifact_service import ArtifactService
         art_repo = AsyncMock()
         rel_repo = AsyncMock()
         conn_repo = AsyncMock()
-        return ArtifactService(art_repo, rel_repo, conn_repo), art_repo, rel_repo, conn_repo
+        return ArtifactService(art_repo, rel_repo, conn_repo, create_registered_connector_registry()), art_repo, rel_repo, conn_repo
 
     async def test_list_release_not_found_raises(self, svc):
         """Branch: release not found → ValidationError"""
         service, _, rel_repo, _ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_105 = uuid4()
         with pytest.raises(ValidationError):
             await service.list_artifacts(uid_105)
@@ -2439,8 +2453,8 @@ class TestArtifactService:
         """Branch: release not found → ValidationError"""
         service, _, rel_repo, _ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
-        from domain.enums import ArtifactType
+        from shared.domain.exceptions import ValidationError
+        from shared.domain.enums import ArtifactType
         uid_106 = uuid4()
         uid_107 = uuid4()
         with pytest.raises(ValidationError):
@@ -2449,7 +2463,7 @@ class TestArtifactService:
     async def test_add_success(self, svc):
         """Branch: release found → artifact saved"""
         service, art_repo, rel_repo, conn_repo = svc
-        from domain.enums import ArtifactType
+        from shared.domain.enums import ArtifactType
         org_id = uuid4()
         release = MagicMock()
         release.organization_id = org_id
@@ -2466,8 +2480,8 @@ class TestArtifactService:
     async def test_add_connector_from_other_organization_raises(self, svc):
         """Branch: connector belongs to a different org than the release → ValidationError (confused-deputy guard)"""
         service, _, rel_repo, conn_repo = svc
-        from domain.enums import ArtifactType
-        from domain.exceptions import ValidationError
+        from shared.domain.enums import ArtifactType
+        from shared.domain.exceptions import ValidationError
         release = MagicMock()
         release.organization_id = uuid4()
         rel_repo.get_by_id = AsyncMock(return_value=release)
@@ -2484,7 +2498,7 @@ class TestArtifactService:
         """Branch: release not found → ValidationError"""
         service, _, rel_repo, _ = svc
         rel_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_110 = uuid4()
         uid_111 = uuid4()
         with pytest.raises(ValidationError):
@@ -2495,7 +2509,7 @@ class TestArtifactService:
         service, art_repo, rel_repo, _ = svc
         rel_repo.get_by_id = AsyncMock(return_value=MagicMock())
         art_repo.find_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_112 = uuid4()
         uid_113 = uuid4()
         with pytest.raises(ValidationError, match="Artifact no encontrado"):
@@ -2509,7 +2523,7 @@ class TestArtifactService:
         artifact = MagicMock()
         artifact.release_id = uuid4()  # different
         art_repo.find_by_id = AsyncMock(return_value=artifact)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_114 = uuid4()
         with pytest.raises(ValidationError, match="no pertenece"):
             await service.remove_artifact(release_id, uid_114)
@@ -2533,7 +2547,7 @@ class TestArtifactService:
 class TestManageProfileGaps:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.manage_profile import ManageProfileUseCase
+        from features.verification.application.use_cases.manage_profile import ManageProfileUseCase
         profile_repo = AsyncMock()
         rule_repo = AsyncMock()
         return ManageProfileUseCase(profile_repo, rule_repo), profile_repo, rule_repo
@@ -2541,7 +2555,7 @@ class TestManageProfileGaps:
     async def test_update_profile_with_description(self, svc):
         """Branch: update_profile with description not None sets description"""
         service, profile_repo, _ = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p", description="old")
         profile_repo.get_by_id = AsyncMock(return_value=p)
         profile_repo.update = AsyncMock(return_value=p)
@@ -2551,7 +2565,7 @@ class TestManageProfileGaps:
     async def test_get_profile_found(self, svc):
         """Branch: get_profile calls repo.get_by_id and returns profile"""
         service, profile_repo, _ = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         profile_repo.get_by_id = AsyncMock(return_value=p)
         result = await service.get_profile(p.id)
@@ -2560,7 +2574,7 @@ class TestManageProfileGaps:
     async def test_list_profiles(self, svc):
         """Branch: list_profiles calls repo.list_by_organization"""
         service, profile_repo, _ = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         profile_repo.list_by_organization = AsyncMock(return_value=[p])
         results = await service.list_profiles(p.organization_id)
@@ -2569,12 +2583,12 @@ class TestManageProfileGaps:
     async def test_duplicate_profile_re_fetch_fails(self, svc):
         """Branch: duplicate_profile where re-fetch after creation returns None"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         original = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="orig", rules=[])
         created = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="copy")
         profile_repo.get_by_id = AsyncMock(side_effect=[original, None])
         profile_repo.create = AsyncMock(return_value=created)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         with pytest.raises(EntityNotFoundError):
             await service.duplicate_profile(original.id, "copy")
 
@@ -2584,16 +2598,16 @@ class TestManageProfileGaps:
 class TestOrganizationServiceGaps:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.organization_service import OrganizationService
+        from features.organizations.application.use_cases.organization_service import OrganizationService
         org_repo = AsyncMock()
         project_repo = AsyncMock()
         user_repo = AsyncMock()
-        return OrganizationService(org_repo, project_repo, user_repo), org_repo, project_repo, user_repo
+        return OrganizationService(org_repo, project_repo, user_repo, audit_logger=get_audit_logger()), org_repo, project_repo, user_repo
 
     async def test_get_organization(self, svc):
         """Branch: get_organization calls repo.get_by_id"""
         service, org_repo, _, _ = svc
-        from domain.entities.organization import Organization
+        from features.organizations.domain.organization import Organization
         o = Organization(id=uuid4(), name="org", slug="org-slug")
         org_repo.get_by_id = AsyncMock(return_value=o)
         result = await service.get_organization(o.id)
@@ -2602,7 +2616,7 @@ class TestOrganizationServiceGaps:
     async def test_list_organizations(self, svc):
         """Branch: list_organizations calls repo.list_all"""
         service, org_repo, _, _ = svc
-        from domain.entities.organization import Organization
+        from features.organizations.domain.organization import Organization
         o = Organization(id=uuid4(), name="org", slug="org-slug")
         org_repo.list_all = AsyncMock(return_value=[o])
         results = await service.list_organizations()
@@ -2611,7 +2625,7 @@ class TestOrganizationServiceGaps:
     async def test_list_projects(self, svc):
         """Branch: list_projects calls repo.list_by_organization"""
         service, _, project_repo, _ = svc
-        from domain.entities.project import Project
+        from features.projects_releases.domain.project import Project
         p = Project(id=uuid4(), name="p", organization_id=uuid4(), description="d", profile_id=uuid4())
         project_repo.list_by_organization = AsyncMock(return_value=[p])
         results = await service.list_projects(p.organization_id)
@@ -2620,7 +2634,7 @@ class TestOrganizationServiceGaps:
     async def test_get_project(self, svc):
         """Branch: get_project calls repo.get_by_id"""
         service, _, project_repo, _ = svc
-        from domain.entities.project import Project
+        from features.projects_releases.domain.project import Project
         p = Project(id=uuid4(), name="p", organization_id=uuid4(), description="d", profile_id=uuid4())
         project_repo.get_by_id = AsyncMock(return_value=p)
         result = await service.get_project(p.id)
@@ -2629,9 +2643,9 @@ class TestOrganizationServiceGaps:
     async def test_list_accessible_projects(self, svc):
         """Branch: U3 admin sees projects from all orgs aggregated"""
         service, org_repo, project_repo, user_repo = svc
-        from domain.entities.organization import Organization
-        from domain.entities.project import Project
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from features.projects_releases.domain.project import Project
+        from shared.domain.enums import UserRole
 
         org1 = Organization(id=uuid4(), name="o1", slug="o1")
         org2 = Organization(id=uuid4(), name="o2", slug="o2")
@@ -2652,7 +2666,7 @@ class TestOrganizationServiceGaps:
 class TestTaskServiceGap:
     async def test_get_task_status(self):
         """Branch: get_task_status calls task_queue.get_task_status"""
-        from application.use_cases.main.task_service import TaskService
+        from features.verification.application.use_cases.task_service import TaskService
 
         queue = AsyncMock()
         queue.get_task_status = AsyncMock(return_value="SUCCESS")
@@ -2667,10 +2681,10 @@ class TestTaskServiceGap:
 class TestTemplateServiceGaps:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.template_service import TemplateService
+        from features.verification.application.use_cases.template_service import TemplateService
         template_repo = AsyncMock()
         profile_repo = AsyncMock()
-        return TemplateService(template_repo, profile_repo), template_repo, profile_repo
+        return TemplateService(template_repo, profile_repo, audit_logger=get_audit_logger()), template_repo, profile_repo
 
     async def test_get_template_not_found(self, svc):
         """Branch: get_template not found returns None"""
@@ -2685,16 +2699,16 @@ class TestTemplateServiceGaps:
 class TestReleaseServiceGaps:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.release_service import CreateReleaseUseCase
+        from features.projects_releases.application.use_cases.release_service import CreateReleaseUseCase
         release_repo = AsyncMock()
         project_repo = AsyncMock()
         profile_repo = AsyncMock()
-        return CreateReleaseUseCase(release_repo, project_repo, profile_repo), release_repo, project_repo, profile_repo
+        return CreateReleaseUseCase(release_repo, project_repo, profile_repo, audit_logger=get_audit_logger()), release_repo, project_repo, profile_repo
 
     async def test_get_release_found(self, svc):
         """Branch: get_release returns release"""
         service, release_repo, _, _ = svc
-        from domain.entities.release import Release
+        from features.projects_releases.domain.release import Release
         r = Release(
             id=uuid4(), name="r1", version="1.0", project_id=uuid4(),
             profile_id=uuid4(), created_by=uuid4(),
@@ -2709,17 +2723,17 @@ class TestReleaseServiceGaps:
 class TestUserServiceGaps:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.user_service import UserService
+        from features.identity.application.use_cases.user_service import UserService
         user_repo = AsyncMock()
         org_repo = AsyncMock()
         password_hasher = AsyncMock()
-        return UserService(user_repo, org_repo, password_hasher), user_repo, org_repo
+        return UserService(user_repo, org_repo, password_hasher, audit_logger=get_audit_logger()), user_repo, org_repo
 
     async def test_get_user_by_id_found(self, svc):
         """Branch: get_user_by_id returns user"""
         service, user_repo, _ = svc
-        from domain.entities.user import User
-        from domain.enums import UserRole
+        from features.identity.domain.user import User
+        from shared.domain.enums import UserRole
         u = User(
             id=uuid4(), email="t@t.com", hashed_password="h",
             display_name="Test", role=UserRole.U2,
@@ -2734,19 +2748,19 @@ class TestUserServiceGaps:
 class TestConnectorServiceConfigureWebhook:
     @pytest.fixture(autouse=True)
     def patch_settings_key(self, monkeypatch):
-        from core import config as cfg
+        from shared.infrastructure import config as cfg
         monkeypatch.setattr(cfg.settings, "encryption_key", _VALID_FERNET_KEY)
 
     @pytest.fixture
-    def svc(self):
-        from application.use_cases.main.connector_service import ConnectorService
+    def svc(self, credential_encryptor):
+        from features.connectors.application.use_cases.connector_service import ConnectorService
         conn_repo = AsyncMock()
         registry = MagicMock()
-        return ConnectorService(conn_repo, registry), conn_repo, registry
+        return ConnectorService(conn_repo, registry, credential_encryptor=credential_encryptor, audit_logger=get_audit_logger(), artifact_probe=HttpConnectorArtifactProbe()), conn_repo, registry
 
     def _connector(self, **overrides):
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         defaults: Dict[str, Any] = dict(
             id=uuid4(), organization_id=uuid4(), connector_type="REPO_CODIGO",
             connector_implementation="GITHUB", name="gh", encrypted_credentials=b"x",
@@ -2758,7 +2772,7 @@ class TestConnectorServiceConfigureWebhook:
     async def test_configure_webhook_not_found_raises(self, svc):
         service, conn_repo, _ = svc
         conn_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         cid = uuid4()
         req_id = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -2768,7 +2782,7 @@ class TestConnectorServiceConfigureWebhook:
         service, conn_repo, _ = svc
         connector = self._connector(connector_type="GESTOR_TAREAS")
         conn_repo.get_by_id = AsyncMock(return_value=connector)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         req_id = uuid4()
         with pytest.raises(ValidationError):
             await service.configure_webhook(connector.id, True, req_id)
@@ -2830,14 +2844,9 @@ class TestConnectorServiceConfigureWebhook:
 # ── HandleIncomingWebhookUseCase ────────────────────────────────────────────
 
 class TestHandleIncomingWebhookUseCase:
-    @pytest.fixture(autouse=True)
-    def patch_settings_key(self, monkeypatch):
-        from core import config as cfg
-        monkeypatch.setattr(cfg.settings, "encryption_key", _VALID_FERNET_KEY)
-
     @pytest.fixture
     def uc(self):
-        from application.use_cases.main.handle_incoming_webhook import HandleIncomingWebhookUseCase
+        from features.connectors.application.use_cases.handle_incoming_webhook import HandleIncomingWebhookUseCase
         connector_repo = AsyncMock()
         project_repo = AsyncMock()
         organization_repo = AsyncMock()
@@ -2849,12 +2858,13 @@ class TestHandleIncomingWebhookUseCase:
             organization_repository=organization_repo,
             release_service=release_service,
             verification_service=verification_service,
+            credential_encryptor=FernetCredentialEncryptor(_VALID_FERNET_KEY),
         )
         return use_case, connector_repo, project_repo, organization_repo, release_service, verification_service
 
     def _connector(self, secret_plaintext: bytes = b"s3cr3t", **overrides):
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         from cryptography.fernet import Fernet
         encrypted = Fernet(_VALID_FERNET_KEY.encode()).encrypt(secret_plaintext) if secret_plaintext else None
         defaults: Dict[str, Any] = dict(
@@ -2866,7 +2876,7 @@ class TestHandleIncomingWebhookUseCase:
         return ConnectorInstance(**defaults)
 
     def _project(self, organization_id):
-        from domain.entities.project import Project
+        from features.projects_releases.domain.project import Project
         return Project(organization_id=organization_id, name="Proj", description="", profile_id=uuid4())
 
     def _github_signature(self, secret: str, body: bytes) -> str:
@@ -2876,7 +2886,7 @@ class TestHandleIncomingWebhookUseCase:
     async def test_connector_not_found_raises(self, uc):
         use_case, connector_repo, *_ = uc
         connector_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         cid = uuid4()
         req_id = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -2886,7 +2896,7 @@ class TestHandleIncomingWebhookUseCase:
         use_case, connector_repo, *_ = uc
         connector = self._connector(webhook_enabled=False)
         connector_repo.get_by_id = AsyncMock(return_value=connector)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         req_id = uuid4()
         with pytest.raises(ValidationError):
             await use_case.handle_source_control_event(req_id, connector.id, b"{}", {})
@@ -2896,7 +2906,7 @@ class TestHandleIncomingWebhookUseCase:
         connector = self._connector()
         connector_repo.get_by_id = AsyncMock(return_value=connector)
         project_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         req_id = uuid4()
         with pytest.raises(EntityNotFoundError):
             await use_case.handle_source_control_event(req_id, connector.id, b"{}", {})
@@ -2906,7 +2916,7 @@ class TestHandleIncomingWebhookUseCase:
         connector = self._connector()
         connector_repo.get_by_id = AsyncMock(return_value=connector)
         project_repo.get_by_id = AsyncMock(return_value=self._project(organization_id=uuid4()))
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         req_id = uuid4()
         with pytest.raises(EntityNotFoundError):
             await use_case.handle_source_control_event(req_id, connector.id, b"{}", {})
@@ -2916,7 +2926,7 @@ class TestHandleIncomingWebhookUseCase:
         connector = self._connector()
         connector_repo.get_by_id = AsyncMock(return_value=connector)
         project_repo.get_by_id = AsyncMock(return_value=self._project(connector.organization_id))
-        from domain.exceptions import InvalidWebhookSignatureError
+        from shared.domain.exceptions import InvalidWebhookSignatureError
         req_id = uuid4()
         with pytest.raises(InvalidWebhookSignatureError):
             await use_case.handle_source_control_event(
@@ -2940,8 +2950,8 @@ class TestHandleIncomingWebhookUseCase:
 
     async def test_valid_tag_event_creates_release_and_launches_verification(self, uc):
         use_case, connector_repo, project_repo, organization_repo, release_service, verification_service = uc
-        from domain.entities.organization import Organization
-        from domain.entities.release import Release
+        from features.organizations.domain.organization import Organization
+        from features.projects_releases.domain.release import Release
 
         connector = self._connector()
         project = self._project(connector.organization_id)
@@ -2974,7 +2984,7 @@ class TestHandleIncomingWebhookUseCase:
 
     async def test_organization_without_owner_raises_validation_error(self, uc):
         use_case, connector_repo, project_repo, organization_repo, *_ = uc
-        from domain.entities.organization import Organization
+        from features.organizations.domain.organization import Organization
 
         connector = self._connector()
         project = self._project(connector.organization_id)
@@ -2986,7 +2996,7 @@ class TestHandleIncomingWebhookUseCase:
         body = b'{"ref_type":"tag","ref":"v1.0.0"}'
         headers = {"X-Hub-Signature-256": self._github_signature("s3cr3t", body), "X-GitHub-Event": "create"}
 
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_115 = uuid4()
         with pytest.raises(ValidationError):
             await use_case.handle_source_control_event(uid_115, connector.id, body, headers)
@@ -2996,17 +3006,17 @@ class TestHandleIncomingWebhookUseCase:
 
 class TestConnectorServiceRemaining:
     @pytest.fixture
-    def svc(self):
-        from application.use_cases.main.connector_service import ConnectorService
+    def svc(self, credential_encryptor):
+        from features.connectors.application.use_cases.connector_service import ConnectorService
         connector_repo = AsyncMock()
         connector_registry = MagicMock()
-        return ConnectorService(connector_repo, connector_registry), connector_repo, connector_registry
+        return ConnectorService(connector_repo, connector_registry, credential_encryptor=credential_encryptor, audit_logger=get_audit_logger(), artifact_probe=HttpConnectorArtifactProbe()), connector_repo, connector_registry
 
     async def test_list_connectors(self, svc):
         """Branch: list_connectors calls repo.list_by_organization"""
         service, connector_repo, _ = svc
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         c = ConnectorInstance(
             id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
             connector_implementation="JIRA", organization_id=uuid4(),
@@ -3019,8 +3029,8 @@ class TestConnectorServiceRemaining:
     async def test_get_connector(self, svc):
         """Branch: get_connector calls repo.get_by_id"""
         service, connector_repo, _ = svc
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         c = ConnectorInstance(
             id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
             connector_implementation="JIRA", organization_id=uuid4(),
@@ -3033,8 +3043,8 @@ class TestConnectorServiceRemaining:
     async def test_delete_connector(self, svc):
         """Branch: delete_connector found deletes and audits"""
         service, connector_repo, _ = svc
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         c = ConnectorInstance(
             id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
             connector_implementation="JIRA", organization_id=uuid4(),
@@ -3051,16 +3061,16 @@ class TestConnectorServiceRemaining:
 class TestReleaseServiceRemaining:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.release_service import CreateReleaseUseCase
+        from features.projects_releases.application.use_cases.release_service import CreateReleaseUseCase
         release_repo = AsyncMock()
         project_repo = AsyncMock()
         profile_repo = AsyncMock()
-        return CreateReleaseUseCase(release_repo, project_repo, profile_repo), release_repo
+        return CreateReleaseUseCase(release_repo, project_repo, profile_repo, audit_logger=get_audit_logger()), release_repo
 
     async def test_list_releases(self, svc):
         """Branch: list_releases calls repo.list_by_project"""
         service, release_repo = svc
-        from domain.entities.release import Release
+        from features.projects_releases.domain.release import Release
         r = Release(
             id=uuid4(), name="r1", version="1.0", project_id=uuid4(),
             profile_id=uuid4(), created_by=uuid4(),
@@ -3072,8 +3082,8 @@ class TestReleaseServiceRemaining:
     async def test_update_status_success(self, svc):
         """Branch: update_status returns updated release"""
         service, release_repo = svc
-        from domain.entities.release import Release
-        from domain.enums import ReleaseStatus
+        from features.projects_releases.domain.release import Release
+        from shared.domain.enums import ReleaseStatus
         r = Release(
             id=uuid4(), name="r1", version="1.0", project_id=uuid4(),
             profile_id=uuid4(), created_by=uuid4(), status=ReleaseStatus.EN_VERIFICACION,
@@ -3085,7 +3095,7 @@ class TestReleaseServiceRemaining:
     async def test_list_org_releases(self, svc):
         """Branch: list_org_releases calls repo.list_by_organization"""
         service, release_repo = svc
-        from domain.entities.release import Release
+        from features.projects_releases.domain.release import Release
         r = Release(
             id=uuid4(), name="r1", version="1.0", project_id=uuid4(),
             profile_id=uuid4(), created_by=uuid4(),
@@ -3099,18 +3109,18 @@ class TestReleaseServiceRemaining:
 
 class TestVerificationServiceRemaining:
     @pytest.fixture
-    def svc(self):
-        from application.use_cases.main.verification_service import VerificationService
+    def svc(self, credential_encryptor):
+        from features.verification.application.use_cases.verification_service import VerificationService
         release_repo = AsyncMock()
         verification_repo = AsyncMock()
         task_queue = AsyncMock()
         connector_registry = MagicMock()
-        return VerificationService(release_repo, verification_repo, task_queue, connector_registry), release_repo, verification_repo
+        return VerificationService(release_repo, verification_repo, task_queue, connector_registry, credential_encryptor=credential_encryptor, audit_logger=get_audit_logger()), release_repo, verification_repo
 
     async def test_get_verification_history_success(self, svc):
         """Branch: get_verification_history with valid release returns results"""
         service, release_repo, verification_repo = svc
-        from domain.entities.release import Release
+        from features.projects_releases.domain.release import Release
         r = Release(
             id=uuid4(), name="r1", version="1.0", project_id=uuid4(),
             profile_id=uuid4(), created_by=uuid4(),
@@ -3126,17 +3136,17 @@ class TestVerificationServiceRemaining:
 
 class TestConnectorServiceTestConnection:
     @pytest.fixture
-    def svc(self):
-        from application.use_cases.main.connector_service import ConnectorService
+    def svc(self, credential_encryptor):
+        from features.connectors.application.use_cases.connector_service import ConnectorService
         connector_repo = AsyncMock()
         connector_registry = MagicMock()
-        return ConnectorService(connector_repo, connector_registry), connector_repo, connector_registry
+        return ConnectorService(connector_repo, connector_registry, credential_encryptor=credential_encryptor, audit_logger=get_audit_logger(), artifact_probe=HttpConnectorArtifactProbe()), connector_repo, connector_registry
 
     async def test_test_connection_success(self, svc):
         """Branch: test_connector_connection success path sets ACTIVO"""
         service, connector_repo, connector_registry = svc
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         c = ConnectorInstance(
             id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
             connector_implementation="JIRA", organization_id=uuid4(),
@@ -3149,13 +3159,7 @@ class TestConnectorServiceTestConnection:
         mock_impl.test_connection = AsyncMock(return_value=True)
         connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
 
-        with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \
-             patch("application.use_cases.main.connector_service.settings") as mock_settings:
-            mock_settings.encryption_key = "dummy-key"
-            mock_fernet = MagicMock()
-            mock_fernet.decrypt = MagicMock(return_value=b"{'key': 'val'}")
-            mock_fernet_cls.return_value = mock_fernet
-
+        with patch.object(service._credential_encryptor, "decrypt", return_value="{'key': 'val'}"):
             result = await service.test_connector_connection(c.id, uuid4())
 
         assert isinstance(result, ConnectorInstance)
@@ -3166,8 +3170,8 @@ class TestConnectorServiceTestConnection:
     async def test_test_connection_failure(self, svc):
         """Branch: test_connector_connection exception sets ERROR and raises"""
         service, connector_repo, connector_registry = svc
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         c = ConnectorInstance(
             id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
             connector_implementation="JIRA", organization_id=uuid4(),
@@ -3180,14 +3184,8 @@ class TestConnectorServiceTestConnection:
         mock_impl.test_connection = MagicMock(side_effect=Exception("Boom"))
         connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
 
-        with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \
-             patch("application.use_cases.main.connector_service.settings") as mock_settings:
-            mock_settings.encryption_key = "dummy-key"
-            mock_fernet = MagicMock()
-            mock_fernet.decrypt = MagicMock(return_value=b"{'key': 'val'}")
-            mock_fernet_cls.return_value = mock_fernet
-
-            from domain.exceptions import ConnectorConnectionFailedError
+        with patch.object(service._credential_encryptor, "decrypt", return_value="{'key': 'val'}"):
+            from shared.domain.exceptions import ConnectorConnectionFailedError
             uid_116 = uuid4()
             with pytest.raises(ConnectorConnectionFailedError):
                 await service.test_connector_connection(c.id, uid_116)
@@ -3198,18 +3196,18 @@ class TestConnectorServiceTestConnection:
 
 class TestConnectorServiceBrowse:
     @pytest.fixture
-    def svc(self):
-        from application.use_cases.main.connector_service import ConnectorService
+    def svc(self, credential_encryptor):
+        from features.connectors.application.use_cases.connector_service import ConnectorService
         connector_repo = AsyncMock()
         connector_registry = MagicMock()
-        return ConnectorService(connector_repo, connector_registry), connector_repo, connector_registry
+        return ConnectorService(connector_repo, connector_registry, credential_encryptor=credential_encryptor, audit_logger=get_audit_logger(), artifact_probe=HttpConnectorArtifactProbe()), connector_repo, connector_registry
 
     async def test_browse_maps_items_generically_for_clickup(self, svc):
         """The browse mapping is generic per implementation (not Confluence-only):
         CLICKUP raw task items must come back as {ref, title, subtitle}."""
         service, connector_repo, connector_registry = svc
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         c = ConnectorInstance(
             id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
             connector_implementation="CLICKUP", organization_id=uuid4(),
@@ -3223,13 +3221,7 @@ class TestConnectorServiceBrowse:
         ])
         connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
 
-        with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \
-             patch("application.use_cases.main.connector_service.settings") as mock_settings:
-            mock_settings.encryption_key = "dummy-key"
-            mock_fernet = MagicMock()
-            mock_fernet.decrypt = MagicMock(return_value=b"{'token': 'tok', 'team_id': '1'}")
-            mock_fernet_cls.return_value = mock_fernet
-
+        with patch.object(service._credential_encryptor, "decrypt", return_value="{'token': 'tok', 'team_id': '1'}"):
             items = await service.browse_connector_items(c.id, query="Release")
 
         assert items == [{"ref": "868czmkt6", "title": "Release 1.0.0", "subtitle": "in progress"}]
@@ -3239,9 +3231,9 @@ class TestConnectorServiceBrowse:
         as ConnectorConnectionFailedError, not be swallowed into an empty list -
         otherwise the UI can't distinguish 'no results' from 'connector broken'."""
         service, connector_repo, connector_registry = svc
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
-        from domain.exceptions import ConnectorConnectionFailedError
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
+        from shared.domain.exceptions import ConnectorConnectionFailedError
         c = ConnectorInstance(
             id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
             connector_implementation="CLICKUP", organization_id=uuid4(),
@@ -3253,13 +3245,7 @@ class TestConnectorServiceBrowse:
         mock_impl.list_artifacts = AsyncMock(side_effect=Exception("401 Unauthorized"))
         connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
 
-        with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \
-             patch("application.use_cases.main.connector_service.settings") as mock_settings:
-            mock_settings.encryption_key = "dummy-key"
-            mock_fernet = MagicMock()
-            mock_fernet.decrypt = MagicMock(return_value=b"{'token': 'bad'}")
-            mock_fernet_cls.return_value = mock_fernet
-
+        with patch.object(service._credential_encryptor, "decrypt", return_value="{'token': 'bad'}"):
             with pytest.raises(ConnectorConnectionFailedError):
                 await service.browse_connector_items(c.id, query="Release")
 
@@ -3268,8 +3254,8 @@ class TestConnectorServiceBrowse:
         by free-text content - otherwise issues are only found if their key happens
         to appear in the summary/description text."""
         service, connector_repo, connector_registry = svc
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         c = ConnectorInstance(
             id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
             connector_implementation="JIRA", organization_id=uuid4(),
@@ -3281,13 +3267,7 @@ class TestConnectorServiceBrowse:
         mock_impl.list_artifacts = AsyncMock(return_value=[])
         connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
 
-        with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \
-             patch("application.use_cases.main.connector_service.settings") as mock_settings:
-            mock_settings.encryption_key = "dummy-key"
-            mock_fernet = MagicMock()
-            mock_fernet.decrypt = MagicMock(return_value=b"{'token': 'tok'}")
-            mock_fernet_cls.return_value = mock_fernet
-
+        with patch.object(service._credential_encryptor, "decrypt", return_value="{'token': 'tok'}"):
             await service.browse_connector_items(c.id, query="SVAES-1")
 
         jql = mock_impl.list_artifacts.call_args[0][0]["jql"]
@@ -3297,8 +3277,8 @@ class TestConnectorServiceBrowse:
         """A non-issue-key search (e.g. a document/plan name) should not add a
         'key =' clause, since it isn't a valid Jira issue key."""
         service, connector_repo, connector_registry = svc
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         c = ConnectorInstance(
             id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
             connector_implementation="JIRA", organization_id=uuid4(),
@@ -3310,13 +3290,7 @@ class TestConnectorServiceBrowse:
         mock_impl.list_artifacts = AsyncMock(return_value=[])
         connector_registry.get_by_implementation = MagicMock(return_value=mock_impl)
 
-        with patch("cryptography.fernet.Fernet") as mock_fernet_cls, \
-             patch("application.use_cases.main.connector_service.settings") as mock_settings:
-            mock_settings.encryption_key = "dummy-key"
-            mock_fernet = MagicMock()
-            mock_fernet.decrypt = MagicMock(return_value=b"{'token': 'tok'}")
-            mock_fernet_cls.return_value = mock_fernet
-
+        with patch.object(service._credential_encryptor, "decrypt", return_value="{'token': 'tok'}"):
             await service.browse_connector_items(c.id, query="Plan de pruebas v1.0.0")
 
         jql = mock_impl.list_artifacts.call_args[0][0]["jql"]
@@ -3325,8 +3299,8 @@ class TestConnectorServiceBrowse:
     async def test_test_connection_impl_not_found(self, svc):
         """Branch: test_connector_connection impl not found → ValidationError"""
         service, connector_repo, connector_registry = svc
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         c = ConnectorInstance(
             id=uuid4(), name="c1", connector_type="GESTOR_TAREAS",
             connector_implementation="UNKNOWN", organization_id=uuid4(),
@@ -3335,7 +3309,7 @@ class TestConnectorServiceBrowse:
         connector_repo.get_by_id = AsyncMock(return_value=c)
         connector_registry.get_by_implementation = MagicMock(return_value=None)
 
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_117 = uuid4()
         with pytest.raises(ValidationError):
             await service.test_connector_connection(c.id, uid_117)
@@ -3346,18 +3320,18 @@ class TestConnectorServiceBrowse:
 class TestUserServiceMoreGaps:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.user_service import UserService
+        from features.identity.application.use_cases.user_service import UserService
         user_repo = AsyncMock()
         org_repo = AsyncMock()
-        from infrastructure.primary.middleware.password_hasher import BcryptPasswordHasher
+        from features.identity.infrastructure.gateways.password_hasher import BcryptPasswordHasher
         password_hasher = BcryptPasswordHasher()
-        return UserService(user_repo, org_repo, password_hasher), user_repo, org_repo, password_hasher
+        return UserService(user_repo, org_repo, password_hasher, audit_logger=get_audit_logger()), user_repo, org_repo, password_hasher
 
     async def test_list_organization_users(self, svc):
         """Branch: list_organization_users calls repo.list_all"""
         service, user_repo, _, _ = svc
-        from domain.entities.user import User
-        from domain.enums import UserRole
+        from features.identity.domain.user import User
+        from shared.domain.enums import UserRole
         u = User(id=uuid4(), email="t@t.com", hashed_password="h", display_name="T", role=UserRole.U2)
         user_repo.list_all = AsyncMock(return_value=[u])
         results = await service.list_organization_users(uuid4())
@@ -3367,7 +3341,7 @@ class TestUserServiceMoreGaps:
         """Branch: deactivate_user not found raises EntityNotFoundError"""
         service, user_repo, _, _ = svc
         user_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_118 = uuid4()
         uid_119 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -3376,8 +3350,8 @@ class TestUserServiceMoreGaps:
     async def test_deactivate_user_success(self, svc):
         """Branch: deactivate_user found sets is_active=False"""
         service, user_repo, _, _ = svc
-        from domain.entities.user import User
-        from domain.enums import UserRole
+        from features.identity.domain.user import User
+        from shared.domain.enums import UserRole
         u = User(id=uuid4(), email="t@t.com", hashed_password="h", display_name="T", role=UserRole.U2, is_active=True)
         user_repo.get_by_id = AsyncMock(return_value=u)
         user_repo.update = AsyncMock(return_value=u)
@@ -3387,8 +3361,8 @@ class TestUserServiceMoreGaps:
     async def test_update_global_role_success(self, svc):
         """Branch: update_global_role found updates role"""
         service, user_repo, _, _ = svc
-        from domain.entities.user import User
-        from domain.enums import UserRole
+        from features.identity.domain.user import User
+        from shared.domain.enums import UserRole
         u = User(id=uuid4(), email="t@t.com", hashed_password="h", display_name="T", role=UserRole.U2)
         user_repo.get_by_id = AsyncMock(return_value=u)
         user_repo.update = AsyncMock(return_value=u)
@@ -3401,24 +3375,24 @@ class TestUserServiceMoreGaps:
 class TestAuthServiceGap:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.auth_service import AuthService
+        from features.identity.application.use_cases.auth_service import AuthService
         user_repo = AsyncMock()
         token_service = MagicMock()
         password_hasher = MagicMock()
-        return AuthService(user_repo, token_service, password_hasher), user_repo
+        return AuthService(user_repo, token_service, password_hasher, audit_logger=get_audit_logger(), totp_service=PyotpTotpService(), qr_renderer=SvgQrRenderer()), user_repo
 
     async def test_disable_totp_invalid_code_raises(self, svc):
         """Branch: disable_totp with invalid code -> ValidationError"""
         service, user_repo = svc
-        from domain.entities.user import User
-        from domain.enums import UserRole
+        from features.identity.domain.user import User
+        from shared.domain.enums import UserRole
         u = User(
             id=uuid4(), email="t@t.com", hashed_password="h",
             display_name="T", role=UserRole.U2,
             totp_enabled=True, totp_secret="JBSWY3DPEHPK3PXP",
         )
         user_repo.get_by_id = AsyncMock(return_value=u)
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         with pytest.raises(ValidationError):
             await service.disable_totp(u.id, "000000")
 
@@ -3428,10 +3402,10 @@ class TestAuthServiceGap:
 class TestTemplateServiceList:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.template_service import TemplateService
+        from features.verification.application.use_cases.template_service import TemplateService
         template_repo = AsyncMock()
         profile_repo = AsyncMock()
-        return TemplateService(template_repo, profile_repo), template_repo
+        return TemplateService(template_repo, profile_repo, audit_logger=get_audit_logger()), template_repo
 
     async def test_list_templates_include_archived(self, svc):
         """Branch: list_templates with include_archived=True"""
@@ -3446,17 +3420,17 @@ class TestTemplateServiceList:
 class TestReleaseServiceFinal:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.release_service import CreateReleaseUseCase
+        from features.projects_releases.application.use_cases.release_service import CreateReleaseUseCase
         release_repo = AsyncMock()
         project_repo = AsyncMock()
         profile_repo = AsyncMock()
-        return CreateReleaseUseCase(release_repo, project_repo, profile_repo), release_repo
+        return CreateReleaseUseCase(release_repo, project_repo, profile_repo, audit_logger=get_audit_logger()), release_repo
 
     async def test_remove_artifact(self, svc):
         """Branch: remove_artifact removes artifact from release and deletes"""
         service, release_repo = svc
-        from domain.entities.release import Release
-        from domain.entities.artifact import Artifact
+        from features.projects_releases.domain.release import Release
+        from features.projects_releases.domain.artifact import Artifact
 
         art_id = uuid4()
         artifact = Artifact(
@@ -3479,8 +3453,8 @@ class TestReleaseServiceFinal:
     async def test_list_artifacts(self, svc):
         """Branch: list_artifacts with release found returns sliced list"""
         service, release_repo = svc
-        from domain.entities.release import Release
-        from domain.entities.artifact import Artifact
+        from features.projects_releases.domain.release import Release
+        from features.projects_releases.domain.artifact import Artifact
 
         art = Artifact(
             id=uuid4(), release_id=uuid4(), connector_instance_id=uuid4(),
@@ -3501,15 +3475,15 @@ class TestReleaseServiceFinal:
 class TestManageApiKeysGap:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.others.manage_api_keys import ManageApiKeysUseCase
+        from features.identity.application.use_cases.manage_api_keys import ManageApiKeysUseCase
         api_key_repo = AsyncMock()
-        return ManageApiKeysUseCase(api_key_repository=api_key_repo), api_key_repo
+        return ManageApiKeysUseCase(api_key_repository=api_key_repo, audit_logger=get_audit_logger(), api_key_pepper=settings.api_key_pepper), api_key_repo
 
     async def test_revoke_api_key_not_found(self, svc):
         """Branch: revoke_api_key not found raises EntityNotFoundError"""
         service, api_key_repo = svc
         api_key_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_120 = uuid4()
         uid_121 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -3521,21 +3495,21 @@ class TestManageApiKeysGap:
 class TestProfileServiceWrappers:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.profile_service import ProfileService
+        from features.verification.application.use_cases.profile_service import ProfileService
         profile_repo = AsyncMock()
         rule_repo = AsyncMock()
-        return ProfileService(profile_repo, rule_repo), profile_repo, rule_repo
+        return ProfileService(profile_repo, rule_repo, audit_logger=get_audit_logger(), schedule_is_valid=croniter.is_valid), profile_repo, rule_repo
 
     @pytest.fixture(autouse=True)
-    def _patch_audit(self):
-        with patch("application.use_cases.main.profile_service.get_audit_logger") as mock_audit:
-            mock_audit.return_value.log = MagicMock()
+    def _patch_audit(self, svc):
+        service, _, _ = svc
+        with patch.object(service._audit_logger, "log"):
             yield
 
     async def test_create_profile_not_default(self, svc):
         """Branch: ProfileService.create_profile with is_default=False → delegates + audits"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         profile_repo.create = AsyncMock(return_value=p)
         profile_repo.get_default_for_organization = AsyncMock(return_value=None)
@@ -3546,7 +3520,7 @@ class TestProfileServiceWrappers:
     async def test_create_profile_default_unsets_existing(self, svc):
         """Branch: ProfileService.create_profile is_default=True, existing default → unset"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         existing = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="old", is_default=True)
         new_p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="new", is_default=True)
         profile_repo.get_default_for_organization = AsyncMock(return_value=existing)
@@ -3560,7 +3534,7 @@ class TestProfileServiceWrappers:
     async def test_update_profile_success(self, svc):
         """Branch: ProfileService.update_profile → delegates + audits"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="updated-name")
         profile_repo.get_by_id = AsyncMock(return_value=p)
         profile_repo.update = AsyncMock(return_value=p)
@@ -3571,9 +3545,9 @@ class TestProfileServiceWrappers:
     async def test_duplicate_profile_success(self, svc):
         """Branch: ProfileService.duplicate_profile → delegates"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_profile import VerificationProfile
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
 
         rule = VerificationRule(profile_id=uuid4(), rule_template="RV01", severity=SeverityType.HIGH)
         original = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="orig", rules=[rule])
@@ -3588,7 +3562,7 @@ class TestProfileServiceWrappers:
     async def test_delete_profile_success(self, svc):
         """Branch: ProfileService.delete_profile found → deletes + audits"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         profile_repo.get_by_id = AsyncMock(return_value=p)
         profile_repo.delete = AsyncMock()
@@ -3600,7 +3574,7 @@ class TestProfileServiceWrappers:
         """Branch: ProfileService.delete_profile not found → EntityNotFoundError"""
         service, profile_repo, rule_repo = svc
         profile_repo.get_by_id = AsyncMock(return_value=None)
-        from domain.exceptions import EntityNotFoundError
+        from shared.domain.exceptions import EntityNotFoundError
         uid_122 = uuid4()
         uid_123 = uuid4()
         with pytest.raises(EntityNotFoundError):
@@ -3609,9 +3583,9 @@ class TestProfileServiceWrappers:
     async def test_add_rule_success(self, svc):
         """Branch: ProfileService.add_rule found → creates + audits"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_profile import VerificationProfile
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
 
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         rule = VerificationRule(profile_id=p.id, rule_template="RV01", severity=SeverityType.HIGH)
@@ -3624,9 +3598,9 @@ class TestProfileServiceWrappers:
     async def test_add_rule_custom_field_check_valid_params_success(self, svc):
         """Branch: add_rule with rule_template=custom_field_check and valid params → creates"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_profile import VerificationProfile
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
 
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         params = {"artifact_type": "TAREA", "field": "epic_id", "operator": "non_empty"}
@@ -3640,8 +3614,8 @@ class TestProfileServiceWrappers:
     async def test_add_rule_custom_field_check_missing_field_raises(self, svc):
         """Branch: add_rule with rule_template=custom_field_check missing 'field' → ValidationError"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.exceptions import ValidationError
+        from features.verification.domain.verification_profile import VerificationProfile
+        from shared.domain.exceptions import ValidationError
 
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         profile_repo.get_by_id = AsyncMock(return_value=p)
@@ -3652,8 +3626,8 @@ class TestProfileServiceWrappers:
     async def test_add_rule_custom_field_check_unknown_operator_raises(self, svc):
         """Branch: add_rule with rule_template=custom_field_check unsupported operator → ValidationError"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.exceptions import ValidationError
+        from features.verification.domain.verification_profile import VerificationProfile
+        from shared.domain.exceptions import ValidationError
 
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         profile_repo.get_by_id = AsyncMock(return_value=p)
@@ -3667,8 +3641,8 @@ class TestProfileServiceWrappers:
     async def test_add_rule_custom_field_check_missing_value_for_operator_raises(self, svc):
         """Branch: add_rule with rule_template=custom_field_check operator != non_empty without 'value' → ValidationError"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.exceptions import ValidationError
+        from features.verification.domain.verification_profile import VerificationProfile
+        from shared.domain.exceptions import ValidationError
 
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
         profile_repo.get_by_id = AsyncMock(return_value=p)
@@ -3682,10 +3656,10 @@ class TestProfileServiceWrappers:
     async def test_update_rule_custom_field_check_invalid_params_raises(self, svc):
         """Branch: update_rule with rule_template=custom_field_check invalid new params → ValidationError"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_rule import VerificationRule
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.enums import SeverityType
-        from domain.exceptions import ValidationError
+        from features.verification.domain.verification_rule import VerificationRule
+        from features.verification.domain.verification_profile import VerificationProfile
+        from shared.domain.enums import SeverityType
+        from shared.domain.exceptions import ValidationError
 
         rule = VerificationRule(profile_id=uuid4(), rule_template="custom_field_check", severity=SeverityType.HIGH)
         profile = VerificationProfile(id=rule.profile_id, organization_id=uuid4(), name="test", is_default=False)
@@ -3698,9 +3672,9 @@ class TestProfileServiceWrappers:
     async def test_update_rule_success(self, svc):
         """Branch: ProfileService.update_rule → delegates + audits"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_rule import VerificationRule
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_rule import VerificationRule
+        from features.verification.domain.verification_profile import VerificationProfile
+        from shared.domain.enums import SeverityType
 
         rule = VerificationRule(profile_id=uuid4(), rule_template="RV01", severity=SeverityType.HIGH)
         profile = VerificationProfile(id=rule.profile_id, organization_id=uuid4(), name="test", is_default=False)
@@ -3714,9 +3688,9 @@ class TestProfileServiceWrappers:
     async def test_delete_rule_success(self, svc):
         """Branch: ProfileService.delete_rule → delegates"""
         service, profile_repo, rule_repo = svc
-        from domain.entities.verification_rule import VerificationRule
-        from domain.entities.verification_profile import VerificationProfile
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_rule import VerificationRule
+        from features.verification.domain.verification_profile import VerificationProfile
+        from shared.domain.enums import SeverityType
 
         rule = VerificationRule(profile_id=uuid4(), rule_template="RV01", severity=SeverityType.HIGH)
         profile = VerificationProfile(id=rule.profile_id, organization_id=uuid4(), name="test", is_default=False)
@@ -3732,25 +3706,25 @@ class TestProfileServiceWrappers:
 # A user can belong to more than one organization simultaneously, holding an
 # independent role in each (e.g. ADMIN in org A and OPERATOR in org B). These
 # tests exercise UserService/OrganizationService wired with a real
-# IUserMembershipRepository mock, which is how core.dependencies wires them in
+# IUserMembershipRepository mock, which is how bootstrap.dependencies wires them in
 # production. When user_membership_repository is None (legacy fixtures above),
 # behaviour falls back to the pre-multi-org single-organization semantics.
 
 class TestUserServiceMultiOrg:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.user_service import UserService
+        from features.identity.application.use_cases.user_service import UserService
         user_repo = AsyncMock()
         org_repo = AsyncMock()
         pw_hasher = MagicMock()
         membership_repo = AsyncMock()
-        service = UserService(user_repo, org_repo, pw_hasher, user_membership_repository=membership_repo)
+        service = UserService(user_repo, org_repo, pw_hasher, user_membership_repository=membership_repo, audit_logger=get_audit_logger())
         return service, user_repo, org_repo, pw_hasher, membership_repo
 
     async def test_invite_existing_active_user_to_second_org_adds_membership(self, svc):
         """An admin of org A can be invited into org B as OPERATOR without disturbing org A."""
-        from domain.entities.organization import Organization
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from shared.domain.enums import UserRole
         service, user_repo, org_repo, _, membership_repo = svc
 
         org_a = uuid4()
@@ -3776,9 +3750,9 @@ class TestUserServiceMultiOrg:
         assert result.role == UserRole.U2
 
     async def test_invite_user_already_member_of_org_raises(self, svc):
-        from domain.entities.organization import Organization
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         service, user_repo, org_repo, _, membership_repo = svc
 
         org_id = uuid4()
@@ -3789,14 +3763,14 @@ class TestUserServiceMultiOrg:
             id=uuid4(), user_id=existing.id, organization_id=org_id, role=UserRole.U2,
         ))
 
-        from domain.exceptions import DuplicateEntityError
+        from shared.domain.exceptions import DuplicateEntityError
         uid_124 = uuid4()
         with pytest.raises(DuplicateEntityError):
             await service.invite_user(org_id, existing.email, UserRole.U4, uid_124)
 
     async def test_invite_brand_new_user_creates_membership(self, svc):
-        from domain.entities.organization import Organization
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from shared.domain.enums import UserRole
         service, user_repo, org_repo, pw_hasher, membership_repo = svc
 
         org_id = uuid4()
@@ -3814,9 +3788,9 @@ class TestUserServiceMultiOrg:
 
     async def test_update_user_role_in_non_active_org_does_not_touch_active_role(self, svc):
         """Changing a user's role in a second org must not overwrite their active-org role."""
-        from domain.entities.organization import Organization
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         service, user_repo, org_repo, _, membership_repo = svc
 
         active_org = uuid4()
@@ -3837,9 +3811,9 @@ class TestUserServiceMultiOrg:
         assert user.role == UserRole.U3  # active-org role in DB is untouched
 
     async def test_update_user_role_in_active_org_persists(self, svc):
-        from domain.entities.organization import Organization
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         service, user_repo, org_repo, _, membership_repo = svc
 
         org_id = uuid4()
@@ -3860,9 +3834,9 @@ class TestUserServiceMultiOrg:
     async def test_remove_user_from_org_falls_back_to_remaining_membership(self, svc):
         """A user removed from their active org, who still belongs to another org,
         becomes active in that remaining org instead of losing all org context."""
-        from domain.entities.organization import Organization
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         service, user_repo, org_repo, _, membership_repo = svc
 
         active_org = uuid4()
@@ -3886,9 +3860,9 @@ class TestUserServiceMultiOrg:
         assert user.role == UserRole.U4
 
     async def test_remove_user_from_only_org_clears_active_org(self, svc):
-        from domain.entities.organization import Organization
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         service, user_repo, org_repo, _, membership_repo = svc
 
         org_id = uuid4()
@@ -3910,8 +3884,8 @@ class TestUserServiceMultiOrg:
     async def test_list_organization_users_reflects_per_org_role(self, svc):
         """A user who is ADMIN in their active org but OPERATOR in this org must be
         listed with the OPERATOR role here, not their globally-active role."""
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         service, user_repo, org_repo, _, membership_repo = svc
 
         org_id = uuid4()
@@ -3927,8 +3901,8 @@ class TestUserServiceMultiOrg:
         assert users[0].role == UserRole.U2
 
     async def test_list_user_organizations(self, svc):
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         service, _, _, _, membership_repo = svc
         user_id = uuid4()
         memberships = [
@@ -3941,8 +3915,8 @@ class TestUserServiceMultiOrg:
         assert result == memberships
 
     async def test_switch_active_organization_success(self, svc):
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         service, user_repo, _, _, membership_repo = svc
 
         target_org = uuid4()
@@ -3959,13 +3933,13 @@ class TestUserServiceMultiOrg:
         assert result.role == UserRole.U4
 
     async def test_switch_active_organization_not_a_member_raises(self, svc):
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         service, user_repo, _, _, membership_repo = svc
         user = _make_user(role=UserRole.U2, organization_id=uuid4())
         user_repo.get_by_id = AsyncMock(return_value=user)
         membership_repo.get = AsyncMock(return_value=None)
 
-        from domain.exceptions import ValidationError
+        from shared.domain.exceptions import ValidationError
         uid_125 = uuid4()
         with pytest.raises(ValidationError):
             await service.switch_active_organization(user.id, uid_125)
@@ -3973,9 +3947,9 @@ class TestUserServiceMultiOrg:
     async def test_delete_user_account_checks_all_memberships_not_just_active(self, svc):
         """Ownership checks on account deletion must cover every org the user belongs
         to, not only their currently-active one."""
-        from domain.entities.organization import Organization
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         service, user_repo, org_repo, pw_hasher, membership_repo = svc
 
         owned_org = uuid4()
@@ -4000,7 +3974,7 @@ class TestUserServiceMultiOrg:
 class TestOrganizationServiceMultiOrg:
     @pytest.fixture
     def svc(self):
-        from application.use_cases.main.organization_service import OrganizationService
+        from features.organizations.application.use_cases.organization_service import OrganizationService
         org_repo = AsyncMock()
         project_repo = AsyncMock()
         user_repo = AsyncMock()
@@ -4010,12 +3984,13 @@ class TestOrganizationServiceMultiOrg:
             project_repository=project_repo,
             user_repository=user_repo,
             user_membership_repository=membership_repo,
+            audit_logger=get_audit_logger(),
         )
         return service, org_repo, project_repo, user_repo, membership_repo
 
     async def test_create_organization_creates_owner_membership(self, svc):
-        from domain.entities.organization import Organization
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from shared.domain.enums import UserRole
         service, org_repo, _, user_repo, membership_repo = svc
 
         owner = _make_user(role=UserRole.U2)
@@ -4035,9 +4010,9 @@ class TestOrganizationServiceMultiOrg:
     async def test_transfer_ownership_updates_membership_roles(self, svc):
         """Old owner demoted to OPERATOR and new owner promoted to MANAGER in the
         membership table, mirroring the per-org role change."""
-        from domain.entities.organization import Organization
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.organizations.domain.organization import Organization
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         service, org_repo, _, user_repo, membership_repo = svc
 
         org_id = uuid4()

@@ -13,8 +13,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4, UUID
 from datetime import datetime, timezone
 
-from domain.entities.access_request import AccessRequest
-from domain.enums import AccessRequestStatus, VerdictType
+from features.identity.domain.access_request import AccessRequest
+from shared.domain.enums import AccessRequestStatus, VerdictType
 
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("ENVIRONMENT", "test")
@@ -313,7 +313,7 @@ def _make_project_row(proj_id=None, org_id=None, name="proj", description="desc"
 class TestSqlReleaseRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.release_repository import SqlReleaseRepository
+        from features.projects_releases.infrastructure.persistence.release_repository import SqlReleaseRepository
         return SqlReleaseRepository()
 
     # -- _release_from_row ---------------------------------------------------
@@ -338,14 +338,14 @@ class TestSqlReleaseRepository:
     async def test_create_release_success(self, repo):
         """Branch: create adds model, commits, refreshes"""
         session, mgr = _make_mock_session()
-        from domain.entities.release import Release
-        from domain.enums import ReleaseStatus
+        from features.projects_releases.domain.release import Release
+        from shared.domain.enums import ReleaseStatus
         release = Release(
             id=uuid4(), name="r1", version="1.2.3", project_id=uuid4(),
             profile_id=uuid4(), created_by=uuid4(),
             status=ReleaseStatus.BORRADOR,
         )
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             await repo.create(release)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -371,7 +371,7 @@ class TestSqlReleaseRepository:
         art_result.scalars = MagicMock(return_value=art_scalars)
 
         session.execute = AsyncMock(side_effect=[rel_result, proj_result, org_result, art_result])
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_id(uuid4())
         assert result is not None
         assert result.name == "v1.0"
@@ -382,7 +382,7 @@ class TestSqlReleaseRepository:
         session, mgr = _make_mock_session()
         rel_result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=rel_result)
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_id(uuid4())
         assert result is None
 
@@ -394,7 +394,7 @@ class TestSqlReleaseRepository:
         rows = [_make_release_row()]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             releases = await repo.list_by_project(uuid4())
         assert len(releases) == 1
         assert releases[0].name == "v1.0"
@@ -404,7 +404,7 @@ class TestSqlReleaseRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             releases = await repo.list_by_project(uuid4())
         assert releases == []
 
@@ -416,7 +416,7 @@ class TestSqlReleaseRepository:
         rows = [_make_release_row()]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             releases = await repo.list_by_organization(uuid4())
         assert len(releases) == 1
 
@@ -426,7 +426,7 @@ class TestSqlReleaseRepository:
         rows = [_make_release_row()]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             releases = await repo.list_by_organization(None)
         assert len(releases) == 1
 
@@ -438,13 +438,13 @@ class TestSqlReleaseRepository:
         rel_row = _make_release_row()
         result = _make_scalar_result(rel_row)
         session.execute = AsyncMock(return_value=result)
-        from domain.entities.release import Release
-        from domain.enums import ReleaseStatus
+        from features.projects_releases.domain.release import Release
+        from shared.domain.enums import ReleaseStatus
         release = Release(
             id=uuid4(), name="updated", version="2.0.0", project_id=uuid4(),
             profile_id=uuid4(), created_by=uuid4(), status=ReleaseStatus.VALIDA,
         )
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             updated = await repo.update(release)
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once()
@@ -455,13 +455,13 @@ class TestSqlReleaseRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        from domain.entities.release import Release
+        from features.projects_releases.domain.release import Release
         release = Release(
             id=uuid4(), name="x", version="1.0.0", project_id=uuid4(),
             profile_id=uuid4(), created_by=uuid4(),
         )
-        from domain.exceptions import EntityNotFoundError
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        from shared.domain.exceptions import EntityNotFoundError
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(EntityNotFoundError, match="Release no encontrada"):
                 await repo.update(release)
 
@@ -473,8 +473,8 @@ class TestSqlReleaseRepository:
         rel_row = _make_release_row()
         result = _make_scalar_result(rel_row)
         session.execute = AsyncMock(return_value=result)
-        from domain.enums import ReleaseStatus
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        from shared.domain.enums import ReleaseStatus
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             updated = await repo.update_status(uuid4(), ReleaseStatus.VALIDA)
         assert updated is not None
         session.commit.assert_awaited_once()
@@ -484,8 +484,8 @@ class TestSqlReleaseRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        from domain.enums import ReleaseStatus
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        from shared.domain.enums import ReleaseStatus
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update_status(uuid4(), ReleaseStatus.VALIDA)
         assert result is None
 
@@ -498,7 +498,7 @@ class TestSqlReleaseRepository:
         result = _make_scalar_result(rel_row)
         session.execute = AsyncMock(return_value=result)
         session.delete = AsyncMock()
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once_with(rel_row)
         session.commit.assert_awaited_once()
@@ -508,8 +508,8 @@ class TestSqlReleaseRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        from domain.exceptions import EntityNotFoundError
-        with patch("infrastructure.secondary.database.repositories.release_repository.AsyncSessionLocal", return_value=mgr):
+        from shared.domain.exceptions import EntityNotFoundError
+        with patch("features.projects_releases.infrastructure.persistence.release_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(EntityNotFoundError, match="Release no encontrada"):
                 await repo.delete(uuid4())
 
@@ -526,7 +526,7 @@ class TestSqlReleaseRepository:
 class TestSqlNotificationRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.notification_repository import SqlNotificationRepository
+        from features.notifications.infrastructure.persistence.notification_repository import SqlNotificationRepository
         return SqlNotificationRepository()
 
     # -- conversion helpers --------------------------------------------------
@@ -556,12 +556,12 @@ class TestSqlNotificationRepository:
     async def test_create_channel_success(self, repo):
         """Branch: create_channel creates model, commits, returns entity"""
         session, mgr = _make_mock_session()
-        from domain.entities.notification_channel import NotificationChannel
+        from features.notifications.domain.notification_channel import NotificationChannel
         channel = NotificationChannel(
             id=uuid4(), organization_id=uuid4(), channel_type="SLACK",
             enabled=True, config_data={"webhook": "url"},
         )
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             result = await repo.create_channel(channel)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -576,7 +576,7 @@ class TestSqlNotificationRepository:
         rows = [_make_channel_row()]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             channels = await repo.list_channels(uuid4())
         assert len(channels) == 1
 
@@ -585,7 +585,7 @@ class TestSqlNotificationRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             channels = await repo.list_channels(uuid4())
         assert channels == []
 
@@ -596,7 +596,7 @@ class TestSqlNotificationRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(_make_channel_row())
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             channel = await repo.get_channel_by_id(uuid4())
         assert channel is not None
 
@@ -605,7 +605,7 @@ class TestSqlNotificationRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             channel = await repo.get_channel_by_id(uuid4())
         assert channel is None
 
@@ -616,12 +616,12 @@ class TestSqlNotificationRepository:
         session, mgr = _make_mock_session()
         model = _make_channel_row()
         session.get = AsyncMock(return_value=model)
-        from domain.entities.notification_channel import NotificationChannel
+        from features.notifications.domain.notification_channel import NotificationChannel
         channel = NotificationChannel(
             id=uuid4(), organization_id=uuid4(), channel_type="EMAIL",
             enabled=False, config_data={"to": "x@x.com"},
         )
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             result = await repo.update_channel(channel)
         session.commit.assert_awaited_once()
         assert result is not None
@@ -630,12 +630,12 @@ class TestSqlNotificationRepository:
         """Branch: update_channel model not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        from domain.entities.notification_channel import NotificationChannel
+        from features.notifications.domain.notification_channel import NotificationChannel
         channel = NotificationChannel(
             id=uuid4(), organization_id=uuid4(), channel_type="EMAIL",
             enabled=True,
         )
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             with pytest.raises(ValueError, match="not found"):
                 await repo.update_channel(channel)
 
@@ -646,7 +646,7 @@ class TestSqlNotificationRepository:
         session, mgr = _make_mock_session()
         model = _make_channel_row()
         session.get = AsyncMock(return_value=model)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             await repo.delete_channel(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -655,7 +655,7 @@ class TestSqlNotificationRepository:
         """Branch: delete_channel not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             with pytest.raises(ValueError, match="not found"):
                 await repo.delete_channel(uuid4())
 
@@ -667,7 +667,7 @@ class TestSqlNotificationRepository:
         rows = [_make_subscription_row()]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             subs = await repo.list_subscriptions(uuid4())
         assert len(subs) == 1
 
@@ -678,7 +678,7 @@ class TestSqlNotificationRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(_make_subscription_row())
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             sub = await repo.get_subscription(uuid4(), "release_validated")
         assert sub is not None
 
@@ -687,7 +687,7 @@ class TestSqlNotificationRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             sub = await repo.get_subscription(uuid4(), "release_validated")
         assert sub is None
 
@@ -699,12 +699,12 @@ class TestSqlNotificationRepository:
         existing = _make_subscription_row(enabled=False)
         result = _make_scalar_result(existing)
         session.execute = AsyncMock(return_value=result)
-        from domain.entities.notification_subscription import NotificationSubscription
+        from features.notifications.domain.notification_subscription import NotificationSubscription
         sub = NotificationSubscription(
             id=uuid4(), user_id=uuid4(), event_type="release_validated",
             enabled=True,
         )
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             updated = await repo.upsert_subscription(sub)
         assert updated is not None
         session.commit.assert_awaited_once()
@@ -714,12 +714,12 @@ class TestSqlNotificationRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        from domain.entities.notification_subscription import NotificationSubscription
+        from features.notifications.domain.notification_subscription import NotificationSubscription
         sub = NotificationSubscription(
             id=uuid4(), user_id=uuid4(), event_type="release_invalidated",
             enabled=True,
         )
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             created = await repo.upsert_subscription(sub)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -733,7 +733,7 @@ class TestSqlNotificationRepository:
         model = _make_subscription_row()
         result = _make_scalar_result(model)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             await repo.delete_subscription(uuid4(), "release_validated")
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -743,7 +743,7 @@ class TestSqlNotificationRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.notification_repository._session_scope", return_value=mgr):
+        with patch("features.notifications.infrastructure.persistence.notification_repository._session_scope", return_value=mgr):
             await repo.delete_subscription(uuid4(), "release_validated")
         session.delete.assert_not_called()
 
@@ -753,7 +753,7 @@ class TestSqlNotificationRepository:
 class TestSqlUserRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.user_repository import SqlUserRepository
+        from features.identity.infrastructure.persistence.user_repository import SqlUserRepository
         return SqlUserRepository()
 
     # -- _model_to_entity ----------------------------------------------------
@@ -782,13 +782,13 @@ class TestSqlUserRepository:
     async def test_create_user_success(self, repo):
         """Branch: create adds model, commits, refreshes, returns User"""
         session, mgr = _make_mock_session()
-        from domain.entities.user import User
-        from domain.enums import UserRole
+        from features.identity.domain.user import User
+        from shared.domain.enums import UserRole
         user = User(
             id=uuid4(), email="new@test.com", hashed_password="pw", # NOSONAR
             display_name="New", role=UserRole.U2,
         )
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.create(user)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -803,7 +803,7 @@ class TestSqlUserRepository:
         row = _make_user_row()
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             user = await repo.get_by_id(uuid4())
         assert user is not None
         assert user.email == "test@test.com"
@@ -813,7 +813,7 @@ class TestSqlUserRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             user = await repo.get_by_id(uuid4())
         assert user is None
 
@@ -825,7 +825,7 @@ class TestSqlUserRepository:
         row = _make_user_row(email="found@test.com")
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             user = await repo.get_by_email("found@test.com")
         assert user is not None
         assert user.email == "found@test.com"
@@ -835,7 +835,7 @@ class TestSqlUserRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             user = await repo.get_by_email("no@test.com")
         assert user is None
 
@@ -847,7 +847,7 @@ class TestSqlUserRepository:
         rows = [_make_user_row()]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             users = await repo.list_all(organization_id=uuid4(), active_only=True)
         assert len(users) == 1
 
@@ -857,7 +857,7 @@ class TestSqlUserRepository:
         rows = [_make_user_row()]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             users = await repo.list_all(organization_id=None, active_only=False)
         assert len(users) == 1
 
@@ -867,7 +867,7 @@ class TestSqlUserRepository:
         rows = [_make_user_row(is_active=False), _make_user_row(is_active=True)]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             users = await repo.list_all(active_only=False)
         assert len(users) == 2
 
@@ -878,13 +878,13 @@ class TestSqlUserRepository:
         session, mgr = _make_mock_session()
         model = _make_user_row()
         session.get = AsyncMock(return_value=model)
-        from domain.entities.user import User
-        from domain.enums import UserRole
+        from features.identity.domain.user import User
+        from shared.domain.enums import UserRole
         user = User(
             id=uuid4(), email="updated@test.com", hashed_password="newhash", # NOSONAR
             display_name="Updated", role=UserRole.U2, is_active=False,
         )
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update(user)
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once()
@@ -894,13 +894,13 @@ class TestSqlUserRepository:
         """Branch: update not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        from domain.entities.user import User
-        from domain.enums import UserRole
+        from features.identity.domain.user import User
+        from shared.domain.enums import UserRole
         user = User(
             id=uuid4(), email="x@x.com", hashed_password="pw", # NOSONAR
             display_name="X", role=UserRole.U2,
         )
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="User not found"):
                 await repo.update(user)
 
@@ -912,7 +912,7 @@ class TestSqlUserRepository:
         row = _make_user_row(activation_token="token123")
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             user = await repo.get_by_activation_token("token123")
         assert user is not None
 
@@ -921,7 +921,7 @@ class TestSqlUserRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             user = await repo.get_by_activation_token("no-token")
         assert user is None
 
@@ -932,7 +932,7 @@ class TestSqlUserRepository:
         session, mgr = _make_mock_session()
         model = _make_user_row()
         session.get = AsyncMock(return_value=model)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -941,7 +941,7 @@ class TestSqlUserRepository:
         """Branch: delete not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.user_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.user_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="User not found"):
                 await repo.delete(uuid4())
 
@@ -951,7 +951,7 @@ class TestSqlUserRepository:
 class TestSqlAccessRequestRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.access_request_repository import (
+        from features.identity.infrastructure.persistence.access_request_repository import (
             SqlAccessRequestRepository,
         )
         return SqlAccessRequestRepository()
@@ -1013,7 +1013,7 @@ class TestSqlAccessRequestRepository:
             status=AccessRequestStatus.PENDING,
         )
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            "features.identity.infrastructure.persistence.access_request_repository.AsyncSessionLocal",
             return_value=mgr,
         ):
             result = await repo.create(ar)
@@ -1030,7 +1030,7 @@ class TestSqlAccessRequestRepository:
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            "features.identity.infrastructure.persistence.access_request_repository.AsyncSessionLocal",
             return_value=mgr,
         ):
             entity = await repo.get_by_id(uuid4())
@@ -1043,7 +1043,7 @@ class TestSqlAccessRequestRepository:
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            "features.identity.infrastructure.persistence.access_request_repository.AsyncSessionLocal",
             return_value=mgr,
         ):
             entity = await repo.get_by_id(uuid4())
@@ -1056,7 +1056,7 @@ class TestSqlAccessRequestRepository:
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            "features.identity.infrastructure.persistence.access_request_repository.AsyncSessionLocal",
             return_value=mgr,
         ):
             entity = await repo.get_by_email("specific@test.com")
@@ -1069,7 +1069,7 @@ class TestSqlAccessRequestRepository:
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            "features.identity.infrastructure.persistence.access_request_repository.AsyncSessionLocal",
             return_value=mgr,
         ):
             entity = await repo.get_by_email("noone@test.com")
@@ -1082,7 +1082,7 @@ class TestSqlAccessRequestRepository:
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            "features.identity.infrastructure.persistence.access_request_repository.AsyncSessionLocal",
             return_value=mgr,
         ):
             entities = await repo.list_by_status(AccessRequestStatus.PENDING)
@@ -1094,7 +1094,7 @@ class TestSqlAccessRequestRepository:
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            "features.identity.infrastructure.persistence.access_request_repository.AsyncSessionLocal",
             return_value=mgr,
         ):
             entities = await repo.list_by_status(AccessRequestStatus.APPROVED)
@@ -1107,7 +1107,7 @@ class TestSqlAccessRequestRepository:
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            "features.identity.infrastructure.persistence.access_request_repository.AsyncSessionLocal",
             return_value=mgr,
         ):
             entities = await repo.list_by_status(
@@ -1132,7 +1132,7 @@ class TestSqlAccessRequestRepository:
             reviewed_at=datetime.now(timezone.utc),
         )
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            "features.identity.infrastructure.persistence.access_request_repository.AsyncSessionLocal",
             return_value=mgr,
         ):
             result = await repo.update(ar)
@@ -1152,7 +1152,7 @@ class TestSqlAccessRequestRepository:
             status=AccessRequestStatus.PENDING,
         )
         with patch(
-            "infrastructure.secondary.database.repositories.access_request_repository.AsyncSessionLocal",
+            "features.identity.infrastructure.persistence.access_request_repository.AsyncSessionLocal",
             return_value=mgr,
         ):
             with pytest.raises(ValueError, match="not found"):
@@ -1164,7 +1164,7 @@ class TestSqlAccessRequestRepository:
 class TestSqlTemplateRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.template_repository import SqlTemplateRepository
+        from features.verification.infrastructure.persistence.template_repository import SqlTemplateRepository
         return SqlTemplateRepository()
 
     def test_model_to_entity_full(self, repo):
@@ -1185,12 +1185,12 @@ class TestSqlTemplateRepository:
     async def test_create_success(self, repo):
         """Branch: create adds model, commits, refreshes"""
         session, mgr = _make_mock_session()
-        from domain.entities.template import Template
+        from features.verification.domain.template import Template
         tpl = Template(
             id=uuid4(), organization_id=uuid4(), name="my-tpl",
             description="desc", profile_id=uuid4(), created_by=uuid4(),
         )
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.create(tpl)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1203,7 +1203,7 @@ class TestSqlTemplateRepository:
         row = _make_template_row()
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_id(uuid4())
         assert entity is not None
         assert entity.name == "tpl"
@@ -1213,7 +1213,7 @@ class TestSqlTemplateRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_id(uuid4())
         assert entity is None
 
@@ -1223,7 +1223,7 @@ class TestSqlTemplateRepository:
         rows = [_make_template_row(), _make_template_row(name="tpl2")]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4())
         assert len(entities) == 2
 
@@ -1232,7 +1232,7 @@ class TestSqlTemplateRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4())
         assert entities == []
 
@@ -1242,7 +1242,7 @@ class TestSqlTemplateRepository:
         rows = [_make_template_row(is_archived=True)]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4(), include_archived=True)
         assert len(entities) == 1
 
@@ -1251,7 +1251,7 @@ class TestSqlTemplateRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4(), skip=10, limit=5)
         assert entities == []
 
@@ -1260,13 +1260,13 @@ class TestSqlTemplateRepository:
         session, mgr = _make_mock_session()
         model = _make_template_row()
         session.get = AsyncMock(return_value=model)
-        from domain.entities.template import Template
+        from features.verification.domain.template import Template
         tpl = Template(
             id=UUID(model.id), organization_id=uuid4(), name="updated",
             description="new-desc", profile_id=uuid4(), created_by=uuid4(),
             is_archived=True,
         )
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update(tpl)
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once()
@@ -1276,12 +1276,12 @@ class TestSqlTemplateRepository:
         """Branch: update not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        from domain.entities.template import Template
+        from features.verification.domain.template import Template
         tpl = Template(
             id=uuid4(), organization_id=uuid4(), name="ghost",
             description="", profile_id=uuid4(), created_by=uuid4(),
         )
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Template not found"):
                 await repo.update(tpl)
 
@@ -1290,7 +1290,7 @@ class TestSqlTemplateRepository:
         session, mgr = _make_mock_session()
         model = _make_template_row()
         session.get = AsyncMock(return_value=model)
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1299,7 +1299,7 @@ class TestSqlTemplateRepository:
         """Branch: delete not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.template_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.template_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Template not found"):
                 await repo.delete(uuid4())
 
@@ -1309,12 +1309,12 @@ class TestSqlTemplateRepository:
 class TestSqlConnectorRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.connector_repository import SqlConnectorRepository
+        from features.connectors.infrastructure.persistence.connector_repository import SqlConnectorRepository
         return SqlConnectorRepository()
 
     def test_model_to_entity_full(self, repo):
         """Branch: _model_to_entity maps all fields including last_tested_at"""
-        from infrastructure.secondary.database.repositories.connector_repository import _model_to_entity
+        from features.connectors.infrastructure.persistence.connector_repository import _model_to_entity
         now = datetime.now(timezone.utc)
         row = _make_connector_row(status="ACTIVO", last_tested_at=now)
         entity = _model_to_entity(row)
@@ -1326,7 +1326,7 @@ class TestSqlConnectorRepository:
 
     def test_model_to_entity_none_dates(self, repo):
         """Branch: _model_to_entity with None updated_at/last_tested_at"""
-        from infrastructure.secondary.database.repositories.connector_repository import _model_to_entity
+        from features.connectors.infrastructure.persistence.connector_repository import _model_to_entity
         row = _make_connector_row(last_tested_at=None)
         row.updated_at = None
         entity = _model_to_entity(row)
@@ -1336,15 +1336,15 @@ class TestSqlConnectorRepository:
     async def test_save_success(self, repo):
         """Branch: save adds model, commits, returns entity"""
         session, mgr = _make_mock_session()
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         ci = ConnectorInstance(
             id=uuid4(), organization_id=uuid4(),
             connector_type="REPO_CODIGO", connector_implementation="GITHUB",
             name="gh-conn", encrypted_credentials=b"enc",
             status=ConnectorStatus.ACTIVO,
         )
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.save(ci)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1354,15 +1354,15 @@ class TestSqlConnectorRepository:
     async def test_save_inactive_status(self, repo):
         """Branch: save with INACTIVO status -> conversion works"""
         session, mgr = _make_mock_session()
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         ci = ConnectorInstance(
             id=uuid4(), organization_id=uuid4(),
             connector_type="GESTOR_TAREAS", connector_implementation="TRELLO",
             name="trello", encrypted_credentials=b"x",
             status=ConnectorStatus.INACTIVO,
         )
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.save(ci)
         assert result.status == ConnectorStatus.INACTIVO
 
@@ -1372,7 +1372,7 @@ class TestSqlConnectorRepository:
         row = _make_connector_row()
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_id(uuid4())
         assert entity is not None
         assert entity.name == "jira-conn"
@@ -1382,7 +1382,7 @@ class TestSqlConnectorRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_id(uuid4())
         assert entity is None
 
@@ -1392,7 +1392,7 @@ class TestSqlConnectorRepository:
         rows = [_make_connector_row()]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4(), active_only=True)
         assert len(entities) == 1
 
@@ -1402,7 +1402,7 @@ class TestSqlConnectorRepository:
         rows = [_make_connector_row(status="ACTIVO"), _make_connector_row(status="INACTIVO")]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4(), active_only=False)
         assert len(entities) == 2
 
@@ -1411,7 +1411,7 @@ class TestSqlConnectorRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4())
         assert entities == []
 
@@ -1421,7 +1421,7 @@ class TestSqlConnectorRepository:
         rows = [_make_connector_row()]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_active(uuid4())
         assert len(entities) == 1
 
@@ -1430,15 +1430,15 @@ class TestSqlConnectorRepository:
         session, mgr = _make_mock_session()
         model = _make_connector_row()
         session.get = AsyncMock(return_value=model)
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         ci = ConnectorInstance(
             id=UUID(model.id), organization_id=uuid4(),
             connector_type="SISTEMA_DOCUMENTAL", connector_implementation="CONFLUENCE",
             name="conf", encrypted_credentials=b"new-enc",
             status=ConnectorStatus.ERROR,
         )
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update(ci)
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once()
@@ -1448,15 +1448,15 @@ class TestSqlConnectorRepository:
         """Branch: update not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        from domain.entities.connector_instance import ConnectorInstance
-        from domain.enums import ConnectorStatus
+        from features.connectors.domain.connector_instance import ConnectorInstance
+        from shared.domain.enums import ConnectorStatus
         ci = ConnectorInstance(
             id=uuid4(), organization_id=uuid4(),
             connector_type="GESTOR_TAREAS", connector_implementation="JIRA",
             name="ghost", encrypted_credentials=b"x",
             status=ConnectorStatus.ACTIVO,
         )
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Connector not found"):
                 await repo.update(ci)
 
@@ -1465,7 +1465,7 @@ class TestSqlConnectorRepository:
         session, mgr = _make_mock_session()
         model = _make_connector_row()
         session.get = AsyncMock(return_value=model)
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1474,7 +1474,7 @@ class TestSqlConnectorRepository:
         """Branch: delete not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.connector_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.connectors.infrastructure.persistence.connector_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Connector not found"):
                 await repo.delete(uuid4())
 
@@ -1484,7 +1484,7 @@ class TestSqlConnectorRepository:
 class TestSqlCustomRoleRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.custom_role_repository import SqlCustomRoleRepository
+        from features.identity.infrastructure.persistence.custom_role_repository import SqlCustomRoleRepository
         return SqlCustomRoleRepository()
 
     def test_model_to_entity_multiple_permissions(self, repo):
@@ -1510,13 +1510,13 @@ class TestSqlCustomRoleRepository:
     async def test_create_success(self, repo):
         """Branch: create adds model, commits, returns entity"""
         session, mgr = _make_mock_session()
-        from domain.entities.custom_role import CustomRole
-        from domain.enums import Permission
+        from features.identity.domain.custom_role import CustomRole
+        from shared.domain.enums import Permission
         role = CustomRole(
             id=uuid4(), organization_id=uuid4(), name="editor",
             permissions=[Permission.VIEW_DASHBOARD, Permission.CREATE_RELEASE],
         )
-        with patch("infrastructure.secondary.database.repositories.custom_role_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.custom_role_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.create(role)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1529,7 +1529,7 @@ class TestSqlCustomRoleRepository:
         row = _make_custom_role_row()
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.custom_role_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.custom_role_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_id(uuid4())
         assert entity is not None
         assert entity.name == "viewer"
@@ -1539,7 +1539,7 @@ class TestSqlCustomRoleRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.custom_role_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.custom_role_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_id(uuid4())
         assert entity is None
 
@@ -1549,7 +1549,7 @@ class TestSqlCustomRoleRepository:
         rows = [_make_custom_role_row(), _make_custom_role_row(name="admin")]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.custom_role_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.custom_role_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4())
         assert len(entities) == 2
 
@@ -1558,7 +1558,7 @@ class TestSqlCustomRoleRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.custom_role_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.custom_role_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4())
         assert entities == []
 
@@ -1567,13 +1567,13 @@ class TestSqlCustomRoleRepository:
         session, mgr = _make_mock_session()
         model = _make_custom_role_row()
         session.get = AsyncMock(return_value=model)
-        from domain.entities.custom_role import CustomRole
-        from domain.enums import Permission
+        from features.identity.domain.custom_role import CustomRole
+        from shared.domain.enums import Permission
         role = CustomRole(
             id=UUID(model.id), organization_id=uuid4(), name="updated-role",
             permissions=[Permission.MANAGE_ROLES], is_active=False,
         )
-        with patch("infrastructure.secondary.database.repositories.custom_role_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.custom_role_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update(role)
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once()
@@ -1583,13 +1583,13 @@ class TestSqlCustomRoleRepository:
         """Branch: update not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        from domain.entities.custom_role import CustomRole
-        from domain.enums import Permission
+        from features.identity.domain.custom_role import CustomRole
+        from shared.domain.enums import Permission
         role = CustomRole(
             id=uuid4(), organization_id=uuid4(), name="ghost",
             permissions=[Permission.VIEW_DASHBOARD],
         )
-        with patch("infrastructure.secondary.database.repositories.custom_role_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.custom_role_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Custom role not found"):
                 await repo.update(role)
 
@@ -1598,7 +1598,7 @@ class TestSqlCustomRoleRepository:
         session, mgr = _make_mock_session()
         model = _make_custom_role_row()
         session.get = AsyncMock(return_value=model)
-        with patch("infrastructure.secondary.database.repositories.custom_role_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.custom_role_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1607,7 +1607,7 @@ class TestSqlCustomRoleRepository:
         """Branch: delete not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.custom_role_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.custom_role_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Custom role not found"):
                 await repo.delete(uuid4())
 
@@ -1617,7 +1617,7 @@ class TestSqlCustomRoleRepository:
 class TestSqlVerificationRuleRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.rule_repository import SqlVerificationRuleRepository
+        from features.verification.infrastructure.persistence.rule_repository import SqlVerificationRuleRepository
         return SqlVerificationRuleRepository()
 
     def test_model_to_entity_full(self, repo):
@@ -1645,8 +1645,8 @@ class TestSqlVerificationRuleRepository:
 
     def test_entity_to_model_attrs(self, repo):
         """Branch: _entity_to_model_attrs maps all fields"""
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
         rule = VerificationRule(
             id=uuid4(), profile_id=uuid4(),
             rule_template="check_docs", severity=SeverityType.MEDIUM,
@@ -1661,13 +1661,13 @@ class TestSqlVerificationRuleRepository:
     async def test_create_success(self, repo):
         """Branch: create adds model, commits, returns entity"""
         session, mgr = _make_mock_session()
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
         rule = VerificationRule(
             id=uuid4(), profile_id=uuid4(),
             rule_template="check_tests", severity=SeverityType.HIGH,
         )
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.create(rule)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1680,7 +1680,7 @@ class TestSqlVerificationRuleRepository:
         row = _make_rule_row()
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_id(uuid4())
         assert entity is not None
         assert entity.rule_template == "check_version"
@@ -1690,7 +1690,7 @@ class TestSqlVerificationRuleRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_id(uuid4())
         assert entity is None
 
@@ -1700,7 +1700,7 @@ class TestSqlVerificationRuleRepository:
         rows = [_make_rule_row(), _make_rule_row(rule_template="check_other")]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_all()
         assert len(entities) == 2
 
@@ -1709,7 +1709,7 @@ class TestSqlVerificationRuleRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_all()
         assert entities == []
 
@@ -1719,7 +1719,7 @@ class TestSqlVerificationRuleRepository:
         rows = [_make_rule_row(), _make_rule_row(display_order=2)]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_profile(uuid4())
         assert len(entities) == 2
 
@@ -1728,7 +1728,7 @@ class TestSqlVerificationRuleRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_profile(uuid4())
         assert entities == []
 
@@ -1737,14 +1737,14 @@ class TestSqlVerificationRuleRepository:
         session, mgr = _make_mock_session()
         model = _make_rule_row()
         session.get = AsyncMock(return_value=model)
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
         rule = VerificationRule(
             id=UUID(model.id), profile_id=uuid4(),
             rule_template="updated_rule", severity=SeverityType.LOW,
             params={"updated": True}, display_order=99, is_active=False,
         )
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update(rule)
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once()
@@ -1754,13 +1754,13 @@ class TestSqlVerificationRuleRepository:
         """Branch: update not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        from domain.entities.verification_rule import VerificationRule
-        from domain.enums import SeverityType
+        from features.verification.domain.verification_rule import VerificationRule
+        from shared.domain.enums import SeverityType
         rule = VerificationRule(
             id=uuid4(), profile_id=uuid4(),
             rule_template="ghost", severity=SeverityType.INFO,
         )
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Rule not found"):
                 await repo.update(rule)
 
@@ -1769,7 +1769,7 @@ class TestSqlVerificationRuleRepository:
         session, mgr = _make_mock_session()
         model = _make_rule_row()
         session.get = AsyncMock(return_value=model)
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1778,7 +1778,7 @@ class TestSqlVerificationRuleRepository:
         """Branch: delete not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.rule_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.rule_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Rule not found"):
                 await repo.delete(uuid4())
 
@@ -1788,12 +1788,12 @@ class TestSqlVerificationRuleRepository:
 class TestSqlAPIKeyRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.api_key_repository import SqlAPIKeyRepository
+        from features.identity.infrastructure.persistence.api_key_repository import SqlAPIKeyRepository
         return SqlAPIKeyRepository()
 
     def test_model_to_entity_full(self, repo):
         """Branch: _model_to_entity with all fields"""
-        from infrastructure.secondary.database.repositories.api_key_repository import _model_to_entity
+        from features.identity.infrastructure.persistence.api_key_repository import _model_to_entity
         now = datetime.now(timezone.utc)
         expires = datetime(2025, 12, 31, tzinfo=timezone.utc)
         row = _make_api_key_row(expires_at=expires, last_used_at=now)
@@ -1807,7 +1807,7 @@ class TestSqlAPIKeyRepository:
 
     def test_model_to_entity_none_dates(self, repo):
         """Branch: _model_to_entity with None expires_at/last_used_at"""
-        from infrastructure.secondary.database.repositories.api_key_repository import _model_to_entity
+        from features.identity.infrastructure.persistence.api_key_repository import _model_to_entity
         row = _make_api_key_row(expires_at=None, last_used_at=None)
         entity = _model_to_entity(row)
         assert entity.expires_at is None
@@ -1816,13 +1816,13 @@ class TestSqlAPIKeyRepository:
     async def test_save_success(self, repo):
         """Branch: save adds model, commits, returns entity"""
         session, mgr = _make_mock_session()
-        from domain.entities.api_key import APIKey
+        from features.identity.domain.api_key import APIKey
         key = APIKey(
             id=uuid4(), user_id=uuid4(), organization_id=uuid4(),
             name="prod-key", key_hash="hash123", prefix="sv_p0",
             is_active=True,
         )
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.save(key)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1835,7 +1835,7 @@ class TestSqlAPIKeyRepository:
         row = _make_api_key_row()
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_id(uuid4())
         assert entity is not None
         assert entity.name == "my-key"
@@ -1845,7 +1845,7 @@ class TestSqlAPIKeyRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_id(uuid4())
         assert entity is None
 
@@ -1855,7 +1855,7 @@ class TestSqlAPIKeyRepository:
         row = _make_api_key_row(key_hash="findme")
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_hash("findme")
         assert entity is not None
         assert entity.key_hash == "findme"
@@ -1865,7 +1865,7 @@ class TestSqlAPIKeyRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.get_by_hash("nope")
         assert entity is None
 
@@ -1875,7 +1875,7 @@ class TestSqlAPIKeyRepository:
         rows = [_make_api_key_row(), _make_api_key_row(name="key2")]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4())
         assert len(entities) == 2
 
@@ -1884,7 +1884,7 @@ class TestSqlAPIKeyRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_organization(uuid4())
         assert entities == []
 
@@ -1894,7 +1894,7 @@ class TestSqlAPIKeyRepository:
         rows = [_make_api_key_row()]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_user(uuid4())
         assert len(entities) == 1
 
@@ -1903,7 +1903,7 @@ class TestSqlAPIKeyRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.list_by_user(uuid4())
         assert entities == []
 
@@ -1912,14 +1912,14 @@ class TestSqlAPIKeyRepository:
         session, mgr = _make_mock_session()
         model = _make_api_key_row()
         session.get = AsyncMock(return_value=model)
-        from domain.entities.api_key import APIKey
+        from features.identity.domain.api_key import APIKey
         now = datetime.now(timezone.utc)
         key = APIKey(
             id=UUID(model.id), user_id=uuid4(), organization_id=uuid4(),
             name="renamed", key_hash="h", prefix="p",
             is_active=False, expires_at=now, last_used_at=now,
         )
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update(key)
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once()
@@ -1929,13 +1929,13 @@ class TestSqlAPIKeyRepository:
         """Branch: update not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        from domain.entities.api_key import APIKey
+        from features.identity.domain.api_key import APIKey
         key = APIKey(
             id=uuid4(), user_id=uuid4(), organization_id=uuid4(),
             name="ghost", key_hash="gh", prefix="g",
             is_active=True,
         )
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="API key not found"):
                 await repo.update(key)
 
@@ -1944,7 +1944,7 @@ class TestSqlAPIKeyRepository:
         session, mgr = _make_mock_session()
         model = _make_api_key_row()
         session.get = AsyncMock(return_value=model)
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1953,7 +1953,7 @@ class TestSqlAPIKeyRepository:
         """Branch: delete not found -> ValueError"""
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.api_key_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.identity.infrastructure.persistence.api_key_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="API key not found"):
                 await repo.delete(uuid4())
 
@@ -1970,14 +1970,14 @@ class TestSqlAPIKeyRepository:
 class TestSqlProfileRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.profile_repository import SqlProfileRepository
+        from features.verification.infrastructure.persistence.profile_repository import SqlProfileRepository
         return SqlProfileRepository()
 
     async def test_create_success(self, repo):
         session, mgr = _make_mock_session()
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="p")
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.create(p)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -1994,7 +1994,7 @@ class TestSqlProfileRepository:
             _make_scalar_result(row),
             _make_scalars_result([rule_row]),
         ])
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_id(pid)
         assert result is not None
         assert result.name == "p"
@@ -2003,7 +2003,7 @@ class TestSqlProfileRepository:
     async def test_get_by_id_not_found(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalar_result(None))
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_id(uuid4())
         assert result is None
 
@@ -2018,14 +2018,14 @@ class TestSqlProfileRepository:
             _make_scalar_result(row),
             _make_scalars_result([rule_row]),
         ])
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_default_for_organization(org_id)
         assert result is not None
 
     async def test_get_default_for_organization_not_found(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalar_result(None))
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_default_for_organization(uuid4())
         assert result is None
 
@@ -2033,9 +2033,9 @@ class TestSqlProfileRepository:
         session, mgr = _make_mock_session()
         model = _make_profile_row()
         session.get = AsyncMock(return_value=model)
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=UUID(model.id), organization_id=uuid4(), name="updated", description="new")
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update(p)
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once()
@@ -2044,9 +2044,9 @@ class TestSqlProfileRepository:
     async def test_update_not_found_raises(self, repo):
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        from domain.entities.verification_profile import VerificationProfile
+        from features.verification.domain.verification_profile import VerificationProfile
         p = VerificationProfile(id=uuid4(), organization_id=uuid4(), name="ghost")
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Profile not found"):
                 await repo.update(p)
 
@@ -2059,7 +2059,7 @@ class TestSqlProfileRepository:
             _make_scalars_result(rows),
             _make_scalars_result(rule_rows),
         ])
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             results = await repo.list_by_organization(uuid4())
         assert len(results) == 1
         assert len(results[0].rules) == 1
@@ -2067,14 +2067,14 @@ class TestSqlProfileRepository:
     async def test_list_by_organization_empty(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalars_result([]))
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             results = await repo.list_by_organization(uuid4())
         assert results == []
 
     async def test_list_by_organization_with_skip_limit(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalars_result([]))
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             results = await repo.list_by_organization(uuid4(), skip=10, limit=5)
         assert results == []
 
@@ -2082,7 +2082,7 @@ class TestSqlProfileRepository:
         session, mgr = _make_mock_session()
         model = _make_profile_row()
         session.get = AsyncMock(return_value=model)
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -2090,7 +2090,7 @@ class TestSqlProfileRepository:
     async def test_delete_not_found_raises(self, repo):
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.profile_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.profile_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Profile not found"):
                 await repo.delete(uuid4())
 
@@ -2109,9 +2109,9 @@ class TestBaseSqlRepository:
 
     def test_session_scope_is_context_manager(self, mock_session_scope):
         session, mgr = mock_session_scope
-        with patch("infrastructure.secondary.database.repositories.base_sql_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("shared.infrastructure.database.base_sql_repository.AsyncSessionLocal", return_value=mgr):
             async def _use():
-                from infrastructure.secondary.database.repositories.base_sql_repository import _session_scope
+                from shared.infrastructure.database.base_sql_repository import _session_scope
                 async with _session_scope() as s:
                     assert s is session
             import asyncio
@@ -2119,7 +2119,7 @@ class TestBaseSqlRepository:
 
     async def test_create_success(self, mock_session_scope):
         session, mgr = mock_session_scope
-        from infrastructure.secondary.database.repositories.base_sql_repository import BaseSqlRepository
+        from shared.infrastructure.database.base_sql_repository import BaseSqlRepository
 
         class _Concrete(BaseSqlRepository):
             model_class = MagicMock
@@ -2134,7 +2134,7 @@ class TestBaseSqlRepository:
         repo = _Concrete()
         entity = MagicMock()
         entity.id = uuid4()
-        with patch("infrastructure.secondary.database.repositories.base_sql_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("shared.infrastructure.database.base_sql_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo._create(entity)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -2143,7 +2143,7 @@ class TestBaseSqlRepository:
 
     async def test_get_by_id_found(self, mock_session_scope):
         session, mgr = mock_session_scope
-        from infrastructure.secondary.database.repositories.base_sql_repository import BaseSqlRepository
+        from shared.infrastructure.database.base_sql_repository import BaseSqlRepository
 
         MockModel = type('MockModel', (), {'id': MagicMock()})
 
@@ -2164,14 +2164,14 @@ class TestBaseSqlRepository:
         mock_select = MagicMock()
         mock_select.where = MagicMock(return_value=mock_select)
 
-        with patch("infrastructure.secondary.database.repositories.base_sql_repository.AsyncSessionLocal", return_value=mgr), \
-             patch("infrastructure.secondary.database.repositories.base_sql_repository.select", return_value=mock_select):
+        with patch("shared.infrastructure.database.base_sql_repository.AsyncSessionLocal", return_value=mgr), \
+             patch("shared.infrastructure.database.base_sql_repository.select", return_value=mock_select):
             result = await repo._get_by_id(uuid4())
         assert result == "entity_test-id"
 
     async def test_get_by_id_not_found(self, mock_session_scope):
         session, mgr = mock_session_scope
-        from infrastructure.secondary.database.repositories.base_sql_repository import BaseSqlRepository
+        from shared.infrastructure.database.base_sql_repository import BaseSqlRepository
 
         MockModel = type('MockModel', (), {'id': MagicMock()})
 
@@ -2187,14 +2187,14 @@ class TestBaseSqlRepository:
         mock_select = MagicMock()
         mock_select.where = MagicMock(return_value=mock_select)
 
-        with patch("infrastructure.secondary.database.repositories.base_sql_repository.AsyncSessionLocal", return_value=mgr), \
-             patch("infrastructure.secondary.database.repositories.base_sql_repository.select", return_value=mock_select):
+        with patch("shared.infrastructure.database.base_sql_repository.AsyncSessionLocal", return_value=mgr), \
+             patch("shared.infrastructure.database.base_sql_repository.select", return_value=mock_select):
             result = await repo._get_by_id(uuid4())
         assert result is None
 
     async def test_list_all_with_results(self, mock_session_scope):
         session, mgr = mock_session_scope
-        from infrastructure.secondary.database.repositories.base_sql_repository import BaseSqlRepository
+        from shared.infrastructure.database.base_sql_repository import BaseSqlRepository
 
         MockModel = type('MockModel', (), {})
 
@@ -2213,15 +2213,15 @@ class TestBaseSqlRepository:
         session.execute = AsyncMock(return_value=_make_scalars_result([row1, row2]))
 
         mock_select = MagicMock()
-        with patch("infrastructure.secondary.database.repositories.base_sql_repository.AsyncSessionLocal", return_value=mgr), \
-             patch("infrastructure.secondary.database.repositories.base_sql_repository.select", return_value=mock_select):
+        with patch("shared.infrastructure.database.base_sql_repository.AsyncSessionLocal", return_value=mgr), \
+             patch("shared.infrastructure.database.base_sql_repository.select", return_value=mock_select):
             results = await repo._list_all()
         assert len(results) == 2
         assert results == ["entity_id1", "entity_id2"]
 
     async def test_list_all_empty(self, mock_session_scope):
         session, mgr = mock_session_scope
-        from infrastructure.secondary.database.repositories.base_sql_repository import BaseSqlRepository
+        from shared.infrastructure.database.base_sql_repository import BaseSqlRepository
 
         MockModel = type('MockModel', (), {})
 
@@ -2235,14 +2235,14 @@ class TestBaseSqlRepository:
         session.execute = AsyncMock(return_value=_make_scalars_result([]))
 
         mock_select = MagicMock()
-        with patch("infrastructure.secondary.database.repositories.base_sql_repository.AsyncSessionLocal", return_value=mgr), \
-             patch("infrastructure.secondary.database.repositories.base_sql_repository.select", return_value=mock_select):
+        with patch("shared.infrastructure.database.base_sql_repository.AsyncSessionLocal", return_value=mgr), \
+             patch("shared.infrastructure.database.base_sql_repository.select", return_value=mock_select):
             results = await repo._list_all()
         assert results == []
 
     async def test_delete_found(self, mock_session_scope):
         session, mgr = mock_session_scope
-        from infrastructure.secondary.database.repositories.base_sql_repository import BaseSqlRepository
+        from shared.infrastructure.database.base_sql_repository import BaseSqlRepository
 
         class _Concrete(BaseSqlRepository):
             model_class = MagicMock
@@ -2253,14 +2253,14 @@ class TestBaseSqlRepository:
         repo = _Concrete()
         model = MagicMock()
         session.get = AsyncMock(return_value=model)
-        with patch("infrastructure.secondary.database.repositories.base_sql_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("shared.infrastructure.database.base_sql_repository.AsyncSessionLocal", return_value=mgr):
             await repo._delete(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
 
     async def test_delete_not_found_raises(self, mock_session_scope):
         session, mgr = mock_session_scope
-        from infrastructure.secondary.database.repositories.base_sql_repository import BaseSqlRepository
+        from shared.infrastructure.database.base_sql_repository import BaseSqlRepository
 
         class _Concrete(BaseSqlRepository):
             model_class = MagicMock
@@ -2270,12 +2270,12 @@ class TestBaseSqlRepository:
 
         repo = _Concrete()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.base_sql_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("shared.infrastructure.database.base_sql_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="not found"):
                 await repo._delete(uuid4())
 
     def test_model_to_entity_raises_not_implemented(self):
-        from infrastructure.secondary.database.repositories.base_sql_repository import BaseSqlRepository
+        from shared.infrastructure.database.base_sql_repository import BaseSqlRepository
         class _Minimal(BaseSqlRepository):
             pass
         minimal = _Minimal()
@@ -2283,7 +2283,7 @@ class TestBaseSqlRepository:
             minimal._model_to_entity(MagicMock())
 
     def test_entity_to_model_attrs_raises_not_implemented(self):
-        from infrastructure.secondary.database.repositories.base_sql_repository import BaseSqlRepository
+        from shared.infrastructure.database.base_sql_repository import BaseSqlRepository
         class _Minimal(BaseSqlRepository):
             pass
         minimal = _Minimal()
@@ -2296,14 +2296,14 @@ class TestBaseSqlRepository:
 class TestSqlProjectRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.project_repository import SqlProjectRepository
+        from features.projects_releases.infrastructure.persistence.project_repository import SqlProjectRepository
         return SqlProjectRepository()
 
     async def test_create_success(self, repo):
         session, mgr = _make_mock_session()
-        from domain.entities.project import Project
+        from features.projects_releases.domain.project import Project
         p = Project(organization_id=uuid4(), name="p", description="d", profile_id=uuid4())
-        with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.project_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.create(p)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -2314,14 +2314,14 @@ class TestSqlProjectRepository:
         session, mgr = _make_mock_session()
         row = _make_project_row()
         session.execute = AsyncMock(return_value=_make_scalar_result(row))
-        with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.project_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_id(uuid4())
         assert result is not None
 
     async def test_get_by_id_not_found(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalar_result(None))
-        with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.project_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_id(uuid4())
         assert result is None
 
@@ -2329,21 +2329,21 @@ class TestSqlProjectRepository:
         session, mgr = _make_mock_session()
         rows = [_make_project_row(), _make_project_row(name="p2")]
         session.execute = AsyncMock(return_value=_make_scalars_result(rows))
-        with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.project_repository.AsyncSessionLocal", return_value=mgr):
             results = await repo.list_by_organization(uuid4())
         assert len(results) == 2
 
     async def test_list_by_organization_empty(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalars_result([]))
-        with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.project_repository.AsyncSessionLocal", return_value=mgr):
             results = await repo.list_by_organization(uuid4())
         assert results == []
 
     async def test_list_by_organization_with_skip_limit(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalars_result([]))
-        with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.project_repository.AsyncSessionLocal", return_value=mgr):
             results = await repo.list_by_organization(uuid4(), skip=10, limit=5)
         assert results == []
 
@@ -2351,9 +2351,9 @@ class TestSqlProjectRepository:
         session, mgr = _make_mock_session()
         model = _make_project_row()
         session.get = AsyncMock(return_value=model)
-        from domain.entities.project import Project
+        from features.projects_releases.domain.project import Project
         p = Project(id=UUID(model.id), name="updated", description="new", organization_id=uuid4(), profile_id=uuid4())
-        with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.project_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update(p)
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once()
@@ -2362,9 +2362,9 @@ class TestSqlProjectRepository:
     async def test_update_not_found_raises(self, repo):
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        from domain.entities.project import Project
+        from features.projects_releases.domain.project import Project
         p = Project(id=uuid4(), name="ghost", description="d", organization_id=uuid4(), profile_id=uuid4())
-        with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.project_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Project not found"):
                 await repo.update(p)
 
@@ -2372,7 +2372,7 @@ class TestSqlProjectRepository:
         session, mgr = _make_mock_session()
         model = _make_project_row()
         session.get = AsyncMock(return_value=model)
-        with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.project_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -2380,7 +2380,7 @@ class TestSqlProjectRepository:
     async def test_delete_not_found_raises(self, repo):
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.project_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.projects_releases.infrastructure.persistence.project_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Project not found"):
                 await repo.delete(uuid4())
 
@@ -2390,7 +2390,7 @@ class TestSqlProjectRepository:
 class TestSqlOrganizationRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.organization_repository import SqlOrganizationRepository
+        from features.organizations.infrastructure.persistence.organization_repository import SqlOrganizationRepository
         return SqlOrganizationRepository()
 
     def test_model_to_entity_with_owner(self, repo):
@@ -2412,9 +2412,9 @@ class TestSqlOrganizationRepository:
 
     async def test_create_success(self, repo):
         session, mgr = _make_mock_session()
-        from domain.entities.organization import Organization
+        from features.organizations.domain.organization import Organization
         org = Organization(name="org", slug="org-slug")
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.create(org)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -2425,14 +2425,14 @@ class TestSqlOrganizationRepository:
         session, mgr = _make_mock_session()
         row = _make_org_row()
         session.execute = AsyncMock(return_value=_make_scalar_result(row))
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_id(uuid4())
         assert result is not None
 
     async def test_get_by_id_not_found(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalar_result(None))
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_id(uuid4())
         assert result is None
 
@@ -2440,7 +2440,7 @@ class TestSqlOrganizationRepository:
         session, mgr = _make_mock_session()
         row = _make_org_row(slug="my-slug")
         session.execute = AsyncMock(return_value=_make_scalar_result(row))
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_slug("my-slug")
         assert result is not None
         assert result.slug == "my-slug"
@@ -2448,7 +2448,7 @@ class TestSqlOrganizationRepository:
     async def test_get_by_slug_not_found(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalar_result(None))
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.get_by_slug("nope")
         assert result is None
 
@@ -2456,7 +2456,7 @@ class TestSqlOrganizationRepository:
         session, mgr = _make_mock_session()
         rows = [_make_org_row(), _make_org_row(name="o2")]
         session.execute = AsyncMock(return_value=_make_scalars_result(rows))
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             results = await repo.list_all(active_only=True)
         assert len(results) == 2
 
@@ -2464,21 +2464,21 @@ class TestSqlOrganizationRepository:
         session, mgr = _make_mock_session()
         rows = [_make_org_row(is_active=False)]
         session.execute = AsyncMock(return_value=_make_scalars_result(rows))
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             results = await repo.list_all(active_only=False)
         assert len(results) == 1
 
     async def test_list_all_empty(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalars_result([]))
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             results = await repo.list_all()
         assert results == []
 
     async def test_list_all_with_skip_limit(self, repo):
         session, mgr = _make_mock_session()
         session.execute = AsyncMock(return_value=_make_scalars_result([]))
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             results = await repo.list_all(skip=10, limit=5)
         assert results == []
 
@@ -2486,9 +2486,9 @@ class TestSqlOrganizationRepository:
         session, mgr = _make_mock_session()
         model = _make_org_row()
         session.get = AsyncMock(return_value=model)
-        from domain.entities.organization import Organization
+        from features.organizations.domain.organization import Organization
         org = Organization(id=UUID(model.id), name="updated", slug="updated-slug")
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             result = await repo.update(org)
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once()
@@ -2497,16 +2497,16 @@ class TestSqlOrganizationRepository:
     async def test_update_not_found_raises(self, repo):
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        from domain.entities.organization import Organization
+        from features.organizations.domain.organization import Organization
         org = Organization(id=uuid4(), name="ghost", slug="ghost")
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Organization not found"):
                 await repo.update(org)
 
     async def test_delete_success(self, repo):
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=_make_org_row())
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             await repo.delete(uuid4())
         session.delete.assert_called_once()
         session.commit.assert_awaited_once()
@@ -2514,7 +2514,7 @@ class TestSqlOrganizationRepository:
     async def test_delete_not_found_raises(self, repo):
         session, mgr = _make_mock_session()
         session.get = AsyncMock(return_value=None)
-        with patch("infrastructure.secondary.database.repositories.organization_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.organizations.infrastructure.persistence.organization_repository.AsyncSessionLocal", return_value=mgr):
             with pytest.raises(ValueError, match="Organization not found"):
                 await repo.delete(uuid4())
 
@@ -2541,12 +2541,12 @@ def _make_verification_result_row(result_id=None, release_id=None, verdict="VALI
 class TestSqlVerificationResultRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.verification_result_repository import SqlVerificationResultRepository
+        from features.verification.infrastructure.persistence.verification_result_repository import SqlVerificationResultRepository
         return SqlVerificationResultRepository()
 
     async def test_save_success(self, repo):
         session, mgr = _make_mock_session()
-        from domain.entities.verification_result import VerificationResult
+        from features.verification.domain.verification_result import VerificationResult
         result = VerificationResult(
             id=uuid4(), release_id=uuid4(), verdict=VerdictType.VALID,
             duration_ms=150, summary={"key": "val"},
@@ -2554,7 +2554,7 @@ class TestSqlVerificationResultRepository:
             profile_snapshot={},
             executed_at=datetime.now(timezone.utc),
         )
-        with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.verification_result_repository.AsyncSessionLocal", return_value=mgr):
             saved = await repo.save(result)
         session.add.assert_called_once()
         session.commit.assert_awaited_once()
@@ -2567,7 +2567,7 @@ class TestSqlVerificationResultRepository:
         row = _make_verification_result_row(result_id=rid, verdict="VALID")
         result = _make_scalar_result(row)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.verification_result_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.find_by_id(rid)
         assert entity is not None
         assert entity.verdict == VerdictType.VALID
@@ -2576,7 +2576,7 @@ class TestSqlVerificationResultRepository:
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.verification_result_repository.AsyncSessionLocal", return_value=mgr):
             entity = await repo.find_by_id(uuid4())
         assert entity is None
 
@@ -2586,7 +2586,7 @@ class TestSqlVerificationResultRepository:
         rows = [_make_verification_result_row(release_id=rel_id, verdict="INVALID")]
         result = _make_scalars_result(rows)
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.verification_result_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.find_by_release(rel_id)
         assert len(entities) == 1
         assert entities[0].verdict == VerdictType.INVALID
@@ -2595,7 +2595,7 @@ class TestSqlVerificationResultRepository:
         session, mgr = _make_mock_session()
         result = _make_scalars_result([])
         session.execute = AsyncMock(return_value=result)
-        with patch("infrastructure.secondary.database.repositories.verification_result_repository.AsyncSessionLocal", return_value=mgr):
+        with patch("features.verification.infrastructure.persistence.verification_result_repository.AsyncSessionLocal", return_value=mgr):
             entities = await repo.find_by_release(uuid4())
         assert entities == []
 
@@ -2616,16 +2616,16 @@ def _make_membership_row(membership_id=None, user_id=None, organization_id=None,
 class TestSqlUserMembershipRepository:
     @pytest.fixture
     def repo(self):
-        from infrastructure.secondary.database.repositories.user_membership_repository import SqlUserMembershipRepository
+        from features.identity.infrastructure.persistence.user_membership_repository import SqlUserMembershipRepository
         return SqlUserMembershipRepository()
 
     def _patch_target(self):
-        return "infrastructure.secondary.database.repositories.user_membership_repository.AsyncSessionLocal"
+        return "features.identity.infrastructure.persistence.user_membership_repository.AsyncSessionLocal"
 
     async def test_create_membership(self, repo):
         session, mgr = _make_mock_session()
-        from domain.entities.user import UserMembership
-        from domain.enums import UserRole
+        from features.identity.domain.user import UserMembership
+        from shared.domain.enums import UserRole
         membership = UserMembership(id=uuid4(), user_id=uuid4(), organization_id=uuid4(), role=UserRole.U4)
         with patch(self._patch_target(), return_value=mgr):
             result = await repo.create(membership)
@@ -2677,7 +2677,7 @@ class TestSqlUserMembershipRepository:
         assert len(memberships) == 1
 
     async def test_update_role_success(self, repo):
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         session, mgr = _make_mock_session()
         row = _make_membership_row(role="OPERATOR")
         result = _make_scalar_result(row)
@@ -2688,7 +2688,7 @@ class TestSqlUserMembershipRepository:
         session.commit.assert_awaited_once()
 
     async def test_update_role_not_found_raises(self, repo):
-        from domain.enums import UserRole
+        from shared.domain.enums import UserRole
         session, mgr = _make_mock_session()
         result = _make_scalar_result(None)
         session.execute = AsyncMock(return_value=result)

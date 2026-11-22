@@ -5,11 +5,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from infrastructure.secondary.database.repositories.artifact_repository import (
+from features.projects_releases.infrastructure.persistence.artifact_repository import (
     _artifact_from_row,
     SqlArtifactRepository,
 )
-from domain.entities.artifact import Artifact
+from features.projects_releases.domain.artifact import Artifact
 
 
 def _make_mock_row(**overrides):
@@ -102,7 +102,7 @@ class TestSqlArtifactRepository:
         repo = SqlArtifactRepository()
 
         with patch(
-            "infrastructure.secondary.database.repositories.artifact_repository._session_scope",
+            "features.projects_releases.infrastructure.persistence.artifact_repository._session_scope",
             side_effect=_mock_scope,
         ):
             result = await repo.save(sample_artifact)
@@ -133,7 +133,7 @@ class TestSqlArtifactRepository:
         repo = SqlArtifactRepository()
 
         with patch(
-            "infrastructure.secondary.database.repositories.artifact_repository._session_scope",
+            "features.projects_releases.infrastructure.persistence.artifact_repository._session_scope",
             side_effect=_mock_scope,
         ):
             result = await repo.find_by_id(artifact_id)
@@ -156,7 +156,7 @@ class TestSqlArtifactRepository:
         repo = SqlArtifactRepository()
 
         with patch(
-            "infrastructure.secondary.database.repositories.artifact_repository._session_scope",
+            "features.projects_releases.infrastructure.persistence.artifact_repository._session_scope",
             side_effect=_mock_scope,
         ):
             result = await repo.find_by_id(artifact_id)
@@ -180,7 +180,7 @@ class TestSqlArtifactRepository:
         repo = SqlArtifactRepository()
 
         with patch(
-            "infrastructure.secondary.database.repositories.artifact_repository._session_scope",
+            "features.projects_releases.infrastructure.persistence.artifact_repository._session_scope",
             side_effect=_mock_scope,
         ):
             results = await repo.find_by_release(release_id)
@@ -207,7 +207,7 @@ class TestSqlArtifactRepository:
         repo = SqlArtifactRepository()
 
         with patch(
-            "infrastructure.secondary.database.repositories.artifact_repository._session_scope",
+            "features.projects_releases.infrastructure.persistence.artifact_repository._session_scope",
             side_effect=_mock_scope,
         ):
             results = await repo.find_by_release(release_id, skip=10, limit=5)
@@ -232,7 +232,7 @@ class TestSqlArtifactRepository:
         repo = SqlArtifactRepository()
 
         with patch(
-            "infrastructure.secondary.database.repositories.artifact_repository._session_scope",
+            "features.projects_releases.infrastructure.persistence.artifact_repository._session_scope",
             side_effect=_mock_scope,
         ):
             results = await repo.find_by_release(release_id)
@@ -253,7 +253,7 @@ class TestSqlArtifactRepository:
         repo = SqlArtifactRepository()
 
         with patch(
-            "infrastructure.secondary.database.repositories.artifact_repository._session_scope",
+            "features.projects_releases.infrastructure.persistence.artifact_repository._session_scope",
             side_effect=_mock_scope,
         ):
             await repo.delete(artifact_id)
@@ -274,7 +274,7 @@ class TestSqlArtifactRepository:
         repo = SqlArtifactRepository()
 
         with patch(
-            "infrastructure.secondary.database.repositories.artifact_repository._session_scope",
+            "features.projects_releases.infrastructure.persistence.artifact_repository._session_scope",
             side_effect=_mock_scope,
         ):
             with pytest.raises(ValueError, match="Artifact not found"):

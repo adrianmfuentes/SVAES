@@ -22,8 +22,8 @@ _MAX_ACTIVE_KEYS = 5
 
 
 def _make_jwt(user_id, email, role, organization_id):
-    from domain.enums import UserRole
-    from infrastructure.primary.middleware.jwt_handler import JwtHandler
+    from shared.domain.enums import UserRole
+    from features.identity.infrastructure.gateways.jwt_handler import JwtHandler
 
     handler = JwtHandler(
         secret=os.environ["JWT_SECRET_KEY"],
@@ -43,9 +43,9 @@ def _make_jwt(user_id, email, role, organization_id):
 @pytest_asyncio.fixture
 async def org_with_admin(client):
     """Create a real org and admin user in the DB, return (org_id, user_id, jwt_headers)."""
-    from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
-    from infrastructure.secondary.database.models import OrganizationModel, UserModel
-    from domain.enums import UserRole
+    from shared.infrastructure.database.get_async_session import AsyncSessionLocal
+    from shared.infrastructure.database.models import OrganizationModel, UserModel
+    from shared.domain.enums import UserRole
 
     org_id = uuid4()
     user_id = uuid4()
@@ -71,9 +71,9 @@ async def org_with_admin(client):
 @pytest_asyncio.fixture
 async def viewer_user(client, org_with_admin):
     """Create a U2 (OPERATOR) user in the same org as admin."""
-    from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
-    from infrastructure.secondary.database.models import UserModel
-    from domain.enums import UserRole
+    from shared.infrastructure.database.get_async_session import AsyncSessionLocal
+    from shared.infrastructure.database.models import UserModel
+    from shared.domain.enums import UserRole
 
     org_id, _, _ = org_with_admin
     viewer_id = uuid4()
@@ -98,9 +98,9 @@ async def viewer_user(client, org_with_admin):
 @pytest_asyncio.fixture
 async def second_org(client):
     """Create a second organization (org B) with an admin user."""
-    from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
-    from infrastructure.secondary.database.models import OrganizationModel, UserModel
-    from domain.enums import UserRole
+    from shared.infrastructure.database.get_async_session import AsyncSessionLocal
+    from shared.infrastructure.database.models import OrganizationModel, UserModel
+    from shared.domain.enums import UserRole
 
     org_id = uuid4()
     user_id = uuid4()
@@ -248,8 +248,8 @@ async def test_tc_api_auth_05_expired_key_returns_401(
     Requirement: AC5.4 / API2.5
     A key with expires_at in the past must return 401 when used.
     """
-    from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
-    from infrastructure.secondary.database.models.api_key_model import APIKeyModel
+    from shared.infrastructure.database.get_async_session import AsyncSessionLocal
+    from shared.infrastructure.database.models.api_key_model import APIKeyModel
     import sqlalchemy as sa
 
     _, user_id, jwt_headers = org_with_admin
@@ -345,8 +345,8 @@ async def test_tc_api_auth_08_db_stores_hash_not_plaintext(
     Verify that the api_key table stores a SHA-256 hash of the key, not the
     raw plaintext. Query the table directly and assert no row contains the raw value.
     """
-    from infrastructure.secondary.database.get_async_session import AsyncSessionLocal
-    from infrastructure.secondary.database.models.api_key_model import APIKeyModel
+    from shared.infrastructure.database.get_async_session import AsyncSessionLocal
+    from shared.infrastructure.database.models.api_key_model import APIKeyModel
     import sqlalchemy as sa
 
     _, user_id, jwt_headers = org_with_admin

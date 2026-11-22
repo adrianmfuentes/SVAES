@@ -59,7 +59,12 @@ jobs:
           enable-cache: true
 
       - name: Run unit tests
-        run: uv run --frozen --no-build --project api --extra dev pytest tests/unit --cov=api/src --cov-report=
+        run: uv run --frozen --no-build --project api --extra dev pytest tests/unit tests/architecture --cov=api/src --cov-report=
+
+      - name: Enforce backend import boundaries
+        env:
+          PYTHONPATH: api/src
+        run: uv run --frozen --no-build --project api --extra dev lint-imports api/pyproject.toml --no-cache
 
       - name: Run acceptance structure tests
         run: uv run --frozen --no-build --project api --extra dev pytest tests/acceptance/test_acceptance_structure.py -v --tb=short

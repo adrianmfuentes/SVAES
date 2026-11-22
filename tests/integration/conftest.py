@@ -52,7 +52,7 @@ def _test_env():
         "CELERY_RESULT_BACKEND": redis_url,
         "ENGINE_URL": engine_url,
     })
-    import core.config as _cfg
+    import shared.infrastructure.config as _cfg
     _cfg.get_settings.cache_clear()
     _cfg.settings = _cfg.get_settings()
     yield
@@ -61,7 +61,7 @@ def _test_env():
 @pytest_asyncio.fixture(scope="session")
 async def _test_db(_test_env):
     from sqlalchemy.ext.asyncio import create_async_engine
-    from infrastructure.secondary.database.models import Base
+    from shared.infrastructure.database.models import Base
 
     test_engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
 
@@ -93,9 +93,9 @@ async def client(_test_db, test_user_id):
         pytest.skip("PostgreSQL test database not available — start PostgreSQL and create 'svaes_test' database")
 
     from main import app
-    from infrastructure.secondary.database.models import Base
-    from infrastructure.secondary.database.models.user_model import UserModel
-    from infrastructure.secondary.database.get_async_session import engine, AsyncSessionLocal
+    from shared.infrastructure.database.models import Base
+    from shared.infrastructure.database.models.user_model import UserModel
+    from shared.infrastructure.database.get_async_session import engine, AsyncSessionLocal
     from httpx import AsyncClient, ASGITransport
 
     @asynccontextmanager
@@ -153,8 +153,8 @@ async def db(_test_db):
 # ---------------------------------------------------------------------------
 
 def _make_token(user_id, email, role, organization_id=None):
-    from domain.enums import UserRole
-    from infrastructure.primary.middleware.jwt_handler import JwtHandler
+    from shared.domain.enums import UserRole
+    from features.identity.infrastructure.gateways.jwt_handler import JwtHandler
 
     handler = JwtHandler(
         secret=os.environ["JWT_SECRET_KEY"],
@@ -183,7 +183,7 @@ def test_org_id():
 
 @pytest.fixture
 def admin_token(test_user_id, test_org_id):
-    from domain.enums import UserRole
+    from shared.domain.enums import UserRole
     return _make_token(test_user_id, "admin@integration.test", UserRole.U3, test_org_id)
 
 
@@ -194,7 +194,7 @@ def admin_headers(admin_token):
 
 @pytest.fixture
 def manager_token(test_user_id, test_org_id):
-    from domain.enums import UserRole
+    from shared.domain.enums import UserRole
     return _make_token(test_user_id, "manager@integration.test", UserRole.U4, test_org_id)
 
 
@@ -205,7 +205,7 @@ def manager_headers(manager_token):
 
 @pytest.fixture
 def operator_token(test_user_id, test_org_id):
-    from domain.enums import UserRole
+    from shared.domain.enums import UserRole
     return _make_token(test_user_id, "operator@integration.test", UserRole.U2, test_org_id)
 
 

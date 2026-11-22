@@ -9,8 +9,8 @@ import pytest_asyncio
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "api", "src"))
 
-from application.ports.output.i_user_repository import IUserRepository
-from domain.entities.user import User
+from features.identity.application.ports.i_user_repository import IUserRepository
+from features.identity.domain.user import User
 _log = logging.getLogger(__name__)
 
 # Shared test Redis URL
@@ -54,7 +54,7 @@ def _test_env():
         "ADMIN_EMAIL": "admin@test.local",
         "ADMIN_PASSWORD": "AdminPass1",
     })
-    import core.config as _cfg
+    import shared.infrastructure.config as _cfg
     _cfg.get_settings.cache_clear()
     _cfg.settings = _cfg.get_settings()
     yield
@@ -63,7 +63,7 @@ def _test_env():
 @pytest_asyncio.fixture(scope="session")
 async def _test_db(_test_env):
     from sqlalchemy.ext.asyncio import create_async_engine
-    from infrastructure.secondary.database.models import Base
+    from shared.infrastructure.database.models import Base
 
     engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
 
@@ -148,8 +148,8 @@ async def client(_test_db):
     app.router.lifespan_context = _test_lifespan
 
     if _test_db:
-        from infrastructure.secondary.database.models import Base
-        from infrastructure.secondary.database.get_async_session import engine
+        from shared.infrastructure.database.models import Base
+        from shared.infrastructure.database.get_async_session import engine
 
         try:
             async with engine.begin() as conn:
@@ -160,7 +160,7 @@ async def client(_test_db):
 
     db_overrides = []
     if not _test_db:
-        from core.dependencies import get_user_repository
+        from bootstrap.dependencies import get_user_repository
 
         mock_repo = InMemoryUserRepository()
         app.dependency_overrides[get_user_repository] = lambda: mock_repo
@@ -173,7 +173,7 @@ async def client(_test_db):
         yield ac
 
     if _test_db:
-        from infrastructure.secondary.database.get_async_session import engine
+        from shared.infrastructure.database.get_async_session import engine
         try:
             await engine.dispose()
         except Exception:
@@ -190,8 +190,8 @@ def test_user_id():
 
 @pytest.fixture
 def auth_token():
-    from domain.enums import UserRole
-    from infrastructure.primary.middleware.jwt_handler import JwtHandler
+    from shared.domain.enums import UserRole
+    from features.identity.infrastructure.gateways.jwt_handler import JwtHandler
 
     handler = JwtHandler(
         secret=os.environ["JWT_SECRET_KEY"],
@@ -221,8 +221,8 @@ def unauth_headers():
 
 @pytest.fixture
 def basic_user_token():
-    from domain.enums import UserRole
-    from infrastructure.primary.middleware.jwt_handler import JwtHandler
+    from shared.domain.enums import UserRole
+    from features.identity.infrastructure.gateways.jwt_handler import JwtHandler
 
     handler = JwtHandler(
         secret=os.environ["JWT_SECRET_KEY"],

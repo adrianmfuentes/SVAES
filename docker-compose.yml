@@ -141,7 +141,7 @@ services:
       dockerfile: Dockerfile
     container_name: svaes-celery
     restart: always
-    command: celery -A src.infrastructure.secondary.queue.celery_app worker --loglevel=warning
+    command: celery -A shared.infrastructure.queue.celery_app worker --loglevel=warning
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-svaes}:${POSTGRES_PASSWORD}@postgres:5432/svaes
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -185,7 +185,7 @@ services:
       dockerfile: Dockerfile
     container_name: svaes-celery-beat
     restart: always
-    command: celery -A src.infrastructure.secondary.queue.celery_app beat --loglevel=warning
+    command: celery -A shared.infrastructure.queue.celery_app beat --loglevel=warning
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-svaes}:${POSTGRES_PASSWORD}@postgres:5432/svaes
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0

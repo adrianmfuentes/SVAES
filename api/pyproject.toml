@@ -40,7 +40,32 @@ dev = [
     "locust>=2.47.0",
     "aiosqlite>=0.22.1",
     "respx>=0.23.1",
+    "import-linter>=2.9",
 ]
+
+[tool.importlinter]
+root_packages = ["features", "shared", "bootstrap"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "El dominio no depende de capas externas"
+type = "forbidden"
+source_modules = ["features.*.domain", "shared.domain"]
+forbidden_modules = [
+    "bootstrap", "features.*.application",
+    "features.*.infrastructure", "shared.application", "shared.infrastructure",
+    "fastapi", "sqlalchemy",
+]
+
+[[tool.importlinter.contracts]]
+name = "La aplicación accede a la infraestructura mediante puertos"
+type = "forbidden"
+source_modules = ["features.*.application", "shared.application"]
+forbidden_modules = [
+    "bootstrap", "features.*.infrastructure", "shared.infrastructure",
+    "fastapi", "sqlalchemy", "httpx", "cryptography", "pyotp", "segno", "reportlab", "croniter",
+]
+allow_indirect_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -59,27 +84,24 @@ dev = [
 [tool.coverage.run]
 omit = [
     "src/main.py",
-    "src/core/config.py",
+    "src/bootstrap/application.py",
+    "src/shared/infrastructure/config.py",
     "src/__init__.py",
-    "src/application/ports/**",
-    "src/infrastructure/workers/verification_worker.py",
-    "src/infrastructure/primary/routers/api/__init__.py",
-    "src/infrastructure/primary/routers/api/v1/__init__.py",
-    "src/infrastructure/secondary/database/models/__init__.py",
-    "src/infrastructure/secondary/database/repositories/__init__.py",
-    "src/infrastructure/secondary/connectors/task_management/__init__.py",
-    "src/infrastructure/secondary/connectors/source_control/__init__.py",
-    "src/infrastructure/secondary/connectors/documentation/__init__.py",
-    "src/infrastructure/secondary/connectors/planning/__init__.py",
-    "src/infrastructure/secondary/connectors/change_management/__init__.py",
-    "src/infrastructure/secondary/queue/__init__.py",
-    "src/infrastructure/secondary/queue/celery_app.py",
-    "src/infrastructure/workers/__init__.py",
+    "src/features/*/application/ports/**",
+    "src/shared/application/**",
+    "src/features/verification/infrastructure/workers/verification_worker.py",
+    "src/shared/infrastructure/database/models/__init__.py",
+    "src/features/connectors/infrastructure/gateways/task_management/__init__.py",
+    "src/features/connectors/infrastructure/gateways/source_control/__init__.py",
+    "src/features/connectors/infrastructure/gateways/documentation/__init__.py",
+    "src/features/connectors/infrastructure/gateways/planning/__init__.py",
+    "src/features/connectors/infrastructure/gateways/change_management/__init__.py",
+    "src/shared/infrastructure/queue/__init__.py",
+    "src/shared/infrastructure/queue/celery_app.py",
+    "src/features/verification/infrastructure/workers/__init__.py",
     "*/alembic/versions/*",
     "*/alembic/env.py",
     "*/migrations/*",
-    "src/infrastructure/config/*",
-    "src/infrastructure/settings*",
     "src/svaes_api.egg-info/*",
 ]
 
