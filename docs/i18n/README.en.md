@@ -2,7 +2,7 @@
 [![Status](https://img.shields.io/badge/TFG-Completed-success)](https://github.com/adrianmfuentes/SVAES) [![TFM](https://img.shields.io/badge/TFM-In%20progress-orange)](https://github.com/adrianmfuentes/SVAES)
 [![Deploy](https://img.shields.io/badge/Deploy-Production-blue)](https://github.com/adrianmfuentes/SVAES)
 
-**[Español](README.md)** · **[Français](README.fr.md)**
+**[Español](../../README.md)** · **[Français](README.fr.md)**
 
 # SVAES
 
@@ -11,7 +11,7 @@
 Final Degree Project (TFG) — Bachelor's Degree in Software Engineering, University of Oviedo · 2025/2026 · Grade: 10/10
 Master's Thesis (TFM, in progress) — Master in Web Engineering, Cybersecurity specialisation, University of Oviedo
 
-> **TFM:** _Semantic verification of software deliveries using local language models: an extension of SVAES._ Continuation of the TFG adding semantic verification with locally-run LLMs. TFG documentation is kept as history. See [docs/tfm](docs/tfm/README.md).
+> **TFM:** _Semantic verification of software deliveries using local language models: an extension of SVAES._ Continuation of the TFG adding semantic verification with locally-run LLMs. TFG documentation is kept as history. See [docs/tfm](../tfm/README.md).
 
 Author: Adrián Martínez Fuentes
 
@@ -31,7 +31,7 @@ A **Quality Gate**: before a release is signed off, SVAES automatically checks t
 | Connectors         | 20 implementations across 5 functional categories |
 | Deployment         | Production, Docker Compose + Oracle Cloud |
 
-Full technical documentation (architecture, domain model, API, security, deployment): **[docs/](docs/README.md)**.
+Full technical documentation (architecture, domain model, API, security, deployment): **[docs/](../README.md)**.
 
 ## How it works
 
@@ -63,13 +63,13 @@ API at `http://localhost:8000`, Swagger at `http://localhost:8000/docs`. Environ
 
 ## User feedback
 
-Users can submit feedback (a 1-5 rating and a comment) through a form in the landing page footer. A scheduled GitHub Action ([`feedback-sync.yml`](.github/workflows/feedback-sync.yml)) periodically syncs the feedback received into the section below, as visible proof that the system has real users:
+Users can submit feedback (a 1-5 rating and a comment) through a form in the landing page footer. A scheduled GitHub Action ([`feedback-sync.yml`](../../.github/workflows/feedback-sync.yml)) periodically syncs the feedback received into the section below, as visible proof that the system has real users:
 
 <!-- FEEDBACK:START -->
 _No feedback published yet. Be the first to share your opinion from the landing page._
 <!-- FEEDBACK:END -->
 
-This section is kept up to date automatically only in the [Spanish README](README.md); this translated copy reflects the structure but is not re-synced on every run.
+This section is kept up to date automatically only in the [Spanish README](../../README.md); this translated copy reflects the structure but is not re-synced on every run.
 
 ---
 

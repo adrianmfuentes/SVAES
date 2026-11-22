@@ -2,7 +2,7 @@
 [![Status](https://img.shields.io/badge/TFG-Finalizado-success)](https://github.com/adrianmfuentes/SVAES) [![TFM](https://img.shields.io/badge/TFM-En%20curso-orange)](https://github.com/adrianmfuentes/SVAES)
 [![Deploy](https://img.shields.io/badge/Deploy-Producción-blue)](https://github.com/adrianmfuentes/SVAES)
 
-**[English](README.en.md)** · **[Français](README.fr.md)**
+**[English](docs/i18n/README.en.md)** · **[Français](docs/i18n/README.fr.md)**
 
 # SVAES
 

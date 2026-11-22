@@ -178,6 +178,8 @@ SVAES/
 │   │   └── postman/             # Postman collection & environment
 │   ├── engine/
 │   │   └── reference.md         # Engine technical reference
+│   ├── i18n/                    # README.en.md, README.fr.md (translations)
+│   ├── PRODUCT.md, SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md
 │   ├── development/
 │   │   ├── guidelines.md        # AI agent & contributor conventions
 │   │   ├── specifications.md    # Functional specification (SRS summary)

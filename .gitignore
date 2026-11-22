@@ -40,9 +40,6 @@ coverage.xml
 .idea/
 .vscode/
 .claude/*
-!.claude/skills/
-.claude/skills/*
-!.claude/skills/speckit-*/
 *.iml
 *.iws
 .DS_Store
@@ -74,9 +71,6 @@ api/.venv/
 
 # Agents and skills
 **/.agents/*
-!/.agents/skills/
-/.agents/skills/*
-!/.agents/skills/speckit-*/
 **/skills-lock.json
 
 
@@ -84,3 +78,15 @@ api/.venv/
 
 /target
 **/target/
+
+# Generated test/coverage output
+tests/results/
+engine/lcov.info
+
+# Spec-driven development (plans/tasks/specs): local only
+specs/
+sdd/
+.specify/
+.agents/
+.local/
+docs/*-plan.md

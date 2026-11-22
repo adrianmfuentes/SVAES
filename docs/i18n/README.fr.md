@@ -2,7 +2,7 @@
 [![Status](https://img.shields.io/badge/Mémoire-Terminé-success)](https://github.com/adrianmfuentes/SVAES) [![TFM](https://img.shields.io/badge/TFM-En%20cours-orange)](https://github.com/adrianmfuentes/SVAES)
 [![Deploy](https://img.shields.io/badge/Déploiement-Production-blue)](https://github.com/adrianmfuentes/SVAES)
 
-**[English](README.en.md)** · **[Español](README.md)**
+**[English](README.en.md)** · **[Español](../../README.md)**
 
 # SVAES
 
@@ -11,7 +11,7 @@
 Mémoire de fin de licence (TFG) — Licence en Ingénierie Informatique du Logiciel, Université d'Oviedo · 2025/2026 · Note : 10/10
 Mémoire de Master (TFM, en cours) — Master en Ingénierie Web, spécialité Cybersécurité, Université d'Oviedo
 
-> **TFM :** _Vérification sémantique des livraisons logicielles via des modèles de langage locaux : extension de SVAES._ Prolongement du TFG ajoutant une vérification sémantique par LLM exécutés en local. La documentation du TFG est conservée comme historique. Voir [docs/tfm](docs/tfm/README.md).
+> **TFM :** _Vérification sémantique des livraisons logicielles via des modèles de langage locaux : extension de SVAES._ Prolongement du TFG ajoutant une vérification sémantique par LLM exécutés en local. La documentation du TFG est conservée comme historique. Voir [docs/tfm](../tfm/README.md).
 
 Auteur : Adrián Martínez Fuentes
 
@@ -31,7 +31,7 @@ Un **Quality Gate** : avant de valider une release, SVAES vérifie automatiqueme
 | Connecteurs         | 20 implémentations réparties en 5 catégories fonctionnelles |
 | Déploiement         | Production, Docker Compose + Oracle Cloud |
 
-Documentation technique complète (architecture, modèle de domaine, API, sécurité, déploiement) : **[docs/](docs/README.md)**.
+Documentation technique complète (architecture, modèle de domaine, API, sécurité, déploiement) : **[docs/](../README.md)**.
 
 ## Fonctionnement
 
@@ -63,13 +63,13 @@ API sur `http://localhost:8000`, Swagger sur `http://localhost:8000/docs`. Varia
 
 ## Avis des utilisateurs
 
-Les utilisateurs peuvent envoyer un avis (note de 1 à 5 et commentaire) via un formulaire dans le pied de page de la landing page. Une GitHub Action planifiée ([`feedback-sync.yml`](.github/workflows/feedback-sync.yml)) synchronise périodiquement les avis reçus dans la section ci-dessous, comme preuve visible que le système a de vrais utilisateurs :
+Les utilisateurs peuvent envoyer un avis (note de 1 à 5 et commentaire) via un formulaire dans le pied de page de la landing page. Une GitHub Action planifiée ([`feedback-sync.yml`](../../.github/workflows/feedback-sync.yml)) synchronise périodiquement les avis reçus dans la section ci-dessous, comme preuve visible que le système a de vrais utilisateurs :
 
 <!-- FEEDBACK:START -->
 _Aucun avis publié pour le moment. Soyez le premier à partager votre opinion depuis la landing page._
 <!-- FEEDBACK:END -->
 
-Cette section n'est mise à jour automatiquement que dans le [README espagnol](README.md) ; cette copie traduite reflète la structure mais n'est pas resynchronisée à chaque exécution.
+Cette section n'est mise à jour automatiquement que dans le [README espagnol](../../README.md) ; cette copie traduite reflète la structure mais n'est pas resynchronisée à chaque exécution.
 
 ---
 

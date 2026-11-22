@@ -449,7 +449,7 @@ The following concerns were identified in the audit and resolved on 2026-05-18:
 ### 10.6 Documentation Discrepancy: Angular Version
 
 **Severity:** Info (resolved — 2026-06-02)  
-**Location:** README.md, README.en.md, README.fr.md  
+**Location:** README.md, docs/i18n/README.en.md, docs/i18n/README.fr.md  
 **Resolution:** All README files updated to Angular 21; frontend status changed from "Pending" to "Implemented".
 
 ### 10.7 Web Frontend Not Implemented
